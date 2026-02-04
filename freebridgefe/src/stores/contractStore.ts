@@ -223,8 +223,22 @@ export const useContractStore = defineStore('contract', () => {
         },
     ]);
 
+    function addContract(contract: ContractDocument) {
+        contracts.value = [...contracts.value, contract];
+    }
+
+    function updateContract(contractId: string, updates: Partial<ContractDocument>) {
+        const index = contracts.value.findIndex((c) => c.id === contractId);
+        if (index !== -1) {
+            contracts.value[index] = { ...contracts.value[index], ...updates };
+            contracts.value = [...contracts.value];
+        }
+    }
+
     return {
         contracts,
         settlements,
+        addContract,
+        updateContract,
     };
 });
