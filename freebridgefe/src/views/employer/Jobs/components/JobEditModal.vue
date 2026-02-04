@@ -49,6 +49,8 @@ const setStatus = (status: JobStatus) => {
 const handleSubmit = (e: Event) => {
   e.preventDefault();
 
+  const confirmed = window.confirm('정말로 수정하시겠습니까?'); if (!confirmed) return;
+
   jobStore.updateJobPosting(props.job.id, {
     title: formData.title,
     description: formData.description,
@@ -58,6 +60,7 @@ const handleSubmit = (e: Event) => {
     status: formData.status,
   });
 
+  window.alert('등록되었습니다!');
   props.onSuccess();
 };
 
