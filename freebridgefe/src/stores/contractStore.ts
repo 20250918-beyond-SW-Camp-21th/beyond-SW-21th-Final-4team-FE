@@ -174,6 +174,67 @@ export const useContractStore = defineStore('contract', () => {
             signedByEmployer: true,
             signedDate: new Date('2024-01-25'),
         },
+        {
+            id: 'contract-4',
+            contractId: 'c4',
+            projectName: '웹 쇼핑몰 리뉴얼',
+            freelancerId: 'f1',
+            freelancerName: '김프론트',
+            employerId: 'e3',
+            employerName: '이커머스 C',
+            startDate: new Date('2024-03-01'),
+            endDate: new Date('2024-06-30'),
+            status: 'DRAFT',
+            budget: 12000000,
+            milestones: [
+                {
+                    id: 'm10',
+                    name: '디자인 시스템 구축',
+                    description: '컴포넌트 라이브러리 및 스타일 가이드',
+                    dueDate: new Date('2024-03-31'),
+                    amount: 3000000,
+                    status: 'PENDING',
+                },
+                {
+                    id: 'm11',
+                    name: '상품 페이지 개발',
+                    description: '상품 목록, 상세, 검색 기능',
+                    dueDate: new Date('2024-05-15'),
+                    amount: 5000000,
+                    status: 'PENDING',
+                },
+                {
+                    id: 'm12',
+                    name: '결제 시스템 연동',
+                    description: 'PG사 연동 및 주문 프로세스',
+                    dueDate: new Date('2024-06-30'),
+                    amount: 4000000,
+                    status: 'PENDING',
+                },
+            ],
+            terms: `1. 프로젝트 범위
+   - 기존 쇼핑몰 프론트엔드 전면 리뉴얼
+   - Vue.js 기반 SPA 개발
+   - 반응형 웹 디자인 적용
+
+2. 계약 기간
+   - 2024년 3월 1일 ~ 2024년 6월 30일 (4개월)
+
+3. 비용 및 지급 조건
+   - 총 계약금: 12,000,000원
+   - 마일스톤별 분할 지급
+   - 각 마일스톤 완료 후 5영업일 이내 지급
+
+4. 지적 재산권
+   - 모든 결과물의 저작권은 고용주에게 귀속됨
+
+5. 기밀 유지
+   - 프로젝트 관련 정보 외부 유출 금지`,
+            signedByFreelancer: false,
+            signedByEmployer: true,
+            employerSignature: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+            paymentDate: new Date('2024-06-30'),
+        },
     ]);
 
     const settlements = ref<Settlement[]>([

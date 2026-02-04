@@ -1,14 +1,25 @@
 <script setup lang="ts">
-import { X, FileText, Calendar, DollarSign, CheckCircle, User } from 'lucide-vue-next';
+import { computed } from 'vue';
+import { X, FileText, Calendar, DollarSign, CheckCircle, User, PenTool } from 'lucide-vue-next';
 import type { ContractDocument } from '@/types/contract';
 
-defineProps<{
+const props = defineProps<{
     contract: ContractDocument;
+    isFreelancer?: boolean;
 }>();
 
 defineEmits<{
     (e: 'close'): void;
+    (e: 'sign'): void;
 }>();
+
+const canSign = computed(() => {
+    if (props.contract.status !== 'DRAFT') return false;
+    if (props.isFreelancer) {
+        return props.contract.signedByEmployer && !props.contract.signedByFreelancer;
+    }
+    return false;
+});
 
 const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('ko-KR');
@@ -260,16 +271,29 @@ const formatCurrency = (amount: number) => {
                     </div>
                 </div>
 
-                <!-- Close Button -->
-                <button
-                    @click="$emit('close')"
-                    class="w-full py-4 bg-white/10 border border-white/10 hover:bg-white/20 text-white font-semibold rounded-2xl hover:shadow-xl transition-all"
-                    v-motion
-                    :hover="{ scale: 1.02 }"
-                    :tap="{ scale: 0.98 }"
-                >
-                    닫기
-                </button>
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    <button
+                        v-if="canSign"
+                        @click="$emit('sign')"
+                        class="flex-1 py-4 bg-orange-500 text-white font-semibold rounded-2xl hover:bg-orange-600 transition-all flex items-center justify-center gap-2"
+                        v-motion
+                        :hover="{ scale: 1.02 }"
+                        :tap="{ scale: 0.98 }"
+                    >
+                        <PenTool class="w-5 h-5" />
+                        서명하기
+                    </button>
+                    <button
+                        @click="$emit('close')"
+                        class="flex-1 py-4 bg-white/10 border border-white/10 hover:bg-white/20 text-white font-semibold rounded-2xl hover:shadow-xl transition-all"
+                        v-motion
+                        :hover="{ scale: 1.02 }"
+                        :tap="{ scale: 0.98 }"
+                    >
+                        닫기
+                    </button>
+                </div>
             </div>
         </div>
     </div>

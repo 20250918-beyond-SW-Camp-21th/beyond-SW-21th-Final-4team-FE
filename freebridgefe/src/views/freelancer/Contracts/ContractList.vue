@@ -42,10 +42,8 @@ const sortOptions = [
 const statusFilters = [
     { value: 'ALL', label: '전체' },
     { value: 'DRAFT', label: '서명 대기' },
-    { value: 'ACTIVE', label: 'Active' },
-    { value: 'IN_PROGRESS', label: 'In Progress' },
-    { value: 'COMPLETED', label: 'Completed' },
-    { value: 'TERMINATED', label: 'Terminated' },
+    { value: 'IN_PROGRESS', label: '진행 중' },
+    { value: 'COMPLETED', label: '완료' },
 ];
 
 const myContracts = computed(() => {
@@ -114,31 +112,31 @@ const calculateDday = (endDate: Date | string) => {
 
 const statusConfig: Record<
     string,
-    { label: string; gradient: string; icon: typeof CheckCircle }
+    { label: string; bgColor: string; icon: typeof CheckCircle }
 > = {
     DRAFT: {
         label: '서명 대기',
-        gradient: 'from-orange-500 to-yellow-500',
+        bgColor: 'bg-orange-500',
         icon: PenTool,
     },
     ACTIVE: {
-        label: 'Active',
-        gradient: 'from-green-500 to-emerald-500',
+        label: '활성',
+        bgColor: 'bg-green-500',
         icon: CheckCircle,
     },
     IN_PROGRESS: {
-        label: 'In Progress',
-        gradient: 'from-blue-500 to-cyan-500',
+        label: '진행 중',
+        bgColor: 'bg-blue-500',
         icon: TrendingUp,
     },
     COMPLETED: {
-        label: 'Completed',
-        gradient: 'from-gray-500 to-gray-600',
+        label: '완료',
+        bgColor: 'bg-gray-500',
         icon: CheckCircle,
     },
     TERMINATED: {
-        label: 'Terminated',
-        gradient: 'from-red-500 to-red-600',
+        label: '종료',
+        bgColor: 'bg-red-500',
         icon: AlertCircle,
     },
 };
@@ -184,9 +182,7 @@ const currentSortLabel = computed(() => {
         <div v-motion :initial="{ opacity: 0, y: 20 }" :enter="{ opacity: 1, y: 0 }" class="mb-8">
             <div class="flex items-center gap-3 mb-3">
                 <FileText class="w-10 h-10 text-white" />
-                <h1
-                    class="text-4xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent"
-                >
+                <h1 class="text-4xl font-bold text-white">
                     Active Contracts
                 </h1>
             </div>
@@ -195,7 +191,7 @@ const currentSortLabel = computed(() => {
 
         <!-- Search, Sort, and Filter -->
         <div
-            class="mb-8 space-y-4"
+            class="mb-8 space-y-4 relative z-20"
             v-motion
             :initial="{ opacity: 0, y: 20 }"
             :enter="{ opacity: 1, y: 0, transition: { delay: 0.1 } }"
@@ -227,7 +223,7 @@ const currentSortLabel = computed(() => {
                     </button>
                     <div
                         v-if="isDropdownOpen"
-                        class="absolute top-full mt-2 right-0 w-full bg-gray-900 border border-white/10 rounded-xl overflow-hidden shadow-xl z-20"
+                        class="absolute top-full mt-2 right-0 w-full bg-gray-900 border border-white/10 rounded-xl overflow-hidden shadow-xl"
                     >
                         <button
                             v-for="option in sortOptions"
@@ -251,7 +247,7 @@ const currentSortLabel = computed(() => {
                     class="px-4 py-2 rounded-full text-sm font-medium transition-all"
                     :class="
                         selectedStatus === filter.value
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
+                            ? 'bg-blue-500 text-white shadow-lg'
                             : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
                     "
                 >
@@ -294,7 +290,7 @@ const currentSortLabel = computed(() => {
                                     {{ contract.projectName }}
                                 </h2>
                                 <div
-                                    :class="`px-4 py-2 rounded-full bg-gradient-to-r ${statusConfig.DRAFT.gradient} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
+                                    :class="`px-4 py-2 rounded-full ${statusConfig.DRAFT.bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
                                 >
                                     <PenTool class="w-4 h-4" />
                                     {{ statusConfig.DRAFT.label }}
@@ -329,7 +325,7 @@ const currentSortLabel = computed(() => {
                             </button>
                             <button
                                 @click="signingContractId = contract.id"
-                                class="px-5 py-3 bg-gradient-to-r from-orange-500 to-yellow-500 rounded-xl text-white font-semibold flex items-center gap-2 shadow-lg"
+                                class="px-5 py-3 bg-orange-500 rounded-xl text-white font-semibold flex items-center gap-2 shadow-lg"
                                 v-motion
                                 :hover="{ scale: 1.05 }"
                                 :tap="{ scale: 0.95 }"
@@ -394,7 +390,7 @@ const currentSortLabel = computed(() => {
                             <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
                             <div
                                 v-if="statusConfig[contract.status]"
-                                :class="`px-4 py-2 rounded-full bg-gradient-to-r ${statusConfig[contract.status].gradient} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
+                                :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
                             >
                                 <component
                                     :is="statusConfig[contract.status].icon"
@@ -467,7 +463,7 @@ const currentSortLabel = computed(() => {
                         class="h-4 bg-white/10 rounded-full overflow-hidden backdrop-blur-xl"
                     >
                         <div
-                            class="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 rounded-full shadow-lg transition-all duration-1000 ease-out"
+                            class="h-full bg-blue-500 rounded-full shadow-lg transition-all duration-1000 ease-out"
                             :style="{ width: `${calculateProgress(contract)}%` }"
                         ></div>
                     </div>
@@ -485,11 +481,11 @@ const currentSortLabel = computed(() => {
                             :key="milestone.id"
                             class="p-5 rounded-2xl border-2 transition-all"
                             :class="{
-                                'bg-green-500/20 border-green-500/50':
+                                'border-green-500/50':
                                     milestone.status === 'COMPLETED',
-                                'bg-blue-500/20 border-blue-500/50':
+                                'border-blue-500/50':
                                     milestone.status === 'IN_PROGRESS',
-                                'bg-white/5 border-white/10':
+                                'border-white/10':
                                     milestone.status === 'PENDING',
                             }"
                             v-motion
@@ -570,7 +566,9 @@ const currentSortLabel = computed(() => {
         <ContractDetailModal
             v-if="selectedContract"
             :contract="selectedContract"
+            :isFreelancer="true"
             @close="selectedContract = null"
+            @sign="signingContractId = selectedContract?.id ?? null; selectedContract = null"
         />
     </div>
 </template>
