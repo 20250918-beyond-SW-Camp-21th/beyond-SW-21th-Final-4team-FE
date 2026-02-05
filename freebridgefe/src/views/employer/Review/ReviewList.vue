@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Star, MessageSquareQuote, UserCheck, ClipboardEdit } from 'lucide-vue-next';
+import { ref } from 'vue';
+import { Star, MessageSquareQuote, UserCheck, ClipboardEdit, Pencil, Trash2, X } from 'lucide-vue-next';
 
 const evaluationItems = [
   { key: 'language', label: '프로그래밍 언어 이해도' },
@@ -20,11 +21,11 @@ type ReviewBase = Record<ReviewRatingKey, number> & {
   createdAt: string;
 };
 
-const employerToFreelancerReviews: Array<
+const employerToFreelancerReviews = ref<Array<
   ReviewBase & {
     freelancerName: string;
   }
-> = [
+>>([
   {
     id: 'ef-1',
     freelancerName: '김프리',
@@ -55,7 +56,7 @@ const employerToFreelancerReviews: Array<
       '커뮤니케이션이 매우 매끄럽고 피드백 반영이 빨랐습니다. 마감 일정은 약간 여유가 필요했지만 결과물 만족도가 높았습니다.',
     createdAt: '2024-08-12',
   },
-];
+]);
 
 const freelancerToEmployerReviews: Array<
   ReviewBase & {
@@ -93,6 +94,45 @@ const freelancerToEmployerReviews: Array<
     createdAt: '2024-07-28',
   },
 ];
+
+const editingReviewId = ref<string | null>(null);
+const editForm = ref<(ReviewBase & { freelancerName: string }) | null>(null);
+
+const toReviewForm = (review: ReviewBase & { freelancerName: string }) =>
+  JSON.parse(JSON.stringify(review)) as ReviewBase & { freelancerName: string };
+
+const computeOverallRating = (review: ReviewBase) => {
+  const total = evaluationItems.reduce((sum, item) => sum + review[item.key], 0);
+  return Number((total / evaluationItems.length).toFixed(1));
+};
+
+const startEdit = (review: ReviewBase & { freelancerName: string }) => {
+  editingReviewId.value = review.id;
+  editForm.value = toReviewForm(review);
+};
+
+const cancelEdit = () => {
+  editingReviewId.value = null;
+  editForm.value = null;
+};
+
+const saveEdit = () => {
+  if (!editForm.value) return;
+  if (!window.confirm('후기를 수정하시겠습니까?')) return;
+  const index = employerToFreelancerReviews.value.findIndex((r) => r.id === editForm.value?.id);
+  if (index === -1) return;
+  editForm.value.rating = computeOverallRating(editForm.value);
+  employerToFreelancerReviews.value[index] = toReviewForm(editForm.value);
+  cancelEdit();
+};
+
+const deleteReview = (id: string) => {
+  if (!window.confirm('후기를 삭제하시겠습니까?')) return;
+  employerToFreelancerReviews.value = employerToFreelancerReviews.value.filter((review) => review.id !== id);
+  if (editingReviewId.value === id) {
+    cancelEdit();
+  }
+};
 </script>
 
 <template>
@@ -152,8 +192,24 @@ const freelancerToEmployerReviews: Array<
                 <div class="text-lg font-semibold text-white">{{ review.freelancerName }}</div>
                 <div class="text-sm text-white/60">{{ review.projectName }}</div>
               </div>
-              <div class="text-sm text-white/60">
+              <div class="flex items-center gap-3 text-sm text-white/60">
                 {{ new Date(review.createdAt).toLocaleDateString('ko-KR') }}
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 text-white/80 hover:bg-white/20 transition-colors"
+                  @click="startEdit(review)"
+                >
+                  <Pencil class="w-4 h-4" />
+                  수정
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors"
+                  @click="deleteReview(review.id)"
+                >
+                  <Trash2 class="w-4 h-4" />
+                  삭제
+                </button>
               </div>
             </div>
             <div class="flex items-center gap-2 mb-4">
@@ -176,6 +232,70 @@ const freelancerToEmployerReviews: Array<
             <p class="text-white/80 leading-relaxed bg-black/20 rounded-xl p-4">
               {{ review.comment }}
             </p>
+
+            <div
+              v-if="editingReviewId === review.id && editForm"
+              class="mt-6 border-t border-white/10 pt-6"
+            >
+              <div class="flex items-center gap-2 mb-4">
+                <ClipboardEdit class="w-5 h-5 text-blue-300" />
+                <h3 class="text-lg font-semibold">후기 수정</h3>
+              </div>
+              <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div
+                  v-for="item in evaluationItems"
+                  :key="item.key"
+                  class="bg-black/20 border border-white/10 rounded-2xl p-4"
+                >
+                  <div class="flex items-center justify-between mb-3">
+                    <span class="font-semibold text-white">{{ item.label }}</span>
+                    <span class="text-white/60 text-sm">{{ editForm[item.key] }} / 5</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <button
+                      v-for="star in 5"
+                      :key="star"
+                      type="button"
+                      class="transition-transform hover:scale-110"
+                      @click="editForm && (editForm[item.key] = star)"
+                    >
+                      <Star
+                        class="w-5 h-5"
+                        :class="star <= editForm[item.key] ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'"
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <label class="flex flex-col gap-2 mb-6">
+                <span class="text-sm text-white/60">후기 내용</span>
+                <textarea
+                  v-model="editForm.comment"
+                  rows="4"
+                  class="bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white/90 focus:outline-none focus:ring-2 focus:ring-white/30"
+                  placeholder="후기 내용을 수정해 주세요."
+                ></textarea>
+              </label>
+
+              <div class="flex flex-col md:flex-row md:items-center gap-3">
+                <button
+                  type="button"
+                  @click="saveEdit"
+                  class="px-6 py-3 bg-white text-black rounded-full font-semibold hover:scale-105 transition-transform"
+                >
+                  수정 저장
+                </button>
+                <button
+                  type="button"
+                  @click="cancelEdit"
+                  class="px-6 py-3 bg-white/10 text-white rounded-full font-semibold hover:bg-white/20 transition-colors inline-flex items-center gap-2"
+                >
+                  <X class="w-4 h-4" />
+                  취소
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

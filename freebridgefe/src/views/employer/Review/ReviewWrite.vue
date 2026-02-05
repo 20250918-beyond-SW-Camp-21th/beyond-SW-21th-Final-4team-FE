@@ -82,6 +82,10 @@ const handleSubmit = () => {
     return;
   }
 
+  if (!window.confirm('후기를 등록하시겠습니까?')) {
+    return;
+  }
+
   formSuccess.value = '후기가 등록되었습니다.';
   resetForm();
 };
