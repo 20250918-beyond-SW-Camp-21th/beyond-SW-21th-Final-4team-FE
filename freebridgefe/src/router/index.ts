@@ -55,9 +55,24 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import('@/views/employer/MyPage/MyPageView.vue')
             },
             {
+                path: 'review',
+                name: 'employer.review',
+                component: () => import('@/views/employer/Review/ReviewList.vue')
+            },
+            {
+                path: 'review/write',
+                name: 'employer.review.write',
+                component: () => import('@/views/employer/Review/ReviewWrite.vue')
+            },
+            {
                 path: 'freelancer/:id',
                 name: 'employer.freelancer.profile',
                 component: () => import('@/views/employer/Freelancer/FreelancerProfileView.vue')
+            },
+            {
+                path: 'dashboard',
+                name: 'employer.dashboard',
+                component: () => import('@/views/employer/Dashboard/DashboardView.vue')
             }
         ]
     },
@@ -97,6 +112,16 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'mypage',
                 name: 'freelancer.mypage',
                 component: () => import('@/views/freelancer/MyPage/MyPageFreelancer.vue')
+            },
+            {
+                path: 'review',
+                name: 'freelancer.review',
+                component: () => import('@/views/freelancer/Review/ReviewList.vue')
+            },
+            {
+                path: 'review/write',
+                name: 'freelancer.review.write',
+                component: () => import('@/views/freelancer/Review/ReviewWrite.vue')
             },
         ]
     }
