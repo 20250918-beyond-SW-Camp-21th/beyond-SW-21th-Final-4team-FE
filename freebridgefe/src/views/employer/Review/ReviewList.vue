@@ -2,8 +2,8 @@
 import { ref } from 'vue';
 import { Star, MessageSquareQuote, UserCheck, ClipboardEdit, Pencil, Trash2, X } from 'lucide-vue-next';
 
-const evaluationItems = [
-  { key: 'language', label: '프로그래밍 언어 이해도' },
+const employerEvaluationItems = [
+  { key: 'language', label: '프로그래밍 이해도' },
   { key: 'framework', label: '프레임워크/라이브러리 활용력' },
   { key: 'debugging', label: '디버깅 및 문제 해결 능력' },
   { key: 'communication', label: '의사소통' },
@@ -11,9 +11,24 @@ const evaluationItems = [
   { key: 'dispute', label: '분쟁 여부' },
 ] as const;
 
-type ReviewRatingKey = typeof evaluationItems[number]['key'];
+const freelancerEvaluationItems = [
+  { key: 'atmosphere', label: '사내 분위기' },
+  { key: 'requirementDetail', label: '요구사항 디테일' },
+  { key: 'schedule', label: '일정 준수' },
+] as const;
 
-type ReviewBase = Record<ReviewRatingKey, number> & {
+type EmployerReviewKey = typeof employerEvaluationItems[number]['key'];
+type FreelancerReviewKey = typeof freelancerEvaluationItems[number]['key'];
+
+type EmployerReviewBase = Record<EmployerReviewKey, number> & {
+  id: string;
+  projectName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+};
+
+type FreelancerReviewBase = Record<FreelancerReviewKey, number> & {
   id: string;
   projectName: string;
   rating: number;
@@ -22,7 +37,7 @@ type ReviewBase = Record<ReviewRatingKey, number> & {
 };
 
 const employerToFreelancerReviews = ref<Array<
-  ReviewBase & {
+  EmployerReviewBase & {
     freelancerName: string;
   }
 >>([
@@ -59,7 +74,7 @@ const employerToFreelancerReviews = ref<Array<
 ]);
 
 const freelancerToEmployerReviews: Array<
-  ReviewBase & {
+  FreelancerReviewBase & {
     reviewerName: string;
   }
 > = [
@@ -68,12 +83,9 @@ const freelancerToEmployerReviews: Array<
     reviewerName: '이프리랜서',
     projectName: '모바일 앱 리팩토링',
     rating: 4.6,
-    language: 4,
-    framework: 5,
-    debugging: 4,
-    communication: 5,
+    atmosphere: 5,
+    requirementDetail: 4,
     schedule: 4,
-    dispute: 5,
     comment:
       '업무 범위가 명확하고 의사 결정이 빠른 편이라 진행이 수월했습니다. 일정 협의도 원활했습니다.',
     createdAt: '2024-09-20',
@@ -83,12 +95,9 @@ const freelancerToEmployerReviews: Array<
     reviewerName: '정개발자',
     projectName: 'API 성능 개선',
     rating: 4.2,
-    language: 4,
-    framework: 4,
-    debugging: 4,
-    communication: 4,
+    atmosphere: 4,
+    requirementDetail: 4,
     schedule: 4,
-    dispute: 5,
     comment:
       '요구사항이 중간에 일부 변경되었지만 조율이 잘 되었고, 정산도 깔끔하게 처리되었습니다.',
     createdAt: '2024-07-28',
@@ -96,17 +105,17 @@ const freelancerToEmployerReviews: Array<
 ];
 
 const editingReviewId = ref<string | null>(null);
-const editForm = ref<(ReviewBase & { freelancerName: string }) | null>(null);
+const editForm = ref<(EmployerReviewBase & { freelancerName: string }) | null>(null);
 
-const toReviewForm = (review: ReviewBase & { freelancerName: string }) =>
-  JSON.parse(JSON.stringify(review)) as ReviewBase & { freelancerName: string };
+const toReviewForm = (review: EmployerReviewBase & { freelancerName: string }) =>
+  JSON.parse(JSON.stringify(review)) as EmployerReviewBase & { freelancerName: string };
 
-const computeOverallRating = (review: ReviewBase) => {
-  const total = evaluationItems.reduce((sum, item) => sum + review[item.key], 0);
-  return Number((total / evaluationItems.length).toFixed(1));
+const computeOverallRating = (review: EmployerReviewBase) => {
+  const total = employerEvaluationItems.reduce((sum, item) => sum + review[item.key], 0);
+  return Number((total / employerEvaluationItems.length).toFixed(1));
 };
 
-const startEdit = (review: ReviewBase & { freelancerName: string }) => {
+const startEdit = (review: EmployerReviewBase & { freelancerName: string }) => {
   editingReviewId.value = review.id;
   editForm.value = toReviewForm(review);
 };
@@ -225,7 +234,7 @@ const deleteReview = (id: string) => {
               <span class="text-white/40">/ 5.0</span>
             </div>
             <div class="flex flex-wrap gap-6 text-sm text-white/60 mb-4">
-              <div v-for="item in evaluationItems" :key="item.key">
+              <div v-for="item in employerEvaluationItems" :key="item.key">
                 {{ item.label }} <span class="text-white font-medium ml-1">{{ review[item.key] }}</span>
               </div>
             </div>
@@ -243,7 +252,7 @@ const deleteReview = (id: string) => {
               </div>
               <div class="grid md:grid-cols-2 gap-6 mb-6">
                 <div
-                  v-for="item in evaluationItems"
+                  v-for="item in employerEvaluationItems"
                   :key="item.key"
                   class="bg-black/20 border border-white/10 rounded-2xl p-4"
                 >
@@ -341,7 +350,7 @@ const deleteReview = (id: string) => {
               <span class="text-white/40">/ 5.0</span>
             </div>
             <div class="flex flex-wrap gap-6 text-sm text-white/60 mb-4">
-              <div v-for="item in evaluationItems" :key="item.key">
+              <div v-for="item in freelancerEvaluationItems" :key="item.key">
                 {{ item.label }} <span class="text-white font-medium ml-1">{{ review[item.key] }}</span>
               </div>
             </div>
