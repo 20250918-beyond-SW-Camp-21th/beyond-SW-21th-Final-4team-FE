@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { 
   Briefcase, FileText, Users, LogOut, Menu, X, 
-  TrendingUp, User, FileCheck, Wallet, UserCircle 
+  TrendingUp, User, FileCheck, Wallet, UserCircle, HelpCircle 
+
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -40,12 +41,20 @@ const handleLogout = () => {
   router.push('/login');
 };
 
+const handleOpenGuide = () => {
+  router.push('/guide');
+};
+
 const navigate = (path: string) => {
   router.push(path);
   isMobileMenuOpen.value = false;
 };
 
 const isActive = (path: string) => route.path.startsWith(path);
+
+onMounted(() => {
+  // Tour auto-start logic removed
+});
 </script>
 
 <template>
@@ -56,9 +65,11 @@ const isActive = (path: string) => route.path.startsWith(path);
         <div 
           @click="router.push(isEmployer ? '/employer/dashboard' : '/freelancer/jobs')"
           class="text-2xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent cursor-pointer"
-          v-motion
-          :initial="{ opacity: 0, x: -20 }"
-          :enter="{ opacity: 1, x: 0 }"
+          :data-tour="isEmployer ? 'employer-dashboard' : undefined"
+          v-motion="{
+            initial: { opacity: 0, x: -20 },
+            enter: { opacity: 1, x: 0 }
+          }"
         >
           FreeBridge
         </div>
@@ -70,11 +81,13 @@ const isActive = (path: string) => route.path.startsWith(path);
             @click="navigate(item.path)"
             class="relative flex items-center gap-2 px-4 py-2.5 rounded-full transition-all"
             :class="isActive(item.path) ? 'text-white' : 'text-white/60 hover:text-white hover:bg-white/5'"
-            v-motion
-            :initial="{ opacity: 0, y: -10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 100 } }"
-            :hover="{ scale: 1.05 }"
-            :tap="{ scale: 0.95 }"
+            :data-tour="item.id"
+            v-motion="{
+              initial: { opacity: 0, y: -10 },
+              enter: { opacity: 1, y: 0, transition: { delay: index * 100 } },
+              hover: { scale: 1.05 },
+              tap: { scale: 0.95 }
+            }"
           >
             <div
               v-if="isActive(item.path)"
@@ -95,12 +108,24 @@ const isActive = (path: string) => route.path.startsWith(path);
             <div class="font-medium text-white">{{ currentUser.name }}</div>
           </div>
           <button
+            @click="handleOpenGuide"
+            class="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10"
+            v-motion="{
+              hover: { scale: 1.05 },
+              tap: { scale: 0.95 }
+            }"
+          >
+            <HelpCircle class="w-5 h-5 text-white/80" />
+            <span class="font-medium text-white/90">이용 가이드</span>
+          </button>
+          <button
             @click="handleLogout"
             class="p-2.5 hover:bg-white/5 rounded-full transition-colors border border-transparent hover:border-white/10"
             title="로그아웃"
-            v-motion
-            :hover="{ scale: 1.1 }"
-            :tap="{ scale: 0.9 }"
+            v-motion="{
+              hover: { scale: 1.1 },
+              tap: { scale: 0.9 }
+            }"
           >
             <LogOut class="w-5 h-5 text-white/60" />
           </button>
@@ -131,9 +156,10 @@ const isActive = (path: string) => route.path.startsWith(path);
       <!-- Mobile Menu -->
       <div v-if="isMobileMenuOpen" 
         class="absolute top-16 left-0 right-0 bg-black/95 backdrop-blur-2xl border-b border-white/10 overflow-hidden"
-        v-motion
-        :initial="{ opacity: 0, height: 0 }"
-        :enter="{ opacity: 1, height: 'auto' }"
+        v-motion="{
+          initial: { opacity: 0, height: 0 },
+          enter: { opacity: 1, height: 'auto' }
+        }"
       >
         <div class="p-4 space-y-2">
           <button
@@ -142,12 +168,20 @@ const isActive = (path: string) => route.path.startsWith(path);
             @click="navigate(item.path)"
             class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
             :class="isActive(item.path) ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/5'"
-            v-motion
-            :initial="{ opacity: 0, x: -20 }"
-            :enter="{ opacity: 1, x: 0, transition: { delay: index * 50 } }"
+            v-motion="{
+              initial: { opacity: 0, x: -20 },
+              enter: { opacity: 1, x: 0, transition: { delay: index * 50 } }
+            }"
           >
             <component :is="item.icon" class="w-5 h-5" />
             <span class="font-medium">{{ item.label }}</span>
+          </button>
+          <button
+            @click="handleOpenGuide"
+            class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-blue-500/10 text-blue-400 transition-all border border-blue-500/20"
+          >
+            <HelpCircle class="w-5 h-5" />
+            <span class="font-medium">이용 가이드</span>
           </button>
           <button
             @click="handleLogout"

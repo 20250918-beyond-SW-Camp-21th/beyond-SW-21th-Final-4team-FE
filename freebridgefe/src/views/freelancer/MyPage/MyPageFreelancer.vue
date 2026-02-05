@@ -16,7 +16,6 @@ import {
   Upload,
   Calendar,
   Users,
-  ChevronDown,
   Check,
   Edit3,
 } from 'lucide-vue-next';
@@ -103,7 +102,7 @@ const handlePortfolioUpload = () => {
     <main class="flex-1 overflow-y-auto bg-slate-900">
         <div v-if="activeTab === 'dashboard'" class="p-8 max-w-7xl mx-auto space-y-8" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1 }">
              <!-- Greeting Header -->
-             <div class="mb-2">
+             <div class="mb-2" data-tour="freelancer-mypage-header">
                 <p class="text-sm text-slate-400 mb-1">안녕하세요</p>
                 <h2 class="text-2xl font-bold text-white">
                     {{ profile.name }}님. 오늘도 프리브릿지가 응원합니다!

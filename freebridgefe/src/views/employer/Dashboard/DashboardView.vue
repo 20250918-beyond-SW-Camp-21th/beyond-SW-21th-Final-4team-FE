@@ -29,8 +29,10 @@ const recentFreelancers = [
 <template>
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white">
     <!-- Header -->
+    <!-- Header -->
     <div 
       class="mb-8"
+      data-tour-dashboard="header"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 600 } }"
@@ -45,6 +47,7 @@ const recentFreelancers = [
     <div 
       v-if="!isPro"
       class="mb-8 p-8 rounded-2xl bg-gradient-to-r from-purple-500 to-blue-500 text-white flex flex-col md:flex-row items-center justify-between gap-4"
+      data-tour-dashboard="upgrade-banner"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 600, delay: 100 } }"
@@ -61,7 +64,10 @@ const recentFreelancers = [
     </div>
 
     <!-- Stats Grid -->
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+    <div 
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+      data-tour-dashboard="stats-grid"
+    >
       <div
         v-for="(stat, index) in stats"
         :key="index"
@@ -82,6 +88,7 @@ const recentFreelancers = [
     <!-- Recent Freelancers -->
     <div 
       class="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl"
+      data-tour-dashboard="recent-freelancers"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0, transition: { duration: 600, delay: 600 } }"
