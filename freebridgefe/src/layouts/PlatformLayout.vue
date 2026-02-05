@@ -2,9 +2,9 @@
 import { ref, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
-import { 
-  Briefcase, FileText, Users, LogOut, Menu, X, 
-  TrendingUp, User, FileCheck, Wallet, UserCircle 
+import {
+  Briefcase, FileText, Users, LogOut, Menu, X,
+  TrendingUp, User, FileCheck, Wallet, UserCircle, Receipt
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -21,6 +21,7 @@ const employerNavItems = [
   { id: 'employer.applications', path: '/employer/applications', label: '지원 관리', icon: FileText },
   { id: 'employer.recommended', path: '/employer/recommended', label: '추천 프리랜서', icon: TrendingUp },
   { id: 'employer.contracts', path: '/employer/contracts', label: '계약서', icon: FileCheck },
+  { id: 'employer.settlements', path: '/employer/settlements', label: '정산', icon: Receipt },
   { id: 'employer.mypage', path: '/employer/mypage', label: '마이페이지', icon: UserCircle },
 ];
 
