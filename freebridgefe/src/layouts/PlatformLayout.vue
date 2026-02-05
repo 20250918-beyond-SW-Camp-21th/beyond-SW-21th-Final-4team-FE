@@ -31,6 +31,7 @@ const freelancerNavItems = [
   { id: 'freelancer.recommended', path: '/freelancer/recommended', label: '추천 공고', icon: TrendingUp },
   { id: 'freelancer.contracts', path: '/freelancer/contracts', label: '계약서', icon: FileCheck },
   { id: 'freelancer.settlement', path: '/freelancer/settlement', label: '정산', icon: Wallet },
+  { id: 'freelancer.review', path: '/freelancer/review', label: '내 리뷰', icon: MessageSquareQuote },
   { id: 'freelancer.mypage', path: '/freelancer/mypage', label: '마이페이지', icon: UserCircle },
 ];
 

@@ -113,6 +113,16 @@ const routes: Array<RouteRecordRaw> = [
                 name: 'freelancer.mypage',
                 component: () => import('@/views/freelancer/MyPage/MyPageFreelancer.vue')
             },
+            {
+                path: 'review',
+                name: 'freelancer.review',
+                component: () => import('@/views/freelancer/Review/ReviewList.vue')
+            },
+            {
+                path: 'review/write',
+                name: 'freelancer.review.write',
+                component: () => import('@/views/freelancer/Review/ReviewWrite.vue')
+            },
         ]
     }
 ]
