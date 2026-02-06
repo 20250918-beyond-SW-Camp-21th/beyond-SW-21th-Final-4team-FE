@@ -67,7 +67,7 @@ onMounted(() => {
         <div 
           @click="router.push(isEmployer ? '/employer/dashboard' : '/freelancer/jobs')"
           class="text-2xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent cursor-pointer"
-          :data-tour="isEmployer ? 'employer-dashboard' : undefined"
+          :data-tour="isEmployer ? 'employer.dashboard' : undefined"
           v-motion="{
             initial: { opacity: 0, x: -20 },
             enter: { opacity: 1, x: 0 }
