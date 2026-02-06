@@ -43,6 +43,7 @@ const handleLogout = () => {
 
 const handleOpenGuide = () => {
   router.push('/guide');
+  isMobileMenuOpen.value = false;
 };
 
 const navigate = (path: string) => {

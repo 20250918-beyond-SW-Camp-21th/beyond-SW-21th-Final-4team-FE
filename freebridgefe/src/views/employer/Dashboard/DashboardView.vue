@@ -53,8 +53,8 @@ const recentFreelancers = [
       :enter="{ opacity: 1, y: 0, transition: { duration: 600, delay: 100 } }"
     >
       <div>
-        <h3 className="text-xl mb-2 font-bold">프로 플랜으로 업그레이드하세요</h3>
-        <p className="text-white/90">
+        <h3 class="text-xl mb-2 font-bold">프로 플랜으로 업그레이드하세요</h3>
+        <p class="text-white/90">
           AI 매칭, 무제한 채팅, 우선 지원을 받아보세요
         </p>
       </div>
@@ -65,7 +65,7 @@ const recentFreelancers = [
 
     <!-- Stats Grid -->
     <div 
-      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
       data-tour-dashboard="stats-grid"
     >
       <div

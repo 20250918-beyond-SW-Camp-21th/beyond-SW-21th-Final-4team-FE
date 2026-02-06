@@ -125,7 +125,7 @@ const handlePortfolioUpload = () => {
                                 </div>
                             </div>
                             <div class="space-y-3">
-                                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                                <h2 class="text-2xl font-bold text-white flex items-center gap-2">
                                     {{ profile.name }}
                                     <span class="text-sm font-normal text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">
                                         {{ profile.grade }}
