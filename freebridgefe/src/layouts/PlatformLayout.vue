@@ -37,9 +37,8 @@ const employerNavItems = [
 ];
 
 const freelancerNavItems = [
-  { id: 'freelancer.browse', path: '/freelancer/jobs', label: '공고 찾기', icon: Briefcase },
+  { id: 'freelancer.browse', path: '/freelancer/jobs', label: '공고', icon: Briefcase },
   { id: 'freelancer.applications', path: '/freelancer/applications', label: '내 지원', icon: FileText },
-  { id: 'freelancer.recommended', path: '/freelancer/recommended', label: '추천 공고', icon: TrendingUp },
   { id: 'freelancer.contracts', path: '/freelancer/contracts', label: '계약서', icon: FileCheck },
   { id: 'freelancer.settlement', path: '/freelancer/settlement', label: '정산', icon: Wallet },
   { id: 'freelancer.review', path: '/freelancer/review', label: '내 리뷰', icon: MessageSquareQuote },

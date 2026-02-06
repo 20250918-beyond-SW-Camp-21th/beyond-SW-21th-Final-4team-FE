@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useMotion } from '@vueuse/motion';
-import { Sparkles, DollarSign, Clock, Briefcase, TrendingUp } from 'lucide-vue-next';
+import { Sparkles, DollarSign, Clock, Briefcase, TrendingUp, Star } from 'lucide-vue-next';
 import { useJobStore } from '@/stores/jobStore';
 import { useAuthStore } from '@/stores/authStore';
 import type { JobPosting } from '@/types';
@@ -10,6 +10,7 @@ import JobDetailModal from '../Jobs/components/JobDetailModal.vue';
 const jobStore = useJobStore();
 const authStore = useAuthStore();
 const selectedJob = ref<JobPosting | null>(null);
+const favoriteIds = ref<string[]>([]);
 
 const recommendedJobs = computed(() => {
   if (!authStore.user || !authStore.user.skills) return jobStore.jobPostings.slice(0, 3);
@@ -30,6 +31,16 @@ const recommendedJobs = computed(() => {
 
 const formatDate = (date: Date | string) => {
   return new Date(date).toLocaleDateString('ko-KR');
+};
+
+const isFavorite = (id: string) => favoriteIds.value.includes(id);
+
+const toggleFavorite = (id: string) => {
+  if (isFavorite(id)) {
+    favoriteIds.value = favoriteIds.value.filter((item) => item !== id);
+    return;
+  }
+  favoriteIds.value = [...favoriteIds.value, id];
 };
 </script>
 
@@ -125,6 +136,19 @@ const formatDate = (date: Date | string) => {
               </div>
             </div>
           </div>
+          <button
+            type="button"
+            class="ml-4 h-10 w-10 rounded-full border transition-all"
+            :class="isFavorite(job.id)
+              ? 'bg-yellow-400/20 border-yellow-400/40 text-yellow-300'
+              : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'"
+            @click.stop="toggleFavorite(job.id)"
+          >
+            <Star
+              class="mx-auto h-5 w-5"
+              :class="isFavorite(job.id) ? 'fill-yellow-400 text-yellow-400' : ''"
+            />
+          </button>
         </div>
       </div>
     </div>

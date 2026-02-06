@@ -101,7 +101,7 @@ const routes: Array<RouteRecordRaw> = [
             {
                 path: 'recommended',
                 name: 'freelancer.recommended',
-                component: () => import('@/views/freelancer/Recommended/RecommendedJobs.vue')
+                redirect: '/freelancer/jobs'
             },
             {
                 path: 'contracts',
