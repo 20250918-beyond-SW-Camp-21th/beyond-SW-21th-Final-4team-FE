@@ -4,8 +4,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { 
   Briefcase, FileText, Users, LogOut, Menu, X, 
-  TrendingUp, User, FileCheck, Wallet, UserCircle, HelpCircle 
-
+  TrendingUp, User, FileCheck, Wallet, UserCircle, HelpCircle, MessageSquareQuote
 } from 'lucide-vue-next';
 
 const router = useRouter();
