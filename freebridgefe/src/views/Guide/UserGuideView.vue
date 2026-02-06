@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { 
   Briefcase, FileText, Users, TrendingUp, 
@@ -7,10 +8,20 @@ import {
   CheckCircle, ArrowRight
 } from 'lucide-vue-next';
 
+const router = useRouter();
 const authStore = useAuthStore();
 const currentUser = computed(() => authStore.user);
 // 탭 기본값은 현재 사용자 역할에 맞춤. 없으면 EMPLOYER
 const activeTab = ref(currentUser.value?.role || 'EMPLOYER');
+
+// Watch for user changes to set the correct tab initially
+watch(() => currentUser.value, (newUser) => {
+  if (newUser?.role) {
+    // Only update if we are on the default fallback or want to sync always.
+    // Given instructions, we just update it when user becomes available.
+    activeTab.value = newUser.role;
+  }
+});
 
 // 고용주 가이드 데이터
 const employerGuides = [
@@ -269,7 +280,7 @@ const currentGuides = computed(() => activeTab.value === 'EMPLOYER' ? employerGu
       <!-- 하단 CTA -->
       <div class="mt-20 text-center">
         <button
-          @click="$router.go(-1)"
+          @click="window.history.length > 1 ? router.go(-1) : router.push('/')"
           class="inline-flex items-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 rounded-full font-bold text-white transition-all backdrop-blur-md border border-white/10"
         >
           <span>서비스로 돌아가기</span>

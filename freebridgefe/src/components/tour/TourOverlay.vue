@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useTourStore } from '@/stores/tourStore';
 import { X, ChevronRight, Briefcase, FileText, TrendingUp, FileCheck, Wallet, UserCircle, LayoutDashboard } from 'lucide-vue-next';
 
+const router = useRouter();
 const route = useRoute();
 const tourStore = useTourStore();
 
@@ -12,18 +13,18 @@ const currentStep = computed(() => tourStore.currentStep);
 // 아이콘 매핑
 const getIcon = (stepId: string) => {
   const iconMap: Record<string, any> = {
-    'employer-dashboard': LayoutDashboard,
-    'employer-jobs': Briefcase,
-    'employer-applications': FileText,
-    'employer-recommended': TrendingUp,
-    'employer-contracts': FileCheck,
-    'employer-mypage': UserCircle,
-    'freelancer-jobs': Briefcase,
-    'freelancer-applications': FileText,
-    'freelancer-recommended': TrendingUp,
-    'freelancer-contracts': FileCheck,
-    'freelancer-settlement': Wallet,
-    'freelancer-mypage': UserCircle,
+    'employer.dashboard': LayoutDashboard,
+    'employer.jobs': Briefcase,
+    'employer.applications': FileText,
+    'employer.recommended': TrendingUp,
+    'employer.contracts': FileCheck,
+    'employer.mypage': UserCircle,
+    'freelancer.jobs': Briefcase,
+    'freelancer.applications': FileText,
+    'freelancer.recommended': TrendingUp,
+    'freelancer.contracts': FileCheck,
+    'freelancer.settlement': Wallet,
+    'freelancer.mypage': UserCircle,
   };
   return iconMap[stepId] || Briefcase;
 };
@@ -36,7 +37,10 @@ const isCurrentRouteStep = computed(() => {
 
 // 다음 스텝으로
 const handleNext = () => {
-  tourStore.next();
+  const nextRoute = tourStore.next();
+  if (nextRoute && nextRoute !== route.path) {
+    router.push(nextRoute);
+  }
 };
 
 // 건너뛰기

@@ -42,12 +42,14 @@ export const useTourStore = defineStore('tour', () => {
 
   const skip = () => finish();
 
-  const next = () => {
+  const next = (): string | null => {
     if (currentIndex.value < steps.value.length - 1) {
+      const nextStep = steps.value[currentIndex.value + 1];
       currentIndex.value += 1;
-      return;
+      return nextStep.route;
     }
     finish();
+    return null;
   };
 
   const prev = () => {
