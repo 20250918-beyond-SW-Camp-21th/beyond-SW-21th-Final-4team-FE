@@ -17,21 +17,21 @@ const favoriteIds = ref<string[]>([]);
 const openJobs = computed(() => jobStore.jobPostings.filter((job) => job.status === 'OPEN'));
 
 const recommendedJobs = computed(() => {
-  if (!authStore.user || !authStore.user.skills) return openJobs.value.slice(0, 3);
+  const limit = authStore.user ? 5 : 3;
+  if (!authStore.user || !authStore.user.skills) return openJobs.value.slice(0, limit);
 
   const userSkills = authStore.user.skills.map((skill) => skill.toLowerCase());
 
   return openJobs.value
     .map((job) => {
       const matchCount = job.techStack.filter((tech) =>
-        userSkills.some(
-          (skill) => skill.includes(tech.toLowerCase()) || tech.toLowerCase().includes(skill)
-        )
+        userSkills.some((skill) => tech.toLowerCase() === skill)
       ).length;
       return { ...job, matchCount };
     })
+    .filter((job) => job.matchCount > 0)
     .sort((a, b) => b.matchCount - a.matchCount)
-    .slice(0, 5);
+    .slice(0, limit);
 });
 
 // 검색 필터
