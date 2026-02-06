@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Search, Filter, Users, Star, MapPin, SlidersHorizontal, Send } from 'lucide-vue-next';
+import { Search, Filter, Users, Star, DollarSign, SlidersHorizontal, Send } from 'lucide-vue-next';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import type { User } from '@/types';
 import ProposalModal from '@/views/employer/Recommended/components/ProposalModal.vue';
@@ -104,7 +104,7 @@ const toggleFavorite = (id: string) => {
         </div>
 
         <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <MapPin class="w-5 h-5 text-white/50" />
+          <DollarSign class="w-5 h-5 text-white/50" />
           <input
             v-model.number="maxHourlyRate"
             type="number"
