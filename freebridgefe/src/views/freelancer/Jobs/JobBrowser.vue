@@ -35,9 +35,11 @@ const formatDate = (date: Date | string) => {
     <!-- Header -->
     <div
       class="mb-12"
-      v-motion
-      :initial="{ opacity: 0, y: 20 }"
-      :enter="{ opacity: 1, y: 0 }"
+      data-tour-freelancer="header"
+      v-motion="{
+        initial: { opacity: 0, y: 20 },
+        enter: { opacity: 1, y: 0 }
+      }"
     >
       <h1 class="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
         프로젝트 찾기
@@ -48,9 +50,11 @@ const formatDate = (date: Date | string) => {
     <!-- Search Bar -->
     <div
       class="mb-8"
-      v-motion
-      :initial="{ opacity: 0, y: 20 }"
-      :enter="{ opacity: 1, y: 0, transition: { delay: 100 } }"
+      data-tour-freelancer="search"
+      v-motion="{
+        initial: { opacity: 0, y: 20 },
+        enter: { opacity: 1, y: 0, transition: { delay: 100 } }
+      }"
     >
       <div class="relative">
         <Search class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
@@ -66,9 +70,11 @@ const formatDate = (date: Date | string) => {
     <!-- Stats -->
     <div
       class="mb-8 flex items-center gap-6"
-      v-motion
-      :initial="{ opacity: 0, y: 20 }"
-      :enter="{ opacity: 1, y: 0, transition: { delay: 200 } }"
+      data-tour-freelancer="stats"
+      v-motion="{
+        initial: { opacity: 0, y: 20 },
+        enter: { opacity: 1, y: 0, transition: { delay: 200 } }
+      }"
     >
       <div class="flex items-center gap-2 text-white/60">
         <TrendingUp class="w-5 h-5 text-green-400" />
@@ -81,15 +87,17 @@ const formatDate = (date: Date | string) => {
     <!-- Job List -->
     <div v-if="filteredJobs.length === 0" 
         class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 text-center"
-        v-motion
-        :initial="{ opacity: 0, scale: 0.95 }"
-        :enter="{ opacity: 1, scale: 1 }"
+        v-motion="{
+          initial: { opacity: 0, scale: 0.95 },
+          enter: { opacity: 1, scale: 1 }
+        }"
     >
       <div 
         class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6"
-        v-motion
-        :initial="{ scale: 0 }"
-        :enter="{ scale: 1, transition: { type: 'spring', delay: 200 } }"
+        v-motion="{
+          initial: { scale: 0 },
+          enter: { scale: 1, transition: { type: 'spring', delay: 200 } }
+        }"
       >
         <Briefcase class="w-10 h-10 text-white/60" />
       </div>
@@ -97,15 +105,16 @@ const formatDate = (date: Date | string) => {
       <p class="text-white/60">다른 검색어로 시도해보세요</p>
     </div>
 
-    <div v-else class="grid gap-6">
+    <div v-else class="grid gap-6" data-tour-freelancer="job-list">
       <div
         v-for="(job, index) in filteredJobs"
         :key="job.id"
         @click="selectedJob = job"
         class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 hover:border-white/20 transition-all cursor-pointer group hover:translate-y-[-4px]"
-        v-motion
-        :initial="{ opacity: 0, y: 20 }"
-        :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
+        v-motion="{
+          initial: { opacity: 0, y: 20 },
+          enter: { opacity: 1, y: 0, transition: { delay: index * 50 } }
+        }"
       >
         <div class="flex items-start justify-between mb-6">
           <div class="flex-1">
