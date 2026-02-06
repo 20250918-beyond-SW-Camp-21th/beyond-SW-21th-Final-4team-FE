@@ -61,7 +61,7 @@ const feeRate = computed(() =>
 
         <!-- 타임라인 스테퍼 -->
         <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
-          <h3 className="text-lg font-bold text-white mb-6">정산 진행 상태</h3>
+          <h3 class="text-lg font-bold text-white mb-6">정산 진행 상태</h3>
           <div class="relative">
             <!-- 프로그레스 라인 -->
             <div class="absolute top-6 left-6 right-6 h-1 bg-white/10">

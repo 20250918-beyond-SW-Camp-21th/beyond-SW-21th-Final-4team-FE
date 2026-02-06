@@ -118,7 +118,13 @@ const stats = computed(() => [
 <template>
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white font-sans">
     <!-- Header -->
-    <div class="mb-12" v-motion :initial="{ opacity: 0, y: 20 }" :enter="{ opacity: 1, y: 0 }">
+    <div
+      class="mb-12"
+      data-tour="freelancer-contracts-header"
+      v-motion
+      :initial="{ opacity: 0, y: 20 }"
+      :enter="{ opacity: 1, y: 0 }"
+    >
       <div class="flex items-center gap-3 mb-3">
         <FileText class="w-10 h-10 text-white" />
         <h1 class="text-4xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">

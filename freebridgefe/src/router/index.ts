@@ -17,6 +17,18 @@ const routes: Array<RouteRecordRaw> = [
         name: 'signup',
         component: () => import('@/views/auth/SignupView.vue')
     },
+    {
+        path: '/guide',
+        component: () => import('@/layouts/PlatformLayout.vue'),
+        children: [
+            {
+                path: '',
+                name: 'guide',
+                component: () => import('@/views/Guide/UserGuideView.vue'),
+                meta: { requiresAuth: false }
+            }
+        ]
+    },
 
     // Employer Routes
     {

@@ -49,6 +49,7 @@ const toggleFavorite = (id: string) => {
     <!-- Header -->
     <div
       class="mb-12"
+      data-tour="freelancer-recommended-header"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0 }"
