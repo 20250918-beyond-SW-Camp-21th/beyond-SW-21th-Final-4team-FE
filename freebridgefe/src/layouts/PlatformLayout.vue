@@ -18,6 +18,7 @@ const isEmployer = computed(() => currentUser.value?.role === 'EMPLOYER');
 // Navigation Items
 const employerNavItems = [
   { id: 'employer.jobs', path: '/employer/jobs', label: '내 공고', icon: Briefcase },
+  { id: 'employer.review', path: '/employer/review', label: '내 리뷰', icon:MessageSquareQuote},
   { id: 'employer.applications', path: '/employer/applications', label: '지원 관리', icon: FileText },
   { id: 'employer.recommended', path: '/employer/recommended', label: '추천 프리랜서', icon: TrendingUp },
   { id: 'employer.contracts', path: '/employer/contracts', label: '계약서', icon: FileCheck },
@@ -30,6 +31,7 @@ const freelancerNavItems = [
   { id: 'freelancer.recommended', path: '/freelancer/recommended', label: '추천 공고', icon: TrendingUp },
   { id: 'freelancer.contracts', path: '/freelancer/contracts', label: '계약서', icon: FileCheck },
   { id: 'freelancer.settlement', path: '/freelancer/settlement', label: '정산', icon: Wallet },
+  { id: 'freelancer.review', path: '/freelancer/review', label: '내 리뷰', icon: MessageSquareQuote },
   { id: 'freelancer.mypage', path: '/freelancer/mypage', label: '마이페이지', icon: UserCircle },
 ];
 
