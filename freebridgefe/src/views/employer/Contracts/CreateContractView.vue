@@ -12,11 +12,12 @@ import {
     ArrowLeft,
     FileText,
     Send,
+    CreditCard,
+    Clock,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { useContractStore } from '@/stores/contractStore';
+import { useContractStore, type Contract, type ContractWithDetails } from '@/stores/contractStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
-import type { ContractDocument } from '@/types/contract';
 import SignaturePadModal from './components/SignaturePadModal.vue';
 
 type CreateContractState = 'form' | 'signing' | 'success';
@@ -29,14 +30,16 @@ const freelancerStore = useFreelancerStore();
 const state = ref<CreateContractState>('form');
 
 // Form fields
-const selectedFreelancerId = ref('');
+const selectedFreelancerId = ref<number | ''>('');
 const projectName = ref('');
-const contractDate = ref('');
-const paymentDate = ref('');
+const startDate = ref('');
+const endDate = ref('');
 const budget = ref('');
+const paymentDay = ref<number>(25); // 매월 정기 지급일 (기본값: 25일)
+const commissionRate = ref<number>(0.05); // 수수료율 (기본값: 5%)
 
-// Created contract reference
-const createdContract = ref<ContractDocument | null>(null);
+// Created contract reference (with display details)
+const createdContract = ref<ContractWithDetails | null>(null);
 
 const freelancerOptions = computed(() =>
     freelancerStore.freelancers.filter((u) => u.role === 'FREELANCER')
@@ -46,9 +49,10 @@ const isFormValid = computed(
     () =>
         selectedFreelancerId.value &&
         projectName.value &&
-        contractDate.value &&
-        paymentDate.value &&
-        budget.value
+        startDate.value &&
+        endDate.value &&
+        budget.value &&
+        paymentDay.value
 );
 
 const handleSubmit = () => {
@@ -58,41 +62,52 @@ const handleSubmit = () => {
 
 const handleSign = (signatureDataUrl: string) => {
     const selectedFreelancer = freelancerOptions.value.find(
-        (f) => f.id === selectedFreelancerId.value
+        (f) => f.id === String(selectedFreelancerId.value)
     );
     if (!selectedFreelancer || !authStore.user) return;
 
-    const newContract: ContractDocument = {
-        id: `contract-${Date.now()}`,
-        contractId: `c${Date.now()}`,
+    // Generate new IDs
+    const newId = Date.now();
+    const newContractId = 1000 + newId % 10000;
+
+    const newContract: Contract = {
+        id: newId,
+        contractId: newContractId,
         projectName: projectName.value,
-        freelancerId: selectedFreelancer.id,
-        freelancerName: selectedFreelancer.name,
-        employerId: authStore.user.id,
-        employerName: authStore.user.companyName || authStore.user.name,
-        startDate: new Date(contractDate.value),
-        endDate: new Date(paymentDate.value),
-        status: 'DRAFT',
+        freelancerId: Number(selectedFreelancer.id),
+        employerId: Number(authStore.user.id),
+        startDate: new Date(startDate.value),
+        endDate: new Date(endDate.value),
+        status: 'WAITING_SIGNATURE', // 고용주 서명 후, 프리랜서 서명 대기
         budget: Number(budget.value),
-        milestones: [],
-        terms: `프로젝트: ${projectName.value}\n계약일: ${contractDate.value}\n결제일: ${paymentDate.value}\n계약금액: ${Number(budget.value).toLocaleString()}원`,
-        signedByEmployer: true,
-        signedByFreelancer: false,
+        commissionRate: commissionRate.value,
+        paymentDay: paymentDay.value,
+        contractPdfUrl: `/contracts/${newContractId}_contract.pdf`,
+        // 고용주 서명 정보
         employerSignature: signatureDataUrl,
-        paymentDate: new Date(paymentDate.value),
+        employerSignedDate: new Date(),
+        // 프리랜서는 아직 서명하지 않음
     };
 
     contractStore.addContract(newContract);
-    createdContract.value = newContract;
+
+    // Create display version with names
+    createdContract.value = {
+        ...newContract,
+        freelancerName: selectedFreelancer.name,
+        employerName: authStore.user.companyName || authStore.user.name,
+    };
     state.value = 'success';
 };
 
 const handleReset = () => {
     selectedFreelancerId.value = '';
     projectName.value = '';
-    contractDate.value = '';
-    paymentDate.value = '';
+    startDate.value = '';
+    endDate.value = '';
     budget.value = '';
+    paymentDay.value = 25;
+    commissionRate.value = 0.05;
     createdContract.value = null;
     state.value = 'form';
 };
@@ -186,17 +201,17 @@ const navigateToContracts = () => {
                         />
                     </div>
 
-                    <!-- Contract Date / Payment Date -->
+                    <!-- Start Date / End Date -->
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
                             <label
                                 class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2"
                             >
                                 <Calendar class="w-4 h-4" />
-                                계약일
+                                계약 시작일
                             </label>
                             <input
-                                v-model="contractDate"
+                                v-model="startDate"
                                 type="date"
                                 class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors [color-scheme:dark]"
                             />
@@ -206,14 +221,33 @@ const navigateToContracts = () => {
                                 class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2"
                             >
                                 <Calendar class="w-4 h-4" />
-                                결제일
+                                계약 종료일
                             </label>
                             <input
-                                v-model="paymentDate"
+                                v-model="endDate"
                                 type="date"
                                 class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors [color-scheme:dark]"
                             />
                         </div>
+                    </div>
+
+                    <!-- Payment Day -->
+                    <div>
+                        <label
+                            class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2"
+                        >
+                            <CreditCard class="w-4 h-4" />
+                            매월 정산일
+                        </label>
+                        <select
+                            v-model="paymentDay"
+                            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors appearance-none cursor-pointer"
+                        >
+                            <option value="10" class="bg-gray-900">매월 10일</option>
+                            <option value="15" class="bg-gray-900">매월 15일</option>
+                            <option value="25" class="bg-gray-900">매월 25일</option>
+                            <option value="31" class="bg-gray-900">매월 말일</option>
+                        </select>
                     </div>
 
                     <!-- Budget -->
@@ -327,7 +361,19 @@ const navigateToContracts = () => {
                                 프리랜서: {{ createdContract.freelancerName }}
                             </div>
                             <div class="text-sm text-white/50">
+                                계약 기간: {{ new Date(createdContract.startDate).toLocaleDateString('ko-KR') }} ~ {{ new Date(createdContract.endDate).toLocaleDateString('ko-KR') }}
+                            </div>
+                            <div class="text-sm text-white/50">
                                 계약금액: {{ createdContract.budget.toLocaleString() }}원
+                            </div>
+                            <div class="text-sm text-white/50">
+                                정산일: 매월 {{ createdContract.paymentDay }}일
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-white/10">
+                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full">
+                                    <Clock class="w-3 h-3" />
+                                    프리랜서 서명 대기중
+                                </span>
                             </div>
                         </div>
                     </div>

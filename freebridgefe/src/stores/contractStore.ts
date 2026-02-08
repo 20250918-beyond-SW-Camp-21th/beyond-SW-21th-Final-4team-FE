@@ -10,12 +10,18 @@ export interface Contract {
     employerId: number;
     startDate: Date | string;
     endDate: Date | string;
-    status: 'DRAFT' | 'WAITING_SIGNATURE' | 'IN_PROGRESS' | 'COMPLETED' | 'TERMINATED';
+    status: 'WAITING_SIGNATURE' | 'IN_PROGRESS' | 'COMPLETED';
     budget: number;
     commissionRate: number;
+    paymentDay: number;                       // 매월 정기 지급일 (예: 10, 25)
     contractPdfUrl: string;
     signedPdfUrl?: string;
-    signedDate?: Date | string;
+    signedDate?: Date | string;               // 최종 서명 완료일 (양측 모두 서명 후)
+    // Signature tracking
+    employerSignature?: string;               // 고용주 서명 이미지 (data URL)
+    employerSignedDate?: Date | string;       // 고용주 서명일
+    freelancerSignature?: string;             // 프리랜서 서명 이미지 (data URL)
+    freelancerSignedDate?: Date | string;     // 프리랜서 서명일
 }
 
 // EmployerSettlement Entity (Invoice - based on entity.md)
@@ -68,6 +74,8 @@ export const useContractStore = defineStore('contract', () => {
     const users = {
         f1: { id: 1, name: '김프론트', role: 'FREELANCER' },
         f2: { id: 2, name: '이백엔드', role: 'FREELANCER' },
+        f3: { id: 3, name: '박디자인', role: 'FREELANCER' },
+        f4: { id: 4, name: '최풀스택', role: 'FREELANCER' },
         e1: { id: 1, name: '스타트업 A', role: 'EMPLOYER' },
         e2: { id: 2, name: '테크기업 B', role: 'EMPLOYER' },
         e3: { id: 3, name: '이커머스 C', role: 'EMPLOYER' },
@@ -81,14 +89,19 @@ export const useContractStore = defineStore('contract', () => {
             projectName: 'SaaS 대시보드 리뉴얼',
             freelancerId: 1,
             employerId: 1,
-            startDate: new Date('2024-01-01'),
-            endDate: new Date('2024-03-31'),
+            startDate: new Date('2026-01-05'),
+            endDate: new Date('2026-03-20'),
             status: 'IN_PROGRESS',
             budget: 5000000,
             commissionRate: 0.05,
+            paymentDay: 25,
             contractPdfUrl: '/contracts/1001_contract.pdf',
             signedPdfUrl: '/contracts/1001_signed.pdf',
-            signedDate: new Date('2023-12-28'),
+            signedDate: new Date('2026-01-05'),
+            employerSignature: 'data:image/png;base64,employer_sig_1',
+            employerSignedDate: new Date('2026-01-03'),
+            freelancerSignature: 'data:image/png;base64,freelancer_sig_1',
+            freelancerSignedDate: new Date('2026-01-05'),
         },
         {
             id: 2,
@@ -96,14 +109,19 @@ export const useContractStore = defineStore('contract', () => {
             projectName: 'API 서버 마이그레이션',
             freelancerId: 2,
             employerId: 1,
-            startDate: new Date('2023-10-01'),
-            endDate: new Date('2023-12-31'),
+            startDate: new Date('2026-01-05'),
+            endDate: new Date('2026-03-20'),
             status: 'COMPLETED',
             budget: 8000000,
             commissionRate: 0.04,
+            paymentDay: 10,
             contractPdfUrl: '/contracts/1002_contract.pdf',
             signedPdfUrl: '/contracts/1002_signed.pdf',
-            signedDate: new Date('2023-09-28'),
+            signedDate: new Date('2026-01-05'),
+            employerSignature: 'data:image/png;base64,employer_sig_2',
+            employerSignedDate: new Date('2026-01-03'),
+            freelancerSignature: 'data:image/png;base64,freelancer_sig_2',
+            freelancerSignedDate: new Date('2026-01-05'),
         },
         {
             id: 3,
@@ -111,14 +129,19 @@ export const useContractStore = defineStore('contract', () => {
             projectName: '모바일 앱 개발',
             freelancerId: 1,
             employerId: 2,
-            startDate: new Date('2024-02-01'),
-            endDate: new Date('2024-05-31'),
+            startDate: new Date('2026-01-05'),
+            endDate: new Date('2026-03-20'),
             status: 'IN_PROGRESS',
             budget: 10000000,
             commissionRate: 0.05,
+            paymentDay: 15,
             contractPdfUrl: '/contracts/1003_contract.pdf',
             signedPdfUrl: '/contracts/1003_signed.pdf',
-            signedDate: new Date('2024-01-25'),
+            signedDate: new Date('2026-01-05'),
+            employerSignature: 'data:image/png;base64,employer_sig_3',
+            employerSignedDate: new Date('2026-01-03'),
+            freelancerSignature: 'data:image/png;base64,freelancer_sig_3',
+            freelancerSignedDate: new Date('2026-01-05'),
         },
         {
             id: 4,
@@ -126,12 +149,73 @@ export const useContractStore = defineStore('contract', () => {
             projectName: '웹 쇼핑몰 리뉴얼',
             freelancerId: 1,
             employerId: 3,
-            startDate: new Date('2024-03-01'),
-            endDate: new Date('2024-06-30'),
+            startDate: new Date('2026-01-05'),
+            endDate: new Date('2026-03-20'),
             status: 'WAITING_SIGNATURE',
             budget: 12000000,
             commissionRate: 0.05,
+            paymentDay: 25,
             contractPdfUrl: '/contracts/1004_contract.pdf',
+            employerSignature: 'data:image/png;base64,employer_sig_4',
+            employerSignedDate: new Date('2026-01-03'),
+            // 프리랜서 아직 서명하지 않음
+        },
+        {
+            id: 5,
+            contractId: 1005,
+            projectName: 'UI/UX 디자인 리뉴얼',
+            freelancerId: 3,
+            employerId: 1,
+            startDate: new Date('2026-01-05'),
+            endDate: new Date('2026-03-20'),
+            status: 'IN_PROGRESS',
+            budget: 3500000,
+            commissionRate: 0.05,
+            paymentDay: 10,
+            contractPdfUrl: '/contracts/1005_contract.pdf',
+            signedPdfUrl: '/contracts/1005_signed.pdf',
+            signedDate: new Date('2026-01-05'),
+            employerSignature: 'data:image/png;base64,employer_sig_5',
+            employerSignedDate: new Date('2026-01-03'),
+            freelancerSignature: 'data:image/png;base64,freelancer_sig_5',
+            freelancerSignedDate: new Date('2026-01-05'),
+        },
+        {
+            id: 6,
+            contractId: 1006,
+            projectName: '데이터 분석 대시보드',
+            freelancerId: 4,
+            employerId: 1,
+            startDate: new Date('2026-01-05'),
+            endDate: new Date('2026-03-20'),
+            status: 'COMPLETED',
+            budget: 4000000,
+            commissionRate: 0.04,
+            paymentDay: 25,
+            contractPdfUrl: '/contracts/1006_contract.pdf',
+            signedPdfUrl: '/contracts/1006_signed.pdf',
+            signedDate: new Date('2026-01-05'),
+            employerSignature: 'data:image/png;base64,employer_sig_6',
+            employerSignedDate: new Date('2026-01-03'),
+            freelancerSignature: 'data:image/png;base64,freelancer_sig_6',
+            freelancerSignedDate: new Date('2026-01-05'),
+        },
+        {
+            id: 7,
+            contractId: 1007,
+            projectName: '실시간 채팅 시스템',
+            freelancerId: 2,
+            employerId: 1,
+            startDate: new Date('2026-01-05'),
+            endDate: new Date('2026-03-20'),
+            status: 'WAITING_SIGNATURE',
+            budget: 7000000,
+            commissionRate: 0.05,
+            paymentDay: 15,
+            contractPdfUrl: '/contracts/1007_contract.pdf',
+            employerSignature: 'data:image/png;base64,employer_sig_7',
+            employerSignedDate: new Date('2026-01-03'),
+            // 프리랜서 아직 서명하지 않음
         },
     ]);
 

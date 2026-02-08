@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { X, FileText, Calendar, DollarSign, CheckCircle, User, PenTool } from 'lucide-vue-next';
-import type { ContractDocument } from '@/types/contract';
+import { X, FileText, Calendar, DollarSign, CheckCircle, User, PenTool, Clock } from 'lucide-vue-next';
+import type { ContractWithDetails } from '@/stores/contractStore';
 
 const props = defineProps<{
-    contract: ContractDocument;
+    contract: ContractWithDetails;
     isFreelancer?: boolean;
 }>();
 
@@ -14,14 +14,15 @@ defineEmits<{
 }>();
 
 const canSign = computed(() => {
-    if (props.contract.status !== 'DRAFT') return false;
+    if (props.contract.status !== 'WAITING_SIGNATURE') return false;
     if (props.isFreelancer) {
-        return props.contract.signedByEmployer && !props.contract.signedByFreelancer;
+        return props.contract.employerSignature && !props.contract.freelancerSignature;
     }
     return false;
 });
 
-const formatDate = (date: Date | string) => {
+const formatDate = (date: Date | string | undefined) => {
+    if (!date) return '-';
     return new Date(date).toLocaleDateString('ko-KR');
 };
 
@@ -136,128 +137,54 @@ const formatCurrency = (amount: number) => {
                     </div>
                 </div>
 
-                <!-- Milestones -->
-                <div
-                    class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg"
-                >
-                    <h3 class="text-lg font-bold mb-4">마일스톤 상세</h3>
-                    <div class="space-y-4">
-                        <div
-                            v-for="(milestone, index) in contract.milestones"
-                            :key="milestone.id"
-                            class="border-l-4 border-blue-500 pl-4 bg-white/5 rounded-r-xl p-4"
-                            v-motion
-                            :initial="{ opacity: 0, x: -20 }"
-                            :enter="{
-                                opacity: 1,
-                                x: 0,
-                                transition: { delay: index * 0.1 },
-                            }"
-                        >
-                            <div class="flex items-start justify-between mb-2">
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-3 mb-2">
-                                        <span class="text-lg font-medium">{{
-                                            milestone.name
-                                        }}</span>
-                                        <CheckCircle
-                                            v-if="milestone.status === 'COMPLETED'"
-                                            class="w-5 h-5 text-green-400"
-                                        />
-                                    </div>
-                                    <p class="text-sm text-white/60 mb-2">
-                                        {{ milestone.description }}
-                                    </p>
-                                    <div class="flex items-center gap-4 text-sm">
-                                        <div class="text-white/60">
-                                            마감일:
-                                            {{ formatDate(milestone.dueDate) }}
-                                        </div>
-                                        <div class="font-medium text-green-400">
-                                            {{ formatCurrency(milestone.amount) }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    class="px-3 py-1 rounded-full text-xs font-semibold"
-                                    :class="{
-                                        'bg-green-500/20 text-green-300 border border-green-500/30':
-                                            milestone.status === 'COMPLETED',
-                                        'bg-blue-500/20 text-blue-300 border border-blue-500/30':
-                                            milestone.status === 'IN_PROGRESS',
-                                        'bg-gray-500/20 text-gray-300 border border-gray-500/30':
-                                            milestone.status === 'PENDING',
-                                    }"
-                                >
-                                    {{
-                                        milestone.status === 'COMPLETED'
-                                            ? '완료'
-                                            : milestone.status === 'IN_PROGRESS'
-                                              ? '진행중'
-                                              : '대기'
-                                    }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Terms -->
-                <div
-                    class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg"
-                >
-                    <h3 class="text-lg font-bold mb-4">계약 조건</h3>
-                    <div
-                        class="text-sm text-white/70 whitespace-pre-line leading-relaxed"
-                    >
-                        {{ contract.terms }}
-                    </div>
-                </div>
-
                 <!-- Signatures -->
                 <div
                     class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg"
                 >
                     <h3 class="text-lg font-bold mb-4">서명 정보</h3>
-                    <div class="grid md:grid-cols-2 gap-4">
-                        <div class="flex items-center gap-3">
-                            <CheckCircle
-                                v-if="contract.signedByFreelancer"
-                                class="w-6 h-6 text-green-400"
-                            />
-                            <div
-                                v-else
-                                class="w-6 h-6 rounded-full border-2 border-white/30"
-                            />
-                            <div>
-                                <div class="text-sm text-white/60">프리랜서</div>
-                                <div class="font-medium">
-                                    {{
-                                        contract.signedByFreelancer
-                                            ? '서명 완료'
-                                            : '서명 대기'
-                                    }}
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Employer Signature -->
+                        <div class="p-4 rounded-xl" :class="contract.employerSignature ? 'bg-green-500/10 border border-green-500/30' : 'bg-white/5 border border-white/10'">
+                            <div class="flex items-center gap-3 mb-3">
+                                <CheckCircle
+                                    v-if="contract.employerSignature"
+                                    class="w-6 h-6 text-green-400"
+                                />
+                                <Clock
+                                    v-else
+                                    class="w-6 h-6 text-white/40"
+                                />
+                                <div>
+                                    <div class="text-sm text-white/60">고용주</div>
+                                    <div class="font-medium" :class="contract.employerSignature ? 'text-green-400' : 'text-white/60'">
+                                        {{ contract.employerSignature ? '서명 완료' : '서명 대기' }}
+                                    </div>
                                 </div>
                             </div>
+                            <div v-if="contract.employerSignedDate" class="text-xs text-white/50">
+                                서명일: {{ formatDate(contract.employerSignedDate) }}
+                            </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <CheckCircle
-                                v-if="contract.signedByEmployer"
-                                class="w-6 h-6 text-green-400"
-                            />
-                            <div
-                                v-else
-                                class="w-6 h-6 rounded-full border-2 border-white/30"
-                            />
-                            <div>
-                                <div class="text-sm text-white/60">고용주</div>
-                                <div class="font-medium">
-                                    {{
-                                        contract.signedByEmployer
-                                            ? '서명 완료'
-                                            : '서명 대기'
-                                    }}
+                        <!-- Freelancer Signature -->
+                        <div class="p-4 rounded-xl" :class="contract.freelancerSignature ? 'bg-green-500/10 border border-green-500/30' : 'bg-orange-500/10 border border-orange-500/30'">
+                            <div class="flex items-center gap-3 mb-3">
+                                <CheckCircle
+                                    v-if="contract.freelancerSignature"
+                                    class="w-6 h-6 text-green-400"
+                                />
+                                <Clock
+                                    v-else
+                                    class="w-6 h-6 text-orange-400"
+                                />
+                                <div>
+                                    <div class="text-sm text-white/60">프리랜서</div>
+                                    <div class="font-medium" :class="contract.freelancerSignature ? 'text-green-400' : 'text-orange-400'">
+                                        {{ contract.freelancerSignature ? '서명 완료' : '서명 대기' }}
+                                    </div>
                                 </div>
+                            </div>
+                            <div v-if="contract.freelancerSignedDate" class="text-xs text-white/50">
+                                서명일: {{ formatDate(contract.freelancerSignedDate) }}
                             </div>
                         </div>
                     </div>
@@ -266,7 +193,7 @@ const formatCurrency = (amount: number) => {
                         class="mt-4 pt-4 border-t border-white/10"
                     >
                         <div class="text-sm text-white/60">
-                            서명일: {{ formatDate(contract.signedDate) }}
+                            계약 체결일: {{ formatDate(contract.signedDate) }}
                         </div>
                     </div>
                 </div>

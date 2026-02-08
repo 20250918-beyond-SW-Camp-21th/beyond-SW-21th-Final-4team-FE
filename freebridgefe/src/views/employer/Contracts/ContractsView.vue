@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router';
 import {
     FileText,
     Calendar,
-    AlertCircle,
     CheckCircle,
     Clock,
     DollarSign,
@@ -16,15 +15,14 @@ import {
     ChevronDown,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { useContractStore } from '@/stores/contractStore';
-import type { ContractDocument } from '@/types/contract';
+import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import ContractDetailModal from './components/ContractDetailModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
 const contractStore = useContractStore();
 
-const selectedContract = ref<ContractDocument | null>(null);
+const selectedContract = ref<ContractWithDetails | null>(null);
 
 // Search and filter state
 const searchQuery = ref('');
@@ -41,14 +39,14 @@ const sortOptions = [
 
 const statusFilters = [
     { value: 'ALL', label: '전체' },
-    { value: 'DRAFT', label: '서명 대기' },
+    { value: 'WAITING_SIGNATURE', label: '서명 대기' },
     { value: 'IN_PROGRESS', label: '진행 중' },
     { value: 'COMPLETED', label: '완료' },
 ];
 
 const myContracts = computed(() => {
-    if (!authStore.user) return [];
-    return contractStore.contracts.filter((c) => c.employerId === authStore.user!.id);
+    // 당장은 모든 계약을 보여주지만 백엔드 개발 시 고용주 ID로 필터링하기
+    return contractStore.contractsWithDetails;
 });
 
 const filteredAndSortedContracts = computed(() => {
@@ -88,27 +86,14 @@ const filteredAndSortedContracts = computed(() => {
     return result;
 });
 
-const calculateDday = (endDate: Date | string) => {
-    const today = new Date();
-    const end = new Date(endDate);
-    const diffTime = end.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-};
-
 const statusConfig: Record<
     string,
     { label: string; bgColor: string; icon: typeof CheckCircle }
 > = {
-    DRAFT: {
+    WAITING_SIGNATURE: {
         label: '서명 대기',
         bgColor: 'bg-orange-500',
         icon: Clock,
-    },
-    ACTIVE: {
-        label: '활성',
-        bgColor: 'bg-green-500',
-        icon: CheckCircle,
     },
     IN_PROGRESS: {
         label: '진행 중',
@@ -117,20 +102,19 @@ const statusConfig: Record<
     },
     COMPLETED: {
         label: '완료',
-        bgColor: 'bg-gray-500',
+        bgColor: 'bg-green-500',
         icon: CheckCircle,
-    },
-    TERMINATED: {
-        label: '종료',
-        bgColor: 'bg-red-500',
-        icon: AlertCircle,
     },
 };
 
-const calculateProgress = (contract: ContractDocument) => {
-    if (contract.milestones.length === 0) return 0;
-    const completed = contract.milestones.filter((m) => m.status === 'COMPLETED').length;
-    return Math.round((completed / contract.milestones.length) * 100);
+// Calculate progress based on contract status
+const calculateProgress = (contract: ContractWithDetails) => {
+    switch (contract.status) {
+        case 'WAITING_SIGNATURE': return 10;
+        case 'IN_PROGRESS': return 50;
+        case 'COMPLETED': return 100;
+        default: return 0;
+    }
 };
 
 const formatDate = (date: Date | string) => {
@@ -288,72 +272,23 @@ const currentSortLabel = computed(() => {
                 :hover="{ y: -4 }"
             >
                 <!-- Header -->
-                <div
-                    class="flex flex-col lg:flex-row items-start justify-between mb-8 gap-6"
-                >
-                    <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-3 flex-wrap">
-                            <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
-                            <div
-                                v-if="statusConfig[contract.status]"
-                                :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
-                            >
-                                <component
-                                    :is="statusConfig[contract.status].icon"
-                                    class="w-4 h-4"
-                                />
-                                {{ statusConfig[contract.status].label }}
-                            </div>
-                        </div>
-                        <div class="text-white/60 flex items-center gap-2">
-                            <Sparkles class="w-4 h-4" />
-                            담당자: {{ contract.freelancerName }}
+                <div class="mb-8">
+                    <div class="flex items-center gap-3 mb-3 flex-wrap">
+                        <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
+                        <div
+                            v-if="statusConfig[contract.status]"
+                            :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
+                        >
+                            <component
+                                :is="statusConfig[contract.status].icon"
+                                class="w-4 h-4"
+                            />
+                            {{ statusConfig[contract.status].label }}
                         </div>
                     </div>
-
-                    <!-- D-day -->
-                    <div
-                        class="text-center px-8 py-4 rounded-2xl border-2 transition-transform hover:scale-105"
-                        :class="{
-                            'bg-red-500/20 border-red-500/50':
-                                calculateDday(contract.endDate) <= 7,
-                            'bg-orange-500/20 border-orange-500/50':
-                                calculateDday(contract.endDate) > 7 &&
-                                calculateDday(contract.endDate) <= 30,
-                            'bg-blue-500/20 border-blue-500/50':
-                                calculateDday(contract.endDate) > 30,
-                        }"
-                    >
-                        <div
-                            class="text-xs mb-2 font-medium"
-                            :class="{
-                                'text-red-400': calculateDday(contract.endDate) <= 7,
-                                'text-orange-400':
-                                    calculateDday(contract.endDate) > 7 &&
-                                    calculateDday(contract.endDate) <= 30,
-                                'text-blue-400': calculateDday(contract.endDate) > 30,
-                            }"
-                        >
-                            D-Day
-                        </div>
-                        <div
-                            class="text-4xl font-bold"
-                            :class="{
-                                'text-red-400': calculateDday(contract.endDate) <= 7,
-                                'text-orange-400':
-                                    calculateDday(contract.endDate) > 7 &&
-                                    calculateDday(contract.endDate) <= 30,
-                                'text-blue-400': calculateDday(contract.endDate) > 30,
-                            }"
-                        >
-                            {{
-                                calculateDday(contract.endDate) > 0
-                                    ? `-${calculateDday(contract.endDate)}`
-                                    : calculateDday(contract.endDate) === 0
-                                      ? 'Today'
-                                      : `+${Math.abs(calculateDday(contract.endDate))}`
-                            }}
-                        </div>
+                    <div class="text-white/60 flex items-center gap-2">
+                        <Sparkles class="w-4 h-4" />
+                        담당자: {{ contract.freelancerName }}
                     </div>
                 </div>
 
@@ -372,60 +307,6 @@ const currentSortLabel = computed(() => {
                             class="h-full bg-blue-500 rounded-full shadow-lg transition-all duration-1000 ease-out"
                             :style="{ width: `${calculateProgress(contract)}%` }"
                         ></div>
-                    </div>
-                </div>
-
-                <!-- Milestones -->
-                <div v-if="contract.milestones.length > 0" class="mb-8">
-                    <div class="text-white/60 font-medium mb-4 flex items-center gap-2">
-                        <Clock class="w-4 h-4" />
-                        마일스톤
-                    </div>
-                    <div class="grid md:grid-cols-3 gap-4">
-                        <div
-                            v-for="(milestone, idx) in contract.milestones"
-                            :key="milestone.id"
-                            class="p-5 rounded-2xl border-2 transition-all"
-                            :class="{
-                                'border-green-500/50':
-                                    milestone.status === 'COMPLETED',
-                                'border-blue-500/50':
-                                    milestone.status === 'IN_PROGRESS',
-                                'border-white/10':
-                                    milestone.status === 'PENDING',
-                            }"
-                            v-motion
-                            :initial="{ opacity: 0, scale: 0.9 }"
-                            :enter="{
-                                opacity: 1,
-                                scale: 1,
-                                transition: { delay: 0.3 + idx * 0.05 },
-                            }"
-                        >
-                            <div class="flex items-start gap-3 mb-3">
-                                <CheckCircle
-                                    v-if="milestone.status === 'COMPLETED'"
-                                    class="w-5 h-5 text-green-400 flex-shrink-0"
-                                />
-                                <Clock
-                                    v-else-if="milestone.status === 'IN_PROGRESS'"
-                                    class="w-5 h-5 text-blue-400 flex-shrink-0 animate-pulse"
-                                />
-                                <AlertCircle
-                                    v-else
-                                    class="w-5 h-5 text-white/40 flex-shrink-0"
-                                />
-
-                                <div class="flex-1 min-w-0">
-                                    <div class="font-medium truncate">
-                                        {{ milestone.name }}
-                                    </div>
-                                    <div class="text-sm text-white/60 mt-1">
-                                        {{ formatCurrency(milestone.amount) }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
