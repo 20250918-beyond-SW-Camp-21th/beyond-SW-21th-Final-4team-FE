@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useMotion } from '@vueuse/motion';
-import { X, DollarSign, CheckCircle, Clock, AlertCircle } from 'lucide-vue-next';
+import { X, DollarSign, CheckCircle, Clock } from 'lucide-vue-next';
 import type { Settlement } from '@/types/contract';
 
 const props = defineProps<{
@@ -53,7 +52,7 @@ const feeRate = computed(() =>
 
       <div class="p-6 space-y-6">
         <!-- 프로젝트 정보 -->
-        <div class="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-xl border border-blue-400/30 rounded-2xl p-6 shadow-lg">
+        <div class="bg-white/5 backdrop-blur-xl border border-blue-400/30 rounded-2xl p-6 shadow-lg">
           <div class="text-sm text-white/60 mb-1">프로젝트</div>
           <div class="text-2xl font-medium text-white mb-2">{{ settlement.projectName }}</div>
           <div class="text-white/70">{{ settlement.employerName }}</div>
@@ -66,7 +65,7 @@ const feeRate = computed(() =>
             <!-- 프로그레스 라인 -->
             <div class="absolute top-6 left-6 right-6 h-1 bg-white/10">
               <div
-                class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 transition-all duration-1000 ease-out"
+                class="h-full bg-blue-500 transition-all duration-1000 ease-out"
                 :style="{ width: `${(currentStageIndex / (paymentStages.length - 1)) * 100}%` }"
               ></div>
             </div>
@@ -81,7 +80,7 @@ const feeRate = computed(() =>
                 <div
                   class="w-12 h-12 rounded-full border-4 flex items-center justify-center transition-all bg-gray-800 border-white/10"
                    :class="{
-                    'bg-gradient-to-br from-blue-500 to-green-500 border-white/20 shadow-lg': index <= currentStageIndex
+                    'bg-blue-600 border-white/20 shadow-lg': index <= currentStageIndex
                   }"
                   v-motion
                   :initial="{ scale: 0 }"
@@ -160,32 +159,32 @@ const feeRate = computed(() =>
             </div>
           </div>
 
-          <div v-if="settlement.paidDate" class="bg-green-500/20 border border-green-400/30 rounded-2xl p-4">
-            <div class="flex items-center gap-2 text-green-300 mb-2">
+          <div v-if="settlement.paidDate" class="bg-white/5 border border-white/10 rounded-2xl p-4">
+            <div class="flex items-center gap-2 text-white/60 mb-2">
               <CheckCircle class="w-4 h-4" />
               <span class="text-sm">지급일</span>
             </div>
-            <div class="font-medium text-green-200">
+            <div class="font-medium text-white">
               {{ new Date(settlement.paidDate).toLocaleDateString('ko-KR') }}
             </div>
           </div>
         </div>
 
         <!-- 상태별 안내 메시지 -->
-        <div v-if="settlement.status === 'PROCESSING'" class="bg-blue-500/20 border border-blue-400/30 rounded-2xl p-4">
-          <div class="text-sm text-blue-200">
+        <div v-if="settlement.status === 'PROCESSING'" class="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div class="text-sm text-gray-300">
             💡 정산이 처리 중입니다. 영업일 기준 2-3일 내 승인 예정입니다.
           </div>
         </div>
 
-        <div v-if="settlement.status === 'APPROVED'" class="bg-purple-500/20 border border-purple-400/30 rounded-2xl p-4">
-          <div class="text-sm text-purple-200">
+        <div v-if="settlement.status === 'APPROVED'" class="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div class="text-sm text-gray-300">
             ✅ 정산이 승인되었습니다. 곧 입금 처리될 예정입니다.
           </div>
         </div>
 
-        <div v-if="settlement.status === 'PAID'" class="bg-green-500/20 border border-green-400/30 rounded-2xl p-4">
-          <div class="text-sm text-green-200">
+        <div v-if="settlement.status === 'PAID'" class="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div class="text-sm text-gray-300">
             🎉 정산이 완료되어 입금되었습니다. 계좌를 확인해주세요.
           </div>
         </div>
@@ -193,7 +192,7 @@ const feeRate = computed(() =>
         <!-- 닫기 버튼 -->
         <button
           @click="$emit('close')"
-          class="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-2xl hover:shadow-xl transition-all"
+          class="w-full py-4 bg-white/5 border border-white/10 text-white font-semibold rounded-2xl hover:bg-white/10 transition-all"
           v-motion
           :hover="{ scale: 1.02 }"
           :tap="{ scale: 0.98 }"

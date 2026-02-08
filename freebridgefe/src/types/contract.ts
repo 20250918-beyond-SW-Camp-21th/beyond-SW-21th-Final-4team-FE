@@ -37,8 +37,9 @@ export interface Settlement {
     platformFee: number;
     tax: number;
     netAmount: number;
-    status: 'PROCESSING' | 'PAID' | 'PENDING';
+    status: 'PENDING' | 'PROCESSING' | 'APPROVED' | 'PAID' | 'REJECTED';
     requestDate: Date | string;
     paidDate?: Date | string;
     bankAccount: string;
+    installmentNumber?: number;
 }

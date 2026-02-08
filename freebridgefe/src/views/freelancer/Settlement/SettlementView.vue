@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useMotion } from '@vueuse/motion';
+
 import {
   DollarSign,
   TrendingUp,
@@ -8,62 +8,162 @@ import {
   CheckCircle,
   Award,
   AlertCircle,
-  Plus,
   Download,
-  Sparkles,
   Zap,
-  Wallet
+  Wallet,
+  Search,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Calendar,
+  CreditCard
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useContractStore } from '@/stores/contractStore';
 import type { Settlement } from '@/types/contract';
-import SettlementRequestModal from './components/SettlementRequestModal.vue';
 import SettlementDetailModal from './components/SettlementDetailModal.vue';
+import BankAccountModal from './components/BankAccountModal.vue';
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
 
-const showRequestModal = ref(false);
+const showBankAccountModal = ref(false);
 const selectedSettlement = ref<Settlement | null>(null);
 
+// Filters & Pagination State
+const searchQuery = ref('');
+const selectedStatus = ref<string>('ALL');
+const selectedDateRange = ref('ALL');
+const isDropdownOpen = ref(false);
+const currentPage = ref(1);
+const itemsPerPage = 10;
+
+const dateRangeOptions = [
+    { value: 'ALL', label: '전체 기간' },
+    { value: 'THIS_MONTH', label: '이번 달' },
+    { value: 'LAST_MONTH', label: '지난 달' },
+    { value: 'LAST_3_MONTHS', label: '최근 3개월' },
+];
+
+const statusFilters = [
+    { value: 'ALL', label: '전체' },
+    { value: 'PENDING', label: '지급 예정' },
+    { value: 'PROCESSING', label: '처리 중' },
+    { value: 'APPROVED', label: '승인 완료' },
+    { value: 'PAID', label: '지급 완료' },
+    { value: 'REJECTED', label: '반려' },
+];
+
+const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
+    PENDING: { label: '지급 예정', color: 'text-blue-400', bg: 'bg-white/5 border-white/10', icon: Calendar },
+    PROCESSING: { label: '처리 중', color: 'text-indigo-400', bg: 'bg-white/5 border-white/10', icon: Clock },
+    APPROVED: { label: '승인 완료', color: 'text-green-400', bg: 'bg-white/5 border-white/10', icon: CheckCircle },
+    PAID: { label: '지급 완료', color: 'text-purple-400', bg: 'bg-white/5 border-white/10', icon: Wallet },
+    REJECTED: { label: '반려', color: 'text-red-400', bg: 'bg-white/5 border-white/10', icon: AlertCircle },
+};
+
+// Base Data
 const mySettlements = computed(() => {
   if (!authStore.user) return [];
   return contractStore.settlements.filter((s) => s.freelancerId === authStore.user!.id);
 });
 
-// 사용 가능 잔액 계산
-const availableBalance = computed(() => mySettlements.value
-    .filter((s) => s.status === 'APPROVED' || s.status === 'PROCESSING')
-    .reduce((sum, s) => sum + s.netAmount, 0));
+// Filtered Data
+const filteredSettlements = computed(() => {
+    let result = [...mySettlements.value];
 
-// 대기 중 금액
+    // Status Filter
+    if (selectedStatus.value !== 'ALL') {
+        result = result.filter((s) => s.status === selectedStatus.value);
+    }
+
+    // Search Filter
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        result = result.filter(
+            (s) =>
+                s.projectName.toLowerCase().includes(query) ||
+                s.employerName.toLowerCase().includes(query)
+        );
+    }
+
+    // Date Range Filter
+    const today = new Date();
+    if (selectedDateRange.value === 'THIS_MONTH') {
+        result = result.filter((s) => {
+            const d = new Date(s.requestDate);
+            return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+        });
+    } else if (selectedDateRange.value === 'LAST_MONTH') {
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        result = result.filter((s) => {
+            const d = new Date(s.requestDate);
+            return (
+                d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
+            );
+        });
+    } else if (selectedDateRange.value === 'LAST_3_MONTHS') {
+        const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+        result = result.filter((s) => new Date(s.requestDate) >= threeMonthsAgo);
+    }
+
+    // Sort by requestDate descending
+    result.sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
+    return result;
+});
+
+// Pagination
+const totalPages = computed(() => Math.ceil(filteredSettlements.value.length / itemsPerPage));
+
+const paginatedSettlements = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredSettlements.value.slice(start, end);
+});
+
+
+// 지급 예정 금액 (PENDING)
 const pendingAmount = computed(() => mySettlements.value
     .filter((s) => s.status === 'PENDING')
     .reduce((sum, s) => sum + s.netAmount, 0));
 
-// 지급 완료 금액
+// 지급 완료 금액 (PAID)
 const paidAmount = computed(() => mySettlements.value
     .filter((s) => s.status === 'PAID')
     .reduce((sum, s) => sum + s.netAmount, 0));
 
-// 상태별 정산 건수
-const statusCounts = computed(() => ({
-    PENDING: mySettlements.value.filter((s) => s.status === 'PENDING').length,
-    PROCESSING: mySettlements.value.filter((s) => s.status === 'PROCESSING').length,
-    APPROVED: mySettlements.value.filter((s) => s.status === 'APPROVED').length,
-    PAID: mySettlements.value.filter((s) => s.status === 'PAID').length,
-}));
 
-const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
-    PENDING: { label: '승인 대기', color: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/20' },
-    PROCESSING: { label: '처리 중', color: 'text-blue-400', bg: 'bg-blue-400/10 border-blue-400/20' },
-    APPROVED: { label: '승인 완료', color: 'text-green-400', bg: 'bg-green-400/10 border-green-400/20' },
-    PAID: { label: '지급 완료', color: 'text-purple-400', bg: 'bg-purple-400/10 border-purple-400/20' },
-    REJECTED: { label: '반려', color: 'text-red-400', bg: 'bg-red-400/10 border-red-400/20' },
-};
 
 const formatDate = (date: Date | string) => {
   return new Date(date).toLocaleDateString('ko-KR');
+};
+
+
+
+const selectStatusFilter = (value: string) => {
+    selectedStatus.value = value;
+    isDropdownOpen.value = false;
+    currentPage.value = 1;
+};
+
+const currentStatusLabel = computed(() => {
+    return statusFilters.find((f) => f.value === selectedStatus.value)?.label || '전체';
+});
+
+const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page;
+    }
+};
+
+const handleDownload = (settlement: Settlement) => {
+    // Mock download
+    alert(`정산 내역서 다운로드: ${settlement.projectName}`);
+};
+
+const handleSaveAccount = (account: { bankName: string; accountNumber: string }) => {
+    alert(`계좌가 저장되었습니다: ${account.bankName} ${account.accountNumber}`);
 };
 </script>
 
@@ -71,124 +171,69 @@ const formatDate = (date: Date | string) => {
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-white">
     <!-- Header -->
     <div
-      class="mb-12"
+      class="mb-8"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0 }"
     >
-      <div class="flex flex-col md:flex-row items-start md:items-center gap-4 mb-3">
-        <h1 class="text-4xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent flex items-center gap-3">
-           <Wallet class="w-10 h-10 text-white" />
-           정산 관리
-        </h1>
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-3">
+        <div>
+             <h1 class="text-4xl font-bold text-white flex items-center gap-3 mb-2">
+                <Wallet class="w-10 h-10 text-white" />
+                정산 관리
+             </h1>
+             <p class="text-white/60">수입 내역과 정산을 손쉽게 관리하세요</p>
+        </div>
+        <button
+            @click="showBankAccountModal = true"
+            class="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-medium transition-all border border-white/10 flex items-center gap-2"
+        >
+            <CreditCard class="w-5 h-5" />
+            계좌 관리
+        </button>
       </div>
-      <p class="text-white/60">수입 내역과 정산을 손쉽게 관리하세요</p>
     </div>
 
-    <!-- Balance Card Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <!-- Main Balance -->
+    <!-- Summary Stats Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div
-            class="lg:col-span-2 relative overflow-hidden bg-[#1e293b]/80 backdrop-blur-xl rounded-3xl p-10 border border-white/10 shadow-xl group"
+            class="bg-[#1e293b]/50 backdrop-blur-sm rounded-3xl p-8 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all"
             v-motion
-            :initial="{ opacity: 0, scale: 0.95 }"
-            :enter="{ opacity: 1, scale: 1, transition: { delay: 100 } }"
+            :initial="{ opacity: 0, x: 20 }"
+            :enter="{ opacity: 1, x: 0, transition: { delay: 200 } }"
         >
-            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-transparent opacity-50 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl group-hover:bg-blue-500/30 transition-colors duration-500"></div>
-            
-            <div class="relative z-10">
-                <div class="flex items-center gap-2 text-blue-400 mb-2 font-medium">
-                    <Sparkles class="w-4 h-4" />
-                    사용 가능 잔액
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex items-center gap-2 text-white/60 text-lg font-medium">
+                    <Calendar class="w-5 h-5 text-blue-400" />
+                    지급 예정
                 </div>
-                <div class="flex items-end gap-3 mb-8">
-                    <div class="text-6xl font-bold text-white tracking-tight">
-                        {{ availableBalance.toLocaleString() }}
-                    </div>
-                    <div class="text-2xl text-white/40 mb-2 font-medium">원</div>
-                </div>
-
-                <div class="flex gap-4">
-                    <button
-                        @click="showRequestModal = true"
-                        class="px-8 py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-900/20 font-bold flex items-center gap-2 transition-all hover:scale-105 active:scale-95 border border-blue-500/50"
-                    >
-                        <Plus class="w-5 h-5" />
-                        정산 요청
-                    </button>
-                    <button class="px-6 py-3.5 bg-white/5 hover:bg-white/10 text-white rounded-xl font-medium transition-all border border-white/10">
-                        계좌 관리
-                    </button>
+                <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                    <TrendingUp class="w-5 h-5" />
                 </div>
             </div>
+            <div class="text-4xl font-bold text-white mb-1">{{ pendingAmount.toLocaleString() }}<span class="text-xl text-white/40 ml-1">원</span></div>
         </div>
 
-        <!-- Summary Stats (Right Column) -->
-        <div class="space-y-6">
-            <div
-                class="bg-[#1e293b]/50 backdrop-blur-sm rounded-3xl p-6 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all"
-                v-motion
-                :initial="{ opacity: 0, x: 20 }"
-                :enter="{ opacity: 1, x: 0, transition: { delay: 200 } }"
-            >
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex items-center gap-2 text-white/60 text-sm font-medium">
-                        <Clock class="w-4 h-4 text-yellow-500" />
-                        정산 대기
-                    </div>
-                    <div class="p-2 bg-yellow-500/10 rounded-lg text-yellow-500 group-hover:bg-yellow-500/20 transition-colors">
-                        <TrendingUp class="w-4 h-4" />
-                    </div>
+        <div
+            class="bg-[#1e293b]/50 backdrop-blur-sm rounded-3xl p-8 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all"
+            v-motion
+            :initial="{ opacity: 0, x: 20 }"
+            :enter="{ opacity: 1, x: 0, transition: { delay: 300 } }"
+        >
+            <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-2 text-white/60 text-lg font-medium">
+                        <CheckCircle class="w-5 h-5 text-green-500" />
+                    총 지급 완료
                 </div>
-                <div class="text-3xl font-bold text-white mb-1">{{ pendingAmount.toLocaleString() }}<span class="text-lg text-white/40 ml-1">원</span></div>
-            </div>
-
-            <div
-                class="bg-[#1e293b]/50 backdrop-blur-sm rounded-3xl p-6 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all"
-                v-motion
-                :initial="{ opacity: 0, x: 20 }"
-                :enter="{ opacity: 1, x: 0, transition: { delay: 300 } }"
-            >
-                <div class="flex justify-between items-start mb-4">
-                     <div class="flex items-center gap-2 text-white/60 text-sm font-medium">
-                         <CheckCircle class="w-4 h-4 text-green-500" />
-                        총 지급 완료
-                    </div>
-                    <div class="p-2 bg-green-500/10 rounded-lg text-green-500 group-hover:bg-green-500/20 transition-colors">
-                        <Award class="w-4 h-4" />
-                    </div>
+                <div class="p-2 bg-green-500/10 rounded-lg text-green-500 group-hover:bg-green-500/20 transition-colors">
+                    <Award class="w-5 h-5" />
                 </div>
-                 <div class="text-3xl font-bold text-white mb-1">{{ paidAmount.toLocaleString() }}<span class="text-lg text-white/40 ml-1">원</span></div>
             </div>
+                <div class="text-4xl font-bold text-white mb-1">{{ paidAmount.toLocaleString() }}<span class="text-xl text-white/40 ml-1">원</span></div>
         </div>
     </div>
     
-    <!-- Status Grid -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-         <div
-            v-for="(stat, index) in [
-                { label: '승인 대기', count: statusCounts.PENDING, icon: AlertCircle, color: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/20' },
-                { label: '처리 중', count: statusCounts.PROCESSING, icon: Clock, color: 'text-blue-400', bg: 'bg-blue-400/10 border-blue-400/20' },
-                { label: '승인 완료', count: statusCounts.APPROVED, icon: CheckCircle, color: 'text-green-400', bg: 'bg-green-400/10 border-green-400/20' },
-                { label: '지급 완료', count: statusCounts.PAID, icon: Wallet, color: 'text-purple-400', bg: 'bg-purple-400/10 border-purple-400/20' },
-            ]"
-            :key="stat.label"
-            class="rounded-2xl p-5 border backdrop-blur-sm flex items-center justify-between group hover:brightness-110 transition-all cursor-default"
-            :class="[stat.bg]"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 400 + index * 100 } }"
-        >
-            <div>
-                 <div class="text-xs text-white/50 mb-1 font-medium">{{ stat.label }}</div>
-                 <div class="text-2xl font-bold text-white">{{ stat.count }}<span class="text-xs text-white/30 ml-1">건</span></div>
-            </div>
-            <div :class="`p-2 rounded-xl ${stat.bg.split(' ')[0]} ${stat.color}`">
-                <component :is="stat.icon" class="w-5 h-5" />
-            </div>
-        </div>
-    </div>
+
 
     <div class="grid lg:grid-cols-3 gap-6">
         <!-- Settlement History -->
@@ -201,12 +246,76 @@ const formatDate = (date: Date | string) => {
             <div class="flex items-center justify-between mb-8">
                 <h2 class="text-xl font-bold text-white flex items-center gap-2">
                     <Clock class="w-5 h-5 text-blue-400" />
-                    최근 정산 내역
+                    정산 내역
                 </h2>
-                <button class="text-sm text-slate-400 hover:text-white transition-colors">전체보기</button>
+                <div class="text-white/60 text-sm">
+                    {{ filteredSettlements.length }}건의 내역
+                </div>
             </div>
 
-            <div v-if="mySettlements.length === 0" class="text-center py-20">
+            <!-- Filters & Search -->
+            <div class="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <!-- Search Bar -->
+                    <div class="relative flex-1 md:flex-initial">
+                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                        <input
+                            v-model="searchQuery"
+                            type="text"
+                            placeholder="프로젝트 검색"
+                            class="w-full md:w-64 pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
+                        />
+                    </div>
+
+                    <!-- Date Range Filter -->
+                    <div class="hidden md:flex bg-white/5 p-1 rounded-xl border border-white/10">
+                        <button
+                            v-for="option in dateRangeOptions"
+                            :key="option.value"
+                            @click="selectedDateRange = option.value"
+                            class="px-3 py-1 text-sm rounded-lg transition-colors"
+                            :class="
+                                selectedDateRange === option.value
+                                    ? 'bg-blue-600 text-white shadow-lg'
+                                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                            "
+                        >
+                            {{ option.label }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status Filter Dropdown -->
+                <div class="relative z-30 w-full md:w-auto">
+                    <button
+                        @click="isDropdownOpen = !isDropdownOpen"
+                        class="flex items-center justify-between w-full md:w-auto gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors min-w-[140px]"
+                    >
+                        <span>{{ currentStatusLabel }}</span>
+                        <ChevronDown
+                            class="w-4 h-4 transition-transform"
+                            :class="{ 'rotate-180': isDropdownOpen }"
+                        />
+                    </button>
+                    <div
+                        v-if="isDropdownOpen"
+                        class="absolute top-full mt-2 right-0 w-full md:w-48 bg-gray-900 border border-white/10 rounded-xl overflow-hidden shadow-xl z-50"
+                    >
+                        <button
+                            v-for="filter in statusFilters"
+                            :key="filter.value"
+                            @click="selectStatusFilter(filter.value)"
+                            class="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-colors text-sm"
+                            :class="{ 'bg-white/5': selectedStatus === filter.value }"
+                        >
+                            {{ filter.label }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List -->
+            <div v-if="paginatedSettlements.length === 0" class="text-center py-20">
                 <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
                     <DollarSign class="w-8 h-8 text-white/20" />
                 </div>
@@ -215,28 +324,87 @@ const formatDate = (date: Date | string) => {
 
             <div v-else class="space-y-3">
                 <div
-                    v-for="(settlement, index) in mySettlements"
+                    v-for="settlement in paginatedSettlements"
                     :key="settlement.id"
-                    @click="selectedSettlement = settlement"
-                    class="group bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer flex items-center justify-between"
+                    class="group bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 hover:border-white/10 transition-all flex items-center justify-between"
                 >
                     <div class="flex items-center gap-4">
                         <div
                             class="w-12 h-12 rounded-xl flex items-center justify-center border"
                             :class="statusConfig[settlement.status].bg"
                         >
-                             <DollarSign class="w-5 h-5" :class="statusConfig[settlement.status].color" />
+                             <component :is="statusConfig[settlement.status].icon" class="w-5 h-5" :class="statusConfig[settlement.status].color" />
                         </div>
                         <div>
-                            <div class="font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">{{ settlement.projectName }}</div>
-                            <div class="text-xs text-white/40">{{ formatDate(settlement.requestDate) }} · {{ statusConfig[settlement.status].label }}</div>
+                            <div class="font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">
+                                {{ settlement.projectName }}
+                            </div>
+                            <div class="text-xs text-white/40">
+                                {{ formatDate(settlement.requestDate) }} · 
+                                <span v-if="settlement.installmentNumber">{{ settlement.installmentNumber }}차 · </span>
+                                {{ statusConfig[settlement.status].label }}
+                            </div>
                         </div>
                     </div>
-                    <div class="text-right">
-                         <div class="text-lg font-bold text-white">{{ settlement.netAmount.toLocaleString() }}원</div>
-                         <div class="text-xs text-white/40">실 수령액</div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                             <div class="text-lg font-bold text-white">{{ settlement.netAmount.toLocaleString() }}원</div>
+                             <div class="text-xs text-white/40">실 수령액</div>
+                        </div>
+                        <div class="flex gap-1">
+                             <button
+                                @click="selectedSettlement = settlement"
+                                class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                title="상세보기"
+                            >
+                                <Eye class="w-5 h-5 text-white/60" />
+                            </button>
+                            <button
+                                @click="handleDownload(settlement)"
+                                class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                title="다운로드"
+                            >
+                                <Download class="w-5 h-5 text-white/60" />
+                            </button>
+                        </div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- Pagination -->
+            <div
+                v-if="totalPages > 1"
+                class="mt-8 flex items-center justify-center gap-2"
+            >
+                <button
+                    @click="goToPage(currentPage - 1)"
+                    :disabled="currentPage === 1"
+                    class="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronLeft class="w-5 h-5 text-white" />
+                </button>
+
+                <template v-for="page in totalPages" :key="page">
+                    <button
+                        @click="goToPage(page)"
+                        class="w-10 h-10 rounded-lg font-medium transition-colors"
+                        :class="
+                            currentPage === page
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                        "
+                    >
+                        {{ page }}
+                    </button>
+                </template>
+
+                <button
+                    @click="goToPage(currentPage + 1)"
+                    :disabled="currentPage === totalPages"
+                    class="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <ChevronRight class="w-5 h-5 text-white" />
+                </button>
             </div>
         </div>
 
@@ -286,8 +454,7 @@ const formatDate = (date: Date | string) => {
                     <div>
                          <div class="font-bold text-blue-300 text-sm mb-1">정산 안내</div>
                         <p class="text-xs text-blue-200/60 leading-relaxed">
-                            정산 요청 후 승인까지 영업일 기준 평균 3-5일이 소요됩니다.
-                            입금이 지연될 경우 1:1 문의를 이용해주세요.
+                            정산은 계약서에 명시된 지급일에 맞춰 자동으로 지정된 계좌로 입금됩니다.
                         </p>
                     </div>
                 </div>
@@ -296,9 +463,11 @@ const formatDate = (date: Date | string) => {
     </div>
 
     <!-- Modals -->
-    <SettlementRequestModal
-        v-if="showRequestModal"
-        @close="showRequestModal = false"
+    <!-- Modals -->
+    <BankAccountModal
+        v-if="showBankAccountModal"
+        @save="handleSaveAccount"
+        @close="showBankAccountModal = false"
     />
     <SettlementDetailModal
         v-if="selectedSettlement"
