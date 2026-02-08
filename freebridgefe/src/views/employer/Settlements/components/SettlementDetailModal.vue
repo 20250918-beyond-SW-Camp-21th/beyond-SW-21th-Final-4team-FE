@@ -17,6 +17,9 @@ interface EmployerSettlement {
     id: string;
     contractId: string;
     billingAmount: number;
+    platformFee: number;
+    tax: number;
+    totalAmount: number;
     installmentNumber: number;
     status: 'ISSUED' | 'PAID' | 'DISBURSED';
     invoicePdfUrl: string;
@@ -96,7 +99,7 @@ const handleDownload = () => {
 
             <div class="p-6 space-y-6">
                 <!-- Project Info Card -->
-                <div class="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-xl border border-blue-400/30 rounded-2xl p-6 shadow-lg">
+                <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
                     <div class="flex items-start justify-between">
                         <div>
                             <div class="text-sm text-white/60 mb-1">프로젝트</div>
@@ -124,7 +127,7 @@ const handleDownload = () => {
                         <!-- Progress Line -->
                         <div class="absolute top-6 left-6 right-6 h-1 bg-white/10">
                             <div
-                                class="h-full bg-gradient-to-r from-blue-500 to-green-500 transition-all duration-1000 ease-out"
+                                class="h-full bg-blue-500 transition-all duration-1000 ease-out"
                                 :style="{ width: `${(currentStageIndex / (paymentStages.length - 1)) * 100}%` }"
                             ></div>
                         </div>
@@ -139,7 +142,7 @@ const handleDownload = () => {
                                 <div
                                     class="w-12 h-12 rounded-full border-4 flex items-center justify-center transition-all bg-gray-800"
                                     :class="{
-                                        'bg-gradient-to-br from-blue-500 to-green-500 border-white/20 shadow-lg': index <= currentStageIndex,
+                                        'bg-blue-500 border-white/20 shadow-lg': index <= currentStageIndex,
                                         'border-white/10': index > currentStageIndex,
                                     }"
                                     v-motion
@@ -173,12 +176,30 @@ const handleDownload = () => {
                             <span class="font-medium text-white">{{ settlement.installmentNumber }}차</span>
                         </div>
                         <div class="flex items-center justify-between py-3 border-b border-white/10">
-                            <span class="text-white/60">청구 금액</span>
-                            <span class="text-2xl font-bold text-white">{{ formatCurrency(settlement.billingAmount) }}</span>
+                            <span class="text-white/60">청구 금액 (공급가액)</span>
+                            <span class="text-xl font-bold text-white">{{ formatCurrency(settlement.billingAmount) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between py-3 border-b border-white/10">
+                            <span class="text-white/60">플랫폼 수수료 (5%)</span>
+                            <span class="text-white">{{ formatCurrency(settlement.platformFee) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between py-3 border-b border-white/10">
+                            <span class="text-white/60">부가세 (10%)</span>
+                            <span class="text-white">{{ formatCurrency(settlement.tax) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between py-3 border-b border-white/10 bg-white/5 px-4 rounded-xl mt-2">
+                            <span class="text-white font-medium">총 결제 금액</span>
+                            <span class="text-2xl font-bold text-blue-400">{{ formatCurrency(settlement.totalAmount) }}</span>
                         </div>
                         <div class="flex items-center justify-between py-3 border-b border-white/10">
                             <span class="text-white/60">계약 ID</span>
-                            <span class="font-medium text-white/80">{{ settlement.contractId }}</span>
+                            <RouterLink 
+                                :to="`/employer/contracts/${settlement.contractId}`"
+                                class="font-medium text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
+                            >
+                                {{ settlement.contractId }}
+                                <Briefcase class="w-3 h-3" />
+                            </RouterLink>
                         </div>
                     </div>
                 </div>
@@ -242,7 +263,7 @@ const handleDownload = () => {
                     </button>
                     <button
                         @click="$emit('close')"
-                        class="flex-1 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-2xl hover:shadow-xl transition-all"
+                        class="flex-1 py-4 bg-blue-500 hover:bg-blue-400 text-white font-semibold rounded-2xl hover:shadow-xl transition-all"
                         v-motion
                         :hover="{ scale: 1.02 }"
                         :tap="{ scale: 0.98 }"

@@ -17,11 +17,17 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import SettlementDetailModal from './components/SettlementDetailModal.vue';
+import { useNow } from '@vueuse/core';
+
+const now = useNow();
 
 interface EmployerSettlement {
     id: string;
     contractId: string;
     billingAmount: number;
+    platformFee: number;
+    tax: number;
+    totalAmount: number;
     installmentNumber: number;
     status: 'ISSUED' | 'PAID' | 'DISBURSED';
     invoicePdfUrl: string;
@@ -41,6 +47,9 @@ const allSettlements = ref<EmployerSettlement[]>([
         id: 'es1',
         contractId: 'c1',
         billingAmount: 1500000,
+        platformFee: 75000,
+        tax: 157500,
+        totalAmount: 1732500,
         installmentNumber: 1,
         status: 'DISBURSED',
         invoicePdfUrl: '/invoices/es1.pdf',
@@ -55,6 +64,9 @@ const allSettlements = ref<EmployerSettlement[]>([
         id: 'es2',
         contractId: 'c1',
         billingAmount: 2000000,
+        platformFee: 100000,
+        tax: 210000,
+        totalAmount: 2310000,
         installmentNumber: 2,
         status: 'PAID',
         invoicePdfUrl: '/invoices/es2.pdf',
@@ -69,6 +81,9 @@ const allSettlements = ref<EmployerSettlement[]>([
         id: 'es3',
         contractId: 'c1',
         billingAmount: 1500000,
+        platformFee: 75000,
+        tax: 157500,
+        totalAmount: 1732500,
         installmentNumber: 3,
         status: 'ISSUED',
         invoicePdfUrl: '/invoices/es3.pdf',
@@ -82,6 +97,9 @@ const allSettlements = ref<EmployerSettlement[]>([
         id: 'es4',
         contractId: 'c2',
         billingAmount: 3000000,
+        platformFee: 150000,
+        tax: 315000,
+        totalAmount: 3465000,
         installmentNumber: 1,
         status: 'DISBURSED',
         invoicePdfUrl: '/invoices/es4.pdf',
@@ -96,6 +114,9 @@ const allSettlements = ref<EmployerSettlement[]>([
         id: 'es5',
         contractId: 'c2',
         billingAmount: 2500000,
+        platformFee: 125000,
+        tax: 262500,
+        totalAmount: 2887500,
         installmentNumber: 2,
         status: 'DISBURSED',
         invoicePdfUrl: '/invoices/es5.pdf',
@@ -110,6 +131,9 @@ const allSettlements = ref<EmployerSettlement[]>([
         id: 'es6',
         contractId: 'c2',
         billingAmount: 2500000,
+        platformFee: 125000,
+        tax: 262500,
+        totalAmount: 2887500,
         installmentNumber: 3,
         status: 'DISBURSED',
         invoicePdfUrl: '/invoices/es6.pdf',
@@ -124,6 +148,9 @@ const allSettlements = ref<EmployerSettlement[]>([
         id: 'es7',
         contractId: 'c3',
         billingAmount: 2000000,
+        platformFee: 100000,
+        tax: 210000,
+        totalAmount: 2310000,
         installmentNumber: 1,
         status: 'ISSUED',
         invoicePdfUrl: '/invoices/es7.pdf',
@@ -137,6 +164,9 @@ const allSettlements = ref<EmployerSettlement[]>([
         id: 'es8',
         contractId: 'c3',
         billingAmount: 6000000,
+        platformFee: 300000,
+        tax: 630000,
+        totalAmount: 6930000,
         installmentNumber: 2,
         status: 'ISSUED',
         invoicePdfUrl: '/invoices/es8.pdf',
@@ -153,6 +183,17 @@ const selectedStatus = ref<string>('ALL');
 const isDropdownOpen = ref(false);
 const currentPage = ref(1);
 const itemsPerPage = 10;
+const searchQuery = ref('');
+const selectedDateRange = ref('ALL');
+const showPaymentConfirmModal = ref(false);
+const pendingPaymentSettlement = ref<EmployerSettlement | null>(null);
+
+const dateRangeOptions = [
+    { value: 'ALL', label: '전체 기간' },
+    { value: 'THIS_MONTH', label: '이번 달' },
+    { value: 'LAST_MONTH', label: '지난 달' },
+    { value: 'LAST_3_MONTHS', label: '최근 3개월' },
+];
 
 const statusFilters = [
     { value: 'ALL', label: '전체' },
@@ -181,12 +222,45 @@ const nextSettlement = computed(() => {
     return issuedSettlements[0] || null;
 });
 
-// Filter by status
+// Filter by status, search query, and date range
 const filteredSettlements = computed(() => {
     let result = [...mySettlements.value];
+
+    // Status Filter
     if (selectedStatus.value !== 'ALL') {
         result = result.filter((s) => s.status === selectedStatus.value);
     }
+
+    // Search Filter
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase();
+        result = result.filter(
+            (s) =>
+                s.projectName.toLowerCase().includes(query) ||
+                s.freelancerName.toLowerCase().includes(query)
+        );
+    }
+
+    // Date Range Filter
+    const today = new Date();
+    if (selectedDateRange.value === 'THIS_MONTH') {
+        result = result.filter((s) => {
+            const d = new Date(s.dueDate);
+            return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+        });
+    } else if (selectedDateRange.value === 'LAST_MONTH') {
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        result = result.filter((s) => {
+            const d = new Date(s.dueDate);
+            return (
+                d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
+            );
+        });
+    } else if (selectedDateRange.value === 'LAST_3_MONTHS') {
+        const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
+        result = result.filter((s) => new Date(s.dueDate) >= threeMonthsAgo);
+    }
+
     // Sort by due date descending
     result.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
     return result;
@@ -229,14 +303,6 @@ const formatCurrency = (amount: number) => {
     return amount.toLocaleString() + '원';
 };
 
-const calculateDday = (dueDate: Date | string) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = due.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-};
-
 const selectStatusFilter = (value: string) => {
     selectedStatus.value = value;
     isDropdownOpen.value = false;
@@ -253,15 +319,31 @@ const handleDownload = (settlement: EmployerSettlement) => {
     alert(`청구서 다운로드: ${settlement.projectName} - ${settlement.installmentNumber}차`);
 };
 
-const handleMarkAsPaid = (settlement: EmployerSettlement) => {
-    const index = allSettlements.value.findIndex((s) => s.id === settlement.id);
-    if (index !== -1) {
-        allSettlements.value[index] = {
-            ...allSettlements.value[index],
-            status: 'PAID',
-            paidDate: new Date(),
-        };
+const openPaymentConfirmModal = (settlement: EmployerSettlement) => {
+    pendingPaymentSettlement.value = settlement;
+    showPaymentConfirmModal.value = true;
+};
+
+const confirmPayment = () => {
+    if (pendingPaymentSettlement.value) {
+        const index = allSettlements.value.findIndex(
+            (s) => s.id === pendingPaymentSettlement.value!.id
+        );
+        if (index !== -1) {
+            allSettlements.value[index] = {
+                ...allSettlements.value[index],
+                status: 'PAID',
+                paidDate: new Date(),
+            };
+        }
+        showPaymentConfirmModal.value = false;
+        pendingPaymentSettlement.value = null;
     }
+};
+
+const cancelPayment = () => {
+    showPaymentConfirmModal.value = false;
+    pendingPaymentSettlement.value = null;
 };
 
 const goToPage = (page: number) => {
@@ -293,9 +375,6 @@ const goToPage = (page: number) => {
                 v-if="nextSettlement"
                 class="relative overflow-hidden bg-[#1e293b]/80 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-xl"
             >
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-transparent"></div>
-                <div class="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
-
                 <div class="relative z-10">
                     <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                         <div>
@@ -326,50 +405,8 @@ const goToPage = (page: number) => {
                         </div>
 
                         <div class="flex flex-col items-center gap-4">
-                            <div
-                                class="text-center px-8 py-4 rounded-2xl border-2"
-                                :class="{
-                                    'bg-red-500/20 border-red-500/50': calculateDday(nextSettlement.dueDate) <= 7,
-                                    'bg-orange-500/20 border-orange-500/50':
-                                        calculateDday(nextSettlement.dueDate) > 7 &&
-                                        calculateDday(nextSettlement.dueDate) <= 30,
-                                    'bg-blue-500/20 border-blue-500/50': calculateDday(nextSettlement.dueDate) > 30,
-                                }"
-                            >
-                                <div
-                                    class="text-xs mb-1 font-medium"
-                                    :class="{
-                                        'text-red-400': calculateDday(nextSettlement.dueDate) <= 7,
-                                        'text-orange-400':
-                                            calculateDday(nextSettlement.dueDate) > 7 &&
-                                            calculateDday(nextSettlement.dueDate) <= 30,
-                                        'text-blue-400': calculateDday(nextSettlement.dueDate) > 30,
-                                    }"
-                                >
-                                    D-Day
-                                </div>
-                                <div
-                                    class="text-3xl font-bold"
-                                    :class="{
-                                        'text-red-400': calculateDday(nextSettlement.dueDate) <= 7,
-                                        'text-orange-400':
-                                            calculateDday(nextSettlement.dueDate) > 7 &&
-                                            calculateDday(nextSettlement.dueDate) <= 30,
-                                        'text-blue-400': calculateDday(nextSettlement.dueDate) > 30,
-                                    }"
-                                >
-                                    {{
-                                        calculateDday(nextSettlement.dueDate) > 0
-                                            ? `-${calculateDday(nextSettlement.dueDate)}`
-                                            : calculateDday(nextSettlement.dueDate) === 0
-                                              ? 'Today'
-                                              : `+${Math.abs(calculateDday(nextSettlement.dueDate))}`
-                                    }}
-                                </div>
-                            </div>
-
                             <button
-                                @click="handleMarkAsPaid(nextSettlement)"
+                                @click="openPaymentConfirmModal(nextSettlement)"
                                 class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
                             >
                                 <CheckCircle class="w-5 h-5" />
@@ -430,42 +467,74 @@ const goToPage = (page: number) => {
             </div>
         </div>
 
-        <!-- Filter -->
+        <!-- Filters & Search -->
         <div
-            class="mb-6 flex items-center justify-between"
+            class="mb-6 flex flex-col md:flex-row items-center justify-between gap-4 relative z-20"
             v-motion
             :initial="{ opacity: 0, y: 20 }"
             :enter="{ opacity: 1, y: 0, transition: { delay: 0.3 } }"
         >
-            <div class="text-white/60 text-sm">
-                {{ filteredSettlements.length }}개의 정산 내역
+            <div class="flex items-center gap-4 w-full md:w-auto">
+                <!-- Search Bar -->
+                <div class="relative flex-1 md:flex-initial">
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                    <input
+                        v-model="searchQuery"
+                        type="text"
+                        placeholder="프로젝트 또는 프리랜서 검색"
+                        class="w-full md:w-64 pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                </div>
+
+                <!-- Date Range Filter -->
+                <div class="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                    <button
+                        v-for="option in dateRangeOptions"
+                        :key="option.value"
+                        @click="selectedDateRange = option.value"
+                        class="px-3 py-1 text-sm rounded-lg transition-colors"
+                        :class="
+                            selectedDateRange === option.value
+                                ? 'bg-blue-600 text-white shadow-lg'
+                                : 'text-white/60 hover:text-white hover:bg-white/5'
+                        "
+                    >
+                        {{ option.label }}
+                    </button>
+                </div>
             </div>
 
-            <!-- Status Dropdown -->
-            <div class="relative">
-                <button
-                    @click="isDropdownOpen = !isDropdownOpen"
-                    class="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors min-w-[140px] justify-between"
-                >
-                    <span>{{ currentStatusLabel }}</span>
-                    <ChevronDown
-                        class="w-4 h-4 transition-transform"
-                        :class="{ 'rotate-180': isDropdownOpen }"
-                    />
-                </button>
-                <div
-                    v-if="isDropdownOpen"
-                    class="absolute top-full mt-2 right-0 w-full bg-gray-900 border border-white/10 rounded-xl overflow-hidden shadow-xl z-20"
-                >
+            <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
+                <div class="text-white/60 text-sm">
+                    {{ filteredSettlements.length }}개의 정산 내역
+                </div>
+
+                <!-- Status Dropdown -->
+                <div class="relative z-30">
                     <button
-                        v-for="filter in statusFilters"
-                        :key="filter.value"
-                        @click="selectStatusFilter(filter.value)"
-                        class="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-colors"
-                        :class="{ 'bg-white/5': selectedStatus === filter.value }"
+                        @click="isDropdownOpen = !isDropdownOpen"
+                        class="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors min-w-[140px] justify-between"
                     >
-                        {{ filter.label }}
+                        <span>{{ currentStatusLabel }}</span>
+                        <ChevronDown
+                            class="w-4 h-4 transition-transform"
+                            :class="{ 'rotate-180': isDropdownOpen }"
+                        />
                     </button>
+                    <div
+                        v-if="isDropdownOpen"
+                        class="absolute top-full mt-2 right-0 w-full bg-gray-900 border border-white/10 rounded-xl overflow-hidden shadow-xl z-50"
+                    >
+                        <button
+                            v-for="filter in statusFilters"
+                            :key="filter.value"
+                            @click="selectStatusFilter(filter.value)"
+                            class="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-colors"
+                            :class="{ 'bg-white/5': selectedStatus === filter.value }"
+                        >
+                            {{ filter.label }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -485,7 +554,7 @@ const goToPage = (page: number) => {
             <p class="text-white/60">선택한 필터에 해당하는 정산 내역이 없습니다</p>
         </div>
 
-        <div v-else class="space-y-4">
+        <div v-else class="space-y-4 relative z-10">
             <div
                 v-for="(settlement, index) in paginatedSettlements"
                 :key="settlement.id"
@@ -528,14 +597,24 @@ const goToPage = (page: number) => {
                     <!-- Right: Status & Actions -->
                     <div class="flex items-center gap-3">
                         <div
-                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-white/10 border border-white/10"
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-white/10 border border-white/10 flex items-center gap-2"
                         >
                             {{ statusConfig[settlement.status].label }}
+                            <!-- Overdue Indicator -->
+                            <span
+                                v-if="
+                                    settlement.status === 'ISSUED' &&
+                                    new Date(settlement.dueDate) < now
+                                "
+                                class="inline-flex items-center px-1.5 py-0.5 rounded textxs font-semibold bg-red-500/20 text-red-400 border border-red-500/30"
+                            >
+                                연체
+                            </span>
                         </div>
 
                         <button
                             v-if="settlement.status === 'ISSUED'"
-                            @click="handleMarkAsPaid(settlement)"
+                            @click="openPaymentConfirmModal(settlement)"
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
                         >
                             결제 완료
@@ -607,5 +686,47 @@ const goToPage = (page: number) => {
             @close="selectedSettlement = null"
             @download="handleDownload"
         />
+
+        <!-- Payment Confirmation Modal -->
+        <div
+            v-if="showPaymentConfirmModal"
+            class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-sans text-white"
+        >
+            <div
+                class="bg-gray-900 border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
+                v-motion
+                :initial="{ opacity: 0, scale: 0.95 }"
+                :enter="{ opacity: 1, scale: 1 }"
+            >
+                <div class="flex items-center gap-3 mb-4 text-white">
+                    <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                        <DollarSign class="w-6 h-6 text-blue-400" />
+                    </div>
+                    <h3 class="text-xl font-bold">결제 확인</h3>
+                </div>
+                
+                <p class="text-white/60 mb-6">
+                    <span class="text-white font-semibold">{{ pendingPaymentSettlement?.projectName }}</span>
+                    프로젝트의 {{ pendingPaymentSettlement?.installmentNumber }}차 대금
+                    <span class="text-white font-bold">{{ formatCurrency(pendingPaymentSettlement?.totalAmount || 0) }}</span>을<br>
+                    결제 완료 처리하시겠습니까?
+                </p>
+
+                <div class="flex gap-3">
+                    <button
+                        @click="cancelPayment"
+                        class="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-medium transition-colors"
+                    >
+                        취소
+                    </button>
+                    <button
+                        @click="confirmPayment"
+                        class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg transition-colors"
+                    >
+                        결제 확정
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
