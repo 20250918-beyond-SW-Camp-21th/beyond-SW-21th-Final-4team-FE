@@ -10,11 +10,11 @@ export interface Contract {
     employerId: number;
     startDate: Date | string;
     endDate: Date | string;
-    status: 'WAITING_SIGNATURE' | 'IN_PROGRESS' | 'COMPLETED';
+    status: 'DRAFT' | 'WAITING_SIGNATURE' | 'IN_PROGRESS' | 'COMPLETED';
     budget: number;
     commissionRate: number;
     paymentDay: number;                       // 매월 정기 지급일 (예: 10, 25)
-    contractPdfUrl: string;
+    contractPdfUrl?: string;
     signedPdfUrl?: string;
     signedDate?: Date | string;               // 최종 서명 완료일 (양측 모두 서명 후)
     // Signature tracking
@@ -217,6 +217,36 @@ export const useContractStore = defineStore('contract', () => {
             employerSignedDate: new Date('2026-01-03'),
             // 프리랜서 아직 서명하지 않음
         },
+        // Sample for DRAFT status (For Freelancer 1)
+        {
+            id: 8,
+            contractId: 1008,
+            projectName: '내부 관리자 페이지',
+            freelancerId: 1,
+            employerId: 2,
+            startDate: new Date('2026-05-01'),
+            endDate: new Date('2026-08-31'),
+            status: 'DRAFT',
+            budget: 15000000,
+            commissionRate: 0.05,
+            paymentDay: 10,
+            // Draft has no PDF yet usually, or maybe it does
+        },
+        // Sample for COMPLETED status (For Freelancer 1 - Existing COMPLETED was for f2)
+        {
+            id: 10,
+            contractId: 1010,
+            projectName: '랜딩 페이지 제작',
+            freelancerId: 1,
+            employerId: 3,
+            startDate: new Date('2025-09-01'),
+            endDate: new Date('2025-10-31'),
+            status: 'COMPLETED',
+            budget: 2000000,
+            commissionRate: 0.05,
+            paymentDay: 15,
+            signedDate: new Date('2025-09-01'),
+        }
     ]);
 
     // EmployerSettlements (Invoice - based on entity.md)

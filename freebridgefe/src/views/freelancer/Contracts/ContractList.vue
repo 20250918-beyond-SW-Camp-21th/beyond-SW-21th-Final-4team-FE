@@ -89,12 +89,17 @@ const filteredAndSortedContracts = computed(() => {
 
 const statusConfig: Record<
     string,
-    { label: string; bgColor: string; icon: typeof CheckCircle }
+    { label: string; bgColor: string; icon: typeof CheckCircle | typeof Clock }
 > = {
+    DRAFT: {
+        label: '작성 중',
+        bgColor: 'bg-gray-500',
+        icon: PenTool,
+    },
     WAITING_SIGNATURE: {
         label: '서명 대기',
         bgColor: 'bg-orange-500',
-        icon: Clock, // using Clock instead of PenTool for consistency with detail modal, or maybe PenTool is better for freelancer? Let's use Clock to match Employer view for now, or PenTool since it's action needed? Employer view uses Clock.
+        icon: Clock,
     },
     IN_PROGRESS: {
         label: '진행 중',
@@ -108,10 +113,11 @@ const statusConfig: Record<
     },
 };
 
-// Calculate progress based on contract status (Mock logic matching Employer view)
+// Calculate progress based on usage status
 const calculateProgress = (contract: ContractWithDetails) => {
     switch (contract.status) {
-        case 'WAITING_SIGNATURE': return 10;
+        case 'WAITING_SIGNATURE': return 0;
+        case 'DRAFT': return 0;
         case 'IN_PROGRESS': return 50;
         case 'COMPLETED': return 100;
         default: return 0;
@@ -138,14 +144,8 @@ const currentSortLabel = computed(() => {
 const handleFreelancerSign = (signatureDataUrl: string) => {
     if (!signingContractId.value) return;
     contractStore.updateContract(signingContractId.value, {
-        // signedByFreelancer: true, // Entity doesn't have this boolean, uses signature presence
         freelancerSignature: signatureDataUrl,
         freelancerSignedDate: new Date(),
-        // Check if employer also signed, then update status? 
-        // For now, let's just update signature. 
-        // In real app, backend handles status transition. 
-        // But for mock, if we assume employer already signed (which they usually do before sending), then we might transition to IN_PROGRESS.
-        // Let's assume employer signature exists for WAITING_SIGNATURE contracts in mock if logical.
         status: 'IN_PROGRESS', // Mock transition
         signedDate: new Date(),
     });
@@ -279,25 +279,28 @@ const openSignModal = (contract: ContractWithDetails) => {
                 :hover="{ y: -4 }"
             >
                 <!-- Header -->
-                <div class="mb-8">
-                    <div class="flex items-center gap-3 mb-3 flex-wrap">
-                        <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
-                        <div
-                            v-if="statusConfig[contract.status]"
-                            :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
-                        >
-                            <component
-                                :is="statusConfig[contract.status].icon"
-                                class="w-4 h-4"
-                            />
-                            {{ statusConfig[contract.status].label }}
+                <div class="flex flex-col lg:flex-row items-start justify-between mb-8 gap-6">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-3 mb-3 flex-wrap">
+                            <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
+                            <div
+                                v-if="statusConfig[contract.status]"
+                                :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
+                            >
+                                <component
+                                    :is="statusConfig[contract.status].icon"
+                                    class="w-4 h-4"
+                                />
+                                {{ statusConfig[contract.status].label }}
+                            </div>
+                        </div>
+                        <div class="text-white/60 flex items-center gap-2">
+                            <Sparkles class="w-4 h-4" />
+                            고용주: {{ contract.employerName }}
                         </div>
                     </div>
-                    <div class="text-white/60 flex items-center gap-2">
-                        <Sparkles class="w-4 h-4" />
-                        고용주: {{ contract.employerName }}
+
                     </div>
-                </div>
 
                 <!-- Progress Bar -->
                 <div class="mb-8">
@@ -316,6 +319,8 @@ const openSignModal = (contract: ContractWithDetails) => {
                         ></div>
                     </div>
                 </div>
+
+
 
                 <!-- Footer -->
                 <div
@@ -339,7 +344,7 @@ const openSignModal = (contract: ContractWithDetails) => {
 
                     <div class="flex items-center gap-3">
                          <button
-                            v-if="contract.status === 'WAITING_SIGNATURE' && !contract.freelancerSignature"
+                            v-if="(contract.status === 'WAITING_SIGNATURE' || contract.status === 'DRAFT') && !contract.freelancerSignature"
                             @click="openSignModal(contract)"
                             class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
                         >
