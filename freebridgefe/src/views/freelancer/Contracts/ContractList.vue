@@ -3,28 +3,26 @@ import { ref, computed } from 'vue';
 import {
     FileText,
     Calendar,
-    AlertCircle,
     CheckCircle,
     Clock,
     DollarSign,
     TrendingUp,
     Eye,
     Sparkles,
-    PenTool,
     Search,
     ChevronDown,
+    PenTool,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { useContractStore } from '@/stores/contractStore';
-import type { ContractDocument } from '@/types/contract';
+import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import ContractDetailModal from '@/views/employer/Contracts/components/ContractDetailModal.vue';
 import SignaturePadModal from '@/views/employer/Contracts/components/SignaturePadModal.vue';
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
 
-const selectedContract = ref<ContractDocument | null>(null);
-const signingContractId = ref<string | null>(null);
+const selectedContract = ref<ContractWithDetails | null>(null);
+const signingContractId = ref<number | null>(null);
 
 // Search and filter state
 const searchQuery = ref('');
@@ -41,14 +39,15 @@ const sortOptions = [
 
 const statusFilters = [
     { value: 'ALL', label: '전체' },
-    { value: 'DRAFT', label: '서명 대기' },
+    { value: 'WAITING_SIGNATURE', label: '서명 대기' },
     { value: 'IN_PROGRESS', label: '진행 중' },
     { value: 'COMPLETED', label: '완료' },
 ];
 
 const myContracts = computed(() => {
     if (!authStore.user) return [];
-    return contractStore.contracts.filter((c) => c.freelancerId === authStore.user!.id);
+    // Filter contracts where user is freelancer
+    return contractStore.contractsWithDetails.filter((c) => c.freelancerId === Number(authStore.user!.id));
 });
 
 const filteredAndSortedContracts = computed(() => {
@@ -88,41 +87,14 @@ const filteredAndSortedContracts = computed(() => {
     return result;
 });
 
-// Separate draft contracts that need signing (shown at top)
-const draftContractsNeedingSignature = computed(() =>
-    filteredAndSortedContracts.value.filter(
-        (c) => c.status === 'DRAFT' && !c.signedByFreelancer
-    )
-);
-
-// Other contracts (non-draft or already signed)
-const otherContracts = computed(() =>
-    filteredAndSortedContracts.value.filter(
-        (c) => !(c.status === 'DRAFT' && !c.signedByFreelancer)
-    )
-);
-
-const calculateDday = (endDate: Date | string) => {
-    const today = new Date();
-    const end = new Date(endDate);
-    const diffTime = end.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-};
-
 const statusConfig: Record<
     string,
     { label: string; bgColor: string; icon: typeof CheckCircle }
 > = {
-    DRAFT: {
+    WAITING_SIGNATURE: {
         label: '서명 대기',
         bgColor: 'bg-orange-500',
-        icon: PenTool,
-    },
-    ACTIVE: {
-        label: '활성',
-        bgColor: 'bg-green-500',
-        icon: CheckCircle,
+        icon: Clock, // using Clock instead of PenTool for consistency with detail modal, or maybe PenTool is better for freelancer? Let's use Clock to match Employer view for now, or PenTool since it's action needed? Employer view uses Clock.
     },
     IN_PROGRESS: {
         label: '진행 중',
@@ -131,20 +103,19 @@ const statusConfig: Record<
     },
     COMPLETED: {
         label: '완료',
-        bgColor: 'bg-gray-500',
+        bgColor: 'bg-green-500',
         icon: CheckCircle,
-    },
-    TERMINATED: {
-        label: '종료',
-        bgColor: 'bg-red-500',
-        icon: AlertCircle,
     },
 };
 
-const calculateProgress = (contract: ContractDocument) => {
-    if (contract.milestones.length === 0) return 0;
-    const completed = contract.milestones.filter((m) => m.status === 'COMPLETED').length;
-    return Math.round((completed / contract.milestones.length) * 100);
+// Calculate progress based on contract status (Mock logic matching Employer view)
+const calculateProgress = (contract: ContractWithDetails) => {
+    switch (contract.status) {
+        case 'WAITING_SIGNATURE': return 10;
+        case 'IN_PROGRESS': return 50;
+        case 'COMPLETED': return 100;
+        default: return 0;
+    }
 };
 
 const formatDate = (date: Date | string) => {
@@ -155,17 +126,6 @@ const formatCurrency = (amount: number) => {
     return amount.toLocaleString() + '원';
 };
 
-const handleFreelancerSign = (signatureDataUrl: string) => {
-    if (!signingContractId.value) return;
-    contractStore.updateContract(signingContractId.value, {
-        signedByFreelancer: true,
-        freelancerSignature: signatureDataUrl,
-        status: 'IN_PROGRESS',
-        signedDate: new Date(),
-    });
-    signingContractId.value = null;
-};
-
 const selectSortOption = (value: string) => {
     sortOption.value = value;
     isDropdownOpen.value = false;
@@ -174,6 +134,28 @@ const selectSortOption = (value: string) => {
 const currentSortLabel = computed(() => {
     return sortOptions.find((o) => o.value === sortOption.value)?.label || '정렬';
 });
+
+const handleFreelancerSign = (signatureDataUrl: string) => {
+    if (!signingContractId.value) return;
+    contractStore.updateContract(signingContractId.value, {
+        // signedByFreelancer: true, // Entity doesn't have this boolean, uses signature presence
+        freelancerSignature: signatureDataUrl,
+        freelancerSignedDate: new Date(),
+        // Check if employer also signed, then update status? 
+        // For now, let's just update signature. 
+        // In real app, backend handles status transition. 
+        // But for mock, if we assume employer already signed (which they usually do before sending), then we might transition to IN_PROGRESS.
+        // Let's assume employer signature exists for WAITING_SIGNATURE contracts in mock if logical.
+        status: 'IN_PROGRESS', // Mock transition
+        signedDate: new Date(),
+    });
+    signingContractId.value = null;
+    selectedContract.value = null; // Close detail modal if open
+};
+
+const openSignModal = (contract: ContractWithDetails) => {
+    signingContractId.value = contract.id;
+};
 </script>
 
 <template>
@@ -204,7 +186,7 @@ const currentSortLabel = computed(() => {
                     <input
                         v-model="searchQuery"
                         type="text"
-                        placeholder="프로젝트명 또는 발주자 이름으로 검색..."
+                        placeholder="프로젝트명 또는 고용주 이름으로 검색..."
                         class="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-blue-500/50 focus:outline-none transition-colors"
                     />
                 </div>
@@ -261,84 +243,6 @@ const currentSortLabel = computed(() => {
             {{ filteredAndSortedContracts.length }}개의 계약서
         </div>
 
-        <!-- Draft Contracts Needing Signature -->
-        <div v-if="draftContractsNeedingSignature.length > 0" class="mb-8">
-            <div class="flex items-center gap-2 mb-6">
-                <PenTool class="w-5 h-5 text-orange-400" />
-                <h2 class="text-xl font-bold">서명 대기 중인 계약서</h2>
-                <span
-                    class="ml-2 min-w-[24px] h-6 flex items-center justify-center px-2 bg-orange-500 text-white text-xs font-bold rounded-full"
-                >
-                    {{ draftContractsNeedingSignature.length }}
-                </span>
-            </div>
-            <div class="space-y-4">
-                <div
-                    v-for="(contract, index) in draftContractsNeedingSignature"
-                    :key="contract.id"
-                    class="bg-orange-500/10 backdrop-blur-xl rounded-3xl border-2 border-orange-500/30 p-8 hover:border-orange-500/50 transition-all"
-                    v-motion
-                    :initial="{ opacity: 0, y: 20 }"
-                    :enter="{ opacity: 1, y: 0, transition: { delay: index * 0.05 } }"
-                >
-                    <div
-                        class="flex flex-col lg:flex-row items-start justify-between gap-6"
-                    >
-                        <div class="flex-1">
-                            <div class="flex items-center gap-3 mb-3 flex-wrap">
-                                <h2 class="text-2xl font-bold">
-                                    {{ contract.projectName }}
-                                </h2>
-                                <div
-                                    :class="`px-4 py-2 rounded-full ${statusConfig.DRAFT.bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
-                                >
-                                    <PenTool class="w-4 h-4" />
-                                    {{ statusConfig.DRAFT.label }}
-                                </div>
-                            </div>
-                            <div class="text-white/60 flex items-center gap-2 mb-2">
-                                <Sparkles class="w-4 h-4" />
-                                발주자: {{ contract.employerName }}
-                            </div>
-                            <div class="flex flex-wrap gap-4 text-white/50 text-sm mt-3">
-                                <div class="flex items-center gap-1">
-                                    <DollarSign class="w-4 h-4" />
-                                    {{ formatCurrency(contract.budget) }}
-                                </div>
-                                <div class="flex items-center gap-1">
-                                    <Calendar class="w-4 h-4" />
-                                    {{ formatDate(contract.startDate) }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-3">
-                            <button
-                                @click="selectedContract = contract"
-                                class="px-5 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-medium flex items-center gap-2"
-                                v-motion
-                                :hover="{ scale: 1.05 }"
-                                :tap="{ scale: 0.95 }"
-                            >
-                                <Eye class="w-4 h-4" />
-                                상세보기
-                            </button>
-                            <button
-                                @click="signingContractId = contract.id"
-                                class="px-5 py-3 bg-orange-500 rounded-xl text-white font-semibold flex items-center gap-2 shadow-lg"
-                                v-motion
-                                :hover="{ scale: 1.05 }"
-                                :tap="{ scale: 0.95 }"
-                            >
-                                <PenTool class="w-4 h-4" />
-                                서명하기
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Empty State -->
         <div
             v-if="filteredAndSortedContracts.length === 0"
@@ -359,21 +263,14 @@ const currentSortLabel = computed(() => {
                 {{ searchQuery || selectedStatus !== 'ALL' ? '검색 결과가 없습니다' : '계약이 없습니다' }}
             </h3>
             <p class="text-white/60">
-                {{ searchQuery || selectedStatus !== 'ALL' ? '다른 검색어나 필터를 시도해보세요' : '새로운 프로젝트를 시작해보세요' }}
+                {{ searchQuery || selectedStatus !== 'ALL' ? '다른 검색어나 필터를 시도해보세요' : '새로운 프로젝트를 찾아서 계약을 진행해보세요' }}
             </p>
         </div>
 
-        <!-- Other Contracts List -->
-        <div v-else-if="otherContracts.length > 0" class="space-y-6">
+        <!-- Contract List -->
+        <div v-else class="space-y-6">
             <div
-                v-if="draftContractsNeedingSignature.length > 0"
-                class="flex items-center gap-2 mb-2"
-            >
-                <TrendingUp class="w-5 h-5 text-blue-400" />
-                <h2 class="text-xl font-bold">진행 중인 계약서</h2>
-            </div>
-            <div
-                v-for="(contract, index) in otherContracts"
+                v-for="(contract, index) in filteredAndSortedContracts"
                 :key="contract.id"
                 class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 hover:border-white/20 transition-all"
                 v-motion
@@ -382,72 +279,23 @@ const currentSortLabel = computed(() => {
                 :hover="{ y: -4 }"
             >
                 <!-- Header -->
-                <div
-                    class="flex flex-col lg:flex-row items-start justify-between mb-8 gap-6"
-                >
-                    <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-3 flex-wrap">
-                            <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
-                            <div
-                                v-if="statusConfig[contract.status]"
-                                :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
-                            >
-                                <component
-                                    :is="statusConfig[contract.status].icon"
-                                    class="w-4 h-4"
-                                />
-                                {{ statusConfig[contract.status].label }}
-                            </div>
-                        </div>
-                        <div class="text-white/60 flex items-center gap-2">
-                            <Sparkles class="w-4 h-4" />
-                            발주자: {{ contract.employerName }}
+                <div class="mb-8">
+                    <div class="flex items-center gap-3 mb-3 flex-wrap">
+                        <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
+                        <div
+                            v-if="statusConfig[contract.status]"
+                            :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
+                        >
+                            <component
+                                :is="statusConfig[contract.status].icon"
+                                class="w-4 h-4"
+                            />
+                            {{ statusConfig[contract.status].label }}
                         </div>
                     </div>
-
-                    <!-- D-day -->
-                    <div
-                        class="text-center px-8 py-4 rounded-2xl border-2 transition-transform hover:scale-105"
-                        :class="{
-                            'bg-red-500/20 border-red-500/50':
-                                calculateDday(contract.endDate) <= 7,
-                            'bg-orange-500/20 border-orange-500/50':
-                                calculateDday(contract.endDate) > 7 &&
-                                calculateDday(contract.endDate) <= 30,
-                            'bg-blue-500/20 border-blue-500/50':
-                                calculateDday(contract.endDate) > 30,
-                        }"
-                    >
-                        <div
-                            class="text-xs mb-2 font-medium"
-                            :class="{
-                                'text-red-400': calculateDday(contract.endDate) <= 7,
-                                'text-orange-400':
-                                    calculateDday(contract.endDate) > 7 &&
-                                    calculateDday(contract.endDate) <= 30,
-                                'text-blue-400': calculateDday(contract.endDate) > 30,
-                            }"
-                        >
-                            D-Day
-                        </div>
-                        <div
-                            class="text-4xl font-bold"
-                            :class="{
-                                'text-red-400': calculateDday(contract.endDate) <= 7,
-                                'text-orange-400':
-                                    calculateDday(contract.endDate) > 7 &&
-                                    calculateDday(contract.endDate) <= 30,
-                                'text-blue-400': calculateDday(contract.endDate) > 30,
-                            }"
-                        >
-                            {{
-                                calculateDday(contract.endDate) > 0
-                                    ? `-${calculateDday(contract.endDate)}`
-                                    : calculateDday(contract.endDate) === 0
-                                      ? 'Today'
-                                      : `+${Math.abs(calculateDday(contract.endDate))}`
-                            }}
-                        </div>
+                    <div class="text-white/60 flex items-center gap-2">
+                        <Sparkles class="w-4 h-4" />
+                        고용주: {{ contract.employerName }}
                     </div>
                 </div>
 
@@ -466,60 +314,6 @@ const currentSortLabel = computed(() => {
                             class="h-full bg-blue-500 rounded-full shadow-lg transition-all duration-1000 ease-out"
                             :style="{ width: `${calculateProgress(contract)}%` }"
                         ></div>
-                    </div>
-                </div>
-
-                <!-- Milestones -->
-                <div v-if="contract.milestones.length > 0" class="mb-8">
-                    <div class="text-white/60 font-medium mb-4 flex items-center gap-2">
-                        <Clock class="w-4 h-4" />
-                        마일스톤
-                    </div>
-                    <div class="grid md:grid-cols-3 gap-4">
-                        <div
-                            v-for="(milestone, idx) in contract.milestones"
-                            :key="milestone.id"
-                            class="p-5 rounded-2xl border-2 transition-all"
-                            :class="{
-                                'border-green-500/50':
-                                    milestone.status === 'COMPLETED',
-                                'border-blue-500/50':
-                                    milestone.status === 'IN_PROGRESS',
-                                'border-white/10':
-                                    milestone.status === 'PENDING',
-                            }"
-                            v-motion
-                            :initial="{ opacity: 0, scale: 0.9 }"
-                            :enter="{
-                                opacity: 1,
-                                scale: 1,
-                                transition: { delay: 0.3 + idx * 0.05 },
-                            }"
-                        >
-                            <div class="flex items-start gap-3 mb-3">
-                                <CheckCircle
-                                    v-if="milestone.status === 'COMPLETED'"
-                                    class="w-5 h-5 text-green-400 flex-shrink-0"
-                                />
-                                <Clock
-                                    v-else-if="milestone.status === 'IN_PROGRESS'"
-                                    class="w-5 h-5 text-blue-400 flex-shrink-0 animate-pulse"
-                                />
-                                <AlertCircle
-                                    v-else
-                                    class="w-5 h-5 text-white/40 flex-shrink-0"
-                                />
-
-                                <div class="flex-1 min-w-0">
-                                    <div class="font-medium truncate">
-                                        {{ milestone.name }}
-                                    </div>
-                                    <div class="text-sm text-white/60 mt-1">
-                                        {{ formatCurrency(milestone.amount) }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -543,24 +337,26 @@ const currentSortLabel = computed(() => {
                         </div>
                     </div>
 
-                    <button
-                        @click="selectedContract = contract"
-                        class="px-6 py-3 bg-white text-black rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
-                    >
-                        <Eye class="w-4 h-4" />
-                        상세보기
-                    </button>
+                    <div class="flex items-center gap-3">
+                         <button
+                            v-if="contract.status === 'WAITING_SIGNATURE' && !contract.freelancerSignature"
+                            @click="openSignModal(contract)"
+                            class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
+                        >
+                            <PenTool class="w-4 h-4" />
+                            서명하기
+                        </button>
+                        <button
+                            @click="selectedContract = contract"
+                            class="px-6 py-3 bg-white text-black rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
+                        >
+                            <Eye class="w-4 h-4" />
+                            상세보기
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- Freelancer Signature Modal -->
-        <SignaturePadModal
-            v-if="signingContractId && authStore.user"
-            :signerName="authStore.user.name"
-            @sign="handleFreelancerSign"
-            @close="signingContractId = null"
-        />
 
         <!-- Contract Detail Modal -->
         <ContractDetailModal
@@ -568,7 +364,15 @@ const currentSortLabel = computed(() => {
             :contract="selectedContract"
             :isFreelancer="true"
             @close="selectedContract = null"
-            @sign="signingContractId = selectedContract?.id ?? null; selectedContract = null"
+            @sign="openSignModal(selectedContract!)"
+        />
+
+        <!-- Freelancer Signature Modal -->
+        <SignaturePadModal
+            v-if="signingContractId && authStore.user"
+            :signerName="authStore.user.name"
+            @sign="handleFreelancerSign"
+            @close="signingContractId = null"
         />
     </div>
 </template>
