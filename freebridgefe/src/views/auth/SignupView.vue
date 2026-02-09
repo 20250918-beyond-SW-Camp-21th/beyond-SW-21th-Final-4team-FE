@@ -36,7 +36,6 @@ const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const errors = ref<Record<string, string>>({});
 
-// Computed used for simplifying template logic
 // Terms Modal State
 const showTermsModal = ref(false);
 const currentTermsTitle = ref('');
@@ -484,8 +483,7 @@ const toggleConfirmPassword = () => {
           :enter="{ opacity: 1, transition: { delay: 1300 } }"
           class="mt-6 text-center"
         >
-          <p class="text-sm text-white/50">
-            이미 계정이 있으신가요?{' '}
+            이미 계정이 있으신가요? 
             <button @click="goBack" class="text-white hover:underline font-medium">
               로그인하기
             </button>
