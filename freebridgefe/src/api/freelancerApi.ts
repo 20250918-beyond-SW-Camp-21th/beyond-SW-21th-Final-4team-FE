@@ -3,6 +3,7 @@ export interface FreelancerProfileDashboard {
     name: string;
     grade: string;
     avatar: string | null;
+    job: string;          // 직무 (ex: 개발자, 디자이너)
     introduction: string;
     careerYears: number;
     salary: string;       // 희망 몸값
@@ -28,6 +29,7 @@ export interface FreelancerProfileDashboard {
     statChat: number;      // 채팅 수
     statContract: number;  // 계약 완료
     statInteresting: number; // 진행중 프로젝트
+    statCompleted: number;   // 프로젝트 종료 (Mock for other domain)
 }
 
 // MOCK DATA
@@ -35,6 +37,7 @@ const MOCK_PROFILE: FreelancerProfileDashboard = {
     name: 'Freelancer',
     grade: 'master',
     avatar: null,
+    job: '개발자',
     introduction: '안녕하세요, 사용자 경험을 최우선으로 생각하는 프론트엔드 개발자입니다. 효율적이고 확장 가능한 코드를 작성하기 위해 항상 고민합니다.',
     careerYears: 5,
     salary: '월 800만원',
@@ -44,7 +47,7 @@ const MOCK_PROFILE: FreelancerProfileDashboard = {
         workStyle: '원격',
         location: '서울'
     },
-    skills: ['React', 'Vue.js', 'TypeScript', 'Node.js', 'TailwindCSS'],
+    skills: ['React', 'Vue.js', 'TypeScript', 'Node.js', 'TailwindCSS', 'Next.js', 'GraphQL', 'AWS', 'Docker', 'Figma', 'Jest'],
     expertise: {
         programming: 4.8,
         framework: 4.9,
@@ -59,7 +62,8 @@ const MOCK_PROFILE: FreelancerProfileDashboard = {
     statContact: 12,
     statChat: 3,
     statContract: 1,
-    statInteresting: 5
+    statInteresting: 5,
+    statCompleted: 8 // Mock Data
 };
 
 

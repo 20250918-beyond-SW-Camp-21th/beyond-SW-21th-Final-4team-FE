@@ -37,6 +37,7 @@ const profile = ref<FreelancerProfileDashboard>({
     name: '',
     grade: '',
     avatar: null,
+    job: '',
     introduction: '',
     careerYears: 0,
     salary: '',
@@ -46,7 +47,6 @@ const profile = ref<FreelancerProfileDashboard>({
         workStyle: '',
         location: ''
     },
-    skills: [],
     skills: [],
     expertise: {
         programming: 0,
@@ -62,7 +62,8 @@ const profile = ref<FreelancerProfileDashboard>({
     statContact: 0,
     statChat: 0,
     statContract: 0,
-    statInteresting: 0
+    statInteresting: 0,
+    statCompleted: 0
 });
 
 onMounted(async () => {
@@ -174,10 +175,9 @@ const handlePortfolioUpload = () => {
                                     </span>
                                 </h2>
                                 <div class="flex items-center gap-2 text-sm text-slate-400">
-                                    <span>개발자</span>
+                                    <span>{{ profile.job }}</span>
                                     <span class="text-slate-600">/</span>
                                     <span>{{ profile.workConditions.type }}</span>
-                                    <span class="text-slate-600">/</span>
                                     <span class="text-slate-600">/</span>
                                     <span>총 경력 {{ profile.careerYears }}년</span>
                                 </div>
@@ -187,8 +187,11 @@ const handlePortfolioUpload = () => {
                                 </p>
 
                                 <div class="flex flex-wrap gap-2">
-                                    <span v-for="skill in profile.skills.slice(0, 3)" :key="skill" class="text-xs px-2 py-1 bg-blue-500/10 text-blue-300 rounded border border-blue-500/20">
+                                    <span v-for="skill in profile.skills.slice(0, 10)" :key="skill" class="text-xs px-2 py-1 bg-blue-500/10 text-blue-300 rounded border border-blue-500/20">
                                         {{ skill }}
+                                    </span>
+                                    <span v-if="profile.skills.length > 10" class="text-xs px-2 py-1 bg-white/5 text-slate-400 rounded border border-white/10">
+                                        +{{ profile.skills.length - 10 }}
                                     </span>
                                 </div>
                             </div>
@@ -311,7 +314,7 @@ const handlePortfolioUpload = () => {
                                 <ChevronRight class="text-slate-600 w-5 h-5 group-hover:translate-x-1 group-hover:text-slate-400 transition-all" />
                             </div>
                             <div class="flex items-baseline gap-2">
-                                <div class="text-5xl font-bold text-white">0</div>
+                                <div class="text-5xl font-bold text-white">{{ profile.statCompleted }}</div>
                                 <div class="text-xs text-slate-500">개</div>
                             </div>
                         </div>
@@ -331,10 +334,15 @@ const handlePortfolioUpload = () => {
                         <div class="w-24 h-24 bg-slate-800 rounded-xl flex items-center justify-center border border-white/5 flex-col gap-1">
                             <div class="text-xs text-slate-500">평균 평점</div>
                             <div class="text-2xl font-bold text-white">{{ profile.averageRating.toFixed(1) }}</div>
-                            <div class="flex text-yellow-500 gap-1">
-                                <Award class="w-3 h-3 fill-current" />
-                                <Award class="w-3 h-3 fill-current" />
-                                <Award class="w-3 h-3 fill-current" />
+                            <!-- Dynamic Star Rating -->
+                            <div class="relative w-16 h-3 bg-slate-700 rounded-sm overflow-hidden">
+                                <div class="absolute top-0 left-0 h-full bg-yellow-400" :style="{ width: `${(profile.averageRating / 5) * 100}%` }"></div>
+                                <div class="absolute top-0 left-0 w-full h-full flex justify-between px-[1px]">
+                                    <div class="w-[1px] h-full bg-slate-900/30"></div>
+                                    <div class="w-[1px] h-full bg-slate-900/30"></div>
+                                    <div class="w-[1px] h-full bg-slate-900/30"></div>
+                                    <div class="w-[1px] h-full bg-slate-900/30"></div>
+                                </div>
                             </div>
                         </div>
                         <div class="flex-1 space-y-3 text-xs justify-center flex flex-col pl-2">
