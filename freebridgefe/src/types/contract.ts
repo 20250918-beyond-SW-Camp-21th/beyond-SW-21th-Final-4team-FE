@@ -18,13 +18,16 @@ export interface ContractDocument {
     employerName: string;
     startDate: Date | string;
     endDate: Date | string;
-    status: 'ACTIVE' | 'IN_PROGRESS' | 'COMPLETED' | 'TERMINATED';
+    status: 'DRAFT' | 'ACTIVE' | 'IN_PROGRESS' | 'COMPLETED' | 'TERMINATED';
     budget: number;
     milestones: Milestone[];
     terms: string;
     signedByFreelancer: boolean;
     signedByEmployer: boolean;
+    freelancerSignature?: string;
+    employerSignature?: string;
     signedDate?: Date | string;
+    paymentDate?: Date | string;
 }
 
 export interface Settlement {
