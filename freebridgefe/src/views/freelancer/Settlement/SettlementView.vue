@@ -66,11 +66,17 @@ const statusConfig: Record<string, { label: string; color: string; bg: string; i
 // Base Data
 const mySettlements = computed(() => {
   if (!authStore.user) return [];
-  return contractStore.settlements.filter((s) => s.freelancerId === authStore.user!.id);
+  const settlements = contractStore.freelancerSettlementsWithDetails || [];
+  // Filter settlements by finding contracts where freelancerId matches current user
+  return settlements.filter((settlement) => {
+    const contract = contractStore.contracts.find((c) => c.id === settlement.contractId);
+    return contract && contract.freelancerId === Number(authStore.user!.id);
+  });
 });
 
 // Filtered Data
 const filteredSettlements = computed(() => {
+    if (!mySettlements.value || mySettlements.value.length === 0) return [];
     let result = [...mySettlements.value];
 
     // Status Filter
@@ -92,24 +98,24 @@ const filteredSettlements = computed(() => {
     const today = new Date();
     if (selectedDateRange.value === 'THIS_MONTH') {
         result = result.filter((s) => {
-            const d = new Date(s.requestDate);
+            const d = new Date(s.expectedPaidDate);
             return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
         });
     } else if (selectedDateRange.value === 'LAST_MONTH') {
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         result = result.filter((s) => {
-            const d = new Date(s.requestDate);
+            const d = new Date(s.expectedPaidDate);
             return (
                 d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
             );
         });
     } else if (selectedDateRange.value === 'LAST_3_MONTHS') {
         const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-        result = result.filter((s) => new Date(s.requestDate) >= threeMonthsAgo);
+        result = result.filter((s) => new Date(s.expectedPaidDate) >= threeMonthsAgo);
     }
 
-    // Sort by requestDate descending
-    result.sort((a, b) => new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime());
+    // Sort by expectedPaidDate descending
+    result.sort((a, b) => new Date(b.expectedPaidDate).getTime() - new Date(a.expectedPaidDate).getTime());
     return result;
 });
 

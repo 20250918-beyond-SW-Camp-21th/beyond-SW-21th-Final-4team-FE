@@ -46,6 +46,7 @@ export interface FreelancerSettlement {
     tax: number;
     netAmount: number;
     status: 'HOLDING' | 'PROCESSING' | 'PAID';
+    installmentNumber: number;
     expectedPaidDate: Date | string;
     paidDate?: Date | string;
     receiptPdfUrl?: string;
@@ -226,11 +227,11 @@ export const useContractStore = defineStore('contract', () => {
             employerId: 2,
             startDate: new Date('2026-05-01'),
             endDate: new Date('2026-08-31'),
-            status: 'DRAFT',
+            status: 'WAITING_SIGNATURE',
             budget: 15000000,
             commissionRate: 0.05,
             paymentDay: 10,
-            // Draft has no PDF yet usually, or maybe it does
+            contractPdfUrl: '/contracts/1008_contract.pdf',
         },
         // Sample for COMPLETED status (For Freelancer 1 - Existing COMPLETED was for f2)
         {
@@ -246,6 +247,8 @@ export const useContractStore = defineStore('contract', () => {
             commissionRate: 0.05,
             paymentDay: 15,
             signedDate: new Date('2025-09-01'),
+            contractPdfUrl: '/contracts/1010_contract.pdf',
+
         }
     ]);
 
@@ -345,14 +348,10 @@ export const useContractStore = defineStore('contract', () => {
             tax: 49500, // 3.3%
             netAmount: 1375500,
             status: 'PAID',
+            installmentNumber: 1,
             expectedPaidDate: new Date('2024-02-02'),
             paidDate: new Date('2024-02-02'),
-<<<<<<< HEAD
-            bankAccount: '국민은행 ***-****-1234',
-            installmentNumber: 1,
-=======
             receiptPdfUrl: '/receipts/fs1.pdf',
->>>>>>> dev
         },
         // Linked to EmployerSettlement 2 (PAID -> processing disbursement)
         {
@@ -364,13 +363,8 @@ export const useContractStore = defineStore('contract', () => {
             tax: 66000, // 3.3%
             netAmount: 1834000,
             status: 'PROCESSING',
-<<<<<<< HEAD
-            requestDate: new Date('2024-02-15'),
-            bankAccount: '국민은행 ***-****-1234',
             installmentNumber: 2,
-=======
             expectedPaidDate: new Date('2024-03-01'),
->>>>>>> dev
         },
         // Linked to EmployerSettlement 4 (DISBURSED)
         {
@@ -382,12 +376,7 @@ export const useContractStore = defineStore('contract', () => {
             tax: 99000, // 3.3%
             netAmount: 2781000,
             status: 'PAID',
-<<<<<<< HEAD
-            requestDate: new Date('2024-01-02'),
-            paidDate: new Date('2024-01-09'),
-            bankAccount: '신한은행 ***-****-5678',
             installmentNumber: 1,
-=======
             expectedPaidDate: new Date('2023-11-30'),
             paidDate: new Date('2023-11-30'),
             receiptPdfUrl: '/receipts/fs3.pdf',
@@ -419,7 +408,6 @@ export const useContractStore = defineStore('contract', () => {
             expectedPaidDate: new Date('2024-01-02'),
             paidDate: new Date('2024-01-02'),
             receiptPdfUrl: '/receipts/fs5.pdf',
->>>>>>> dev
         },
         // Additional Mock Data for Pagination & Filtering Tests
         {
@@ -433,8 +421,6 @@ export const useContractStore = defineStore('contract', () => {
             tax: 300000,
             netAmount: 2550000,
             status: 'PENDING',
-            requestDate: new Date('2024-03-01'),
-            bankAccount: '국민은행 ***-****-1234',
             installmentNumber: 1,
         },
         {
@@ -448,8 +434,6 @@ export const useContractStore = defineStore('contract', () => {
             tax: 300000,
             netAmount: 2550000,
             status: 'APPROVED',
-            requestDate: new Date('2024-02-20'),
-            bankAccount: '국민은행 ***-****-1234',
             installmentNumber: 1,
         },
         {
@@ -463,8 +447,6 @@ export const useContractStore = defineStore('contract', () => {
             tax: 500000,
             netAmount: 4250000,
             status: 'REJECTED',
-            requestDate: new Date('2024-01-10'),
-            bankAccount: '카카오뱅크 ***-****-9999',
             installmentNumber: 1,
         },
         {
@@ -478,10 +460,8 @@ export const useContractStore = defineStore('contract', () => {
             tax: 150000,
             netAmount: 1275000,
             status: 'PAID',
-            requestDate: new Date('2023-12-15'),
-            paidDate: new Date('2023-12-20'),
-            bankAccount: '국민은행 ***-****-1234',
             installmentNumber: 3,
+            paidDate: new Date('2023-12-20'),
         },
         {
             id: 's8',
@@ -494,8 +474,6 @@ export const useContractStore = defineStore('contract', () => {
             tax: 400000,
             netAmount: 3400000,
             status: 'PENDING',
-            requestDate: new Date(), // Today
-            bankAccount: '국민은행 ***-****-1234',
             installmentNumber: 1,
         },
         {
@@ -509,8 +487,6 @@ export const useContractStore = defineStore('contract', () => {
             tax: 400000,
             netAmount: 3400000,
             status: 'PROCESSING',
-            requestDate: new Date(Date.now() - 86400000 * 2), // 2 days ago
-            bankAccount: '국민은행 ***-****-1234',
             installmentNumber: 2,
         },
         {
@@ -524,10 +500,8 @@ export const useContractStore = defineStore('contract', () => {
             tax: 100000,
             netAmount: 850000,
             status: 'PAID',
-            requestDate: new Date('2023-11-01'),
-            paidDate: new Date('2023-11-05'),
-            bankAccount: '토스뱅크 ***-****-0000',
             installmentNumber: 1,
+            paidDate: new Date('2023-11-05'),
         },
         {
             id: 's11',
@@ -540,10 +514,8 @@ export const useContractStore = defineStore('contract', () => {
             tax: 100000,
             netAmount: 850000,
             status: 'PAID',
-            requestDate: new Date('2023-12-01'),
-            paidDate: new Date('2023-12-05'),
-            bankAccount: '토스뱅크 ***-****-0000',
             installmentNumber: 2,
+            paidDate: new Date('2023-12-05'),
         },
         {
             id: 's12',
@@ -556,19 +528,17 @@ export const useContractStore = defineStore('contract', () => {
             tax: 700000,
             netAmount: 5950000,
             status: 'APPROVED',
-            requestDate: new Date('2024-02-25'),
-            bankAccount: '국민은행 ***-****-1234',
             installmentNumber: 1,
         }
     ]);
 
-    // Helper function to get user name by id and role
+    // Helper function to get username by id and role
     const getUserName = (id: number, role: 'FREELANCER' | 'EMPLOYER'): string => {
         const key = role === 'FREELANCER' ? `f${id}` : `e${id}`;
         return users[key as keyof typeof users]?.name || 'Unknown';
     };
 
-    // Computed: Contracts with joined user names
+    // Computed: Contracts with joined usernames
     const contractsWithDetails = computed<ContractWithDetails[]>(() => {
         return contracts.value.map((contract) => ({
             ...contract,
