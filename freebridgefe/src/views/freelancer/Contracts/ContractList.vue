@@ -89,12 +89,17 @@ const filteredAndSortedContracts = computed(() => {
 
 const statusConfig: Record<
     string,
-    { label: string; bgColor: string; icon: typeof CheckCircle }
+    { label: string; bgColor: string; icon: typeof CheckCircle | typeof Clock }
 > = {
+    DRAFT: {
+        label: '작성 중',
+        bgColor: 'bg-gray-500',
+        icon: PenTool,
+    },
     WAITING_SIGNATURE: {
         label: '서명 대기',
         bgColor: 'bg-orange-500',
-        icon: Clock, // using Clock instead of PenTool for consistency with detail modal, or maybe PenTool is better for freelancer? Let's use Clock to match Employer view for now, or PenTool since it's action needed? Employer view uses Clock.
+        icon: Clock,
     },
     IN_PROGRESS: {
         label: '진행 중',
@@ -138,14 +143,8 @@ const currentSortLabel = computed(() => {
 const handleFreelancerSign = (signatureDataUrl: string) => {
     if (!signingContractId.value) return;
     contractStore.updateContract(signingContractId.value, {
-        // signedByFreelancer: true, // Entity doesn't have this boolean, uses signature presence
         freelancerSignature: signatureDataUrl,
         freelancerSignedDate: new Date(),
-        // Check if employer also signed, then update status? 
-        // For now, let's just update signature. 
-        // In real app, backend handles status transition. 
-        // But for mock, if we assume employer already signed (which they usually do before sending), then we might transition to IN_PROGRESS.
-        // Let's assume employer signature exists for WAITING_SIGNATURE contracts in mock if logical.
         status: 'IN_PROGRESS', // Mock transition
         signedDate: new Date(),
     });

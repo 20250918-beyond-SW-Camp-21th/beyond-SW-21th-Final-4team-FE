@@ -5,7 +5,7 @@ export type JobStatus = 'OPEN' | 'IN_PROGRESS' | 'CONTRACTED' | 'CLOSED';
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED';
 
 export interface User {
-    id: string;
+    id: string | number;
     role: UserRole;
     name: string;
     email: string;
