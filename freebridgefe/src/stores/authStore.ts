@@ -5,7 +5,22 @@ import type { User } from '@/types';
 export const useAuthStore = defineStore('auth', () => {
     // Initialize from localStorage if available
     const savedUser = localStorage.getItem('user');
-    const user = ref<User | null>(savedUser ? JSON.parse(savedUser) : null);
+    let initialUser: User | null = null;
+    if (savedUser) {
+        try {
+            initialUser = JSON.parse(savedUser);
+            if (initialUser?.createdAt) {
+                initialUser.createdAt = new Date(initialUser.createdAt);
+            }
+            if (initialUser?.agreedToTermsAt) {
+                initialUser.agreedToTermsAt = new Date(initialUser.agreedToTermsAt);
+            }
+        } catch (e) {
+            console.error('Failed to restore user from localStorage', e);
+        }
+    }
+    const user = ref<User | null>(initialUser);
+    const isLoading = ref(false);
 
     const isAuthenticated = computed(() => !!user.value);
 
@@ -19,16 +34,41 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.removeItem('user');
     }
 
-    function signup(userData: User) {
-        user.value = userData;
-        localStorage.setItem('user', JSON.stringify(userData));
+    async function checkEmailDuplicate(email: string): Promise<boolean> {
+        // TODO: Replace with actual API call
+        // return await api.post('/auth/check-email', { email });
+
+        // Mock: Always available
+        return new Promise(resolve => setTimeout(() => resolve(true), 500));
+    }
+
+    async function signup(userData: User) {
+        isLoading.value = true;
+        try {
+            // TODO: Replace with actual API call
+            // const response = await api.post('/auth/signup', userData);
+            // user.value = response.data;
+
+            // Mock: Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            user.value = userData;
+            localStorage.setItem('user', JSON.stringify(userData));
+        } catch (error) {
+            console.error('Signup failed:', error);
+            throw error;
+        } finally {
+            isLoading.value = false;
+        }
     }
 
     return {
         user,
         isAuthenticated,
+        isLoading,
         login,
         logout,
-        signup
+        signup,
+        checkEmailDuplicate
     };
 });

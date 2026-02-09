@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+// ...
 import { useAuthStore } from '@/stores/authStore';
 import { Mail, Lock, User as UserIcon, Building2, ArrowLeft, Eye, EyeOff, Check } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
@@ -35,6 +36,8 @@ const formData = ref({
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const errors = ref<Record<string, string>>({});
+const isEmailChecking = ref(false);
+const isEmailAvailable = ref(false);
 
 // Terms Modal State
 const showTermsModal = ref(false);
@@ -93,12 +96,16 @@ const validateForm = () => {
     newErrors.email = '이메일을 입력해주세요';
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) {
     newErrors.email = '올바른 이메일 형식이 아닙니다';
+  } else if (!isEmailAvailable.value) {
+    newErrors.email = '이미 사용 중이거나 확인되지 않은 이메일입니다';
   }
 
   if (!formData.value.password) {
     newErrors.password = '비밀번호를 입력해주세요';
   } else if (formData.value.password.length < 8) {
     newErrors.password = '비밀번호는 8자 이상이어야 합니다';
+  } else if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(formData.value.password)) {
+    newErrors.password = '영문, 숫자, 특수문자를 포함해야 합니다';
   }
 
   if (formData.value.password !== formData.value.confirmPassword) {
@@ -125,26 +132,37 @@ const validateForm = () => {
   return Object.keys(newErrors).length === 0;
 };
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
 
   if (!validateForm()) return;
 
-  const newUser: User = {
-    id: isEmployer.value ? 'e-new' : 'f-new',
-    name: formData.value.name,
-    email: formData.value.email,
-    role: role.value,
-  };
+  try {
+    const newUser: User = {
+      id: isEmployer.value ? 'e-new' : 'f-new',
+      name: formData.value.name,
+      email: formData.value.email,
+      role: role.value,
+      createdAt: new Date(),
+      agreedToTermsAt: new Date(),
+      isEmailVerified: false,
+      skills: !isEmployer.value 
+        ? formData.value.skills.split(',').map(s => s.trim()).filter(s => s.length > 0) 
+        : undefined
+    };
 
-  // Mock Signup
-  authStore.signup(newUser);
-  alert(`회원가입이 완료되었습니다!\n환영합니다, ${formData.value.name}님 🎉`);
-  
-  // Redirect to dashboard based on role (Mock)
-  if (isEmployer.value) {
-      router.push('/employer/dashboard');
-  } else {
-      router.push('/freelancer/jobs');
+    // Mock Signup
+    await authStore.signup(newUser);
+    
+    alert(`회원가입이 완료되었습니다!\n환영합니다, ${formData.value.name}님 🎉`);
+    
+    // Redirect to dashboard based on role (Mock)
+    if (isEmployer.value) {
+        router.push('/employer/dashboard');
+    } else {
+        router.push('/freelancer/jobs');
+    }
+  } catch (error) {
+    alert('회원가입 중 오류가 발생했습니다. 다시 시도해주세요.');
   }
 };
 
@@ -158,6 +176,30 @@ const togglePassword = () => {
 
 const toggleConfirmPassword = () => {
   showConfirmPassword.value = !showConfirmPassword.value;
+};
+
+// Reset email availability when email changes
+watch(() => formData.value.email, () => {
+  isEmailAvailable.value = false;
+});
+
+const checkEmail = async () => {
+  if (!formData.value.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) return;
+  
+  isEmailChecking.value = true;
+  try {
+    const isAvailable = await authStore.checkEmailDuplicate(formData.value.email);
+    isEmailAvailable.value = isAvailable;
+    if (!isAvailable) {
+      errors.value.email = '이미 사용 중인 이메일입니다';
+    } else {
+      delete errors.value.email;
+    }
+  } catch (e) {
+    console.error(e);
+  } finally {
+    isEmailChecking.value = false;
+  }
 };
 </script>
 
@@ -275,17 +317,22 @@ const toggleConfirmPassword = () => {
             <label class="block text-sm font-medium mb-2 text-white/80">
               이메일 <span class="text-red-400">*</span>
             </label>
-            <div class="relative">
-              <Mail class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-              <input
-                type="email"
-                v-model="formData.email"
-                placeholder="your@email.com"
-                class="w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl focus:outline-none transition-colors text-white placeholder:text-white/30"
-                :class="errors.email ? 'border-red-500/50' : 'border-white/10 focus:border-white/30'"
-              />
-            </div>
-            <p v-if="errors.email" class="text-red-400 text-sm mt-2">{{ errors.email }}</p>
+              <div class="relative">
+                <Mail class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                <input
+                  type="email"
+                  v-model="formData.email"
+                  @blur="checkEmail"
+                  placeholder="your@email.com"
+                  class="w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl focus:outline-none transition-colors text-white placeholder:text-white/30"
+                  :class="errors.email ? 'border-red-500/50' : (isEmailAvailable ? 'border-green-500/50' : 'border-white/10 focus:border-white/30')"
+                />
+                <div v-if="isEmailChecking" class="absolute right-4 top-1/2 -translate-y-1/2">
+                  <div class="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                </div>
+                <Check v-else-if="isEmailAvailable && !errors.email" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-green-500" />
+              </div>
+              <p v-if="errors.email" class="text-red-400 text-sm mt-2">{{ errors.email }}</p>
           </div>
 
           <!-- Skills (Freelancer Only) -->
@@ -322,7 +369,7 @@ const toggleConfirmPassword = () => {
               <input
                 :type="showPassword ? 'text' : 'password'"
                 v-model="formData.password"
-                placeholder="8자 이상"
+                placeholder="영문, 숫자, 특수문자 포함 8자 이상"
                 class="w-full pl-12 pr-12 py-4 bg-white/5 border rounded-2xl focus:outline-none transition-colors text-white placeholder:text-white/30"
                 :class="errors.password ? 'border-red-500/50' : 'border-white/10 focus:border-white/30'"
               />
@@ -466,13 +513,15 @@ const toggleConfirmPassword = () => {
           <!-- Submit Button -->
           <button
             type="submit"
+            :disabled="authStore.isLoading"
             v-motion
             :initial="{ opacity: 0, y: 10 }"
             :enter="{ opacity: 1, y: 0, transition: { delay: 1200 } }"
-            class="w-full py-4 text-white rounded-2xl font-semibold text-lg hover:shadow-2xl transition-transform hover:scale-102 active:scale-98"
+            class="w-full py-4 text-white rounded-2xl font-semibold text-lg hover:shadow-2xl transition-all hover:scale-102 active:scale-98 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             :class="isEmployer ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'"
           >
-            가입 완료
+            <div v-if="authStore.isLoading" class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+            <span>{{ authStore.isLoading ? '가입 처리중...' : '가입 완료' }}</span>
           </button>
         </form>
 
@@ -483,6 +532,7 @@ const toggleConfirmPassword = () => {
           :enter="{ opacity: 1, transition: { delay: 1300 } }"
           class="mt-6 text-center"
         >
+          <p class="text-sm text-white/50">
             이미 계정이 있으신가요? 
             <button @click="goBack" class="text-white hover:underline font-medium">
               로그인하기
