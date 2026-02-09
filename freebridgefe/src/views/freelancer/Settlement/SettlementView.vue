@@ -171,7 +171,8 @@ const handleSaveAccount = (account: { bankName: string; accountNumber: string })
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-white">
     <!-- Header -->
     <div
-      class="mb-8"
+      class="mb-12"
+      data-tour="freelancer-settlement-header"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0 }"
