@@ -57,6 +57,11 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import('@/views/employer/Recommended/RecommendedView.vue')
             },
             {
+                path: 'freelancers',
+                name: 'employer.freelancers',
+                component: () => import('@/views/employer/Freelancers/FreelancerSearchView.vue')
+            },
+            {
                 path: 'contracts',
                 name: 'employer.contracts',
                 component: () => import('@/views/employer/Contracts/ContractsView.vue')
@@ -108,7 +113,7 @@ const routes: Array<RouteRecordRaw> = [
             {
                 path: 'recommended',
                 name: 'freelancer.recommended',
-                component: () => import('@/views/freelancer/Recommended/RecommendedJobs.vue')
+                redirect: '/freelancer/jobs'
             },
             {
                 path: 'contracts',

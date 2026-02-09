@@ -1,15 +1,26 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { TrendingUp, Send } from 'lucide-vue-next';
+import { TrendingUp, Send, Star } from 'lucide-vue-next';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import ProposalModal from './components/ProposalModal.vue';
 import type { User } from '@/types';
 
 const freelancerStore = useFreelancerStore();
 const selectedFreelancer = ref<User | null>(null);
+const favoriteIds = ref<string[]>([]);
 
 const formatSkills = (skills?: string[]) => {
   return skills?.slice(0, 4) || [];
+};
+
+const isFavorite = (id: string) => favoriteIds.value.includes(id);
+
+const toggleFavorite = (id: string) => {
+  if (isFavorite(id)) {
+    favoriteIds.value = favoriteIds.value.filter((item) => item !== id);
+    return;
+  }
+  favoriteIds.value = [...favoriteIds.value, id];
 };
 </script>
 
@@ -66,13 +77,29 @@ const formatSkills = (skills?: string[]) => {
               {{ freelancer.hourlyRate?.toLocaleString() }}원
             </span>
           </div>
-          <button
-            @click="selectedFreelancer = freelancer"
-            class="px-4 py-2 bg-[#2D5BFF] text-white rounded-lg hover:bg-[#2D5BFF]/90 hover:shadow-lg transition-all flex items-center gap-2"
-          >
-            <Send class="w-4 h-4" />
-            제안하기
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="toggleFavorite(freelancer.id)"
+              class="px-3 py-2 rounded-lg border transition-all"
+              :class="isFavorite(freelancer.id)
+                ? 'bg-yellow-400/20 border-yellow-400/40 text-yellow-300'
+                : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'"
+            >
+              <Star
+                class="w-4 h-4"
+                :class="isFavorite(freelancer.id) ? 'fill-yellow-400 text-yellow-400' : ''"
+              />
+            </button>
+            <button
+              type="button"
+              @click="selectedFreelancer = freelancer"
+              class="px-4 py-2 bg-[#2D5BFF] text-white rounded-lg hover:bg-[#2D5BFF]/90 hover:shadow-lg transition-all flex items-center gap-2"
+            >
+              <Send class="w-4 h-4" />
+              제안하기
+            </button>
+          </div>
         </div>
       </div>
     </div>
