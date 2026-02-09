@@ -96,8 +96,8 @@ onMounted(async () => {
 
 const menuItems = [
     { id: 'dashboard', label: '프로필 관리', icon: User, action: () => activeTab.value = 'dashboard' },
-    { id: 'projects', label: '프로젝트 지원현황', icon: Briefcase, action: () => router.push({ name: 'freelancer.applications' }) },
-    { id: 'contracts', label: '정산 프로젝트', icon: CreditCard, action: () => router.push({ name: 'freelancer.contracts' }) },
+    { id: 'projects', label: '프로젝트', icon: Briefcase, action: () => activeTab.value = 'projects' },
+    // { id: 'contracts', label: '정산 프로젝트', icon: CreditCard, action: () => router.push({ name: 'freelancer.contracts' }) }, // Removed as per request to consolidate
     { id: 'resume', label: '이력서 관리', icon: FileText, action: () => activeTab.value = 'resume' },
     { id: 'evaluation', label: '고용주 평가', icon: Award, action: () => activeTab.value = 'evaluation' },
     { id: 'gradecheck', label: '회원 등급 조회', icon: CheckCircle, action: () => activeTab.value = 'gradecheck' },
