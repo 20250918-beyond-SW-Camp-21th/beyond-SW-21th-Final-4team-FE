@@ -15,6 +15,8 @@ import {
   Wallet,
   UserCircle,
   MessageSquareQuote,
+  HelpCircle,
+  Receipt,
 } from 'lucide-vue-next';
 
 const router = useRouter();
