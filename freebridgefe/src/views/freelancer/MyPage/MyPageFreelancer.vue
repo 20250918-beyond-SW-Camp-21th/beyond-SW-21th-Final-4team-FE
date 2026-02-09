@@ -16,6 +16,7 @@ import {
   Users,
   Check,
   Edit3,
+  Upload,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/freelancerApi';

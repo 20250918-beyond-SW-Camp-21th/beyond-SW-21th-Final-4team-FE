@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Search, Filter, Calendar, DollarSign, User as UserIcon } from 'lucide-vue-next';
+import { getFreelancerProjects, type FreelancerProject } from '@/api/projectApi';
+import { useAuthStore } from '@/stores/authStore';
+
+const authStore = useAuthStore();
 
 // 탭 정의
 const tabs = [
@@ -13,36 +17,22 @@ const tabs = [
 const activeTab = ref('all');
 const searchQuery = ref('');
 
-// Mock Data (나중에 API로 대체)
-const projects = ref([
-    {
-        id: 1,
-        title: '금융권 차세대 시스템 구축',
-        clientName: '비바리퍼블리카',
-        status: 'ongoing',
-        period: '2024.02.01 ~ 2024.08.31',
-        amount: '월 900만원',
-        dDay: 'D-150'
-    },
-    {
-        id: 2,
-        title: '이커머스 플랫폼 리뉴얼',
-        clientName: '쿠팡',
-        status: 'scheduled',
-        period: '2024.09.01 ~ 2025.02.28',
-        amount: '월 850만원',
-        dDay: '시작 전'
-    },
-    {
-        id: 3,
-        title: '사내 어드민 대시보드 개발',
-        clientName: '우아한형제들',
-        status: 'completed',
-        period: '2023.08.01 ~ 2024.01.31',
-        amount: '월 800만원',
-        dDay: '종료'
+const projects = ref<FreelancerProject[]>([]);
+
+onMounted(async () => {
+    if (authStore.user?.id) {
+        try {
+            const data = await getFreelancerProjects(authStore.user.id);
+            projects.value = data;
+        } catch (error) {
+            console.error('Failed to load projects:', error);
+        }
+    } else {
+        // Fallback for demo/guest
+         const data = await getFreelancerProjects('guest');
+         projects.value = data;
     }
-]);
+});
 
 // 필터링 로직
 const filteredProjects = computed(() => {

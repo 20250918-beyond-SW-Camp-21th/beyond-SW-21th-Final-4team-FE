@@ -30,6 +30,11 @@ export interface FreelancerProfileDashboard {
     statContract: number;  // 계약 완료
     statInteresting: number; // 진행중 프로젝트
     statCompleted: number;   // 프로젝트 종료 (Mock for other domain)
+    portfolio: {
+        fileUrl: string | null;
+        fileName: string;
+        lastUpdated: string;
+    };
 }
 
 // MOCK DATA
@@ -63,7 +68,12 @@ const MOCK_PROFILE: FreelancerProfileDashboard = {
     statChat: 3,
     statContract: 1,
     statInteresting: 5,
-    statCompleted: 8 // Mock Data
+    statCompleted: 8, // Mock Data
+    portfolio: {
+        fileUrl: '#',
+        fileName: 'Portfolio_2024_v2.pdf',
+        lastUpdated: '2024.02.10'
+    }
 };
 
 
