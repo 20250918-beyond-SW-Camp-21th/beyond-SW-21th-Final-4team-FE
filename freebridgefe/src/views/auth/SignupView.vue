@@ -77,6 +77,10 @@ const switchRole = (newRole: UserRole) => {
   role.value = newRole;
   // Optional: clear errors or form data when switching
   errors.value = {};
+  formData.value.agreeService = false;
+  formData.value.agreePrivacy = false;
+  formData.value.agreeThirdParty = false;
+  formData.value.agreeMarketing = false;
 };
 
 const validateForm = () => {
@@ -107,23 +111,22 @@ const validateForm = () => {
   }
 
   if (!formData.value.agreeService) {
-    newErrors.terms = '서비스 이용약관에 동의해주세요';
+    newErrors.agreeService = '서비스 이용약관에 동의해주세요';
   }
 
   if (!formData.value.agreePrivacy) {
-    newErrors.privacy = '개인정보 수집 및 이용에 동의해주세요';
+    newErrors.agreePrivacy = '개인정보 수집 및 이용에 동의해주세요';
   }
 
   if (!isEmployer.value && !formData.value.agreeThirdParty) {
-    newErrors.thirdParty = '개인정보 제3자 제공에 동의해주세요';
+    newErrors.agreeThirdParty = '개인정보 제3자 제공에 동의해주세요';
   }
 
   errors.value = newErrors;
   return Object.keys(newErrors).length === 0;
 };
 
-const handleSubmit = (e: Event) => {
-  e.preventDefault();
+const handleSubmit = () => {
 
   if (!validateForm()) return;
 
@@ -240,7 +243,7 @@ const toggleConfirmPassword = () => {
           </button>
         </div>
 
-        <form @submit="handleSubmit" class="space-y-5">
+        <form @submit.prevent="handleSubmit" class="space-y-5">
           <!-- Name / Company -->
           <div
             v-motion
@@ -400,7 +403,7 @@ const toggleConfirmPassword = () => {
                 </label>
                 <button type="button" @click="openTermsModal('서비스 이용약관', SERVICE_TERMS)" class="text-xs text-white/40 hover:text-white underline p-1">보기</button>
               </div>
-              <p v-if="errors.terms" class="text-red-400 text-xs ml-8">{{ errors.terms }}</p>
+              <p v-if="errors.agreeService" class="text-red-400 text-xs ml-8">{{ errors.agreeService }}</p>
             </div>
 
             <!-- Privacy Terms -->
@@ -422,7 +425,7 @@ const toggleConfirmPassword = () => {
                   class="text-xs text-white/40 hover:text-white underline p-1"
                 >보기</button>
               </div>
-              <p v-if="errors.privacy" class="text-red-400 text-xs ml-8">{{ errors.privacy }}</p>
+              <p v-if="errors.agreePrivacy" class="text-red-400 text-xs ml-8">{{ errors.agreePrivacy }}</p>
             </div>
 
             <!-- Third Party (Freelancer Only) -->
@@ -440,7 +443,7 @@ const toggleConfirmPassword = () => {
                 </label>
                 <button type="button" @click="openTermsModal('개인정보 제3자 제공 동의', THIRD_PARTY_TERMS)" class="text-xs text-white/40 hover:text-white underline p-1">보기</button>
               </div>
-              <p v-if="errors.thirdParty" class="text-red-400 text-xs ml-8">{{ errors.thirdParty }}</p>
+              <p v-if="errors.agreeThirdParty" class="text-red-400 text-xs ml-8">{{ errors.agreeThirdParty }}</p>
             </div>
 
             <!-- Marketing -->
