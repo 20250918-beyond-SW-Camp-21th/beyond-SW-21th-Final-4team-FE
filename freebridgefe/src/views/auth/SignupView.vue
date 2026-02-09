@@ -2,16 +2,6 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 // ...
-const toggleConfirmPassword = () => {
-  showConfirmPassword.value = !showConfirmPassword.value;
-};
-
-// Reset email availability when email changes
-watch(() => formData.value.email, () => {
-  isEmailAvailable.value = false;
-});
-
-const checkEmail = async () => {
 import { useAuthStore } from '@/stores/authStore';
 import { Mail, Lock, User as UserIcon, Building2, ArrowLeft, Eye, EyeOff, Check } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
@@ -154,7 +144,10 @@ const handleSubmit = async () => {
       role: role.value,
       createdAt: new Date(),
       agreedToTermsAt: new Date(),
-      isEmailVerified: false
+      isEmailVerified: false,
+      skills: !isEmployer.value 
+        ? formData.value.skills.split(',').map(s => s.trim()).filter(s => s.length > 0) 
+        : undefined
     };
 
     // Mock Signup
@@ -179,6 +172,10 @@ const goBack = () => {
 
 const togglePassword = () => {
   showPassword.value = !showPassword.value;
+};
+
+const toggleConfirmPassword = () => {
+  showConfirmPassword.value = !showConfirmPassword.value;
 };
 
 // Reset email availability when email changes
