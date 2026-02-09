@@ -230,16 +230,16 @@ const handlePortfolioUpload = () => {
                     <!-- Active Projects -->
                     <div
                         @click="router.push({ name: 'freelancer.contracts' })"
-                        class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl hover:shadow-orange-500/20 transition-all cursor-pointer"
+                        class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl hover:shadow-blue-500/20 transition-all cursor-pointer"
                     >
                         <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-500"></div>
                         <div class="relative z-10">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-orange-100 font-semibold text-sm">진행중 프로젝트</span>
+                                <span class="text-blue-100 font-semibold text-sm">진행중 프로젝트</span>
                                 <ChevronRight class="text-white/60 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </div>
                             <div class="text-5xl font-bold text-white">{{ profile.statInteresting }}</div>
-                            <div class="text-xs text-orange-100/80 mt-1">개</div>
+                            <div class="text-xs text-blue-100/80 mt-1">개</div>
                         </div>
                     </div>
 
