@@ -10,11 +10,11 @@ export interface Contract {
     employerId: number;
     startDate: Date | string;
     endDate: Date | string;
-    status: 'DRAFT' | 'WAITING_SIGNATURE' | 'IN_PROGRESS' | 'COMPLETED';
+    status: 'WAITING_SIGNATURE' | 'IN_PROGRESS' | 'COMPLETED';
     budget: number;
     commissionRate: number;
     paymentDay: number;                       // 매월 정기 지급일 (예: 10, 25)
-    contractPdfUrl?: string;
+    contractPdfUrl: string;
     signedPdfUrl?: string;
     signedDate?: Date | string;               // 최종 서명 완료일 (양측 모두 서명 후)
     // Signature tracking

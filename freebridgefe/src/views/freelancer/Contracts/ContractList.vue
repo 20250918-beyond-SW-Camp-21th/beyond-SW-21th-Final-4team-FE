@@ -113,11 +113,10 @@ const statusConfig: Record<
     },
 };
 
-// Calculate progress based on usage status
+// Calculate progress based on contract status (Mock logic matching Employer view)
 const calculateProgress = (contract: ContractWithDetails) => {
     switch (contract.status) {
-        case 'WAITING_SIGNATURE': return 0;
-        case 'DRAFT': return 0;
+        case 'WAITING_SIGNATURE': return 10;
         case 'IN_PROGRESS': return 50;
         case 'COMPLETED': return 100;
         default: return 0;
@@ -315,28 +314,25 @@ const openSignModal = (contract: ContractWithDetails) => {
                 :hover="{ y: -4 }"
             >
                 <!-- Header -->
-                <div class="flex flex-col lg:flex-row items-start justify-between mb-8 gap-6">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-3 flex-wrap">
-                            <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
-                            <div
-                                v-if="statusConfig[contract.status]"
-                                :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
-                            >
-                                <component
-                                    :is="statusConfig[contract.status].icon"
-                                    class="w-4 h-4"
-                                />
-                                {{ statusConfig[contract.status].label }}
-                            </div>
-                        </div>
-                        <div class="text-white/60 flex items-center gap-2">
-                            <Sparkles class="w-4 h-4" />
-                            고용주: {{ contract.employerName }}
+                <div class="mb-8">
+                    <div class="flex items-center gap-3 mb-3 flex-wrap">
+                        <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
+                        <div
+                            v-if="statusConfig[contract.status]"
+                            :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
+                        >
+                            <component
+                                :is="statusConfig[contract.status].icon"
+                                class="w-4 h-4"
+                            />
+                            {{ statusConfig[contract.status].label }}
                         </div>
                     </div>
-
+                    <div class="text-white/60 flex items-center gap-2">
+                        <Sparkles class="w-4 h-4" />
+                        고용주: {{ contract.employerName }}
                     </div>
+                </div>
 
                 <!-- Progress Bar -->
                 <div class="mb-8">
@@ -355,8 +351,6 @@ const openSignModal = (contract: ContractWithDetails) => {
                         ></div>
                     </div>
                 </div>
-
-
 
                 <!-- Footer -->
                 <div
@@ -380,7 +374,7 @@ const openSignModal = (contract: ContractWithDetails) => {
 
                     <div class="flex items-center gap-3">
                          <button
-                            v-if="(contract.status === 'WAITING_SIGNATURE' || contract.status === 'DRAFT') && !contract.freelancerSignature"
+                            v-if="contract.status === 'WAITING_SIGNATURE' && !contract.freelancerSignature"
                             @click="openSignModal(contract)"
                             class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
                         >
