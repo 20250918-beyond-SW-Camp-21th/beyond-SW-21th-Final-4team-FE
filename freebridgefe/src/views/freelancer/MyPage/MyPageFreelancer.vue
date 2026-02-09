@@ -53,7 +53,10 @@ const profile = ref({
     statApply: 12,
     statInterview: 3,
     statPass: 1,
-    statInteresting: 5
+    statInteresting: 5,
+    years: 5,
+    intro: '안녕하세요. 5년차 프론트엔드 개발자입니다. React와 TypeScript를 주력으로 하며, 사용자 경험 중심의 UI/UX 구현에 강점이 있습니다.',
+    value: '새로운 기술 습득을 즐기며, 동료와의 커뮤니케이션을 중요하게 생각합니다.',
 });
 
 const menuItems = [
@@ -136,7 +139,7 @@ const handlePortfolioUpload = () => {
                                     <span class="text-slate-600">/</span>
                                     <span>{{ profile.workConditions.type }}</span>
                                     <span class="text-slate-600">/</span>
-                                    <span>총 경력 5년</span>
+                                    <span>총 경력 {{ profile.years }}년</span>
                                 </div>
 
                                 <div class="flex flex-wrap gap-2">
@@ -144,8 +147,14 @@ const handlePortfolioUpload = () => {
                                         {{ skill }}
                                     </span>
                                 </div>
+                                
+                                <!-- Intro Section (Moved here) -->
+                                <div class="pt-2">
+                                    <p class="text-white/80 text-sm leading-relaxed">"{{ profile.intro }}"</p>
+                                </div>
                             </div>
                         </div>
+
 
                         <!-- Right: Detailed Conditions -->
                         <div class="flex-1 md:border-l border-white/10 md:pl-12 flex flex-col justify-center space-y-4 pt-8 md:pt-2">
@@ -266,7 +275,6 @@ const handlePortfolioUpload = () => {
                 </div>
             </div>
 
-            <!-- Grids -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Evaluation -->
                 <div class="bg-[#1e293b]/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm h-full flex flex-col">
@@ -359,12 +367,11 @@ const handlePortfolioUpload = () => {
             v-else-if="activeTab === 'account'"
             @back="activeTab = 'dashboard'"
         />
+
     </main>
-    
-    <OneOnOneInquiryModal
+  <OneOnOneInquiryModal
         v-if="isInquiryOpen"
         @close="isInquiryOpen = false"
     />
-
   </div>
 </template>
