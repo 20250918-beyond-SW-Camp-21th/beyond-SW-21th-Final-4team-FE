@@ -212,17 +212,17 @@ const handlePortfolioUpload = () => {
                         <div class="flex items-center justify-between">
                             <div class="flex-1 text-center">
                                 <div class="text-3xl font-bold text-white mb-1">{{ profile.statApply }}</div>
-                                <div class="text-xs text-slate-500">지원완료</div>
+                                <div class="text-xs text-slate-500">접촉 수</div>
                             </div>
                             <div class="w-px h-12 bg-white/10"></div>
                             <div class="flex-1 text-center">
                                 <div class="text-3xl font-bold text-blue-400 mb-1">{{ profile.statInterview }}</div>
-                                <div class="text-xs text-slate-500">인터뷰요청</div>
+                                <div class="text-xs text-slate-500">채팅 수</div>
                             </div>
                             <div class="w-px h-12 bg-white/10"></div>
                             <div class="flex-1 text-center">
                                 <div class="text-3xl font-bold text-green-400 mb-1">{{ profile.statPass }}</div>
-                                <div class="text-xs text-slate-500">최종합격</div>
+                                <div class="text-xs text-slate-500">계약 완료</div>
                             </div>
                         </div>
                     </div>
