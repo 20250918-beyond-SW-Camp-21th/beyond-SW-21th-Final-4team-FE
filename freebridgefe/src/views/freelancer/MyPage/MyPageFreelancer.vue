@@ -26,6 +26,7 @@ import GradeCheckPage from './components/GradeCheckPage.vue';
 import OneOnOneInquiryModal from './components/OneOnOneInquiryModal.vue';
 import ProfileEditPage from './components/ProfileEditPage.vue';
 import ProjectManagementPage from './components/ProjectManagementPage.vue';
+import ProjectDetailModal from './components/ProjectDetailModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -35,6 +36,14 @@ const activeTab = ref('dashboard');
 const isConditionOpen = ref(false);
 const isPortfolioOpen = ref(false);
 const isInquiryOpen = ref(false);
+
+const isProjectDetailOpen = ref(false);
+const selectedProjectId = ref<number | null>(null);
+
+const openProjectDetail = (projectId: number) => {
+    selectedProjectId.value = projectId;
+    isProjectDetailOpen.value = true;
+};
 
 // 초기값은 비어있거나 로딩 상태를 나타내는 값으로 설정
 const profile = ref<FreelancerProfileDashboard>({
@@ -463,7 +472,7 @@ const handlePortfolioUpload = () => {
         <ProjectManagementPage
             v-else-if="activeTab === 'projects'"
             @back="activeTab = 'dashboard'"
-            @openDetail="() => {}"
+            @openDetail="openProjectDetail"
         />
 
         <ResumeManagementPage
@@ -485,6 +494,13 @@ const handlePortfolioUpload = () => {
             v-else-if="activeTab === 'account'"
             @back="activeTab = 'dashboard'"
         />
+
+        <ProjectDetailModal
+            :is-open="isProjectDetailOpen"
+            :project-id="selectedProjectId"
+            @close="isProjectDetailOpen = false"
+        />
+
     </main>
     
     <OneOnOneInquiryModal
