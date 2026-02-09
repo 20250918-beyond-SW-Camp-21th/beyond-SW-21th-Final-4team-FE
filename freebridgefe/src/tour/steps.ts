@@ -86,7 +86,7 @@ export const freelancerTourSteps: TourStep[] = [
     id: 'freelancer.recommended',
     title: '추천 공고',
     description: '나의 기술 스택과 경력을 분석하여 AI가 맞춤 프로젝트를 추천해드립니다. 놓치지 말고 확인해보세요!',
-    route: '/freelancer/recommended',
+    route: '/freelancer/jobs',
     selector: '[data-tour="freelancer.recommended"]',
     placement: 'center',
   },
