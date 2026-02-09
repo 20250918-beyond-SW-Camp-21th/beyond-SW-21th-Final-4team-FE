@@ -1,6 +1,17 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+// ...
+const toggleConfirmPassword = () => {
+  showConfirmPassword.value = !showConfirmPassword.value;
+};
+
+// Reset email availability when email changes
+watch(() => formData.value.email, () => {
+  isEmailAvailable.value = false;
+});
+
+const checkEmail = async () => {
 import { useAuthStore } from '@/stores/authStore';
 import { Mail, Lock, User as UserIcon, Building2, ArrowLeft, Eye, EyeOff, Check } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
@@ -170,9 +181,11 @@ const togglePassword = () => {
   showPassword.value = !showPassword.value;
 };
 
-const toggleConfirmPassword = () => {
-  showConfirmPassword.value = !showConfirmPassword.value;
-};
+// Reset email availability when email changes
+watch(() => formData.value.email, () => {
+  isEmailAvailable.value = false;
+});
+
 const checkEmail = async () => {
   if (!formData.value.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) return;
   

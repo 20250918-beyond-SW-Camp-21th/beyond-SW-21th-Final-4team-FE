@@ -10,8 +10,8 @@ export interface User {
     name: string;
     email: string;
     avatar?: string;
-    createdAt?: Date;
-    agreedToTermsAt?: Date;
+    createdAt?: string | Date;
+    agreedToTermsAt?: string | Date;
     isEmailVerified?: boolean;
     // Freelancer specific
     skills?: string[];

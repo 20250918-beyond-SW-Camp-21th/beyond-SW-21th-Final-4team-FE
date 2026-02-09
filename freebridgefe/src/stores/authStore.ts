@@ -5,7 +5,21 @@ import type { User } from '@/types';
 export const useAuthStore = defineStore('auth', () => {
     // Initialize from localStorage if available
     const savedUser = localStorage.getItem('user');
-    const user = ref<User | null>(savedUser ? JSON.parse(savedUser) : null);
+    let initialUser: User | null = null;
+    if (savedUser) {
+        try {
+            initialUser = JSON.parse(savedUser);
+            if (initialUser?.createdAt) {
+                initialUser.createdAt = new Date(initialUser.createdAt);
+            }
+            if (initialUser?.agreedToTermsAt) {
+                initialUser.agreedToTermsAt = new Date(initialUser.agreedToTermsAt);
+            }
+        } catch (e) {
+            console.error('Failed to restore user from localStorage', e);
+        }
+    }
+    const user = ref<User | null>(initialUser);
     const isLoading = ref(false);
 
     const isAuthenticated = computed(() => !!user.value);
