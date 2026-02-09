@@ -211,7 +211,9 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle }> 
 // Filter settlements by current employer
 const mySettlements = computed(() => {
     if (!authStore.user) return allSettlements.value;
-    return allSettlements.value.filter((s) => s.employerId === authStore.user!.id);
+    // Temporarily show all settlements for development
+    return allSettlements.value;
+    // return allSettlements.value.filter((s) => s.employerId === authStore.user!.id);
 });
 
 // Get next upcoming settlement (first ISSUED settlement by due date)

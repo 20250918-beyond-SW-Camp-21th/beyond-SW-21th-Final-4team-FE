@@ -218,33 +218,33 @@ const handleDownload = () => {
 
                     <div
                         v-if="settlement.paidDate"
-                        class="bg-green-500/20 border border-green-400/30 rounded-2xl p-4"
+                        class="bg-white/5 border border-white/10 rounded-2xl p-4"
                     >
-                        <div class="flex items-center gap-2 text-green-300 mb-2">
+                        <div class="flex items-center gap-2 text-white/60 mb-2">
                             <CheckCircle class="w-4 h-4" />
                             <span class="text-sm">결제일</span>
                         </div>
-                        <div class="font-medium text-green-200">
+                        <div class="font-medium text-white">
                             {{ formatDate(settlement.paidDate) }}
                         </div>
                     </div>
                 </div>
 
                 <!-- Status Messages -->
-                <div v-if="settlement.status === 'ISSUED'" class="bg-yellow-500/20 border border-yellow-400/30 rounded-2xl p-4">
-                    <div class="text-sm text-yellow-200">
+                <div v-if="settlement.status === 'ISSUED'" class="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div class="text-sm text-white/80">
                         청구서가 발행되었습니다. 납부 기한 내에 결제를 완료해주세요.
                     </div>
                 </div>
 
-                <div v-if="settlement.status === 'PAID'" class="bg-blue-500/20 border border-blue-400/30 rounded-2xl p-4">
-                    <div class="text-sm text-blue-200">
+                <div v-if="settlement.status === 'PAID'" class="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div class="text-sm text-white/80">
                         결제가 완료되었습니다. 프리랜서에게 지급 처리 중입니다.
                     </div>
                 </div>
 
-                <div v-if="settlement.status === 'DISBURSED'" class="bg-green-500/20 border border-green-400/30 rounded-2xl p-4">
-                    <div class="text-sm text-green-200">
+                <div v-if="settlement.status === 'DISBURSED'" class="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div class="text-sm text-white/80">
                         프리랜서에게 정산이 완료되었습니다.
                     </div>
                 </div>
@@ -263,7 +263,7 @@ const handleDownload = () => {
                     </button>
                     <button
                         @click="$emit('close')"
-                        class="flex-1 py-4 bg-blue-500 hover:bg-blue-400 text-white font-semibold rounded-2xl hover:shadow-xl transition-all"
+                        class="flex-1 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold rounded-2xl transition-all"
                         v-motion
                         :hover="{ scale: 1.02 }"
                         :tap="{ scale: 0.98 }"

@@ -60,6 +60,8 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'settlements',
                 name: 'employer.settlements',
                 component: () => import('@/views/employer/Settlements/SettlementsView.vue')
+            },
+            {
                 path: 'freelancers',
                 name: 'employer.freelancers',
                 component: () => import('@/views/employer/Freelancers/FreelancerSearchView.vue')
