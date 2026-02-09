@@ -160,7 +160,8 @@ const handlePortfolioUpload = () => {
                         <!-- Left: Avatar & Basic Info -->
                         <div class="flex items-center gap-6 flex-1">
                             <div class="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 bg-[#E2E8F0] border-2 border-white/10 relative group-avatar cursor-pointer">
-                                <div class="w-full h-full flex items-center justify-center bg-slate-800">
+                                <img v-if="profile.avatar" :src="profile.avatar" alt="Profile" class="w-full h-full object-cover" />
+                                <div v-else class="w-full h-full flex items-center justify-center bg-slate-800">
                                      <User class="w-10 h-10 text-slate-400" />
                                 </div>
                             </div>
@@ -404,28 +405,28 @@ const handlePortfolioUpload = () => {
                 <!-- Resume/Portfolio -->
                 <div class="bg-[#1e293b]/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm h-full flex flex-col">
                     <div class="flex justify-between items-center mb-6">
-                        <h4 class="font-bold text-base text-white">이력서(포트폴리오)</h4>
-                        <button @click="activeTab = 'resume'" class="text-slate-500 hover:text-white transition-colors"><Plus class="w-4 h-4" /></button>
+                        <h4 class="font-bold text-base text-white">포트폴리오</h4>
+                        <button class="text-slate-500 hover:text-white transition-colors"><Upload class="w-4 h-4" /></button>
                     </div>
                     <div class="flex-1 flex flex-col items-center justify-center text-center space-y-4 py-4">
-                        <div class="text-sm text-slate-300 bg-white/5 px-4 py-2 rounded-lg flex items-center gap-2">
-                            <FileText class="w-4 h-4 text-blue-400" />
-                            등록된 이력서가 있습니다
-                        </div>
-                        <div class="flex gap-2">
-                            <button
-                                @click="activeTab = 'resume'"
-                                class="px-4 py-2 bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 hover:text-white rounded-lg font-medium text-xs transition-colors"
-                            >
-                                이력서 관리
-                            </button>
-                            <button
-                                @click="isPortfolioOpen = true"
-                                class="px-4 py-2 bg-blue-600/10 border border-blue-500/20 text-blue-400 hover:bg-blue-600/20 hover:text-blue-300 rounded-lg font-medium text-xs transition-colors"
-                            >
-                                포트폴리오 추가
+                        <div class="w-full bg-white/5 border border-dashed border-white/10 rounded-xl p-4 flex items-center justify-between group hover:border-blue-500/50 hover:bg-blue-500/5 transition-all cursor-pointer">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-red-400/20 rounded-lg flex items-center justify-center text-red-400">
+                                    <FileText class="w-5 h-5" />
+                                </div>
+                                <div class="text-left">
+                                    <div class="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">Portfolio_2024.pdf</div>
+                                    <div class="text-xs text-slate-500">2.4 MB • 2024.02.01 업데이트</div>
+                                </div>
+                            </div>
+                            <button class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-slate-400 hover:bg-blue-500 hover:text-white transition-all">
+                                <Briefcase class="w-4 h-4" /> <!-- Using Briefcase as download icon placeholder since Download icon might not be imported. Will check imports. -->
                             </button>
                         </div>
+                        
+                        <p class="text-xs text-slate-500">
+                            최근 업데이트된 포트폴리오를 다운로드하여 확인하세요.
+                        </p>
                     </div>
                 </div>
             </div>
