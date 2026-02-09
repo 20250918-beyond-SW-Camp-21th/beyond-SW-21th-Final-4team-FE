@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
@@ -13,13 +13,10 @@ import {
   Award,
   CreditCard,
   Plus,
-  Upload,
-  Calendar,
-  Users,
-  Check,
-  Edit3,
+  // ... other icons
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/freelancerApi';
 import ResumeManagementPage from './components/ResumeManagementPage.vue';
 import CompanyEvaluationSummary from './components/CompanyEvaluationSummary.vue';
 import AccountManagementPage from './components/AccountManagementPage.vue';
@@ -31,32 +28,61 @@ const authStore = useAuthStore();
 const currentUser = computed(() => authStore.user);
 
 const activeTab = ref('dashboard');
-const isConditionOpen = ref(false); // Simplified: toggle editing mode or modal
+const isConditionOpen = ref(false);
 const isPortfolioOpen = ref(false);
 const isInquiryOpen = ref(false);
 
-const profile = ref({
-    name: currentUser.value?.name || 'Freelancer',
-    grade: 'Master',
+// 초기값은 비어있거나 로딩 상태를 나타내는 값으로 설정
+const profile = ref<FreelancerProfileDashboard>({
+    name: '',
+    grade: '',
     avatar: null,
+    introduction: '',
+    careerYears: 0,
+    salary: '',
     workConditions: {
-        type: '개인',
-        startDate: '2024-02-01',
-        workStyle: '원격',
-        location: '서울'
+        type: '',
+        startDate: '',
+        workStyle: '',
+        location: ''
     },
-    skills: currentUser.value?.skills || ['React', 'Vue.js', 'TypeScript'],
-    expertise: 4.8,
-    communication: 4.7,
-    scheduleAdherence: 4.9,
-    averageRating: 4.8,
-    statApply: 12,
-    statInterview: 3,
-    statPass: 1,
-    statInteresting: 5,
-    years: 5,
-    intro: '안녕하세요. 5년차 프론트엔드 개발자입니다. React와 TypeScript를 주력으로 하며, 사용자 경험 중심의 UI/UX 구현에 강점이 있습니다.',
-    value: '새로운 기술 습득을 즐기며, 동료와의 커뮤니케이션을 중요하게 생각합니다.',
+    skills: [],
+    skills: [],
+    expertise: {
+        programming: 0,
+        framework: 0,
+        problemSolving: 0
+    },
+    collaboration: {
+        communication: 0,
+        scheduleAdherence: 0,
+        dispute: 0
+    },
+    averageRating: 0,
+    statContact: 0,
+    statChat: 0,
+    statContract: 0,
+    statInteresting: 0
+});
+
+onMounted(async () => {
+    if (currentUser.value?.id) {
+        try {
+            const data = await getFreelancerProfile(currentUser.value.id);
+            profile.value = data;
+
+            // 만약 authStore의 이름/스킬을 우선하고 싶다면 여기서 덮어씌우기:
+            if (currentUser.value.name) profile.value.name = currentUser.value.name;
+            if (currentUser.value.skills && currentUser.value.skills.length > 0) profile.value.skills = currentUser.value.skills;
+
+        } catch (error) {
+            console.error('Failed to load profile:', error);
+        }
+    } else {
+        // 로그인 정보가 없을 때의 디폴트 처리 (또는 로그인 페이지 리다이렉트)
+        const data = await getFreelancerProfile('guest');
+        profile.value = data;
+    }
 });
 
 const menuItems = [
@@ -69,6 +95,16 @@ const menuItems = [
     { id: 'inquiry', label: '1:1 문의', icon: MessageSquare, action: () => isInquiryOpen.value = true },
     { id: 'account', label: '내 계정 관리', icon: Settings, action: () => activeTab.value = 'account' },
 ];
+
+const getGradeColor = (grade: string) => {
+    switch (grade) {
+        case 'Junior': return 'text-green-400 border-green-400/30 bg-green-400/10';
+        case 'Middle': return 'text-blue-400 border-blue-400/30 bg-blue-400/10';
+        case 'Senior': return 'text-purple-400 border-purple-400/30 bg-purple-400/10';
+        case 'Master': return 'text-amber-400 border-amber-400/30 bg-amber-400/10';
+        default: return 'text-slate-400 border-white/10 bg-white/5';
+    }
+};
 
 const handlePortfolioUpload = () => {
     alert('포트폴리오 업로드 완료!');
@@ -105,7 +141,7 @@ const handlePortfolioUpload = () => {
     <main class="flex-1 overflow-y-auto bg-slate-900">
         <div v-if="activeTab === 'dashboard'" class="p-8 max-w-7xl mx-auto space-y-8" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1 }">
              <!-- Greeting Header -->
-             <div class="mb-2" data-tour="freelancer-mypage-header">
+             <div class="mb-2">
                 <p class="text-sm text-slate-400 mb-1">안녕하세요</p>
                 <h2 class="text-2xl font-bold text-white">
                     {{ profile.name }}님. 오늘도 프리브릿지가 응원합니다!
@@ -128,10 +164,13 @@ const handlePortfolioUpload = () => {
                                 </div>
                             </div>
                             <div class="space-y-3">
-                                <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                                     {{ profile.name }}
-                                    <span class="text-sm font-normal text-slate-400 bg-white/5 px-2 py-0.5 rounded border border-white/10">
-                                        {{ profile.grade }}
+                                    <span
+                                        class="text-sm font-normal px-2 py-0.5 rounded border"
+                                        :class="getGradeColor(profile.grade)"
+                                    >
+                                        {{ profile.grade }} 등급
                                     </span>
                                 </h2>
                                 <div class="flex items-center gap-2 text-sm text-slate-400">
@@ -139,22 +178,21 @@ const handlePortfolioUpload = () => {
                                     <span class="text-slate-600">/</span>
                                     <span>{{ profile.workConditions.type }}</span>
                                     <span class="text-slate-600">/</span>
-                                    <span>총 경력 {{ profile.years }}년</span>
+                                    <span class="text-slate-600">/</span>
+                                    <span>총 경력 {{ profile.careerYears }}년</span>
                                 </div>
+
+                                <p class="text-sm text-slate-300 bg-white/5 p-2 rounded border border-white/5 mt-1">
+                                    "{{ profile.introduction }}"
+                                </p>
 
                                 <div class="flex flex-wrap gap-2">
                                     <span v-for="skill in profile.skills.slice(0, 3)" :key="skill" class="text-xs px-2 py-1 bg-blue-500/10 text-blue-300 rounded border border-blue-500/20">
                                         {{ skill }}
                                     </span>
                                 </div>
-                                
-                                <!-- Intro Section (Moved here) -->
-                                <div class="pt-2">
-                                    <p class="text-white/80 text-sm leading-relaxed">"{{ profile.intro }}"</p>
-                                </div>
                             </div>
                         </div>
-
 
                         <!-- Right: Detailed Conditions -->
                         <div class="flex-1 md:border-l border-white/10 md:pl-12 flex flex-col justify-center space-y-4 pt-8 md:pt-2">
@@ -180,6 +218,12 @@ const handlePortfolioUpload = () => {
                                 <span class="text-slate-500 font-medium w-24">희망 근무지</span>
                                 <div class="flex-1 flex justify-end">
                                     <span class="text-white font-bold">{{ profile.workConditions.location }}</span>
+                                </div>
+                            </div>
+                             <div class="flex justify-between items-center text-sm">
+                                <span class="text-slate-500 font-medium w-24">희망 몸값</span>
+                                <div class="flex-1 flex justify-end">
+                                    <span class="text-white font-bold">{{ profile.salary }}</span>
                                 </div>
                             </div>
                         </div>
@@ -220,17 +264,17 @@ const handlePortfolioUpload = () => {
                         </h4>
                         <div class="flex items-center justify-between">
                             <div class="flex-1 text-center">
-                                <div class="text-3xl font-bold text-white mb-1">{{ profile.statApply }}</div>
+                                <div class="text-3xl font-bold text-white mb-1">{{ profile.statContact }}</div>
                                 <div class="text-xs text-slate-500">접촉 수</div>
                             </div>
                             <div class="w-px h-12 bg-white/10"></div>
                             <div class="flex-1 text-center">
-                                <div class="text-3xl font-bold text-blue-400 mb-1">{{ profile.statInterview }}</div>
+                                <div class="text-3xl font-bold text-blue-400 mb-1">{{ profile.statChat }}</div>
                                 <div class="text-xs text-slate-500">채팅 수</div>
                             </div>
                             <div class="w-px h-12 bg-white/10"></div>
                             <div class="flex-1 text-center">
-                                <div class="text-3xl font-bold text-green-400 mb-1">{{ profile.statPass }}</div>
+                                <div class="text-3xl font-bold text-green-400 mb-1">{{ profile.statContract }}</div>
                                 <div class="text-xs text-slate-500">계약 완료</div>
                             </div>
                         </div>
@@ -239,7 +283,7 @@ const handlePortfolioUpload = () => {
                     <!-- Active Projects -->
                     <div
                         @click="router.push({ name: 'freelancer.contracts' })"
-                        class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl hover:shadow-blue-500/20 transition-all cursor-pointer"
+                        class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl hover:shadow-blue-500/20 transition-all cursor-pointer"
                     >
                         <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-500"></div>
                         <div class="relative z-10">
@@ -275,6 +319,7 @@ const handlePortfolioUpload = () => {
                 </div>
             </div>
 
+            <!-- Grids -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Evaluation -->
                 <div class="bg-[#1e293b]/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm h-full flex flex-col">
@@ -292,27 +337,57 @@ const handlePortfolioUpload = () => {
                                 <Award class="w-3 h-3 fill-current" />
                             </div>
                         </div>
-                        <div class="flex-1 space-y-2.5 text-xs justify-center flex flex-col">
-                            <div class="flex items-center gap-2">
-                                <span class="text-slate-400 w-14">전문성</span>
-                                <div class="flex-1 bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
-                                    <div class="bg-purple-500 h-full" :style="{ width: `${(profile.expertise / 5) * 100}%` }"></div>
+                        <div class="flex-1 space-y-3 text-xs justify-center flex flex-col pl-2">
+                            <!-- Expertize -->
+                            <div class="space-y-1.5">
+                                <div class="text-[10px] text-slate-500 font-bold">전문성</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 w-20">프로그래밍</span>
+                                    <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-700">
+                                        <div class="bg-purple-500 h-full" :style="{ width: `${(profile.expertise.programming / 5) * 100}%` }"></div>
+                                    </div>
+                                    <span class="text-white font-bold w-6 text-right">{{ profile.expertise.programming.toFixed(1) }}</span>
                                 </div>
-                                <span class="text-white font-bold text-sm w-7 text-right">{{ profile.expertise.toFixed(1) }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 w-20">프레임워크</span>
+                                    <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-700">
+                                        <div class="bg-purple-500 h-full" :style="{ width: `${(profile.expertise.framework / 5) * 100}%` }"></div>
+                                    </div>
+                                    <span class="text-white font-bold w-6 text-right">{{ profile.expertise.framework.toFixed(1) }}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 w-20">문제해결</span>
+                                    <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-700">
+                                        <div class="bg-purple-500 h-full" :style="{ width: `${(profile.expertise.problemSolving / 5) * 100}%` }"></div>
+                                    </div>
+                                    <span class="text-white font-bold w-6 text-right">{{ profile.expertise.problemSolving.toFixed(1) }}</span>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-slate-400 w-14">의사소통</span>
-                                <div class="flex-1 bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
-                                    <div class="bg-blue-500 h-full" :style="{ width: `${(profile.communication / 5) * 100}%` }"></div>
+
+                            <!-- Collaboration -->
+                            <div class="space-y-1.5">
+                                <div class="text-[10px] text-slate-500 font-bold mt-1">협업 능력</div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 w-20">의사소통</span>
+                                    <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-700">
+                                        <div class="bg-blue-500 h-full" :style="{ width: `${(profile.collaboration.communication / 5) * 100}%` }"></div>
+                                    </div>
+                                    <span class="text-white font-bold w-6 text-right">{{ profile.collaboration.communication.toFixed(1) }}</span>
                                 </div>
-                                <span class="text-white font-bold text-sm w-7 text-right">{{ profile.communication.toFixed(1) }}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-slate-400 w-14">일정준수</span>
-                                <div class="flex-1 bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
-                                    <div class="bg-green-500 h-full" :style="{ width: `${(profile.scheduleAdherence / 5) * 100}%` }"></div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 w-20">일정준수</span>
+                                    <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-700">
+                                        <div class="bg-blue-500 h-full" :style="{ width: `${(profile.collaboration.scheduleAdherence / 5) * 100}%` }"></div>
+                                    </div>
+                                    <span class="text-white font-bold w-6 text-right">{{ profile.collaboration.scheduleAdherence.toFixed(1) }}</span>
                                 </div>
-                                <span class="text-white font-bold text-sm w-7 text-right">{{ profile.scheduleAdherence.toFixed(1) }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-slate-400 w-20">분쟁관리</span>
+                                    <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-700">
+                                        <div class="bg-blue-500 h-full" :style="{ width: `${(profile.collaboration.dispute / 5) * 100}%` }"></div>
+                                    </div>
+                                    <span class="text-white font-bold w-6 text-right">{{ profile.collaboration.dispute.toFixed(1) }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -367,11 +442,12 @@ const handlePortfolioUpload = () => {
             v-else-if="activeTab === 'account'"
             @back="activeTab = 'dashboard'"
         />
-
     </main>
-  <OneOnOneInquiryModal
+    
+    <OneOnOneInquiryModal
         v-if="isInquiryOpen"
         @close="isInquiryOpen = false"
     />
+
   </div>
 </template>
