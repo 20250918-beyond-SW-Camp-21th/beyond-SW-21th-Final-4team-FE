@@ -4,14 +4,15 @@ import { useMotion } from '@vueuse/motion';
 import { Search, DollarSign, Clock, Briefcase, Sparkles, TrendingUp, Star } from 'lucide-vue-next';
 import { useJobStore } from '@/stores/jobStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 import type { JobPosting } from '@/types';
 import JobDetailModal from './components/JobDetailModal.vue';
 
 const jobStore = useJobStore();
 const authStore = useAuthStore();
+const favoritesStore = useFavoritesStore();
 const selectedJob = ref<JobPosting | null>(null);
 const searchTerm = ref('');
-const favoriteIds = ref<string[]>([]);
 
 // OPEN 상태인 공고만 표시
 const openJobs = computed(() => jobStore.jobPostings.filter((job) => job.status === 'OPEN'));
@@ -50,14 +51,10 @@ const formatDate = (date: Date | string) => {
   return new Date(date).toLocaleDateString('ko-KR');
 };
 
-const isFavorite = (id: string) => favoriteIds.value.includes(id);
+const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
 
 const toggleFavorite = (id: string) => {
-  if (isFavorite(id)) {
-    favoriteIds.value = favoriteIds.value.filter((item) => item !== id);
-    return;
-  }
-  favoriteIds.value = [...favoriteIds.value, id];
+  favoritesStore.toggleFavorite(id);
 };
 </script>
 
