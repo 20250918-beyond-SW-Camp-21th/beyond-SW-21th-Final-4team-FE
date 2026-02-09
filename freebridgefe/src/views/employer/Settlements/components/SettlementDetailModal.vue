@@ -193,13 +193,10 @@ const handleDownload = () => {
                         </div>
                         <div class="flex items-center justify-between py-3 border-b border-white/10">
                             <span class="text-white/60">계약 ID</span>
-                            <RouterLink 
-                                :to="`/employer/contracts/${settlement.contractId}`"
-                                class="font-medium text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1"
-                            >
+                            <span class="font-medium text-white flex items-center gap-1">
                                 {{ settlement.contractId }}
                                 <Briefcase class="w-3 h-3" />
-                            </RouterLink>
+                            </span>
                         </div>
                     </div>
                 </div>
