@@ -25,6 +25,7 @@ import AccountManagementPage from './components/AccountManagementPage.vue';
 import GradeCheckPage from './components/GradeCheckPage.vue';
 import OneOnOneInquiryModal from './components/OneOnOneInquiryModal.vue';
 import ProfileEditPage from './components/ProfileEditPage.vue';
+import ProjectManagementPage from './components/ProjectManagementPage.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -457,6 +458,12 @@ const handlePortfolioUpload = () => {
             :profile="profile"
             @back="activeTab = 'dashboard'"
             @update="handleProfileUpdate"
+        />
+
+        <ProjectManagementPage
+            v-else-if="activeTab === 'projects'"
+            @back="activeTab = 'dashboard'"
+            @openDetail="() => {}"
         />
 
         <ResumeManagementPage
