@@ -159,14 +159,50 @@ const openSignModal = (contract: ContractWithDetails) => {
 </script>
 
 <template>
-    <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white">
-        <!-- Header -->
-        <div v-motion :initial="{ opacity: 0, y: 20 }" :enter="{ opacity: 1, y: 0 }" class="mb-8">
-            <div class="flex items-center gap-3 mb-3">
-                <FileText class="w-10 h-10 text-white" />
-                <h1 class="text-4xl font-bold text-white">
-                    Active Contracts
-                </h1>
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white font-sans">
+    <!-- Header -->
+    <div
+      class="mb-12"
+      data-tour="freelancer-contracts-header"
+      v-motion
+      :initial="{ opacity: 0, y: 20 }"
+      :enter="{ opacity: 1, y: 0 }"
+    >
+      <div class="flex items-center gap-3 mb-3">
+        <FileText class="w-10 h-10 text-white" />
+        <h1 class="text-4xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
+          내 계약서
+        </h1>
+      </div>
+      <p class="text-white/60">
+        진행 중인 프로젝트 계약을 안전하게 관리하세요
+      </p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid md:grid-cols-3 gap-6 mb-12">
+      <div
+        v-for="(stat, index) in stats"
+        :key="index"
+        @click="stat.onClick && stat.onClick()"
+        class="bg-white/5 backdrop-blur-xl rounded-3xl border p-8 transition-all relative overflow-hidden"
+        :class="[
+          (stat.id && activeTab === stat.id) ? 'border-white/40 bg-white/10 ring-2 ring-white/20' : 'border-white/10 hover:border-white/20',
+          stat.onClick ? 'cursor-pointer' : ''
+        ]"
+        v-motion
+        :initial="{ opacity: 0, y: 20 }"
+        :enter="{ opacity: 1, y: 0, transition: { delay: index * 0.1 } }"
+        :hover="{ y: -4 }"
+      >
+        <div class="flex items-center gap-4 relative z-10">
+          <div :class="`w-16 h-16 rounded-2xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center shadow-lg`">
+            <component :is="stat.icon" class="w-8 h-8 text-white" />
+          </div>
+          <div>
+            <div class="text-sm text-white/60 mb-1">{{ stat.label }}</div>
+            <div :class="`font-bold text-white ${stat.isAmount ? 'text-2xl' : 'text-4xl'}`">
+              {{ stat.value }}
             </div>
             <p class="text-white/60">진행 중인 계약서를 관리하세요</p>
         </div>
