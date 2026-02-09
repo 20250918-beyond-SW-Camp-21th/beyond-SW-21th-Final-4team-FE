@@ -33,11 +33,13 @@ const handleAddTech = () => {
 const handleRemoveTech = (tech: string) => {
   formData.techStack = formData.techStack.filter((t) => t !== tech);
 };
-
 const handleSubmit = (e: Event) => {
   e.preventDefault();
 
   if (!authStore.user) return;
+
+  const confirmed = window.confirm('정말로 등록하시겠습니까?');
+  if (!confirmed) return;
 
   jobStore.addJobPosting({
     employerId: authStore.user.id,
@@ -50,8 +52,10 @@ const handleSubmit = (e: Event) => {
     status: 'OPEN',
   });
 
+  window.alert('등록되었습니다!');
   props.onSuccess();
 };
+
 
 const isValid = computed(() => {
     return formData.title && formData.description && formData.techStack.length > 0 && formData.budget && formData.duration;

@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useWindowScroll } from '@vueuse/core';
-import { ArrowRight, Sparkles, Shield, MessageSquare, Star, ChevronDown } from 'lucide-vue-next';
+import { ArrowRight, Sparkles, Shield, MessageSquare, Star } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
 
 const router = useRouter();
@@ -160,20 +160,6 @@ const stats = [
           </button>
         </div>
 
-        <!-- Scroll Indicator -->
-        <div
-          v-motion
-          :initial="{ opacity: 0 }"
-          :enter="{ opacity: 1, transition: { duration: 1000, delay: 1500 } }"
-          class="absolute bottom-12 left-1/2 -translate-x-1/2"
-        >
-          <div
-            v-motion
-            :enter="{ y: [0, 10, 0], transition: { duration: 2000, repeat: Infinity } }"
-          >
-            <ChevronDown class="w-8 h-8 text-white/50" />
-          </div>
-        </div>
       </div>
     </section>
 

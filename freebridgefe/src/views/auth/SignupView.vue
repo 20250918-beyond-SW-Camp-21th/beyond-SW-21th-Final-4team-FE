@@ -4,6 +4,14 @@ import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { Mail, Lock, User as UserIcon, Building2, ArrowLeft, Eye, EyeOff, Check } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
+import TermsModal from './components/TermsModal.vue';
+import { 
+  SERVICE_TERMS, 
+  PRIVACY_TERMS_FREELANCER, 
+  PRIVACY_TERMS_EMPLOYER, 
+  THIRD_PARTY_TERMS, 
+  MARKETING_TERMS 
+} from '@/constants/terms';
 import type { User, UserRole } from '@/types';
 
 const router = useRouter();
@@ -19,15 +27,43 @@ const formData = ref({
   confirmPassword: '',
   company: '',
   skills: '',
-  agreeTerms: false,
+  agreeService: false,
   agreePrivacy: false,
+  agreeThirdParty: false,
+  agreeMarketing: false,
 });
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const errors = ref<Record<string, string>>({});
 
+// Terms Modal State
+const showTermsModal = ref(false);
+const currentTermsTitle = ref('');
+const currentTermsContent = ref('');
+
+const openTermsModal = (title: string, content: string) => {
+  currentTermsTitle.value = title;
+  currentTermsContent.value = content;
+  showTermsModal.value = true;
+};
+
 // Computed used for simplifying template logic
 const isEmployer = computed(() => role.value === 'EMPLOYER');
+
+const allAgreed = computed({
+  get: () => {
+    const base = formData.value.agreeService && formData.value.agreePrivacy && formData.value.agreeMarketing;
+    return isEmployer.value ? base : (base && formData.value.agreeThirdParty);
+  },
+  set: (val: boolean) => {
+    formData.value.agreeService = val;
+    formData.value.agreePrivacy = val;
+    formData.value.agreeMarketing = val;
+    if (!isEmployer.value) {
+      formData.value.agreeThirdParty = val;
+    }
+  }
+});
 
 // Initialize role from query param
 onMounted(() => {
@@ -40,6 +76,10 @@ const switchRole = (newRole: UserRole) => {
   role.value = newRole;
   // Optional: clear errors or form data when switching
   errors.value = {};
+  formData.value.agreeService = false;
+  formData.value.agreePrivacy = false;
+  formData.value.agreeThirdParty = false;
+  formData.value.agreeMarketing = false;
 };
 
 const validateForm = () => {
@@ -69,20 +109,23 @@ const validateForm = () => {
     newErrors.skills = '주요 기술을 입력해주세요';
   }
 
-  if (!formData.value.agreeTerms) {
-    newErrors.terms = '이용약관에 동의해주세요';
+  if (!formData.value.agreeService) {
+    newErrors.agreeService = '서비스 이용약관에 동의해주세요';
   }
 
   if (!formData.value.agreePrivacy) {
-    newErrors.privacy = '개인정보처리방침에 동의해주세요';
+    newErrors.agreePrivacy = '개인정보 수집 및 이용에 동의해주세요';
+  }
+
+  if (!isEmployer.value && !formData.value.agreeThirdParty) {
+    newErrors.agreeThirdParty = '개인정보 제3자 제공에 동의해주세요';
   }
 
   errors.value = newErrors;
   return Object.keys(newErrors).length === 0;
 };
 
-const handleSubmit = (e: Event) => {
-  e.preventDefault();
+const handleSubmit = () => {
 
   if (!validateForm()) return;
 
@@ -199,7 +242,7 @@ const toggleConfirmPassword = () => {
           </button>
         </div>
 
-        <form @submit="handleSubmit" class="space-y-5">
+        <form @submit.prevent="handleSubmit" class="space-y-5">
           <!-- Name / Company -->
           <div
             v-motion
@@ -330,41 +373,94 @@ const toggleConfirmPassword = () => {
             v-motion
             :initial="{ opacity: 0 }"
             :enter="{ opacity: 1, transition: { delay: 1100 } }"
-            class="space-y-3 pt-4"
+            class="space-y-4 pt-4 border-t border-white/10"
           >
-            <label
-              class="flex items-start gap-3 cursor-pointer p-4 rounded-2xl border transition-colors"
-              :class="errors.terms ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 hover:border-white/20'"
-            >
+            <!-- Select All -->
+            <label class="flex items-center gap-3 cursor-pointer pb-2 hover:bg-white/5 p-2 rounded-xl transition-colors">
               <div
-                class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5"
-                :class="formData.agreeTerms ? 'bg-white border-white' : 'border-white/30'"
+                class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0"
+                :class="allAgreed ? 'bg-white border-white' : 'border-white/30'"
               >
-                <Check v-if="formData.agreeTerms" class="w-4 h-4 text-black" />
+                <Check v-if="allAgreed" class="w-4 h-4 text-black" />
               </div>
-              <input type="checkbox" v-model="formData.agreeTerms" class="sr-only" />
-              <span class="text-sm text-white/80">
-                <span class="font-medium text-white">이용약관</span>에 동의합니다{' '}
-                <span class="text-red-400">*</span>
-              </span>
+              <input type="checkbox" v-model="allAgreed" class="sr-only" />
+              <span class="font-bold text-white">전체 동의하기</span>
             </label>
 
-            <label
-              class="flex items-start gap-3 cursor-pointer p-4 rounded-2xl border transition-colors"
-              :class="errors.privacy ? 'border-red-500/50 bg-red-500/5' : 'border-white/10 hover:border-white/20'"
-            >
-              <div
-                class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5"
-                :class="formData.agreePrivacy ? 'bg-white border-white' : 'border-white/30'"
-              >
-                <Check v-if="formData.agreePrivacy" class="w-4 h-4 text-black" />
+            <!-- Service Terms -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 group-hover:border-white/50 transition-colors"
+                    :class="formData.agreeService ? 'bg-white border-white' : 'border-white/30'"
+                  >
+                    <Check v-if="formData.agreeService" class="w-4 h-4 text-black" />
+                  </div>
+                  <input type="checkbox" v-model="formData.agreeService" class="sr-only" />
+                  <span class="text-sm text-white/80"><span class="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 mr-1">필수</span> 서비스 이용약관 동의</span>
+                </label>
+                <button type="button" @click="openTermsModal('서비스 이용약관', SERVICE_TERMS)" class="text-xs text-white/40 hover:text-white underline p-1">보기</button>
               </div>
-              <input type="checkbox" v-model="formData.agreePrivacy" class="sr-only" />
-              <span class="text-sm text-white/80">
-                <span class="font-medium text-white">개인정보처리방침</span>에 동의합니다{' '}
-                <span class="text-red-400">*</span>
-              </span>
-            </label>
+              <p v-if="errors.agreeService" class="text-red-400 text-xs ml-8">{{ errors.agreeService }}</p>
+            </div>
+
+            <!-- Privacy Terms -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 group-hover:border-white/50 transition-colors"
+                    :class="formData.agreePrivacy ? 'bg-white border-white' : 'border-white/30'"
+                  >
+                    <Check v-if="formData.agreePrivacy" class="w-4 h-4 text-black" />
+                  </div>
+                  <input type="checkbox" v-model="formData.agreePrivacy" class="sr-only" />
+                  <span class="text-sm text-white/80"><span class="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 mr-1">필수</span> 개인정보 수집 및 이용 동의</span>
+                </label>
+                <button 
+                  type="button" 
+                  @click="openTermsModal('개인정보 수집 및 이용 동의', isEmployer ? PRIVACY_TERMS_EMPLOYER : PRIVACY_TERMS_FREELANCER)" 
+                  class="text-xs text-white/40 hover:text-white underline p-1"
+                >보기</button>
+              </div>
+              <p v-if="errors.agreePrivacy" class="text-red-400 text-xs ml-8">{{ errors.agreePrivacy }}</p>
+            </div>
+
+            <!-- Third Party (Freelancer Only) -->
+            <div v-if="!isEmployer" class="space-y-1">
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 group-hover:border-white/50 transition-colors"
+                    :class="formData.agreeThirdParty ? 'bg-white border-white' : 'border-white/30'"
+                  >
+                    <Check v-if="formData.agreeThirdParty" class="w-4 h-4 text-black" />
+                  </div>
+                  <input type="checkbox" v-model="formData.agreeThirdParty" class="sr-only" />
+                  <span class="text-sm text-white/80"><span class="text-xs px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 mr-1">필수</span> 개인정보 제3자 제공 동의</span>
+                </label>
+                <button type="button" @click="openTermsModal('개인정보 제3자 제공 동의', THIRD_PARTY_TERMS)" class="text-xs text-white/40 hover:text-white underline p-1">보기</button>
+              </div>
+              <p v-if="errors.agreeThirdParty" class="text-red-400 text-xs ml-8">{{ errors.agreeThirdParty }}</p>
+            </div>
+
+            <!-- Marketing -->
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    class="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 group-hover:border-white/50 transition-colors"
+                    :class="formData.agreeMarketing ? 'bg-white border-white' : 'border-white/30'"
+                  >
+                    <Check v-if="formData.agreeMarketing" class="w-4 h-4 text-black" />
+                  </div>
+                  <input type="checkbox" v-model="formData.agreeMarketing" class="sr-only" />
+                  <span class="text-sm text-white/80"><span class="text-xs px-1.5 py-0.5 rounded bg-white/10 text-white/60 mr-1">선택</span> 마케팅 정보 수신 동의</span>
+                </label>
+                <button type="button" @click="openTermsModal('마케팅 정보 수신 동의', MARKETING_TERMS)" class="text-xs text-white/40 hover:text-white underline p-1">보기</button>
+              </div>
+            </div>
           </div>
 
           <!-- Submit Button -->
@@ -387,8 +483,7 @@ const toggleConfirmPassword = () => {
           :enter="{ opacity: 1, transition: { delay: 1300 } }"
           class="mt-6 text-center"
         >
-          <p class="text-sm text-white/50">
-            이미 계정이 있으신가요?{' '}
+            이미 계정이 있으신가요? 
             <button @click="goBack" class="text-white hover:underline font-medium">
               로그인하기
             </button>
@@ -397,4 +492,10 @@ const toggleConfirmPassword = () => {
       </div>
     </div>
   </div>
+  <TermsModal
+    :isOpen="showTermsModal"
+    :title="currentTermsTitle"
+    :content="currentTermsContent"
+    @close="showTermsModal = false"
+  />
 </template>
