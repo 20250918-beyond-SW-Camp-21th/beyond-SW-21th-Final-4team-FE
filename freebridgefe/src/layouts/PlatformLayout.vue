@@ -15,7 +15,12 @@ import {
   Wallet,
   UserCircle,
   MessageSquareQuote,
+<<<<<<< HEAD
   Receipt
+=======
+  HelpCircle,
+  Receipt,
+>>>>>>> dev
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -75,10 +80,10 @@ onMounted(() => {
   <div v-if="currentUser" class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 font-sans">
     <!-- Desktop Navigation -->
     <nav class="hidden lg:block sticky top-0 z-50 h-20 bg-white/5 backdrop-blur-2xl border-b border-white/10">
-      <div class="max-w-[1400px] mx-auto px-8 h-full flex items-center justify-between">
+      <div class="w-full px-4 xl:px-8 h-full flex items-center justify-between gap-4">
         <div 
           @click="router.push(isEmployer ? '/employer/dashboard' : '/freelancer/jobs')"
-          class="text-2xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent cursor-pointer"
+          class="shrink-0 text-2xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent cursor-pointer"
           :data-tour="isEmployer ? 'employer.dashboard' : undefined"
           v-motion="{
             initial: { opacity: 0, x: -20 },
@@ -88,34 +93,36 @@ onMounted(() => {
           FreeBridge
         </div>
 
-        <div class="flex items-center gap-2">
-          <button
-            v-for="(item, index) in navItems"
-            :key="item.id"
-            @click="navigate(item.path)"
-            class="relative flex items-center gap-2 px-4 py-2.5 rounded-full transition-all"
-            :class="isActive(item.path) ? 'text-white' : 'text-white/60 hover:text-white hover:bg-white/5'"
-            :data-tour="item.id"
-            v-motion="{
-              initial: { opacity: 0, y: -10 },
-              enter: { opacity: 1, y: 0, transition: { delay: index * 100 } },
-              hover: { scale: 1.05 },
-              tap: { scale: 0.95 }
-            }"
-          >
-            <div
-              v-if="isActive(item.path)"
-              class="absolute inset-0 bg-white/10 rounded-full border border-white/20"
-              v-motion
-              layoutId="activeTab"
-            />
-            <component :is="item.icon" class="w-5 h-5 relative z-10" />
-            <span class="relative z-10 font-medium">{{ item.label }}</span>
-          </button>
+        <div class="flex-1 flex items-center justify-center min-w-0 mx-4 md:mx-6">
+          <div class="flex items-center gap-2 py-2 px-1 w-auto justify-center">
+            <button
+              v-for="(item, index) in navItems"
+              :key="item.id"
+              @click="navigate(item.path)"
+              class="shrink-0 relative flex items-center gap-2 px-4 py-2.5 rounded-full transition-all whitespace-nowrap"
+              :class="isActive(item.path) ? 'text-white' : 'text-white/60 hover:text-white hover:bg-white/5'"
+              :data-tour="item.id"
+              v-motion="{
+                initial: { opacity: 0, y: -10 },
+                enter: { opacity: 1, y: 0, transition: { delay: index * 100 } },
+                hover: { scale: 1.05 },
+                tap: { scale: 0.95 }
+              }"
+            >
+              <div
+                v-if="isActive(item.path)"
+                class="absolute inset-0 bg-white/10 rounded-full border border-white/20"
+                v-motion
+                layoutId="activeTab"
+              />
+              <component :is="item.icon" class="w-5 h-5 relative z-10" />
+              <span class="relative z-10 font-medium">{{ item.label }}</span>
+            </button>
+          </div>
         </div>
 
-        <div class="flex items-center gap-3">
-          <div class="px-4 py-2.5 bg-white/5 backdrop-blur-xl rounded-full border border-white/10">
+        <div class="shrink-0 flex items-center gap-3">
+          <div class="px-4 py-2.5 bg-white/5 backdrop-blur-xl rounded-full border border-white/10 hidden xl:block">
             <div class="text-xs text-white/50">
               {{ isEmployer ? '고용주' : '프리랜서' }}
             </div>
@@ -123,14 +130,15 @@ onMounted(() => {
           </div>
           <button
             @click="handleOpenGuide"
-            class="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10"
+            class="flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10 whitespace-nowrap"
             v-motion="{
               hover: { scale: 1.05 },
               tap: { scale: 0.95 }
             }"
           >
             <HelpCircle class="w-5 h-5 text-white/80" />
-            <span class="font-medium text-white/90">이용 가이드</span>
+            <span class="font-medium text-white/90 hidden xl:inline">이용 가이드</span>
+            <span class="font-medium text-white/90 xl:hidden">가이드</span>
           </button>
           <button
             @click="handleLogout"
@@ -226,3 +234,13 @@ onMounted(() => {
     </main>
   </div>
 </template>
+
+<style scoped>
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+</style>

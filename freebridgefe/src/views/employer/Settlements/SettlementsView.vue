@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import {
     Receipt,
     Calendar,
@@ -57,8 +57,8 @@ const allSettlements = ref<EmployerSettlement[]>([
         freelancerName: '김프론트',
         freelancerId: 'f1',
         employerId: 'e1',
-        dueDate: new Date('2024-01-31'),
-        paidDate: new Date('2024-01-28'),
+        dueDate: new Date('2026-02-15'), // THIS_MONTH
+        paidDate: new Date('2026-02-12'),
     },
     {
         id: 'es2',
@@ -74,8 +74,8 @@ const allSettlements = ref<EmployerSettlement[]>([
         freelancerName: '김프론트',
         freelancerId: 'f1',
         employerId: 'e1',
-        dueDate: new Date('2024-02-28'),
-        paidDate: new Date('2024-02-25'),
+        dueDate: new Date('2026-02-25'), // THIS_MONTH
+        paidDate: new Date('2026-02-22'),
     },
     {
         id: 'es3',
@@ -91,7 +91,7 @@ const allSettlements = ref<EmployerSettlement[]>([
         freelancerName: '김프론트',
         freelancerId: 'f1',
         employerId: 'e1',
-        dueDate: new Date('2024-03-31'),
+        dueDate: new Date('2026-02-28'), // THIS_MONTH
     },
     {
         id: 'es4',
@@ -107,8 +107,8 @@ const allSettlements = ref<EmployerSettlement[]>([
         freelancerName: '이백엔드',
         freelancerId: 'f2',
         employerId: 'e1',
-        dueDate: new Date('2023-11-30'),
-        paidDate: new Date('2023-11-25'),
+        dueDate: new Date('2026-01-15'), // LAST_MONTH
+        paidDate: new Date('2026-01-12'),
     },
     {
         id: 'es5',
@@ -124,8 +124,8 @@ const allSettlements = ref<EmployerSettlement[]>([
         freelancerName: '이백엔드',
         freelancerId: 'f2',
         employerId: 'e1',
-        dueDate: new Date('2023-12-15'),
-        paidDate: new Date('2023-12-12'),
+        dueDate: new Date('2026-01-20'), // LAST_MONTH
+        paidDate: new Date('2026-01-18'),
     },
     {
         id: 'es6',
@@ -141,8 +141,8 @@ const allSettlements = ref<EmployerSettlement[]>([
         freelancerName: '이백엔드',
         freelancerId: 'f2',
         employerId: 'e1',
-        dueDate: new Date('2023-12-31'),
-        paidDate: new Date('2023-12-28'),
+        dueDate: new Date('2025-12-20'), // LAST_3_MONTHS
+        paidDate: new Date('2025-12-18'),
     },
     {
         id: 'es7',
@@ -158,7 +158,7 @@ const allSettlements = ref<EmployerSettlement[]>([
         freelancerName: '김프론트',
         freelancerId: 'f1',
         employerId: 'e1',
-        dueDate: new Date('2024-02-29'),
+        dueDate: new Date('2025-11-25'), // OLD (not in LAST_3_MONTHS)
     },
     {
         id: 'es8',
@@ -174,7 +174,7 @@ const allSettlements = ref<EmployerSettlement[]>([
         freelancerName: '김프론트',
         freelancerId: 'f1',
         employerId: 'e1',
-        dueDate: new Date('2024-04-30'),
+        dueDate: new Date('2025-10-15'), // OLD (not in LAST_3_MONTHS)
     },
 ]);
 
@@ -211,7 +211,9 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle }> 
 // Filter settlements by current employer
 const mySettlements = computed(() => {
     if (!authStore.user) return allSettlements.value;
-    return allSettlements.value.filter((s) => s.employerId === authStore.user!.id);
+    // Temporarily show all settlements for development
+    return allSettlements.value;
+    // return allSettlements.value.filter((s) => s.employerId === authStore.user!.id);
 });
 
 // Get next upcoming settlement (first ISSUED settlement by due date)
@@ -311,6 +313,14 @@ const selectStatusFilter = (value: string) => {
 
 const currentStatusLabel = computed(() => {
     return statusFilters.find((f) => f.value === selectedStatus.value)?.label || '전체';
+});
+
+watch(searchQuery, () => {
+    currentPage.value = 1;
+});
+
+watch(selectedDateRange, () => {
+    currentPage.value = 1;
 });
 
 const handleDownload = (settlement: EmployerSettlement) => {
@@ -606,7 +616,7 @@ const goToPage = (page: number) => {
                                     settlement.status === 'ISSUED' &&
                                     new Date(settlement.dueDate) < now
                                 "
-                                class="inline-flex items-center px-1.5 py-0.5 rounded textxs font-semibold bg-red-500/20 text-red-400 border border-red-500/30"
+                                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30"
                             >
                                 연체
                             </span>

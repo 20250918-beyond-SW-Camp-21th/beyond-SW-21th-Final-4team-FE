@@ -60,6 +60,8 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'settlements',
                 name: 'employer.settlements',
                 component: () => import('@/views/employer/Settlements/SettlementsView.vue')
+            },
+            {
                 path: 'freelancers',
                 name: 'employer.freelancers',
                 component: () => import('@/views/employer/Freelancers/FreelancerSearchView.vue')
@@ -68,6 +70,16 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'contracts',
                 name: 'employer.contracts',
                 component: () => import('@/views/employer/Contracts/ContractsView.vue')
+            },
+            {
+                path: 'settlements',
+                name: 'employer.settlements',
+                component: () => import('@/views/employer/Settlements/SettlementsView.vue')
+            },
+            {
+                path: 'contracts/create',
+                name: 'employer.contracts.create',
+                component: () => import('@/views/employer/Contracts/CreateContractView.vue')
             },
             {
                 path: 'mypage',
