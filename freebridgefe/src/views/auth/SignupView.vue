@@ -131,7 +131,7 @@ const validateForm = () => {
   return Object.keys(newErrors).length === 0;
 };
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
 
   if (!validateForm()) return;
 
