@@ -164,6 +164,14 @@ const freelancerGuides = [
 ];
 
 const currentGuides = computed(() => activeTab.value === 'EMPLOYER' ? employerGuides : freelancerGuides);
+
+const handleReturnToService = () => {
+  if (currentUser.value) {
+    router.push(currentUser.value.role === 'EMPLOYER' ? '/employer/dashboard' : '/freelancer/jobs');
+  } else {
+    router.push('/');
+  }
+};
 </script>
 
 <template>
@@ -280,7 +288,7 @@ const currentGuides = computed(() => activeTab.value === 'EMPLOYER' ? employerGu
       <!-- 하단 CTA -->
       <div class="mt-20 text-center">
         <button
-          @click="window.history.length > 1 ? router.go(-1) : router.push('/')"
+          @click="handleReturnToService"
           class="inline-flex items-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 rounded-full font-bold text-white transition-all backdrop-blur-md border border-white/10"
         >
           <span>서비스로 돌아가기</span>
