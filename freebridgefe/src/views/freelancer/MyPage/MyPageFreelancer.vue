@@ -13,7 +13,9 @@ import {
   Award,
   CreditCard,
   Plus,
-  // ... other icons
+  Users,
+  Check,
+  Edit3,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/freelancerApi';
@@ -22,6 +24,7 @@ import CompanyEvaluationSummary from './components/CompanyEvaluationSummary.vue'
 import AccountManagementPage from './components/AccountManagementPage.vue';
 import GradeCheckPage from './components/GradeCheckPage.vue';
 import OneOnOneInquiryModal from './components/OneOnOneInquiryModal.vue';
+import ProfileEditPage from './components/ProfileEditPage.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -65,6 +68,11 @@ const profile = ref<FreelancerProfileDashboard>({
     statInteresting: 0,
     statCompleted: 0
 });
+
+const handleProfileUpdate = (updatedData: FreelancerProfileDashboard) => {
+    profile.value = updatedData;
+    activeTab.value = 'dashboard';
+};
 
 onMounted(async () => {
     if (currentUser.value?.id) {
@@ -142,11 +150,20 @@ const handlePortfolioUpload = () => {
     <main class="flex-1 overflow-y-auto bg-slate-900">
         <div v-if="activeTab === 'dashboard'" class="p-8 max-w-7xl mx-auto space-y-8" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1 }">
              <!-- Greeting Header -->
-             <div class="mb-2">
-                <p class="text-sm text-slate-400 mb-1">안녕하세요</p>
-                <h2 class="text-2xl font-bold text-white">
-                    {{ profile.name }}님. 오늘도 프리브릿지가 응원합니다!
-                </h2>
+             <div class="mb-2 flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-slate-400 mb-1">안녕하세요</p>
+                    <h2 class="text-2xl font-bold text-white">
+                        {{ profile.name }}님. 오늘도 프리브릿지가 응원합니다!
+                    </h2>
+                </div>
+                <button 
+                    @click="activeTab = 'edit'"
+                    class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-slate-300 hover:text-white transition-all"
+                >
+                    <Edit3 class="w-4 h-4" />
+                    프로필 수정하기
+                </button>
             </div>
 
             <!-- Profile Summary Card -->
@@ -236,7 +253,10 @@ const handlePortfolioUpload = () => {
                      <div class="bg-[#0F172A]/50 border-t border-white/5 py-3 px-6 rounded-b-2xl flex justify-center items-center">
                         <button class="text-xs text-slate-400 flex items-center gap-1 group">
                             최신 업데이트 프로필로 정확한 추천 정보를 받으세요!
-                            <span class="font-bold text-white underline underline-offset-2 ml-1 decoration-slate-500 group-hover:decoration-white transition-all">
+                            <span 
+                                @click="activeTab = 'edit'"
+                                class="font-bold text-white underline underline-offset-2 ml-1 decoration-slate-500 group-hover:decoration-white transition-all cursor-pointer"
+                            >
                                 프로필 업데이트하기
                             </span>
                         </button>
@@ -431,6 +451,13 @@ const handlePortfolioUpload = () => {
                 </div>
             </div>
         </div>
+
+        <ProfileEditPage
+            v-else-if="activeTab === 'edit'"
+            :profile="profile"
+            @back="activeTab = 'dashboard'"
+            @update="handleProfileUpdate"
+        />
 
         <ResumeManagementPage
             v-else-if="activeTab === 'resume'"

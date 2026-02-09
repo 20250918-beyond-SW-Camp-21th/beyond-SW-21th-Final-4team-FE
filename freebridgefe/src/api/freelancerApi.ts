@@ -79,3 +79,13 @@ export const getFreelancerProfile = async (userId: string): Promise<FreelancerPr
         }, 500); // 0.5초 지연 시뮬레이션
     });
 };
+
+export const updateFreelancerProfile = async (userId: string, updatedProfile: Partial<FreelancerProfileDashboard>): Promise<FreelancerProfileDashboard> => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            // Update Mock Data (In-memory update for simulation)
+            Object.assign(MOCK_PROFILE, updatedProfile);
+            resolve(MOCK_PROFILE);
+        }, 800);
+    });
+};
