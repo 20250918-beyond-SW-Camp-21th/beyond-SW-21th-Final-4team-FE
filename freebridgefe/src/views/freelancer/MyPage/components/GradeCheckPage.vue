@@ -1,84 +1,104 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
-import { ArrowLeft, Award, GraduationCap, CheckCircle, Info } from 'lucide-vue-next';
+import { ArrowLeft, Award, GraduationCap, CheckCircle, Info, Save, Loader2 } from 'lucide-vue-next';
+import { 
+    type GradeLevel, 
+    type EducationType, 
+    type CertificationType, 
+    type EducationOption,
+    type CertificationOption,
+    type GradeCriteriaItem,
+    getEducationOptions,
+    getCertificationOptions,
+    getGradeCriteria,
+    calculateGrade,
+    saveGrade
+} from '@/api/MyPage/gradeApi';
 
 const emit = defineEmits<{
   (e: 'back'): void;
 }>();
 
-type GradeLevel = '초급' | '중급' | '고급' | '특급' | '';
-type EducationType = '' | '전문학사' | '학사' | '석사' | '박사';
-type CertificationType = '' | '산업기사' | '기사';
-
 const selectedType = ref<'education' | 'certification'>('education');
-const education = ref<EducationType>('');
+const education = ref<EducationType>('전문학사'); // Default to first option or handle empty
 const yearsOfExperience = ref<number>(0);
-const certification = ref<CertificationType>('');
+const certification = ref<CertificationType>('산업기사'); // Default
 const certYears = ref<number>(0);
 const calculatedGrade = ref<GradeLevel>('');
 
-// 학경력자 등급 계산
-const calculateEducationGrade = (edu: EducationType, years: number): GradeLevel => {
-    if (!edu) return '';
+const educationOptions = ref<EducationOption[]>([]);
+const certificationOptions = ref<CertificationOption[]>([]);
+const criteriaList = ref<GradeCriteriaItem[]>([]);
 
-    if (edu === '박사') {
-        if (years >= 4) return '특급';
-        if (years >= 1) return '고급';
-        return '중급';
+const isLoading = ref(false);
+const isSaving = ref(false);
+
+onMounted(async () => {
+    try {
+        const [eduOpts, certOpts, criteria] = await Promise.all([
+            getEducationOptions(),
+            getCertificationOptions(),
+            getGradeCriteria()
+        ]);
+        educationOptions.value = eduOpts;
+        certificationOptions.value = certOpts;
+        criteriaList.value = criteria;
+        
+        // Initialize defaults if available
+        if (eduOpts.length > 0) education.value = eduOpts[0].value;
+        if (certOpts.length > 0) certification.value = certOpts[0].value;
+    } catch (error) {
+        console.error('Failed to load initial data', error);
     }
-    if (edu === '석사') {
-        if (years >= 9) return '특급';
-        if (years >= 6) return '고급';
-        if (years >= 3) return '중급';
-        return '초급';
+});
+
+const handleCalculate = async () => {
+    if (selectedType.value === 'education' && !education.value) return;
+    if (selectedType.value === 'certification' && !certification.value) return;
+
+    isLoading.value = true;
+    calculatedGrade.value = ''; // Reset result
+    
+    try {
+        const result = await calculateGrade({
+            type: selectedType.value,
+            education: selectedType.value === 'education' ? education.value : undefined,
+            certification: selectedType.value === 'certification' ? certification.value : undefined,
+            yearsOfExperience: selectedType.value === 'education' ? yearsOfExperience.value : certYears.value
+        });
+        calculatedGrade.value = result;
+    } catch (error) {
+        console.error('Calculation failed', error);
+    } finally {
+        isLoading.value = false;
     }
-    if (edu === '학사') {
-        if (years >= 12) return '특급';
-        if (years >= 9) return '고급';
-        if (years >= 6) return '중급';
-        return '초급';
-    }
-    if (edu === '전문학사') {
-        if (years >= 15) return '특급';
-        if (years >= 12) return '고급';
-        if (years >= 9) return '중급';
-        if (years >= 3) return '초급';
-        return '';
-    }
-    return '';
 };
 
-// 자격자 등급 계산
-const calculateCertificationGrade = (cert: CertificationType, years: number): GradeLevel => {
-    if (!cert) return '';
+const handleSave = async () => {
+    if (!calculatedGrade.value) return;
 
-    if (cert === '기사') {
-        if (years >= 10) return '특급';
-        if (years >= 7) return '고급';
-        if (years >= 4) return '중급';
-        return '초급';
-    }
-    if (cert === '산업기사') {
-        if (years >= 13) return '특급';
-        if (years >= 10) return '고급';
-        if (years >= 7) return '중급';
-        return '초급';
-    }
-    return '';
-};
-
-const handleCalculate = () => {
-    if (selectedType.value === 'education') {
-        calculatedGrade.value = calculateEducationGrade(education.value, yearsOfExperience.value);
-    } else {
-        calculatedGrade.value = calculateCertificationGrade(certification.value, certYears.value);
+    isSaving.value = true;
+    try {
+        await saveGrade({
+            type: selectedType.value,
+            education: selectedType.value === 'education' ? education.value : undefined,
+            certification: selectedType.value === 'certification' ? certification.value : undefined,
+            yearsOfExperience: selectedType.value === 'education' ? yearsOfExperience.value : certYears.value,
+            grade: calculatedGrade.value
+        });
+        alert('등급 정보가 성공적으로 저장되었습니다.');
+    } catch (error) {
+        console.error('Save failed', error);
+        alert('저장에 실패했습니다.');
+    } finally {
+        isSaving.value = false;
     }
 };
 
 const getGradeColor = (grade: GradeLevel) => {
     switch (grade) {
-        case '특급': return 'from-purple-500 to-pink-500';
+        case '특급': return 'from-purple-600 to-pink-600';
         case '고급': return 'from-blue-500 to-cyan-500';
         case '중급': return 'from-green-500 to-emerald-500';
         case '초급': return 'from-slate-500 to-slate-600';
@@ -88,7 +108,7 @@ const getGradeColor = (grade: GradeLevel) => {
 
 const getGradeBadgeColor = (grade: string) => {
     switch (grade) {
-        case '특급': return 'bg-purple-500';
+        case '특급': return 'bg-purple-600';
         case '고급': return 'bg-blue-500';
         case '중급': return 'bg-green-500';
         case '초급': return 'bg-slate-500';
@@ -193,11 +213,15 @@ const getGradeBadgeColor = (grade: string) => {
                             @change="calculatedGrade = ''"
                             class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
                         >
-                            <option value="" disabled selected>선택하세요</option>
-                            <option value="전문학사" class="text-black">전문학사</option>
-                            <option value="학사" class="text-black">학사</option>
-                            <option value="석사" class="text-black">석사</option>
-                            <option value="박사" class="text-black">박사</option>
+                            <option value="" disabled>선택하세요</option>
+                            <option 
+                                v-for="opt in educationOptions" 
+                                :key="opt.value" 
+                                :value="opt.value" 
+                                class="text-black"
+                            >
+                                {{ opt.label }}
+                            </option>
                         </select>
                     </div>
                     <div>
@@ -235,9 +259,15 @@ const getGradeBadgeColor = (grade: string) => {
                             @change="calculatedGrade = ''"
                             class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-green-500 transition-colors"
                         >
-                            <option value="" disabled selected>선택하세요</option>
-                            <option value="산업기사" class="text-black">산업기사</option>
-                            <option value="기사" class="text-black">기사</option>
+                             <option value="" disabled>선택하세요</option>
+                             <option 
+                                v-for="opt in certificationOptions" 
+                                :key="opt.value" 
+                                :value="opt.value" 
+                                class="text-black"
+                            >
+                                {{ opt.label }}
+                            </option>
                         </select>
                     </div>
                     <div>
@@ -256,13 +286,14 @@ const getGradeBadgeColor = (grade: string) => {
 
             <button
                 @click="handleCalculate"
-                :disabled="selectedType === 'education' ? !education : !certification"
-                class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl disabled:shadow-none"
+                :disabled="(selectedType === 'education' ? !education : !certification) || isLoading"
+                class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center gap-2"
                 v-motion
                 :hover="{ scale: 1.02 }"
                 :tap="{ scale: 0.98 }"
             >
-                등급 계산하기
+                <Loader2 v-if="isLoading" class="w-5 h-5 animate-spin" />
+                <span v-else>등급 계산하기</span>
             </button>
         </div>
 
@@ -279,7 +310,28 @@ const getGradeBadgeColor = (grade: string) => {
                     <CheckCircle class="w-12 h-12 text-white mb-4" />
                     <div class="text-sm text-white/80 mb-2">귀하의 등급은</div>
                     <div class="text-5xl font-bold text-white mb-2">{{ calculatedGrade }}</div>
-                    <div class="text-sm text-white/80">입니다</div>
+                    <div class="text-sm text-white/80 mb-6">입니다</div>
+                    
+                    <div class="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-left">
+                        <Info class="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+                        <div>
+                            <h4 class="text-red-400 font-bold text-sm mb-1">허위 정보 입력 시 주의사항</h4>
+                            <p class="text-xs text-red-300/80 leading-relaxed">
+                                해당 등급은 입력하신 정보를 바탕으로 산정됩니다. 
+                                실제 정보와 다를 경우 <span class="text-red-400 font-bold decoration-wavy underline">고용주와의 법적 분쟁 및 손해배상 청구</span>의 대상이 될 수 있습니다.
+                            </p>
+                        </div>
+                    </div>
+
+                     <button
+                        @click="handleSave"
+                        :disabled="isSaving"
+                        class="px-6 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm font-semibold transition-colors flex items-center gap-2 mx-auto"
+                    >
+                        <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
+                        <Save v-else class="w-4 h-4" />
+                        등급 정보 저장
+                    </button>
                 </template>
                 <template v-else>
                      <Award class="w-12 h-12 text-white/40 mb-4" />
@@ -326,12 +378,7 @@ const getGradeBadgeColor = (grade: string) => {
                     </tr>
                 </thead>
                 <tbody>
-                     <tr v-for="item in [
-                        { grade: '특급', color: 'bg-purple-500', edu: '박사+4년 / 석사+9년 / 학사+12년 / 전문학사+15년', cert: '기사+10년 / 산업기사+13년' },
-                        { grade: '고급', color: 'bg-blue-500', edu: '박사+1년 / 석사+6년 / 학사+9년 / 전문학사+12년', cert: '기사+7년 / 산업기사+10년' },
-                        { grade: '중급', color: 'bg-green-500', edu: '박사 / 석사+3년 / 학사+6년 / 전문학사+9년', cert: '기사+4년 / 산업기사+7년' },
-                        { grade: '초급', color: 'bg-slate-500', edu: '석사 / 학사 / 전문학사+3년', cert: '기사 / 산업기사' },
-                    ]" :key="item.grade" class="border-b border-white/10 hover:bg-white/5">
+                     <tr v-for="item in criteriaList" :key="item.grade" class="border-b border-white/10 hover:bg-white/5">
                         <td class="py-3 px-4">
                             <span :class="`inline-block px-3 py-1 ${item.color} text-white rounded-full text-xs font-bold`">{{ item.grade }}</span>
                         </td>

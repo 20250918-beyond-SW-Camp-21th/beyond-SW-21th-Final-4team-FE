@@ -18,6 +18,8 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 
+import { updateAccountInfo, changePassword } from '@/api/MyPage/accountApi';
+
 const emit = defineEmits<{
   (e: 'back'): void;
 }>();
@@ -26,6 +28,7 @@ const authStore = useAuthStore();
 const currentUser = authStore.user;
 
 const accountInfo = ref({
+    id: currentUser?.id || 1,
     name: currentUser?.name || '김프론트',
     email: currentUser?.email || 'frontend@example.com',
     phone: '010-1234-5678',
@@ -52,11 +55,25 @@ const notifications = ref({
 
 const twoFactorEnabled = ref(false);
 
-const handleSaveAccountInfo = () => {
-    alert('계정 정보가 저장되었습니다.');
+const handleSaveAccountInfo = async () => {
+    try {
+        const success = await updateAccountInfo(accountInfo.value);
+        if (success) {
+            alert('계정 정보가 저장되었습니다.');
+            // authStore 업데이트 로직이 필요하다면 추가
+            if (currentUser) {
+                currentUser.name = accountInfo.value.name;
+                // currentUser.phone = accountInfo.value.phone; // 타입에 phone이 있다면
+            }
+        } else {
+            alert('저장에 실패했습니다.');
+        }
+    } catch (e) {
+        alert('오류가 발생했습니다.');
+    }
 };
 
-const handleChangePassword = () => {
+const handleChangePassword = async () => {
     if (passwordData.value.newPassword !== passwordData.value.confirmPassword) {
         alert('새 비밀번호가 일치하지 않습니다.');
         return;
@@ -65,8 +82,23 @@ const handleChangePassword = () => {
         alert('비밀번호는 최소 8자 이상이어야 합니다.');
         return;
     }
-    alert('비밀번호가 변경되었습니다.');
-    passwordData.value = { currentPassword: '', newPassword: '', confirmPassword: '' };
+    
+    try {
+        const success = await changePassword({
+            current: passwordData.value.currentPassword,
+            new: passwordData.value.newPassword,
+            confirm: passwordData.value.confirmPassword
+        });
+        
+        if (success) {
+            alert('비밀번호가 변경되었습니다.');
+            passwordData.value = { currentPassword: '', newPassword: '', confirmPassword: '' };
+        } else {
+            alert('비밀번호 변경에 실패했습니다.');
+        }
+    } catch (e) {
+        alert('오류가 발생했습니다.');
+    }
 };
 </script>
 
