@@ -143,39 +143,7 @@ const allSettlements = ref<EmployerSettlement[]>([
         employerId: 'e1',
         dueDate: new Date('2025-12-20'), // LAST_3_MONTHS
         paidDate: new Date('2025-12-18'),
-    },
-    {
-        id: 'es7',
-        contractId: 'c3',
-        billingAmount: 2000000,
-        platformFee: 100000,
-        tax: 210000,
-        totalAmount: 2310000,
-        installmentNumber: 1,
-        status: 'ISSUED',
-        invoicePdfUrl: '/invoices/es7.pdf',
-        projectName: '모바일 앱 개발',
-        freelancerName: '김프론트',
-        freelancerId: 'f1',
-        employerId: 'e1',
-        dueDate: new Date('2025-11-25'), // OLD (not in LAST_3_MONTHS)
-    },
-    {
-        id: 'es8',
-        contractId: 'c3',
-        billingAmount: 6000000,
-        platformFee: 300000,
-        tax: 630000,
-        totalAmount: 6930000,
-        installmentNumber: 2,
-        status: 'ISSUED',
-        invoicePdfUrl: '/invoices/es8.pdf',
-        projectName: '모바일 앱 개발',
-        freelancerName: '김프론트',
-        freelancerId: 'f1',
-        employerId: 'e1',
-        dueDate: new Date('2025-10-15'), // OLD (not in LAST_3_MONTHS)
-    },
+    }
 ]);
 
 const selectedSettlement = ref<EmployerSettlement | null>(null);
@@ -185,8 +153,6 @@ const currentPage = ref(1);
 const itemsPerPage = 10;
 const searchQuery = ref('');
 const selectedDateRange = ref('ALL');
-const showPaymentConfirmModal = ref(false);
-const pendingPaymentSettlement = ref<EmployerSettlement | null>(null);
 
 const dateRangeOptions = [
     { value: 'ALL', label: '전체 기간' },
@@ -330,33 +296,6 @@ const handleDownload = (settlement: EmployerSettlement) => {
     alert(`청구서 다운로드: ${settlement.projectName} - ${settlement.installmentNumber}차`);
 };
 
-const openPaymentConfirmModal = (settlement: EmployerSettlement) => {
-    pendingPaymentSettlement.value = settlement;
-    showPaymentConfirmModal.value = true;
-};
-
-const confirmPayment = () => {
-    if (pendingPaymentSettlement.value) {
-        const index = allSettlements.value.findIndex(
-            (s) => s.id === pendingPaymentSettlement.value!.id
-        );
-        if (index !== -1) {
-            allSettlements.value[index] = {
-                ...allSettlements.value[index],
-                status: 'PAID',
-                paidDate: new Date(),
-            };
-        }
-        showPaymentConfirmModal.value = false;
-        pendingPaymentSettlement.value = null;
-    }
-};
-
-const cancelPayment = () => {
-    showPaymentConfirmModal.value = false;
-    pendingPaymentSettlement.value = null;
-};
-
 const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page;
@@ -407,7 +346,7 @@ const goToPage = (page: number) => {
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="text-sm text-white/40 mb-1">납부 기한</div>
+                                    <div class="text-sm text-white/40 mb-1">결제일</div>
                                     <div class="text-lg font-medium text-white">
                                         {{ formatDate(nextSettlement.dueDate) }}
                                     </div>
@@ -416,13 +355,9 @@ const goToPage = (page: number) => {
                         </div>
 
                         <div class="flex flex-col items-center gap-4">
-                            <button
-                                @click="openPaymentConfirmModal(nextSettlement)"
-                                class="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold flex items-center gap-2 transition-all hover:scale-105 active:scale-95"
-                            >
-                                <CheckCircle class="w-5 h-5" />
-                                결제 완료 처리
-                            </button>
+                            <div class="px-4 py-2 rounded-full bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 font-medium">
+                                결제 대기
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -607,29 +542,25 @@ const goToPage = (page: number) => {
 
                     <!-- Right: Status & Actions -->
                     <div class="flex items-center gap-3">
+                        <!-- Status Badge -->
                         <div
-                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-white/10 border border-white/10 flex items-center gap-2"
+                            v-if="settlement.status === 'ISSUED'"
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 flex items-center gap-2"
                         >
-                            {{ statusConfig[settlement.status].label }}
-                            <!-- Overdue Indicator -->
+                            결제 대기
                             <span
-                                v-if="
-                                    settlement.status === 'ISSUED' &&
-                                    new Date(settlement.dueDate) < now
-                                "
+                                v-if="new Date(settlement.dueDate) < now"
                                 class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30"
                             >
                                 연체
                             </span>
                         </div>
-
-                        <button
-                            v-if="settlement.status === 'ISSUED'"
-                            @click="openPaymentConfirmModal(settlement)"
-                            class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors"
+                        <div
+                            v-else
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-green-500/20 border border-green-500/30 text-green-400"
                         >
                             결제 완료
-                        </button>
+                        </div>
 
                         <button
                             @click="selectedSettlement = settlement"
@@ -697,47 +628,5 @@ const goToPage = (page: number) => {
             @close="selectedSettlement = null"
             @download="handleDownload"
         />
-
-        <!-- Payment Confirmation Modal -->
-        <div
-            v-if="showPaymentConfirmModal"
-            class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-sans text-white"
-        >
-            <div
-                class="bg-gray-900 border border-white/10 rounded-2xl p-6 max-w-md w-full shadow-2xl"
-                v-motion
-                :initial="{ opacity: 0, scale: 0.95 }"
-                :enter="{ opacity: 1, scale: 1 }"
-            >
-                <div class="flex items-center gap-3 mb-4 text-white">
-                    <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                        <DollarSign class="w-6 h-6 text-blue-400" />
-                    </div>
-                    <h3 class="text-xl font-bold">결제 확인</h3>
-                </div>
-                
-                <p class="text-white/60 mb-6">
-                    <span class="text-white font-semibold">{{ pendingPaymentSettlement?.projectName }}</span>
-                    프로젝트의 {{ pendingPaymentSettlement?.installmentNumber }}차 대금
-                    <span class="text-white font-bold">{{ formatCurrency(pendingPaymentSettlement?.totalAmount || 0) }}</span>을<br>
-                    결제 완료 처리하시겠습니까?
-                </p>
-
-                <div class="flex gap-3">
-                    <button
-                        @click="cancelPayment"
-                        class="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-white font-medium transition-colors"
-                    >
-                        취소
-                    </button>
-                    <button
-                        @click="confirmPayment"
-                        class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-lg transition-colors"
-                    >
-                        결제 확정
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 </template>

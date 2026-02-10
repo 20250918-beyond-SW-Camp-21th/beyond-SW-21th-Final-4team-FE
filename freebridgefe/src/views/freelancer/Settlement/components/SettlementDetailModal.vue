@@ -1,43 +1,47 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { useMotion } from '@vueuse/motion';
-import { X, DollarSign, CheckCircle, Clock, AlertCircle } from 'lucide-vue-next';
-import type { Settlement } from '@/types/contract';
+import { X, DollarSign, Clock, Calendar, Download } from 'lucide-vue-next';
+import type { FreelancerSettlementWithDetails } from '@/stores/contractStore';
 
 const props = defineProps<{
-  settlement: Settlement;
+  settlement: FreelancerSettlementWithDetails;
 }>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
+  (e: 'download', settlement: FreelancerSettlementWithDetails): void;
 }>();
 
-// 결제 단계 타임라인
-const paymentStages = [
-  { id: 1, label: '정산 요청', status: 'PENDING' },
-  { id: 2, label: '검토중', status: 'PROCESSING' },
-  { id: 3, label: '승인 완료', status: 'APPROVED' },
-  { id: 4, label: '지급 완료', status: 'PAID' },
-];
+// Simplified status for UI
+const isPaid = computed(() => props.settlement.status === 'PAID');
 
-const currentStageIndex = computed(() => 
-  paymentStages.findIndex((s) => s.status === props.settlement.status)
-);
+const statusDisplay = computed(() => {
+  if (isPaid.value) {
+    return { label: '지급 완료', color: 'text-green-400', bg: 'bg-green-400/10 border-green-400/30' };
+  }
+  return { label: '지급 예정', color: 'text-blue-400', bg: 'bg-blue-400/10 border-blue-400/30' };
+});
 
-const feeRate = computed(() => 
-  ((props.settlement.platformFee / props.settlement.totalAmount) * 100).toFixed(1)
-);
+// Calculate correct netAmount (only tax is deducted for freelancers)
+const calculatedNetAmount = computed(() => {
+  return props.settlement.totalAmount - props.settlement.tax;
+});
+
+const handleDownload = () => {
+  emit('download', props.settlement);
+};
 </script>
 
 <template>
   <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-sans text-white">
     <div
-      class="bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+      class="bg-gray-900/95 backdrop-blur-xl border border-white/10 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
       v-motion
       :initial="{ opacity: 0, scale: 0.95, y: 20 }"
       :enter="{ opacity: 1, scale: 1, y: 0 }"
       :leave="{ opacity: 0, scale: 0.95, y: 20 }"
     >
+      <!-- Header -->
       <div class="sticky top-0 bg-gray-900/95 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10">
         <h2 class="text-2xl font-bold text-white">정산 상세 내역</h2>
         <button
@@ -52,62 +56,49 @@ const feeRate = computed(() =>
       </div>
 
       <div class="p-6 space-y-6">
-        <!-- 프로젝트 정보 -->
-        <div class="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-xl border border-blue-400/30 rounded-2xl p-6 shadow-lg">
-          <div class="text-sm text-white/60 mb-1">프로젝트</div>
-          <div class="text-2xl font-medium text-white mb-2">{{ settlement.projectName }}</div>
-          <div class="text-white/70">{{ settlement.employerName }}</div>
+        <!-- Project Info -->
+        <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-sm text-white/60 mb-1">프로젝트</div>
+              <div class="text-2xl font-bold text-white mb-2">{{ settlement.projectName }}</div>
+              <div class="text-white/70">{{ settlement.employerName }}</div>
+              <div class="text-sm text-white/50 mt-2">{{ settlement.installmentNumber }}차 정산</div>
+            </div>
+            <div
+              class="px-4 py-2 rounded-full border font-medium"
+              :class="statusDisplay.bg"
+            >
+              <span :class="statusDisplay.color">
+                {{ statusDisplay.label }}
+              </span>
+            </div>
+          </div>
         </div>
 
-        <!-- 타임라인 스테퍼 -->
+        <!-- Payment Schedule -->
         <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
-          <h3 class="text-lg font-bold text-white mb-6">정산 진행 상태</h3>
-          <div class="relative">
-            <!-- 프로그레스 라인 -->
-            <div class="absolute top-6 left-6 right-6 h-1 bg-white/10">
-              <div
-                class="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-green-500 transition-all duration-1000 ease-out"
-                :style="{ width: `${(currentStageIndex / (paymentStages.length - 1)) * 100}%` }"
-              ></div>
-            </div>
+          <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+            <Calendar class="w-5 h-5 text-blue-400" />
+            지급 일정
+          </h3>
+          <div class="grid md:grid-cols-1 gap-4">
+            <div class="bg-white/5 rounded-xl p-4">
+              <div class="flex items-center gap-2 text-white/60 mb-2">
+                <Clock class="w-4 h-4" />
+                <span class="text-sm">정기 지급일</span>
+              </div>
+              <div class="font-bold text-white text-lg">
+                매월 15일
 
-            <!-- 단계 -->
-            <div class="relative flex justify-between">
-              <div
-                v-for="(stage, index) in paymentStages"
-                :key="stage.id"
-                class="flex flex-col items-center"
-              >
-                <div
-                  class="w-12 h-12 rounded-full border-4 flex items-center justify-center transition-all bg-gray-800 border-white/10"
-                   :class="{
-                    'bg-gradient-to-br from-blue-500 to-green-500 border-white/20 shadow-lg': index <= currentStageIndex
-                  }"
-                  v-motion
-                  :initial="{ scale: 0 }"
-                  :enter="{ scale: 1, transition: { delay: 0.2 + index * 0.1 } }"
-                >
-                  <CheckCircle v-if="index <= currentStageIndex" class="w-6 h-6 text-white" />
-                  <div v-else class="w-3 h-3 rounded-full bg-white/30" />
-                </div>
-                <div
-                  class="mt-3 text-sm text-center"
-                  :class="index === currentStageIndex ? 'font-medium text-blue-400' : 'text-white/60'"
-                >
-                  {{ stage.label }}
-                </div>
-                <div
-                  v-if="index === currentStageIndex"
-                  class="mt-1 px-2 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30"
-                >
-                  진행중
-                </div>
+<!--당장은 하드 코딩이지만 나중에는 계약서에서 값을 뽑아오는 방식으로
+    매월 {{ settlement.paymentDay }}일-->
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 금액 breakdown -->
+        <!-- Amount Breakdown -->
         <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
           <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <DollarSign class="w-5 h-5 text-green-400" />
@@ -124,11 +115,7 @@ const feeRate = computed(() =>
 
             <div class="space-y-3">
               <div class="flex items-center justify-between text-red-400">
-                <span>플랫폼 수수료 ({{ feeRate }}%)</span>
-                <span>- {{ settlement.platformFee.toLocaleString() }}원</span>
-              </div>
-              <div class="flex items-center justify-between text-red-400">
-                <span>원천세 (10%)</span>
+                <span>원천세 (3.3%)</span>
                 <span>- {{ settlement.tax.toLocaleString() }}원</span>
               </div>
             </div>
@@ -136,70 +123,34 @@ const feeRate = computed(() =>
             <div class="pt-4 border-t border-white/10 flex items-center justify-between">
               <span class="text-lg font-medium text-white">실수령액</span>
               <span class="text-3xl font-bold text-green-400">
-                {{ settlement.netAmount.toLocaleString() }}원
+                {{ calculatedNetAmount.toLocaleString() }}원
               </span>
             </div>
           </div>
         </div>
 
-        <!-- 계좌 정보 -->
-        <div v-if="settlement.bankAccount" class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
-          <h3 class="text-lg font-bold text-white mb-3">입금 계좌</h3>
-          <div class="text-xl font-medium text-white">{{ settlement.bankAccount }}</div>
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button
+            @click="handleDownload"
+            class="flex-1 py-4 bg-white/5 border border-white/10 text-white font-semibold rounded-2xl hover:bg-white/10 transition-all flex items-center justify-center gap-2"
+            v-motion
+            :hover="{ scale: 1.02 }"
+            :tap="{ scale: 0.98 }"
+          >
+            <Download class="w-5 h-5" />
+            정산 내역서 다운로드
+          </button>
+          <button
+            @click="$emit('close')"
+            class="flex-1 py-4 bg-white/5 border border-white/10 hover:bg-white/10 text-white font-semibold rounded-2xl transition-all"
+            v-motion
+            :hover="{ scale: 1.02 }"
+            :tap="{ scale: 0.98 }"
+          >
+            닫기
+          </button>
         </div>
-
-        <!-- 날짜 정보 -->
-        <div class="grid md:grid-cols-2 gap-4">
-          <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
-            <div class="flex items-center gap-2 text-white/60 mb-2">
-              <Clock class="w-4 h-4" />
-              <span class="text-sm">요청일</span>
-            </div>
-            <div class="font-medium text-white">
-              {{ new Date(settlement.requestDate).toLocaleDateString('ko-KR') }}
-            </div>
-          </div>
-
-          <div v-if="settlement.paidDate" class="bg-green-500/20 border border-green-400/30 rounded-2xl p-4">
-            <div class="flex items-center gap-2 text-green-300 mb-2">
-              <CheckCircle class="w-4 h-4" />
-              <span class="text-sm">지급일</span>
-            </div>
-            <div class="font-medium text-green-200">
-              {{ new Date(settlement.paidDate).toLocaleDateString('ko-KR') }}
-            </div>
-          </div>
-        </div>
-
-        <!-- 상태별 안내 메시지 -->
-        <div v-if="settlement.status === 'PROCESSING'" class="bg-blue-500/20 border border-blue-400/30 rounded-2xl p-4">
-          <div class="text-sm text-blue-200">
-            💡 정산이 처리 중입니다. 영업일 기준 2-3일 내 승인 예정입니다.
-          </div>
-        </div>
-
-        <div v-if="settlement.status === 'APPROVED'" class="bg-purple-500/20 border border-purple-400/30 rounded-2xl p-4">
-          <div class="text-sm text-purple-200">
-            ✅ 정산이 승인되었습니다. 곧 입금 처리될 예정입니다.
-          </div>
-        </div>
-
-        <div v-if="settlement.status === 'PAID'" class="bg-green-500/20 border border-green-400/30 rounded-2xl p-4">
-          <div class="text-sm text-green-200">
-            🎉 정산이 완료되어 입금되었습니다. 계좌를 확인해주세요.
-          </div>
-        </div>
-
-        <!-- 닫기 버튼 -->
-        <button
-          @click="$emit('close')"
-          class="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold rounded-2xl hover:shadow-xl transition-all"
-          v-motion
-          :hover="{ scale: 1.02 }"
-          :tap="{ scale: 0.98 }"
-        >
-          닫기
-        </button>
       </div>
     </div>
   </div>
