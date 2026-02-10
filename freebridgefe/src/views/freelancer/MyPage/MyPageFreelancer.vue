@@ -21,7 +21,7 @@ import {
 import { useAuthStore } from '@/stores/authStore.ts';
 import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi.ts';
 import ResumeManagementPage from './components/ResumeManagementPage.vue';
-import CompanyEvaluationSummary from './components/CompanyEvaluationSummary.vue';
+import EvaluationListPage from './components/EvaluationListPage.vue';
 import AccountManagementPage from './components/AccountManagementPage.vue';
 import GradeCheckPage from './components/GradeCheckPage.vue';
 import ProfileEditPage from './components/ProfileEditPage.vue';
@@ -35,7 +35,6 @@ const currentUser = computed(() => authStore.user);
 const activeTab = ref('dashboard');
 const isConditionOpen = ref(false);
 const isPortfolioOpen = ref(false);
-const isInquiryOpen = ref(false);
 
 const isProjectDetailOpen = ref(false);
 const selectedProjectId = ref<number | null>(null);
@@ -111,7 +110,6 @@ const menuItems = [
     { id: 'resume', label: '이력서 관리', icon: FileText, action: () => activeTab.value = 'resume' },
     { id: 'evaluation', label: '고용주 평가', icon: Award, action: () => activeTab.value = 'evaluation' },
     { id: 'gradecheck', label: '회원 등급 조회', icon: CheckCircle, action: () => activeTab.value = 'gradecheck' },
-    { id: 'inquiry', label: '1:1 문의', icon: MessageSquare, action: () => isInquiryOpen.value = true },
     { id: 'account', label: '내 계정 관리', icon: Settings, action: () => activeTab.value = 'account' },
 ];
 
@@ -480,7 +478,7 @@ const handlePortfolioUpload = () => {
             @back="activeTab = 'dashboard'"
         />
 
-        <CompanyEvaluationSummary
+        <EvaluationListPage
             v-else-if="activeTab === 'evaluation'"
             @back="activeTab = 'dashboard'"
         />
@@ -502,11 +500,6 @@ const handlePortfolioUpload = () => {
         />
 
     </main>
-    
-    <OneOnOneInquiryModal
-        v-if="isInquiryOpen"
-        @close="isInquiryOpen = false"
-    />
 
   </div>
 </template>
