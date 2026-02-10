@@ -2,15 +2,12 @@
 import { computed } from 'vue';
 import {
     X,
-    DollarSign,
     CheckCircle,
     Clock,
     Send,
-    Calendar,
     User,
     FileText,
     Download,
-    Briefcase,
 } from 'lucide-vue-next';
 
 interface EmployerSettlement {
@@ -46,16 +43,6 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle; co
     DISBURSED: { label: '지급 완료', icon: Send, color: 'text-green-400', bg: 'bg-green-400/10 border-green-400/30' },
 };
 
-const paymentStages = [
-    { id: 1, label: '청구서 발행', status: 'ISSUED' },
-    { id: 2, label: '결제 완료', status: 'PAID' },
-    { id: 3, label: '지급 완료', status: 'DISBURSED' },
-];
-
-const currentStageIndex = computed(() => {
-    const statusOrder = ['ISSUED', 'PAID', 'DISBURSED'];
-    return statusOrder.indexOf(props.settlement.status);
-});
 
 const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('ko-KR', {
@@ -120,49 +107,6 @@ const handleDownload = () => {
                     </div>
                 </div>
 
-                <!-- Progress Timeline -->
-                <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
-                    <h3 class="text-lg font-bold text-white mb-6">정산 진행 상태</h3>
-                    <div class="relative">
-                        <!-- Progress Line -->
-                        <div class="absolute top-6 left-6 right-6 h-1 bg-white/10">
-                            <div
-                                class="h-full bg-blue-500 transition-all duration-1000 ease-out"
-                                :style="{ width: `${(currentStageIndex / (paymentStages.length - 1)) * 100}%` }"
-                            ></div>
-                        </div>
-
-                        <!-- Stages -->
-                        <div class="relative flex justify-between">
-                            <div
-                                v-for="(stage, index) in paymentStages"
-                                :key="stage.id"
-                                class="flex flex-col items-center"
-                            >
-                                <div
-                                    class="w-12 h-12 rounded-full border-4 flex items-center justify-center transition-all bg-gray-800"
-                                    :class="{
-                                        'bg-blue-500 border-white/20 shadow-lg': index <= currentStageIndex,
-                                        'border-white/10': index > currentStageIndex,
-                                    }"
-                                    v-motion
-                                    :initial="{ scale: 0 }"
-                                    :enter="{ scale: 1, transition: { delay: 0.2 + index * 0.1 } }"
-                                >
-                                    <CheckCircle v-if="index <= currentStageIndex" class="w-6 h-6 text-white" />
-                                    <div v-else class="w-3 h-3 rounded-full bg-white/30" />
-                                </div>
-                                <div
-                                    class="mt-3 text-sm text-center"
-                                    :class="index === currentStageIndex ? 'font-medium text-blue-400' : 'text-white/60'"
-                                >
-                                    {{ stage.label }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Settlement Details -->
                 <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
                     <h3 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
@@ -175,74 +119,26 @@ const handleDownload = () => {
                             <span class="text-white/60">청구 회차</span>
                             <span class="font-medium text-white">{{ settlement.installmentNumber }}차</span>
                         </div>
+                        <div v-if="settlement.paidDate" class="flex items-center justify-between py-3 border-b border-white/10">
+                            <span class="text-white/60">결제일</span>
+                            <span class="font-medium text-white">{{ formatDate(settlement.paidDate) }}</span>
+                        </div>
                         <div class="flex items-center justify-between py-3 border-b border-white/10">
-                            <span class="text-white/60">청구 금액 (공급가액)</span>
+                            <span class="text-white/60">청구 금액</span>
                             <span class="text-xl font-bold text-white">{{ formatCurrency(settlement.billingAmount) }}</span>
                         </div>
                         <div class="flex items-center justify-between py-3 border-b border-white/10">
                             <span class="text-white/60">플랫폼 수수료 (5%)</span>
                             <span class="text-white">{{ formatCurrency(settlement.platformFee) }}</span>
                         </div>
-                        <div class="flex items-center justify-between py-3 border-b border-white/10">
-                            <span class="text-white/60">부가세 (10%)</span>
-                            <span class="text-white">{{ formatCurrency(settlement.tax) }}</span>
-                        </div>
-                        <div class="flex items-center justify-between py-3 border-b border-white/10 bg-white/5 px-4 rounded-xl mt-2">
+<!--                        <div class="flex items-center justify-between py-3 border-b border-white/10">-->
+<!--                            <span class="text-white/60"> 소득세 (3.3%)</span>-->
+<!--                            <span class="text-white">{{ formatCurrency(settlement.tax) }}</span>-->
+<!--                        </div>-->
+                        <div class="flex items-center justify-between py-3 bg-white/5 px-4 rounded-xl mt-2">
                             <span class="text-white font-medium">총 결제 금액</span>
                             <span class="text-2xl font-bold text-blue-400">{{ formatCurrency(settlement.totalAmount) }}</span>
                         </div>
-                        <div class="flex items-center justify-between py-3 border-b border-white/10">
-                            <span class="text-white/60">계약 ID</span>
-                            <span class="font-medium text-white flex items-center gap-1">
-                                {{ settlement.contractId }}
-                                <Briefcase class="w-3 h-3" />
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dates -->
-                <div class="grid md:grid-cols-2 gap-4">
-                    <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4">
-                        <div class="flex items-center gap-2 text-white/60 mb-2">
-                            <Calendar class="w-4 h-4" />
-                            <span class="text-sm">납부 기한</span>
-                        </div>
-                        <div class="font-medium text-white">
-                            {{ formatDate(settlement.dueDate) }}
-                        </div>
-                    </div>
-
-                    <div
-                        v-if="settlement.paidDate"
-                        class="bg-white/5 border border-white/10 rounded-2xl p-4"
-                    >
-                        <div class="flex items-center gap-2 text-white/60 mb-2">
-                            <CheckCircle class="w-4 h-4" />
-                            <span class="text-sm">결제일</span>
-                        </div>
-                        <div class="font-medium text-white">
-                            {{ formatDate(settlement.paidDate) }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Status Messages -->
-                <div v-if="settlement.status === 'ISSUED'" class="bg-white/5 border border-white/10 rounded-2xl p-4">
-                    <div class="text-sm text-white/80">
-                        청구서가 발행되었습니다. 납부 기한 내에 결제를 완료해주세요.
-                    </div>
-                </div>
-
-                <div v-if="settlement.status === 'PAID'" class="bg-white/5 border border-white/10 rounded-2xl p-4">
-                    <div class="text-sm text-white/80">
-                        결제가 완료되었습니다. 프리랜서에게 지급 처리 중입니다.
-                    </div>
-                </div>
-
-                <div v-if="settlement.status === 'DISBURSED'" class="bg-white/5 border border-white/10 rounded-2xl p-4">
-                    <div class="text-sm text-white/80">
-                        프리랜서에게 정산이 완료되었습니다.
                     </div>
                 </div>
 

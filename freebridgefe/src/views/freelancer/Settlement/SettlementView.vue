@@ -48,19 +48,14 @@ const dateRangeOptions = [
 
 const statusFilters = [
     { value: 'ALL', label: '전체' },
-    { value: 'PENDING', label: '지급 예정' },
-    { value: 'PROCESSING', label: '처리 중' },
-    { value: 'APPROVED', label: '승인 완료' },
+    { value: 'HOLDING', label: '지급 예정' },
     { value: 'PAID', label: '지급 완료' },
-    { value: 'REJECTED', label: '반려' },
 ];
 
-const statusConfig: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-    PENDING: { label: '지급 예정', color: 'text-blue-400', bg: 'bg-white/5 border-white/10', icon: Calendar },
-    PROCESSING: { label: '처리 중', color: 'text-indigo-400', bg: 'bg-white/5 border-white/10', icon: Clock },
-    APPROVED: { label: '승인 완료', color: 'text-green-400', bg: 'bg-white/5 border-white/10', icon: CheckCircle },
-    PAID: { label: '지급 완료', color: 'text-purple-400', bg: 'bg-white/5 border-white/10', icon: Wallet },
-    REJECTED: { label: '반려', color: 'text-red-400', bg: 'bg-white/5 border-white/10', icon: AlertCircle },
+const statusConfig: Record<string, { label: string; color: string; bg: string; badgeBg: string; icon: any }> = {
+    HOLDING: { label: '지급 예정', color: 'text-blue-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-blue-500/20 border border-blue-500/30 text-blue-400', icon: Calendar },
+    PROCESSING: { label: '지급 예정', color: 'text-blue-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-blue-500/20 border border-blue-500/30 text-blue-400', icon: Calendar },
+    PAID: { label: '지급 완료', color: 'text-green-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-green-500/20 border border-green-500/30 text-green-400', icon: CheckCircle },
 };
 
 // Base Data
@@ -129,9 +124,9 @@ const paginatedSettlements = computed(() => {
 });
 
 
-// 지급 예정 금액 (PENDING)
+// 지급 예정 금액 (HOLDING or PROCESSING)
 const pendingAmount = computed(() => mySettlements.value
-    .filter((s) => s.status === 'PENDING')
+    .filter((s) => s.status === 'HOLDING' || s.status === 'PROCESSING')
     .reduce((sum, s) => sum + s.netAmount, 0));
 
 // 지급 완료 금액 (PAID)
@@ -347,9 +342,8 @@ const handleSaveAccount = (account: { bankName: string; accountNumber: string })
                                 {{ settlement.projectName }}
                             </div>
                             <div class="text-xs text-white/40">
-                                {{ formatDate(settlement.requestDate) }} · 
-                                <span v-if="settlement.installmentNumber">{{ settlement.installmentNumber }}차 · </span>
-                                {{ statusConfig[settlement.status].label }}
+                                {{ settlement.installmentNumber }}차 정산
+                                <span v-if="settlement.paidDate"> · {{ formatDate(settlement.paidDate) }}</span>
                             </div>
                         </div>
                     </div>
@@ -358,22 +352,20 @@ const handleSaveAccount = (account: { bankName: string; accountNumber: string })
                              <div class="text-lg font-bold text-white">{{ settlement.netAmount.toLocaleString() }}원</div>
                              <div class="text-xs text-white/40">실 수령액</div>
                         </div>
-                        <div class="flex gap-1">
-                             <button
-                                @click="selectedSettlement = settlement"
-                                class="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                                title="상세보기"
-                            >
-                                <Eye class="w-5 h-5 text-white/60" />
-                            </button>
-                            <button
-                                @click="handleDownload(settlement)"
-                                class="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                                title="다운로드"
-                            >
-                                <Download class="w-5 h-5 text-white/60" />
-                            </button>
+                        <!-- Status Badge -->
+                        <div
+                            class="px-3 py-1.5 rounded-full text-sm font-medium"
+                            :class="statusConfig[settlement.status].badgeBg"
+                        >
+                            {{ statusConfig[settlement.status].label }}
                         </div>
+                        <button
+                            @click="selectedSettlement = settlement"
+                            class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            title="상세보기"
+                        >
+                            <Eye class="w-5 h-5 text-white/60" />
+                        </button>
                     </div>
                 </div>
             </div>
@@ -448,24 +440,6 @@ const handleSaveAccount = (account: { bankName: string; accountNumber: string })
                     </button>
                 </div>
             </div>
-
-            <!-- Tip Card -->
-            <div
-                class="bg-blue-500/10 border border-blue-500/20 rounded-3xl p-6"
-                 v-motion
-                :initial="{ opacity: 0, x: 20 }"
-                :enter="{ opacity: 1, x: 0, transition: { delay: 700 } }"
-            >
-                <div class="flex items-start gap-3">
-                    <AlertCircle class="w-5 h-5 text-blue-400 flex-shrink-0" />
-                    <div>
-                         <div class="font-bold text-blue-300 text-sm mb-1">정산 안내</div>
-                        <p class="text-xs text-blue-200/60 leading-relaxed">
-                            정산은 계약서에 명시된 지급일에 맞춰 자동으로 지정된 계좌로 입금됩니다.
-                        </p>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -480,6 +454,7 @@ const handleSaveAccount = (account: { bankName: string; accountNumber: string })
         v-if="selectedSettlement"
         :settlement="selectedSettlement"
         @close="selectedSettlement = null"
+        @download="handleDownload"
     />
   </div>
 </template>

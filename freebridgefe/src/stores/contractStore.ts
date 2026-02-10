@@ -36,13 +36,11 @@ export interface EmployerSettlement {
     paidDate?: Date | string;
 }
 
-// FreelancerSettlement Entity (Disbursement - based on entity.md)
 export interface FreelancerSettlement {
     id: number;
     contractId: number;
     employerSettlementId: number;
     totalAmount: number;
-    platformFee: number;
     tax: number;
     netAmount: number;
     status: 'HOLDING' | 'PROCESSING' | 'PAID';
@@ -337,199 +335,194 @@ export const useContractStore = defineStore('contract', () => {
     ]);
 
     // FreelancerSettlements (Disbursement - based on entity.md)
+    // netAmount = totalAmount - tax (3.3%) - freelancers don't pay platform fee
     const freelancerSettlements = ref<FreelancerSettlement[]>([
-        // Linked to EmployerSettlement 1 (DISBURSED)
+        // === Contract 1: SaaS 대시보드 리뉴얼 (freelancerId: 1) ===
+        // Linked to EmployerSettlement 1 (DISBURSED) - PAID
         {
             id: 1,
             contractId: 1,
             employerSettlementId: 1,
             totalAmount: 1500000,
-            platformFee: 75000, // 5%
             tax: 49500, // 3.3%
-            netAmount: 1375500,
+            netAmount: 1450500, // totalAmount - tax
             status: 'PAID',
             installmentNumber: 1,
-            expectedPaidDate: new Date('2024-02-02'),
-            paidDate: new Date('2024-02-02'),
+            expectedPaidDate: new Date('2026-01-25'),
+            paidDate: new Date('2026-01-25'),
             receiptPdfUrl: '/receipts/fs1.pdf',
         },
-        // Linked to EmployerSettlement 2 (PAID -> processing disbursement)
+        // Linked to EmployerSettlement 2 (PAID -> processing) - PROCESSING
         {
             id: 2,
             contractId: 1,
             employerSettlementId: 2,
             totalAmount: 2000000,
-            platformFee: 100000, // 5%
             tax: 66000, // 3.3%
-            netAmount: 1834000,
+            netAmount: 1934000,
             status: 'PROCESSING',
             installmentNumber: 2,
-            expectedPaidDate: new Date('2024-03-01'),
+            expectedPaidDate: new Date('2026-02-25'),
         },
-        // Linked to EmployerSettlement 4 (DISBURSED)
+        // Linked to EmployerSettlement 3 (ISSUED -> waiting) - HOLDING
         {
             id: 3,
+            contractId: 1,
+            employerSettlementId: 3,
+            totalAmount: 1500000,
+            tax: 49500,
+            netAmount: 1450500,
+            status: 'HOLDING',
+            installmentNumber: 3,
+            expectedPaidDate: new Date('2026-03-25'),
+        },
+
+        // === Contract 3: 모바일 앱 개발 (freelancerId: 1) ===
+        // Linked to EmployerSettlement 7 - HOLDING
+        {
+            id: 4,
+            contractId: 3,
+            employerSettlementId: 7,
+            totalAmount: 2000000,
+            tax: 66000,
+            netAmount: 1934000,
+            status: 'HOLDING',
+            installmentNumber: 1,
+            expectedPaidDate: new Date('2026-02-15'),
+        },
+        // Linked to EmployerSettlement 8 - HOLDING
+        {
+            id: 5,
+            contractId: 3,
+            employerSettlementId: 8,
+            totalAmount: 6000000,
+            tax: 198000,
+            netAmount: 5802000,
+            status: 'HOLDING',
+            installmentNumber: 2,
+            expectedPaidDate: new Date('2026-03-15'),
+        },
+
+        // === Contract 10: 랜딩 페이지 제작 (freelancerId: 1, COMPLETED) ===
+        {
+            id: 6,
+            contractId: 10,
+            employerSettlementId: 9,
+            totalAmount: 1000000,
+            tax: 33000,
+            netAmount: 967000,
+            status: 'PAID',
+            installmentNumber: 1,
+            expectedPaidDate: new Date('2025-10-15'),
+            paidDate: new Date('2025-10-15'),
+            receiptPdfUrl: '/receipts/fs6.pdf',
+        },
+        {
+            id: 7,
+            contractId: 10,
+            employerSettlementId: 10,
+            totalAmount: 1000000,
+            tax: 33000,
+            netAmount: 967000,
+            status: 'PAID',
+            installmentNumber: 2,
+            expectedPaidDate: new Date('2025-11-15'),
+            paidDate: new Date('2025-11-15'),
+            receiptPdfUrl: '/receipts/fs7.pdf',
+        },
+
+        // === Contract 2: API 서버 마이그레이션 (freelancerId: 2) ===
+        {
+            id: 8,
             contractId: 2,
             employerSettlementId: 4,
             totalAmount: 3000000,
-            platformFee: 120000, // 4%
-            tax: 99000, // 3.3%
-            netAmount: 2781000,
+            tax: 99000,
+            netAmount: 2901000,
             status: 'PAID',
             installmentNumber: 1,
-            expectedPaidDate: new Date('2023-11-30'),
-            paidDate: new Date('2023-11-30'),
-            receiptPdfUrl: '/receipts/fs3.pdf',
+            expectedPaidDate: new Date('2025-12-10'),
+            paidDate: new Date('2025-12-10'),
+            receiptPdfUrl: '/receipts/fs8.pdf',
         },
-        // Linked to EmployerSettlement 5 (DISBURSED)
         {
-            id: 4,
+            id: 9,
             contractId: 2,
             employerSettlementId: 5,
             totalAmount: 2500000,
-            platformFee: 100000, // 4%
-            tax: 82500, // 3.3%
-            netAmount: 2317500,
+            tax: 82500,
+            netAmount: 2417500,
             status: 'PAID',
-            expectedPaidDate: new Date('2023-12-17'),
-            paidDate: new Date('2023-12-17'),
-            receiptPdfUrl: '/receipts/fs4.pdf',
+            installmentNumber: 2,
+            expectedPaidDate: new Date('2026-01-10'),
+            paidDate: new Date('2026-01-10'),
+            receiptPdfUrl: '/receipts/fs9.pdf',
         },
-        // Linked to EmployerSettlement 6 (DISBURSED)
         {
-            id: 5,
+            id: 10,
             contractId: 2,
             employerSettlementId: 6,
             totalAmount: 2500000,
-            platformFee: 100000, // 4%
-            tax: 82500, // 3.3%
-            netAmount: 2317500,
-            status: 'PAID',
-            expectedPaidDate: new Date('2024-01-02'),
-            paidDate: new Date('2024-01-02'),
-            receiptPdfUrl: '/receipts/fs5.pdf',
-        },
-        // Additional Mock Data for Pagination & Filtering Tests
-        {
-            id: 's4',
-            freelancerId: 'f1',
-            contractId: 'c3',
-            projectName: '모바일 앱 개발',
-            employerName: '테크기업 B',
-            totalAmount: 3000000,
-            platformFee: 150000,
-            tax: 300000,
-            netAmount: 2550000,
-            status: 'PENDING',
-            installmentNumber: 1,
-        },
-        {
-            id: 's5',
-            freelancerId: 'f1',
-            contractId: 'c3',
-            projectName: '모바일 앱 개발',
-            employerName: '테크기업 B',
-            totalAmount: 3000000,
-            platformFee: 150000,
-            tax: 300000,
-            netAmount: 2550000,
-            status: 'APPROVED',
-            installmentNumber: 1,
-        },
-        {
-            id: 's6',
-            freelancerId: 'f1',
-            contractId: 'c4',
-            projectName: '이커머스 결제 모듈',
-            employerName: '쇼핑몰 C',
-            totalAmount: 5000000,
-            platformFee: 250000,
-            tax: 500000,
-            netAmount: 4250000,
-            status: 'REJECTED',
-            installmentNumber: 1,
-        },
-        {
-            id: 's7',
-            freelancerId: 'f1',
-            contractId: 'c1',
-            projectName: 'SaaS 대시보드 리뉴얼',
-            employerName: '스타트업 A',
-            totalAmount: 1500000,
-            platformFee: 75000,
-            tax: 150000,
-            netAmount: 1275000,
+            tax: 82500,
+            netAmount: 2417500,
             status: 'PAID',
             installmentNumber: 3,
-            paidDate: new Date('2023-12-20'),
+            expectedPaidDate: new Date('2026-02-10'),
+            paidDate: new Date('2026-02-10'),
+            receiptPdfUrl: '/receipts/fs10.pdf',
         },
+
+        // === Contract 5: UI/UX 디자인 리뉴얼 (freelancerId: 3) ===
         {
-            id: 's8',
-            freelancerId: 'f1',
-            contractId: 'c5',
-            projectName: '사내 관리자 시스템',
-            employerName: '중견기업 D',
-            totalAmount: 4000000,
-            platformFee: 200000,
-            tax: 400000,
-            netAmount: 3400000,
-            status: 'PENDING',
+            id: 11,
+            contractId: 5,
+            employerSettlementId: 11,
+            totalAmount: 1750000,
+            tax: 57750,
+            netAmount: 1692250,
+            status: 'HOLDING',
             installmentNumber: 1,
+            expectedPaidDate: new Date('2026-02-10'),
         },
         {
-            id: 's9',
-            freelancerId: 'f1',
-            contractId: 'c5',
-            projectName: '사내 관리자 시스템',
-            employerName: '중견기업 D',
-            totalAmount: 4000000,
-            platformFee: 200000,
-            tax: 400000,
-            netAmount: 3400000,
-            status: 'PROCESSING',
+            id: 12,
+            contractId: 5,
+            employerSettlementId: 12,
+            totalAmount: 1750000,
+            tax: 57750,
+            netAmount: 1692250,
+            status: 'HOLDING',
             installmentNumber: 2,
+            expectedPaidDate: new Date('2026-03-10'),
         },
+
+        // === Contract 6: 데이터 분석 대시보드 (freelancerId: 4, COMPLETED) ===
         {
-            id: 's10',
-            freelancerId: 'f1',
-            contractId: 'c6',
-            projectName: '랜딩 페이지 리디자인',
-            employerName: '마케팅 E',
-            totalAmount: 1000000,
-            platformFee: 50000,
-            tax: 100000,
-            netAmount: 850000,
+            id: 13,
+            contractId: 6,
+            employerSettlementId: 13,
+            totalAmount: 2000000,
+            tax: 66000,
+            netAmount: 1934000,
             status: 'PAID',
             installmentNumber: 1,
-            paidDate: new Date('2023-11-05'),
+            expectedPaidDate: new Date('2025-11-25'),
+            paidDate: new Date('2025-11-25'),
+            receiptPdfUrl: '/receipts/fs13.pdf',
         },
         {
-            id: 's11',
-            freelancerId: 'f1',
-            contractId: 'c6',
-            projectName: '랜딩 페이지 리디자인',
-            employerName: '마케팅 E',
-            totalAmount: 1000000,
-            platformFee: 50000,
-            tax: 100000,
-            netAmount: 850000,
+            id: 14,
+            contractId: 6,
+            employerSettlementId: 14,
+            totalAmount: 2000000,
+            tax: 66000,
+            netAmount: 1934000,
             status: 'PAID',
             installmentNumber: 2,
-            paidDate: new Date('2023-12-05'),
+            expectedPaidDate: new Date('2025-12-25'),
+            paidDate: new Date('2025-12-25'),
+            receiptPdfUrl: '/receipts/fs14.pdf',
         },
-        {
-            id: 's12',
-            freelancerId: 'f1',
-            contractId: 'c7',
-            projectName: '블록체인 지갑 연동',
-            employerName: '핀테크 F',
-            totalAmount: 7000000,
-            platformFee: 350000,
-            tax: 700000,
-            netAmount: 5950000,
-            status: 'APPROVED',
-            installmentNumber: 1,
-        }
     ]);
 
     // Helper function to get username by id and role
@@ -617,19 +610,19 @@ export const useContractStore = defineStore('contract', () => {
         });
 
         // Create freelancer settlement (HOLDING status)
-        const platformFee = Math.floor(settlement.billingAmount * contract.commissionRate);
+        // Freelancers only pay tax (3.3%), not platform fee
         const tax = Math.floor(settlement.billingAmount * 0.033); // 3.3%
-        const netAmount = settlement.billingAmount - platformFee - tax;
+        const netAmount = settlement.billingAmount - tax;
 
         const newFreelancerSettlement: FreelancerSettlement = {
             id: freelancerSettlements.value.length + 1,
             contractId: settlement.contractId,
             employerSettlementId: settlementId,
             totalAmount: settlement.billingAmount,
-            platformFee,
             tax,
             netAmount,
             status: 'HOLDING',
+            installmentNumber: settlement.installmentNumber,
             expectedPaidDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days later
         };
 

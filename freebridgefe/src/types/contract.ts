@@ -34,15 +34,15 @@ export interface Settlement {
     id: string;
     freelancerId: string;
     contractId: string;
+    employerSettlementId: string;
     projectName: string;
     employerName: string;
     totalAmount: number;
-    platformFee: number;
     tax: number;
     netAmount: number;
-    status: 'PENDING' | 'PROCESSING' | 'APPROVED' | 'PAID' | 'REJECTED';
-    requestDate: Date | string;
+    installmentNumber: number;
+    status: 'HOLDING' | 'PROCESSING' | 'PAID';
     paidDate?: Date | string;
     bankAccount: string;
-    installmentNumber?: number;
+    paymentDay: number;
 }
