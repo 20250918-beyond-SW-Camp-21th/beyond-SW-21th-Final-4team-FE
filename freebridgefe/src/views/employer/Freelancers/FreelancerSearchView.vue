@@ -7,10 +7,17 @@ import ProposalModal from '@/views/employer/Recommended/components/ProposalModal
 
 const freelancerStore = useFreelancerStore();
 
+const searchQueryInput = ref('');
+const selectedSkillInput = ref('ALL');
+const minExperienceInput = ref(0);
+const maxHourlyRateInput = ref(100000);
+const favoriteOnlyInput = ref(false);
+
 const searchQuery = ref('');
 const selectedSkill = ref('ALL');
 const minExperience = ref(0);
 const maxHourlyRate = ref(100000);
+const favoriteOnly = ref(false);
 const selectedFreelancer = ref<User | null>(null);
 const favoriteIds = ref<string[]>([]);
 
@@ -41,7 +48,9 @@ const filteredFreelancers = computed<User[]>(() => {
     const matchesRate =
       (freelancer.hourlyRate ?? 0) <= maxHourlyRate.value;
 
-    return matchesQuery && matchesSkill && matchesExperience && matchesRate;
+    const matchesFavorite = !favoriteOnly.value || isFavorite(freelancer.id);
+
+    return matchesQuery && matchesSkill && matchesExperience && matchesRate && matchesFavorite;
   });
 });
 
@@ -56,6 +65,14 @@ const toggleFavorite = (id: string) => {
   }
   favoriteIds.value = [...favoriteIds.value, id];
 };
+
+const applyFilters = () => {
+  searchQuery.value = searchQueryInput.value;
+  selectedSkill.value = selectedSkillInput.value;
+  minExperience.value = minExperienceInput.value;
+  maxHourlyRate.value = maxHourlyRateInput.value;
+  favoriteOnly.value = favoriteOnlyInput.value;
+};
 </script>
 
 <template>
@@ -67,11 +84,12 @@ const toggleFavorite = (id: string) => {
       </div>
       <p class="text-white/60">전체 프리랜서를 조건별로 검색해보세요</p>
 
-      <div class="grid gap-4 lg:grid-cols-[2fr_1fr_1fr_1fr] items-stretch">
+      <div class="grid gap-4 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] items-stretch">
         <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
           <Search class="w-5 h-5 text-white/50" />
           <input
-            v-model="searchQuery"
+            v-model="searchQueryInput"
+            @keyup.enter="applyFilters"
             type="text"
             placeholder="이름, 스킬, 소개로 검색"
             class="w-full bg-transparent text-white placeholder:text-white/40 focus:outline-none"
@@ -81,7 +99,7 @@ const toggleFavorite = (id: string) => {
         <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
           <Filter class="w-5 h-5 text-white/50" />
           <select
-            v-model="selectedSkill"
+            v-model="selectedSkillInput"
             class="w-full bg-transparent text-white focus:outline-none"
           >
             <option v-for="skill in allSkills" :key="skill" :value="skill">
@@ -93,7 +111,8 @@ const toggleFavorite = (id: string) => {
         <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
           <SlidersHorizontal class="w-5 h-5 text-white/50" />
           <input
-            v-model.number="minExperience"
+            v-model.number="minExperienceInput"
+            @keyup.enter="applyFilters"
             type="number"
             min="0"
             step="1"
@@ -106,7 +125,8 @@ const toggleFavorite = (id: string) => {
         <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
           <DollarSign class="w-5 h-5 text-white/50" />
           <input
-            v-model.number="maxHourlyRate"
+            v-model.number="maxHourlyRateInput"
+            @keyup.enter="applyFilters"
             type="number"
             min="0"
             step="1000"
@@ -114,6 +134,24 @@ const toggleFavorite = (id: string) => {
             placeholder="최대 시급"
           />
           <span class="text-white/40 text-sm">원</span>
+        </div>
+
+        <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
+          <label class="flex items-center gap-2 text-sm text-white/80 whitespace-nowrap">
+            <input
+              v-model="favoriteOnlyInput"
+              type="checkbox"
+              class="h-4 w-4 rounded border-white/20 bg-transparent"
+            />
+            즐겨찾기만
+          </label>
+          <button
+            type="button"
+            @click="applyFilters"
+            class="ml-auto px-4 py-2 rounded-lg bg-emerald-400 text-black font-semibold hover:bg-emerald-300 transition-colors"
+          >
+            검색
+          </button>
         </div>
       </div>
     </div>
