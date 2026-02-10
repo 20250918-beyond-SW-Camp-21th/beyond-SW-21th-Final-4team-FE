@@ -12,13 +12,13 @@ const favoritesStore = useFavoritesStore();
 const searchQueryInput = ref('');
 const selectedSkillInput = ref('ALL');
 const minExperienceInput = ref(0);
-const maxHourlyRateInput = ref(100000);
+const maxMonthlySalaryInput = ref(10000000);
 const favoriteOnlyInput = ref(false);
 
 const searchQuery = ref('');
 const selectedSkill = ref('ALL');
 const minExperience = ref(0);
-const maxHourlyRate = ref(100000);
+const maxMonthlySalary = ref(10000000);
 const favoriteOnly = ref(false);
 const selectedFreelancer = ref<User | null>(null);
 
@@ -47,7 +47,7 @@ const filteredFreelancers = computed<User[]>(() => {
       (freelancer.experience ?? 0) >= minExperience.value;
 
     const matchesRate =
-      (freelancer.hourlyRate ?? 0) <= maxHourlyRate.value;
+      (freelancer.monthlySalary ?? 0) <= maxMonthlySalary.value;
 
     const matchesFavorite = !favoriteOnly.value || isFavorite(freelancer.id);
 
@@ -65,7 +65,7 @@ const applyFilters = () => {
   searchQuery.value = searchQueryInput.value;
   selectedSkill.value = selectedSkillInput.value;
   minExperience.value = minExperienceInput.value;
-  maxHourlyRate.value = maxHourlyRateInput.value;
+  maxMonthlySalary.value = maxMonthlySalaryInput.value;
   favoriteOnly.value = favoriteOnlyInput.value;
 };
 </script>
@@ -120,13 +120,13 @@ const applyFilters = () => {
         <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
           <DollarSign class="w-5 h-5 text-white/50" />
           <input
-            v-model.number="maxHourlyRateInput"
+            v-model.number="maxMonthlySalaryInput"
             @keyup.enter="applyFilters"
             type="number"
             min="0"
-            step="1000"
+            step="100000"
             class="w-full bg-transparent text-white focus:outline-none"
-            placeholder="최대 시급"
+            placeholder="최대 월급"
           />
           <span class="text-white/40 text-sm">원</span>
         </div>
@@ -187,7 +187,7 @@ const applyFilters = () => {
 
         <div class="flex items-center justify-between pt-4 border-t border-white/10">
           <div class="text-sm text-white/60">
-            시간당 <span class="text-white font-semibold">{{ freelancer.hourlyRate?.toLocaleString() }}원</span>
+            월급 <span class="text-white font-semibold">{{ freelancer.monthlySalary?.toLocaleString() }}원</span>
           </div>
           <div class="flex items-center gap-2">
             <button
