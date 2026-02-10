@@ -11,29 +11,6 @@ export interface PasswordChange {
     confirm: string;
 }
 
-export interface GradeInfo {
-    currentGrade: 'Junior' | 'Middle' | 'Senior' | 'Master';
-    score: number;
-    nextGradeScore: number;
-    totalProjects: number;
-    averageRating: number;
-}
-
-export const getGradeInfo = async (userId: number): Promise<GradeInfo> => {
-    console.log(`Fetching grade info for user ${userId}`);
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({
-                currentGrade: 'Senior',
-                score: 350,
-                nextGradeScore: 500,
-                totalProjects: 12,
-                averageRating: 4.8
-            });
-        }, 600);
-    });
-};
-
 export const updateAccountInfo = async (data: Partial<AccountInfo>): Promise<boolean> => {
     console.log('Update account info:', data);
     return new Promise((resolve) => {
