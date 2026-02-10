@@ -2,10 +2,12 @@
 import { computed, ref } from 'vue';
 import { Search, Filter, Users, Star, DollarSign, SlidersHorizontal, Send } from 'lucide-vue-next';
 import { useFreelancerStore } from '@/stores/freelancerStore';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 import type { User } from '@/types';
 import ProposalModal from '@/views/employer/Recommended/components/ProposalModal.vue';
 
 const freelancerStore = useFreelancerStore();
+const favoritesStore = useFavoritesStore();
 
 const searchQueryInput = ref('');
 const selectedSkillInput = ref('ALL');
@@ -19,7 +21,6 @@ const minExperience = ref(0);
 const maxHourlyRate = ref(100000);
 const favoriteOnly = ref(false);
 const selectedFreelancer = ref<User | null>(null);
-const favoriteIds = ref<string[]>([]);
 
 const allSkills = computed(() => {
   const skills = new Set<string>();
@@ -56,15 +57,9 @@ const filteredFreelancers = computed<User[]>(() => {
 
 const formatSkills = (skills?: string[]) => skills?.slice(0, 6) || [];
 
-const isFavorite = (id: string) => favoriteIds.value.includes(id);
+const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
 
-const toggleFavorite = (id: string) => {
-  if (isFavorite(id)) {
-    favoriteIds.value = favoriteIds.value.filter((item) => item !== id);
-    return;
-  }
-  favoriteIds.value = [...favoriteIds.value, id];
-};
+const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
 
 const applyFilters = () => {
   searchQuery.value = searchQueryInput.value;
