@@ -5,6 +5,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { Mail, Lock, User as UserIcon, Building2, ArrowLeft, Eye, EyeOff, Check } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
+import VerificationModal from './components/VerificationModal.vue';
 import TermsModal from './components/TermsModal.vue';
 import { 
   SERVICE_TERMS, 
@@ -27,7 +28,7 @@ const formData = ref({
   password: '',
   confirmPassword: '',
   company: '',
-  skills: '',
+
   agreeService: false,
   agreePrivacy: false,
   agreeThirdParty: false,
@@ -43,6 +44,9 @@ const isEmailAvailable = ref(false);
 const showTermsModal = ref(false);
 const currentTermsTitle = ref('');
 const currentTermsContent = ref('');
+
+// Verification Modal State
+const showVerificationModal = ref(false);
 
 const openTermsModal = (title: string, content: string) => {
   currentTermsTitle.value = title;
@@ -112,9 +116,7 @@ const validateForm = () => {
     newErrors.confirmPassword = '비밀번호가 일치하지 않습니다';
   }
 
-  if (!isEmployer.value && !formData.value.skills.trim()) {
-    newErrors.skills = '주요 기술을 입력해주세요';
-  }
+
 
   if (!formData.value.agreeService) {
     newErrors.agreeService = '서비스 이용약관에 동의해주세요';
@@ -145,25 +147,27 @@ const handleSubmit = async () => {
       createdAt: new Date(),
       agreedToTermsAt: new Date(),
       isEmailVerified: false,
-      skills: !isEmployer.value 
-        ? formData.value.skills.split(',').map(s => s.trim()).filter(s => s.length > 0) 
-        : undefined
+      // skills removed
     };
 
-    // Mock Signup
-    await authStore.signup(newUser);
+    // Start 2FA Signup Process
+    await authStore.startSignup(newUser);
+    showVerificationModal.value = true;
     
-    alert(`회원가입이 완료되었습니다!\n환영합니다, ${formData.value.name}님 🎉`);
-    
-    // Redirect to dashboard based on role (Mock)
-    if (isEmployer.value) {
-        router.push('/employer/dashboard');
-    } else {
-        router.push('/freelancer/jobs');
-    }
   } catch (error) {
-    alert('회원가입 중 오류가 발생했습니다. 다시 시도해주세요.');
+    alert('회원가입 요청 중 오류가 발생했습니다. 다시 시도해주세요.');
   }
+};
+
+const handleVerificationSuccess = () => {
+    alert(`이메일 인증이 완료되었습니다!\n환영합니다, ${formData.value.name}님 🎉`);
+    
+    // Redirect to ONBOARDING instead of dashboard
+    if (isEmployer.value) {
+        router.push('/onboarding/employer');
+    } else {
+        router.push('/onboarding/freelancer');
+    }
 };
 
 const goBack = () => {
@@ -335,25 +339,7 @@ const checkEmail = async () => {
               <p v-if="errors.email" class="text-red-400 text-sm mt-2">{{ errors.email }}</p>
           </div>
 
-          <!-- Skills (Freelancer Only) -->
-          <div
-            v-if="!isEmployer"
-            v-motion
-            :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 800 } }"
-          >
-            <label class="block text-sm font-medium mb-2 text-white/80">
-              주요 기술 <span class="text-red-400">*</span>
-            </label>
-            <input
-              type="text"
-              v-model="formData.skills"
-              placeholder="예: React, TypeScript, Node.js"
-              class="w-full px-4 py-4 bg-white/5 border rounded-2xl focus:outline-none transition-colors text-white placeholder:text-white/30"
-              :class="errors.skills ? 'border-red-500/50' : 'border-white/10 focus:border-white/30'"
-            />
-            <p v-if="errors.skills" class="text-red-400 text-sm mt-2">{{ errors.skills }}</p>
-          </div>
+
 
           <!-- Password -->
           <div
@@ -521,7 +507,7 @@ const checkEmail = async () => {
             :class="isEmployer ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-gradient-to-r from-blue-500 to-cyan-500'"
           >
             <div v-if="authStore.isLoading" class="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-            <span>{{ authStore.isLoading ? '가입 처리중...' : '가입 완료' }}</span>
+            <span>{{ authStore.isLoading ? '처리중...' : '가입하기' }}</span>
           </button>
         </form>
 
@@ -542,10 +528,18 @@ const checkEmail = async () => {
       </div>
     </div>
   </div>
+  
   <TermsModal
     :isOpen="showTermsModal"
     :title="currentTermsTitle"
     :content="currentTermsContent"
     @close="showTermsModal = false"
+  />
+
+  <VerificationModal
+    :isOpen="showVerificationModal"
+    :email="formData.email"
+    @close="showVerificationModal = false"
+    @verified="handleVerificationSuccess"
   />
 </template>

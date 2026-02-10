@@ -72,7 +72,7 @@ const toggleFavorite = (id: string) => {
 
         <div class="flex items-center justify-between pt-4 border-t border-white/10">
           <div class="text-sm">
-            <span class="text-white/60">시간당</span>{' '}
+            <span class="text-white/60">시간당</span>
             <span class="font-medium text-white">
               {{ freelancer.hourlyRate?.toLocaleString() }}원
             </span>

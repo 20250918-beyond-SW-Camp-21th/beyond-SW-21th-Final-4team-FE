@@ -42,20 +42,68 @@ export const useAuthStore = defineStore('auth', () => {
         return new Promise(resolve => setTimeout(() => resolve(true), 500));
     }
 
-    async function signup(userData: User) {
+    async function startSignup(userData: User) {
+        isLoading.value = true;
+        try {
+            // TODO: Replace with actual API call to send verification email
+            // await api.post('/auth/signup-request', userData);
+
+            // Mock: Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Store temp user data for verification step
+            // In a real app, this might be handled by the backend session or a temporary token
+            sessionStorage.setItem('temp_signup_user', JSON.stringify(userData));
+        } catch (error) {
+            console.error('Failed to start signup:', error);
+            throw error;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
+    async function verifyEmail(email: string, code: string): Promise<boolean> {
         isLoading.value = true;
         try {
             // TODO: Replace with actual API call
-            // const response = await api.post('/auth/signup', userData);
-            // user.value = response.data;
+            // const response = await api.post('/auth/verify-email', { email, code });
 
-            // Mock: Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Mock: Simulate network delay & check code
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            user.value = userData;
-            localStorage.setItem('user', JSON.stringify(userData));
+            if (code !== '123456') { // Mock verification code
+                throw new Error('Invalid verification code');
+            }
+
+            // Retrieve temp user data
+            const storedData = sessionStorage.getItem('temp_signup_user');
+            if (storedData) {
+                const userData = JSON.parse(storedData);
+                // Complete signup
+                user.value = userData;
+                localStorage.setItem('user', JSON.stringify(userData));
+                sessionStorage.removeItem('temp_signup_user');
+                return true;
+            }
+            return false;
         } catch (error) {
-            console.error('Signup failed:', error);
+            console.error('Verification failed:', error);
+            throw error;
+        } finally {
+            isLoading.value = false;
+        }
+    }
+
+    async function resendVerificationCode(email: string) {
+        isLoading.value = true;
+        try {
+            // TODO: Replace with actual API call
+            // await api.post('/auth/resend-verification', { email });
+
+            // Mock: Simulate delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+            console.error('Failed to resend code:', error);
             throw error;
         } finally {
             isLoading.value = false;
@@ -68,7 +116,9 @@ export const useAuthStore = defineStore('auth', () => {
         isLoading,
         login,
         logout,
-        signup,
+        startSignup,
+        verifyEmail,
+        resendVerificationCode,
         checkEmailDuplicate
     };
 });
