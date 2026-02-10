@@ -155,15 +155,15 @@ const onTechInputKeydown = (e: KeyboardEvent) => {
           </div>
         </div>
 
-        <!-- 예산 -->
+        <!-- 월급 -->
         <div>
           <label class="block text-sm text-white/80 mb-2">
-            프로젝트 예산 (원) <span class="text-red-400">*</span>
+            월급 (원) <span class="text-red-400">*</span>
           </label>
           <input
             type="number"
             v-model="formData.budget"
-            placeholder="5000000"
+            placeholder="4500000"
             min="0"
             step="100000"
             class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-blue-500 text-white placeholder:text-white/30"
@@ -174,12 +174,12 @@ const onTechInputKeydown = (e: KeyboardEvent) => {
         <!-- 기간 -->
         <div>
           <label class="block text-sm text-white/80 mb-2">
-            예상 기간 (주) <span class="text-red-400">*</span>
+            예상 기간 (개월) <span class="text-red-400">*</span>
           </label>
           <input
             type="number"
             v-model="formData.duration"
-            placeholder="8"
+            placeholder="3"
             min="1"
             class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-blue-500 text-white placeholder:text-white/30"
             required

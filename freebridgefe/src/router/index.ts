@@ -29,6 +29,24 @@ const routes: Array<RouteRecordRaw> = [
             }
         ]
     },
+    {
+        path: '/onboarding',
+        component: () => import('@/layouts/BlankLayout.vue'), // Using a direct render function or importing a simple layout
+        children: [
+            {
+                path: 'employer',
+                name: 'onboarding.employer',
+                component: () => import('@/views/onboarding/EmployerOnboarding.vue'),
+                meta: { requiresAuth: true, role: 'EMPLOYER' }
+            },
+            {
+                path: 'freelancer',
+                name: 'onboarding.freelancer',
+                component: () => import('@/views/onboarding/FreelancerOnboarding.vue'),
+                meta: { requiresAuth: true, role: 'FREELANCER' }
+            }
+        ]
+    },
 
     // Employer Routes
     {
@@ -74,7 +92,7 @@ const routes: Array<RouteRecordRaw> = [
             {
                 path: 'settlements',
                 name: 'employer.settlements',
-                component: () => import('@/views/freelancer/Settlement/SettlementView.vue')
+                component: () => import('@/views/employer/Settlements/SettlementsView.vue')
             },
             {
                 path: 'contracts/create',

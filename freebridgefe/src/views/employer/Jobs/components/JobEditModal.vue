@@ -183,10 +183,10 @@ const onTechInputKeydown = (e: KeyboardEvent) => {
           </div>
         </div>
 
-        <!-- 예산 -->
+        <!-- 월급 -->
         <div>
           <label class="block text-sm text-white/80 mb-2">
-            프로젝트 예산 (원) <span class="text-red-400">*</span>
+            월급 (원) <span class="text-red-400">*</span>
           </label>
           <input
             type="number"
@@ -201,7 +201,7 @@ const onTechInputKeydown = (e: KeyboardEvent) => {
         <!-- 기간 -->
         <div>
           <label class="block text-sm text-white/80 mb-2">
-            예상 기간 (주) <span class="text-red-400">*</span>
+            예상 기간 (개월) <span class="text-red-400">*</span>
           </label>
           <input
             type="number"
