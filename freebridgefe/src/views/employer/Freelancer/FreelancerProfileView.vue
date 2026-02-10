@@ -74,7 +74,7 @@ const goBack = () => {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <Clock class="w-4 h-4" />
-                                    시간당 {{ freelancer.hourlyRate?.toLocaleString() }}원
+                                    월급 {{ freelancer.monthlySalary?.toLocaleString() }}원
                                 </div>
                             </div>
                         </div>

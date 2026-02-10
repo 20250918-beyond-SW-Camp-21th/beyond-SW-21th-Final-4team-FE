@@ -59,7 +59,7 @@ const formatDate = (date: Date | string) => {
           <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-lg">
             <div class="flex items-center gap-2 text-white/60 text-sm mb-1">
               <DollarSign class="w-4 h-4" />
-              프로젝트 예산
+              월급
             </div>
             <div class="text-2xl font-bold text-white">{{ job.budget.toLocaleString() }}원</div>
           </div>
@@ -68,7 +68,7 @@ const formatDate = (date: Date | string) => {
               <Clock class="w-4 h-4" />
               예상 기간
             </div>
-            <div class="text-2xl font-bold text-white">{{ job.duration }}주</div>
+            <div class="text-2xl font-bold text-white">{{ job.duration }}개월</div>
           </div>
         </div>
 

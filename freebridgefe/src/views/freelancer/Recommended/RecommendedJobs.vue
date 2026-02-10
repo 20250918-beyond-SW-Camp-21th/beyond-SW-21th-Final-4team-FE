@@ -121,13 +121,13 @@ const toggleFavorite = (id: string) => {
                  <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
                   <DollarSign class="w-4 h-4 text-green-400" />
                 </div>
-                <span class="font-medium">{{ job.budget.toLocaleString() }}원</span>
+                <span class="font-medium">월급 {{ job.budget.toLocaleString() }}원</span>
               </div>
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
                   <Clock class="w-4 h-4 text-blue-400" />
                 </div>
-                <span class="font-medium">{{ job.duration }}주</span>
+                <span class="font-medium">{{ job.duration }}개월</span>
               </div>
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">

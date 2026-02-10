@@ -2,26 +2,21 @@
 import { ref } from 'vue';
 import { TrendingUp, Send, Star } from 'lucide-vue-next';
 import { useFreelancerStore } from '@/stores/freelancerStore';
+import { useFavoritesStore } from '@/stores/favoritesStore';
 import ProposalModal from './components/ProposalModal.vue';
 import type { User } from '@/types';
 
 const freelancerStore = useFreelancerStore();
+const favoritesStore = useFavoritesStore();
 const selectedFreelancer = ref<User | null>(null);
-const favoriteIds = ref<string[]>([]);
 
 const formatSkills = (skills?: string[]) => {
   return skills?.slice(0, 4) || [];
 };
 
-const isFavorite = (id: string) => favoriteIds.value.includes(id);
+const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
 
-const toggleFavorite = (id: string) => {
-  if (isFavorite(id)) {
-    favoriteIds.value = favoriteIds.value.filter((item) => item !== id);
-    return;
-  }
-  favoriteIds.value = [...favoriteIds.value, id];
-};
+const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
 </script>
 
 <template>
@@ -72,9 +67,9 @@ const toggleFavorite = (id: string) => {
 
         <div class="flex items-center justify-between pt-4 border-t border-white/10">
           <div class="text-sm">
-            <span class="text-white/60">시간당</span>
+            <span class="text-white/60">월급 </span>
             <span class="font-medium text-white">
-              {{ freelancer.hourlyRate?.toLocaleString() }}원
+              {{ freelancer.monthlySalary?.toLocaleString() }}원
             </span>
           </div>
           <div class="flex items-center gap-2">
