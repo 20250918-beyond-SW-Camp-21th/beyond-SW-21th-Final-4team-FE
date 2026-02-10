@@ -14,21 +14,41 @@ import {
   Edit2,
 } from 'lucide-vue-next';
 
+import type { EmployerProfileData } from '@/api/MyPage/employer';
+
 defineEmits<{
   (e: 'back'): void;
 }>();
 
 const isEditing = ref(false);
-const profileData = ref({
-  companyName: '테크스타트업',
-  industry: 'IT/소프트웨어',
-  size: '50-100명',
-  location: '서울 강남구',
-  website: 'https://techstartup.com',
-  email: 'contact@techstartup.com',
-  phone: '02-1234-5678',
-  description: '혁신적인 기술로 세상을 변화시키는 스타트업입니다.',
+const profileData = ref<EmployerProfileData>({
+  companyName: '',
+  industry: '',
+  size: '',
+  location: '',
+  website: '',
+  email: '',
+  phone: '',
+  description: '',
 });
+
+const companySizeOptions = [
+  '1-10명',
+  '10-50명',
+  '50-100명',
+  '100-500명',
+  '500명 이상',
+];
+
+// TODO: API 연동 시 아래와 같이 데이터를 불러오세요.
+// onMounted(async () => {
+//   try {
+//     const response = await axios.get('/api/v1/employer/profile');
+//     profileData.value = response.data;
+//   } catch (error) {
+//     console.error('Failed to fetch profile:', error);
+//   }
+// });
 
 const handleSave = () => {
   isEditing.value = false;
@@ -128,11 +148,9 @@ const handleSave = () => {
               v-model="profileData.size"
               class="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors appearance-none"
             >
-              <option value="1-10명">1-10명</option>
-              <option value="10-50명">10-50명</option>
-              <option value="50-100명">50-100명</option>
-              <option value="100-500명">100-500명</option>
-              <option value="500명 이상">500명 이상</option>
+              <option v-for="option in companySizeOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
             </select>
             <div v-else class="text-white/80">{{ profileData.size }}</div>
           </div>
