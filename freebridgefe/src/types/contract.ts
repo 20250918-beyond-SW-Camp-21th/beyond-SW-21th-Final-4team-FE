@@ -30,18 +30,3 @@ export interface ContractDocument {
     paymentDate?: Date | string;
 }
 
-export interface Settlement {
-    id: string;
-    freelancerId: string;
-    contractId: string;
-    projectName: string;
-    employerName: string;
-    totalAmount: number;
-    platformFee: number;
-    tax: number;
-    netAmount: number;
-    status: 'PROCESSING' | 'PAID' | 'PENDING';
-    requestDate: Date | string;
-    paidDate?: Date | string;
-    bankAccount: string;
-}
