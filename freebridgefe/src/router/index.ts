@@ -72,6 +72,11 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import('@/views/employer/Contracts/ContractsView.vue')
             },
             {
+                path: 'settlements',
+                name: 'employer.settlements',
+                component: () => import('@/views/employer/Settlements/SettlementsView.vue')
+            },
+            {
                 path: 'contracts/create',
                 name: 'employer.contracts.create',
                 component: () => import('@/views/employer/Contracts/CreateContractView.vue')
@@ -95,6 +100,11 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'freelancer/:id',
                 name: 'employer.freelancer.profile',
                 component: () => import('@/views/employer/Freelancer/FreelancerProfileView.vue')
+            },
+            {
+                path: 'dashboard',
+                name: 'employer.dashboard',
+                component: () => import('@/views/employer/Dashboard/DashboardView.vue')
             }
         ]
     },

@@ -210,14 +210,15 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle }> 
 
 // Filter settlements by current employer
 const mySettlements = computed(() => {
-    if (!authStore.user) return allSettlements.value;
+    if (!authStore.user) return allSettlements.value || [];
     // Temporarily show all settlements for development
-    return allSettlements.value;
+    return allSettlements.value || [];
     // return allSettlements.value.filter((s) => s.employerId === authStore.user!.id);
 });
 
 // Get next upcoming settlement (first ISSUED settlement by due date)
 const nextSettlement = computed(() => {
+    if (!mySettlements.value || mySettlements.value.length === 0) return null;
     const issuedSettlements = mySettlements.value
         .filter((s) => s.status === 'ISSUED')
         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());

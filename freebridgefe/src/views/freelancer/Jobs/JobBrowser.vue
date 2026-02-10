@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useMotion } from '@vueuse/motion';
-import { Search, DollarSign, Clock, Briefcase, Sparkles, TrendingUp, Star } from 'lucide-vue-next';
+import { Search, DollarSign, Clock, Briefcase, Sparkles, TrendingUp, Star, Filter } from 'lucide-vue-next';
 import { useJobStore } from '@/stores/jobStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
@@ -12,7 +12,10 @@ const jobStore = useJobStore();
 const authStore = useAuthStore();
 const favoritesStore = useFavoritesStore();
 const selectedJob = ref<JobPosting | null>(null);
+const searchTermInput = ref('');
+const favoriteOnlyInput = ref(false);
 const searchTerm = ref('');
+const favoriteOnly = ref(false);
 
 // OPEN 상태인 공고만 표시
 const openJobs = computed(() => jobStore.jobPostings.filter((job) => job.status === 'OPEN'));
@@ -38,12 +41,17 @@ const recommendedJobs = computed(() => {
 // 검색 필터
 const filteredJobs = computed(() => {
   return openJobs.value.filter(
-    (job) =>
-      job.title.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-      job.description.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-      job.techStack.some((tech) =>
-        tech.toLowerCase().includes(searchTerm.value.toLowerCase())
-      )
+    (job) => {
+      const normalizedSearchTerm = searchTerm.value.toLowerCase();
+      const matchesSearch =
+        job.title.toLowerCase().includes(normalizedSearchTerm) ||
+        job.description.toLowerCase().includes(normalizedSearchTerm) ||
+        job.techStack.some((tech) => tech.toLowerCase().includes(normalizedSearchTerm));
+
+      const matchesFavorite = !favoriteOnly.value || isFavorite(job.id);
+
+      return matchesSearch && matchesFavorite;
+    }
   );
 });
 
@@ -55,6 +63,11 @@ const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
 
 const toggleFavorite = (id: string) => {
   favoritesStore.toggleFavorite(id);
+};
+
+const applyFilters = () => {
+  searchTerm.value = searchTermInput.value;
+  favoriteOnly.value = favoriteOnlyInput.value;
 };
 </script>
 
@@ -170,14 +183,33 @@ const toggleFavorite = (id: string) => {
         enter: { opacity: 1, y: 0, transition: { delay: 100 } }
       }"
     >
-      <div class="relative">
-        <Search class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
-        <input
-          type="text"
-          v-model="searchTerm"
-          placeholder="프로젝트 제목, 설명, 기술 스택으로 검색..."
-          class="w-full pl-14 pr-6 py-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl focus:outline-none focus:border-white/30 transition-colors text-white placeholder:text-white/30"
-        />
+      <div class="grid gap-4 lg:grid-cols-[1fr_auto_auto]">
+        <div class="relative">
+          <Search class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+          <input
+            type="text"
+            v-model="searchTermInput"
+            @keyup.enter="applyFilters"
+            placeholder="프로젝트 제목, 설명, 기술 스택으로 검색..."
+            class="w-full pl-14 pr-6 py-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl focus:outline-none focus:border-white/30 transition-colors text-white placeholder:text-white/30"
+          />
+        </div>
+        <label class="px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl inline-flex items-center gap-2 text-sm text-white/80 whitespace-nowrap">
+          <Filter class="w-4 h-4 text-white/60" />
+          <input
+            v-model="favoriteOnlyInput"
+            type="checkbox"
+            class="h-4 w-4 rounded border-white/20 bg-transparent"
+          />
+          즐겨찾기만
+        </label>
+        <button
+          type="button"
+          @click="applyFilters"
+          class="px-6 py-4 bg-blue-500 text-white rounded-2xl font-semibold hover:bg-blue-400 transition-colors"
+        >
+          검색
+        </button>
       </div>
     </div>
 
