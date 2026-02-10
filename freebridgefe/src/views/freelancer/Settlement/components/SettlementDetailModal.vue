@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { X, DollarSign, CheckCircle, Clock, Calendar, Wallet, Download } from 'lucide-vue-next';
-import type { Settlement } from '@/types/contract';
+import { X, DollarSign, Clock, Calendar, Download } from 'lucide-vue-next';
+import type { FreelancerSettlementWithDetails } from '@/stores/contractStore';
 
 const props = defineProps<{
-  settlement: Settlement;
+  settlement: FreelancerSettlementWithDetails;
 }>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
-  (e: 'download', settlement: Settlement): void;
+  (e: 'download', settlement: FreelancerSettlementWithDetails): void;
 }>();
 
 // Simplified status for UI
@@ -26,14 +26,6 @@ const statusDisplay = computed(() => {
 const calculatedNetAmount = computed(() => {
   return props.settlement.totalAmount - props.settlement.tax;
 });
-
-const formatDate = (date: Date | string) => {
-  return new Date(date).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-};
 
 const handleDownload = () => {
   emit('download', props.settlement);
@@ -135,15 +127,6 @@ const handleDownload = () => {
               </span>
             </div>
           </div>
-        </div>
-
-        <!-- Bank Account -->
-        <div v-if="settlement.bankAccount" class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg">
-          <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
-            <Wallet class="w-5 h-5 text-purple-400" />
-            입금 계좌
-          </h3>
-          <div class="text-xl font-medium text-white">{{ settlement.bankAccount }}</div>
         </div>
 
         <!-- Action Buttons -->

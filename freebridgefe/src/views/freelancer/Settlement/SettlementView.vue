@@ -20,8 +20,7 @@ import {
   CreditCard
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { useContractStore } from '@/stores/contractStore';
-import type { Settlement } from '@/types/contract';
+import { useContractStore, type FreelancerSettlementWithDetails } from '@/stores/contractStore';
 import SettlementDetailModal from './components/SettlementDetailModal.vue';
 import BankAccountModal from './components/BankAccountModal.vue';
 
@@ -29,7 +28,7 @@ const authStore = useAuthStore();
 const contractStore = useContractStore();
 
 const showBankAccountModal = ref(false);
-const selectedSettlement = ref<Settlement | null>(null);
+const selectedSettlement = ref<FreelancerSettlementWithDetails | null>(null);
 
 // Filters & Pagination State
 const searchQuery = ref('');
@@ -158,7 +157,7 @@ const goToPage = (page: number) => {
     }
 };
 
-const handleDownload = (settlement: Settlement) => {
+const handleDownload = (settlement: FreelancerSettlementWithDetails) => {
     // Mock download
     alert(`정산 내역서 다운로드: ${settlement.projectName}`);
 };
