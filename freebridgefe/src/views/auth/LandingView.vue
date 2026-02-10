@@ -2,7 +2,7 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useWindowScroll } from '@vueuse/core';
-import { ArrowRight, Sparkles, Shield, MessageSquare, Star } from 'lucide-vue-next';
+import { ArrowRight, Sparkles, Shield, MessageSquare, Star, Github } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
 
 const router = useRouter();
@@ -102,7 +102,7 @@ const stats = [
         >
           <div class="px-6 py-3 rounded-full bg-white/10 backdrop-blur-xl border border-white/20">
             <p class="text-sm font-medium text-white/90">
-              🚀 AI 기반 프리랜서 매칭 플랫폼
+               AI 기반 프리랜서,고용주 양방향 매칭 플랫폼 📝
             </p>
           </div>
         </div>
@@ -112,7 +112,7 @@ const stats = [
           v-motion
           :initial="{ opacity: 0, y: 30 }"
           :enter="{ opacity: 1, y: 0, transition: { duration: 800, delay: 400 } }"
-          class="text-6xl md:text-8xl font-bold mb-8 leading-tight tracking-tight"
+          class="text-6xl md:text-8xl font-bold mb-8 leading-tight tracking-tight pb-4"
           style="background: linear-gradient(180deg, #ffffff 0%, #a0a0a0 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
         >
           최고의 프리랜서와
@@ -194,7 +194,7 @@ const stats = [
           :visible="{ opacity: 1, y: 0, transition: { duration: 800 } }"
           class="text-center mb-20"
         >
-          <h2 class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent">
+          <h2 class="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-br from-white to-white/50 bg-clip-text text-transparent pb-4 leading-normal">
             왜 FreeBridge인가요?
           </h2>
           <p class="text-xl text-white/60 max-w-2xl mx-auto">
@@ -270,54 +270,36 @@ const stats = [
     </section>
 
     <!-- Footer -->
-    <footer class="relative border-t border-white/10 py-16">
-      <div class="max-w-7xl mx-auto px-6">
-        <div class="grid md:grid-cols-4 gap-12 mb-12">
-          <div>
-            <h3 class="text-2xl font-bold mb-4 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
-              FreeBridge
-            </h3>
-            <p class="text-white/50 text-sm leading-relaxed">
-              최고의 프리랜서와 고용주를 연결하는 플랫폼
-            </p>
-          </div>
-
-          <div>
-            <h4 class="font-semibold mb-4">서비스</h4>
-            <ul class="space-y-3">
-              <li v-for="link in ['프로젝트 찾기', '프리랜서 찾기', '계약 관리']" :key="link">
-                <a href="#" class="text-white/50 hover:text-white transition-colors text-sm">
-                  {{ link }}
-                </a>
-              </li>
-            </ul>
-          </div>
-           <div>
-            <h4 class="font-semibold mb-4">회사</h4>
-            <ul class="space-y-3">
-              <li v-for="link in ['회사 소개', '채용', '문의']" :key="link">
-                <a href="#" class="text-white/50 hover:text-white transition-colors text-sm">
-                  {{ link }}
-                </a>
-              </li>
-            </ul>
-          </div>
-           <div>
-            <h4 class="font-semibold mb-4">지원</h4>
-            <ul class="space-y-3">
-              <li v-for="link in  ['고객센터', '이용약관', '개인정보처리방침']" :key="link">
-                <a href="#" class="text-white/50 hover:text-white transition-colors text-sm">
-                  {{ link }}
-                </a>
-              </li>
-            </ul>
-          </div>
+    <footer class="relative border-t border-white/10 py-12">
+      <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+        <!-- Brand Info -->
+        <div class="text-center md:text-left">
+          <h3 class="text-2xl font-bold mb-2 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
+            FreeBridge
+          </h3>
+          <p class="text-white/50 text-sm">
+            Beyond SW Camp 21th - Team FallGuys Final Project
+          </p>
         </div>
 
-        <div class="border-t border-white/10 pt-8 text-center text-white/40 text-sm">
-          © 2024 FreeBridge. All rights reserved.
+        <!-- Links & Copyright -->
+        <div class="flex flex-col md:flex-row items-center gap-6">
+          <a
+            href="https://github.com/20250918-beyond-SW-Camp-21th/beyond-SW-21th-Final-4team-FE"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-white/50 hover:text-white transition-colors flex items-center gap-2 text-sm group"
+          >
+            <Github class="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span>GitHub Repository</span>
+          </a>
+          
+          <div class="hidden md:block w-px h-4 bg-white/10"></div>
+          
+          <p class="text-white/40 text-sm">
+            © 2026 FreeBridge. All rights reserved.
+          </p>
         </div>
-
       </div>
     </footer>
   </div>
