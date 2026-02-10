@@ -50,7 +50,6 @@ export const useOnboardingStore = defineStore('onboarding', () => {
 
             // Mock delay
             await new Promise(resolve => setTimeout(resolve, 1500));
-            console.log('Submitted Employer Data:', employerData.value);
             return true;
         } catch (e) {
             console.error(e);
@@ -67,7 +66,6 @@ export const useOnboardingStore = defineStore('onboarding', () => {
             // await api.post('/freelancers/onboarding', freelancerData.value);
 
             await new Promise(resolve => setTimeout(resolve, 1500));
-            console.log('Submitted Freelancer Data:', freelancerData.value);
             return true;
         } catch (e) {
             console.error(e);
