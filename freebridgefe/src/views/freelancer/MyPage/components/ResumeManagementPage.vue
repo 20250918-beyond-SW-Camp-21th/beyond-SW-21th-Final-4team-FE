@@ -1,377 +1,511 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Save,
-  ArrowLeft,
-  Camera,
-  Briefcase,
-  FileText,
-  Calendar,
-  Plus,
-  Trash2,
-  Code,
-  GraduationCap,
-  Edit2,
-  Download,
-  Award
+    ArrowLeft,
+    Save,
+    User,
+    Calendar,
+    Phone,
+    Mail,
+    MapPin,
+    GraduationCap,
+    Plus,
+    Trash2,
+    Briefcase,
+    Award,
+    Check
 } from 'lucide-vue-next';
+import {
+    getResumeDetail,
+    saveResumeDetail,
+    type ResumeDetail,
+    type Education,
+    type Career,
+    type Certification
+} from '@/api/MyPage/resumeApi';
 import { useAuthStore } from '@/stores/authStore';
 
 const emit = defineEmits<{
-  (e: 'back'): void;
+    (e: 'back'): void;
 }>();
 
 const authStore = useAuthStore();
-const currentUser = authStore.user;
 
-const isEditing = ref(false);
-const newSkill = ref('');
-const avatarPreview = ref<string | null>(null); // In real app, use user's avatar
-
-// Mock Data initialized from user
-const profileData = ref({
-    name: currentUser?.name || '',
-    title: 'Senior Frontend Developer',
-    email: currentUser?.email || '',
-    phone: '010-1234-5678',
-    location: 'Seoul, Korea',
-    intro: '안녕하세요. 5년차 프론트엔드 개발자입니다. React와 TypeScript를 주력으로 하며, 사용자 경험 중심의 UI/UX 구현에 강점이 있습니다.',
-    skills: ['React', 'TypeScript', 'TailwindCSS', 'Node.js', 'Next.js'],
-    education: [
-        { id: 1, period: '1987.03 - 1989.02', school: 'KAIST대학원(석사)', major: '컴퓨터공학' },
-        { id: 2, period: '1983.03 - 1987.02', school: '연세대학교(4년)', major: '전자공학' },
-    ],
-    experience: [
-        { id: 1, period: '2023.05 - 2023.12', company: 'LG전자', role: '프론트엔드 개발', description: 'React 기반 웹 애플리케이션 개발 및 유지보수' },
-        { id: 2, period: '2023.02 - 2023.04', company: '에스원', role: '웹 고도화', description: 'UI/UX 개선 및 성능 최적화' },
-    ],
-    certifications: [
-        { id: 1, name: '정보처리기사', issuer: '한국산업인력공단', date: '2020.08' },
-    ]
+// --- State ---
+const resumeData = ref<ResumeDetail>({
+    id: 0,
+    name: '',
+    birthDate: '',
+    phone: '',
+    email: '',
+    address: '',
+    educations: [],
+    careers: [],
+    certifications: []
 });
 
-const handleSave = () => {
-    alert('이력서 정보가 저장되었습니다.');
-    isEditing.value = false;
-};
+const isLoading = ref(true);
 
-const handleAvatarChange = (e: Event) => {
-    const input = e.target as HTMLInputElement;
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            avatarPreview.value = e.target?.result as string;
-        };
-        reader.readAsDataURL(input.files[0]);
+// --- Temporary State for Adding Items ---
+const isAddingEducation = ref(false);
+const newEducation = ref<Education>({
+    id: 0,
+    schoolType: '대학교',
+    schoolName: '',
+    major: '',
+    status: '졸업',
+    entranceDate: '',
+    graduationDate: ''
+});
+
+const isAddingCareer = ref(false);
+const newCareer = ref<Career>({
+    id: 0,
+    companyName: '',
+    department: '',
+    position: '',
+    jobType: '',
+    employmentType: '정규직',
+    startDate: '',
+    endDate: '',
+    description: ''
+});
+
+const isAddingCertification = ref(false);
+const newCertification = ref<Certification>({
+    id: 0,
+    name: '',
+    issuer: '',
+    acquisitionDate: ''
+});
+
+// --- Actions ---
+
+onMounted(async () => {
+    try {
+        isLoading.value = true;
+        resumeData.value = await getResumeDetail(authStore.user?.id || 1);
+    } catch (e) {
+        console.error(e);
+        alert('이력서 데이터를 불러오는데 실패했습니다.');
+    } finally {
+        isLoading.value = false;
     }
-};
+});
 
-const addSkill = (e: KeyboardEvent) => {
-    if (e.key === 'Enter' && newSkill.value.trim()) {
-        if (!profileData.value.skills.includes(newSkill.value.trim())) {
-            profileData.value.skills.push(newSkill.value.trim());
+const handleSave = async () => {
+    try {
+        const success = await saveResumeDetail(resumeData.value);
+        if (success) {
+            alert('이력서 정보가 저장되었습니다.');
         }
-        newSkill.value = '';
+    } catch (e) {
+        alert('저장 중 오류가 발생했습니다.');
     }
 };
 
-const removeSkill = (skillToRemove: string) => {
-    profileData.value.skills = profileData.value.skills.filter(s => s !== skillToRemove);
+// --- Education Actions ---
+const addEducation = () => {
+    if (!newEducation.value.schoolName) return alert('학교명을 입력해주세요.');
+    resumeData.value.educations.push({ ...newEducation.value, id: Date.now() });
+    
+    // Reset
+    newEducation.value = {
+        id: 0,
+        schoolType: '대학교',
+        schoolName: '',
+        major: '',
+        status: '졸업',
+        entranceDate: '',
+        graduationDate: ''
+    };
+    isAddingEducation.value = false;
+};
+
+const removeEducation = (index: number) => {
+    if (confirm('삭제하시겠습니까?')) {
+        resumeData.value.educations.splice(index, 1);
+    }
+};
+
+// --- Career Actions ---
+const addCareer = () => {
+    if (!newCareer.value.companyName) return alert('회사명을 입력해주세요.');
+    resumeData.value.careers.push({ ...newCareer.value, id: Date.now() });
+
+    // Reset
+    newCareer.value = {
+        id: 0,
+        companyName: '',
+        department: '',
+        position: '',
+        jobType: '',
+        employmentType: '정규직',
+        startDate: '',
+        endDate: '',
+        description: ''
+    };
+    isAddingCareer.value = false;
+};
+
+const removeCareer = (index: number) => {
+    if (confirm('삭제하시겠습니까?')) {
+        resumeData.value.careers.splice(index, 1);
+    }
+};
+
+// --- Certification Actions ---
+const addCertification = () => {
+    if (!newCertification.value.name) return alert('자격증명을 입력해주세요.');
+    resumeData.value.certifications.push({ ...newCertification.value, id: Date.now() });
+
+    // Reset
+    newCertification.value = {
+        id: 0,
+        name: '',
+        issuer: '',
+        acquisitionDate: ''
+    };
+    isAddingCertification.value = false;
+};
+
+const removeCertification = (index: number) => {
+    if (confirm('삭제하시겠습니까?')) {
+        resumeData.value.certifications.splice(index, 1);
+    }
 };
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 md:px-8 py-8 font-sans text-white">
-    <!-- Header -->
-    <div class="flex items-center justify-between mb-8">
-        <div class="flex items-center gap-4">
-            <button
-                @click="$emit('back')"
-                class="p-2 hover:bg-white/5 rounded-lg transition-colors"
-                v-motion
-                :hover="{ scale: 1.1 }"
-                :tap="{ scale: 0.9 }"
-            >
-                <ArrowLeft class="w-5 h-5 text-white/60" />
-            </button>
-            <div>
-                <h1 class="text-2xl font-bold text-white">이력서 관리</h1>
-                <p class="text-sm text-slate-400 mt-1">프로필 정보를 관리하고 이력서를 다운로드하세요</p>
+    <div class="max-w-5xl mx-auto px-4 md:px-8 py-8 font-sans text-white">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-8">
+            <div class="flex items-center gap-4">
+                <button
+                    @click="$emit('back')"
+                    class="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                    v-motion
+                    :hover="{ scale: 1.1 }"
+                    :tap="{ scale: 0.9 }"
+                >
+                    <ArrowLeft class="w-5 h-5 text-white/60" />
+                </button>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">이력서 상세 관리</h1>
+                    <p class="text-sm text-slate-400 mt-1">기본 정보와 상세 경력을 관리하세요.</p>
+                </div>
             </div>
-        </div>
-        <div class="flex items-center gap-2">
             <button
-                @click="alert('PDF 다운로드 기능 (준비중)')"
-                class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors border border-white/10 flex items-center gap-2"
-            >
-                <Download class="w-4 h-4" />
-                PDF 다운로드
-            </button>
-            <button
-                v-if="isEditing"
                 @click="handleSave"
-                class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+                class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 shadow-lg shadow-blue-500/20"
             >
                 <Save class="w-4 h-4" />
                 저장하기
             </button>
-            <button
-                v-else
-                @click="isEditing = true"
-                class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors border border-white/10 flex items-center gap-2"
-            >
-                <Edit2 class="w-4 h-4" />
-                수정하기
-            </button>
         </div>
-    </div>
 
-    <!-- Resume Content -->
-    <div class="space-y-6">
-        <!-- Basic Info Section -->
-        <div
-            class="bg-white/5 rounded-2xl border border-white/10 p-8"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0 }"
-        >
-            <div class="flex items-start gap-8 flex-col md:flex-row">
-                <!-- Avatar -->
-                <div class="relative group flex-shrink-0 mx-auto md:mx-0">
-                    <div class="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white/10 bg-white/5 relative">
-                        <img v-if="avatarPreview" :src="avatarPreview" alt="Profile" class="w-full h-full object-cover" />
-                        <div v-else class="w-full h-full flex items-center justify-center">
-                            <User class="w-10 h-10 text-white/20" />
-                        </div>
-                        <label v-if="isEditing" class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                            <Camera class="w-5 h-5 text-white" />
-                            <input type="file" class="hidden" accept="image/*" @change="handleAvatarChange" />
-                        </label>
-                    </div>
-                </div>
+        <div v-if="isLoading" class="flex justify-center py-20">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        </div>
 
-                <!-- Basic Info -->
-                <div class="flex-1 space-y-4 w-full">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs text-slate-500 mb-1 block">이름</label>
-                            <input
-                                v-if="isEditing"
-                                type="text"
-                                v-model="profileData.name"
-                                class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500/50"
-                            />
-                            <p v-else class="text-white font-medium">{{ profileData.name }}</p>
-                        </div>
-                        <div>
-                            <label class="text-xs text-slate-500 mb-1 block">직무</label>
-                            <input
-                                v-if="isEditing"
-                                type="text"
-                                v-model="profileData.title"
-                                class="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-blue-500/50"
-                            />
-                            <p v-else class="text-white font-medium">{{ profileData.title }}</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs text-slate-500 mb-1 block">이메일</label>
-                            <div v-if="isEditing" class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                                <Mail class="w-4 h-4 text-slate-400" />
-                                <input
-                                    type="email"
-                                    v-model="profileData.email"
-                                    class="bg-transparent border-none outline-none w-full text-white text-sm"
-                                />
-                            </div>
-                            <p v-else class="text-white flex items-center gap-2">
-                                <Mail class="w-4 h-4 text-slate-400" />
-                                {{ profileData.email }}
-                            </p>
-                        </div>
-                        <div>
-                            <label class="text-xs text-slate-500 mb-1 block">연락처</label>
-                            <div v-if="isEditing" class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                                <Phone class="w-4 h-4 text-slate-400" />
-                                <input
-                                    type="tel"
-                                    v-model="profileData.phone"
-                                    class="bg-transparent border-none outline-none w-full text-white text-sm"
-                                />
-                            </div>
-                            <p v-else class="text-white flex items-center gap-2">
-                                <Phone class="w-4 h-4 text-slate-400" />
-                                {{ profileData.phone }}
-                            </p>
-                        </div>
-                    </div>
-
+        <div v-else class="space-y-6">
+            <!-- 1. 기본 정보 (Basic Info) -->
+            <div class="bg-white/5 rounded-2xl border border-white/10 p-8">
+                <h2 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <User class="w-5 h-5 text-blue-400" />
+                    기본 정보
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="text-xs text-slate-500 mb-1 block">활동 지역</label>
-                        <div v-if="isEditing" class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2">
-                            <MapPin class="w-4 h-4 text-slate-400" />
+                        <label class="text-xs text-slate-500 mb-1.5 block">이름</label>
+                        <input
+                            type="text"
+                            v-model="resumeData.name"
+                            class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
+                        />
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500 mb-1.5 block">생년월일</label>
+                        <div class="relative">
                             <input
-                                type="text"
-                                v-model="profileData.location"
-                                class="bg-transparent border-none outline-none w-full text-white text-sm"
+                                type="date"
+                                v-model="resumeData.birthDate"
+                                class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
+                            />
+                            <!-- Custom Calendar Icon overlay could go here if needed -->
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500 mb-1.5 block">연락처</label>
+                        <div class="relative">
+                            <Phone class="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                            <input
+                                type="tel"
+                                v-model="resumeData.phone"
+                                class="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
+                                placeholder="010-0000-0000"
                             />
                         </div>
-                        <p v-else class="text-white flex items-center gap-2">
-                            <MapPin class="w-4 h-4 text-slate-400" />
-                            {{ profileData.location }}
-                        </p>
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-500 mb-1.5 block">이메일</label>
+                        <div class="relative">
+                            <Mail class="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                            <input
+                                type="email"
+                                v-model="resumeData.email"
+                                class="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
+                            />
+                        </div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-xs text-slate-500 mb-1.5 block">주소</label>
+                        <div class="relative">
+                            <MapPin class="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+                            <input
+                                type="text"
+                                v-model="resumeData.address"
+                                class="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
+                            />
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Introduction -->
-        <div
-            class="bg-white/5 rounded-2xl border border-white/10 p-8"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 100 } }"
-        >
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <User class="w-5 h-5 text-blue-400" />
-                자기소개
-            </h2>
-            <textarea
-                v-if="isEditing"
-                v-model="profileData.intro"
-                class="w-full h-32 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm outline-none focus:border-blue-500/50 resize-none"
-                placeholder="본인의 강점과 경험을 자유롭게 작성해주세요."
-            ></textarea>
-            <p v-else class="text-slate-300 leading-relaxed">{{ profileData.intro }}</p>
-        </div>
-
-        <!-- Skills -->
-        <div
-            class="bg-white/5 rounded-2xl border border-white/10 p-8"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 200 } }"
-        >
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Code class="w-5 h-5 text-purple-400" />
-                보유 스킬
-            </h2>
-            <div class="flex flex-wrap gap-2 mb-4">
-                <span
-                    v-for="skill in profileData.skills"
-                    :key="skill"
-                    class="px-3 py-1.5 bg-blue-500/20 text-blue-300 rounded-lg text-sm border border-blue-500/30 flex items-center gap-2"
-                >
-                    {{ skill }}
-                    <button v-if="isEditing" @click="removeSkill(skill)" class="hover:text-white">
-                        <Trash2 class="w-3 h-3" />
+            <!-- 2. 학력 사항 (Education) -->
+            <div class="bg-white/5 rounded-2xl border border-white/10 p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <GraduationCap class="w-5 h-5 text-green-400" />
+                        학력 사항
+                    </h2>
+                    <button 
+                        v-if="!isAddingEducation"
+                        @click="isAddingEducation = true"
+                        class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg text-slate-300 transition-colors flex items-center gap-1"
+                    >
+                        <Plus class="w-3 h-3" /> 추가
                     </button>
-                </span>
-            </div>
-            <input
-                v-if="isEditing"
-                type="text"
-                v-model="newSkill"
-                @keydown="addSkill"
-                class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white text-sm outline-none focus:border-blue-500/50"
-                placeholder="스킬을 입력하고 Enter를 누르세요"
-            />
-        </div>
+                </div>
 
-        <!-- Experience -->
-        <div
-            class="bg-white/5 rounded-2xl border border-white/10 p-8"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 300 } }"
-        >
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Briefcase class="w-5 h-5 text-orange-400" />
-                경력
-            </h2>
-            <div class="space-y-4">
-                <div v-for="exp in profileData.experience" :key="exp.id" class="border-l-2 border-blue-500/30 pl-6 pb-4 relative">
-                    <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-500 border-4 border-[#1e293b]"></div>
-                    <div class="flex items-start justify-between mb-2">
-                        <div>
-                            <h3 class="text-white font-bold">{{ exp.company }}</h3>
-                            <p class="text-sm text-blue-400">{{ exp.role }}</p>
+                <!-- Education List -->
+                <div class="space-y-3 mb-4">
+                    <div 
+                        v-for="(edu, index) in resumeData.educations" 
+                        :key="edu.id" 
+                        class="bg-white/5 p-5 rounded-xl border border-white/5 flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:border-white/10 transition-colors"
+                    >
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/20">{{ edu.schoolType }}</span>
+                                <span class="text-xs text-slate-500">{{ edu.status }}</span>
+                            </div>
+                            <h3 class="font-bold text-white text-lg">{{ edu.schoolName }}</h3>
+                            <p class="text-sm text-slate-400">{{ edu.major }}</p>
                         </div>
-                        <span class="text-xs text-slate-500 bg-white/5 px-2 py-1 rounded">{{ exp.period }}</span>
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm text-slate-500 font-mono">{{ edu.entranceDate }} ~ {{ edu.graduationDate }}</span>
+                            <button @click="removeEducation(index)" class="p-2 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                                <Trash2 class="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
-                    <p class="text-sm text-slate-400">{{ exp.description }}</p>
                 </div>
-                <button
-                    v-if="isEditing"
-                     class="w-full py-3 border border-dashed border-white/20 rounded-lg text-white/40 hover:text-white hover:border-white/40 transition-colors flex items-center justify-center gap-2"
-                >
-                    <Plus class="w-4 h-4" /> 경력 추가
-                </button>
-            </div>
-        </div>
 
-        <!-- Education -->
-        <div
-            class="bg-white/5 rounded-2xl border border-white/10 p-8"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 400 } }"
-        >
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <GraduationCap class="w-5 h-5 text-green-400" />
-                학력
-            </h2>
-             <div class="space-y-3">
-                <div v-for="edu in profileData.education" :key="edu.id" class="flex items-center justify-between bg-white/5 p-4 rounded-lg border border-white/5">
-                    <div>
-                        <h3 class="font-medium text-white">{{ edu.school }}</h3>
-                        <p class="text-sm text-slate-400">{{ edu.major }}</p>
+                <!-- Add Education Form -->
+                <div v-if="isAddingEducation" class="bg-white/5 p-5 rounded-xl border border-green-500/30 animate-in fade-in slide-in-from-top-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">학교 구분</label>
+                            <select v-model="newEducation.schoolType" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none">
+                                <option value="고등학교">고등학교</option>
+                                <option value="대학교">대학교</option>
+                                <option value="대학원">대학원</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">학교명</label>
+                            <input type="text" v-model="newEducation.schoolName" placeholder="학교명 입력" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">전공</label>
+                            <input type="text" v-model="newEducation.major" placeholder="전공 입력" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">상태</label>
+                            <select v-model="newEducation.status" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none">
+                                <option value="졸업">졸업</option>
+                                <option value="재학">재학</option>
+                                <option value="수료">수료</option>
+                                <option value="휴학">휴학</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-slate-500 mb-1 block">입학년월</label>
+                                <input type="text" v-model="newEducation.entranceDate" placeholder="YYYY.MM" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-500 mb-1 block">졸업년월</label>
+                                <input type="text" v-model="newEducation.graduationDate" placeholder="YYYY.MM" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                            </div>
+                        </div>
                     </div>
-                    <span class="text-sm text-slate-500">{{ edu.period }}</span>
+                    <div class="flex justify-end gap-2">
+                        <button @click="isAddingEducation = false" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white">취소</button>
+                        <button @click="addEducation" class="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white text-xs rounded-lg font-bold">추가 완료</button>
+                    </div>
                 </div>
-                 <button
-                    v-if="isEditing"
-                     class="w-full py-3 border border-dashed border-white/20 rounded-lg text-white/40 hover:text-white hover:border-white/40 transition-colors flex items-center justify-center gap-2"
-                >
-                    <Plus class="w-4 h-4" /> 학력 추가
-                </button>
             </div>
-        </div>
 
-        <!-- Certifications -->
-        <div
-            class="bg-white/5 rounded-2xl border border-white/10 p-8"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 500 } }"
-        >
-             <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Award class="w-5 h-5 text-yellow-400" />
-                자격증
-            </h2>
-             <div class="space-y-3">
-                <div v-for="cert in profileData.certifications" :key="cert.id" class="flex items-center justify-between bg-white/5 p-4 rounded-lg border border-white/5">
-                    <div>
-                        <h3 class="font-medium text-white">{{ cert.name }}</h3>
-                        <p class="text-sm text-slate-400">{{ cert.issuer }}</p>
-                    </div>
-                    <span class="text-sm text-slate-500">{{ cert.date }}</span>
+            <!-- 3. 경력 사항 (Career) -->
+            <div class="bg-white/5 rounded-2xl border border-white/10 p-8">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <Briefcase class="w-5 h-5 text-orange-400" />
+                        경력 사항
+                    </h2>
+                    <button 
+                        v-if="!isAddingCareer"
+                        @click="isAddingCareer = true"
+                        class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg text-slate-300 transition-colors flex items-center gap-1"
+                    >
+                        <Plus class="w-3 h-3" /> 추가
+                    </button>
                 </div>
-                <button
-                    v-if="isEditing"
-                     class="w-full py-3 border border-dashed border-white/20 rounded-lg text-white/40 hover:text-white hover:border-white/40 transition-colors flex items-center justify-center gap-2"
-                >
-                    <Plus class="w-4 h-4" /> 자격증 추가
-                </button>
+
+                <div class="space-y-4 mb-4">
+                    <div 
+                        v-for="(career, index) in resumeData.careers" 
+                        :key="career.id" 
+                        class="relative pl-6 pb-4 border-l-2 border-white/10 last:border-0 last:pb-0 group"
+                    >
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-orange-500 border-4 border-[#1e293b]"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="font-bold text-white text-lg mb-0.5">{{ career.companyName }}</h3>
+                                <p class="text-sm text-orange-400 mb-2">{{ career.department }} / {{ career.position }} ({{ career.employmentType }})</p>
+                                <p class="text-sm text-slate-300">{{ career.jobType }}</p>
+                                <p class="text-xs text-slate-500 mt-2 leading-relaxed">{{ career.description }}</p>
+                            </div>
+                            <div class="flex flex-col items-end gap-2">
+                                <span class="text-xs text-slate-500 bg-white/5 px-2 py-1 rounded">{{ career.startDate }} ~ {{ career.endDate }}</span>
+                                <button @click="removeCareer(index)" class="p-1.5 text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Trash2 class="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Career Form -->
+                <div v-if="isAddingCareer" class="bg-white/5 p-5 rounded-xl border border-orange-500/30 animate-in fade-in slide-in-from-top-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="col-span-1 md:col-span-2">
+                            <label class="text-xs text-slate-500 mb-1 block">회사명</label>
+                            <input type="text" v-model="newCareer.companyName" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">부서</label>
+                            <input type="text" v-model="newCareer.department" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                        </div>
+                         <div>
+                            <label class="text-xs text-slate-500 mb-1 block">직위/직책</label>
+                            <input type="text" v-model="newCareer.position" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">고용 형태</label>
+                            <select v-model="newCareer.employmentType" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none">
+                                <option value="정규직">정규직</option>
+                                <option value="계약직">계약직</option>
+                                <option value="프리랜서">프리랜서</option>
+                                <option value="인턴">인턴</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label class="text-xs text-slate-500 mb-1 block">담당 업무</label>
+                            <input type="text" v-model="newCareer.jobType" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-slate-500 mb-1 block">입사년월</label>
+                                <input type="text" v-model="newCareer.startDate" placeholder="YYYY.MM" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-500 mb-1 block">퇴사년월</label>
+                                <input type="text" v-model="newCareer.endDate" placeholder="YYYY.MM or 재직중" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                            </div>
+                        </div>
+                        <div class="col-span-1 md:col-span-2">
+                             <label class="text-xs text-slate-500 mb-1 block">상세 설명</label>
+                             <textarea v-model="newCareer.description" rows="3" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none resize-none"></textarea>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button @click="isAddingCareer = false" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white">취소</button>
+                        <button @click="addCareer" class="px-3 py-1.5 bg-orange-600 hover:bg-orange-500 text-white text-xs rounded-lg font-bold">추가 완료</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 자격증 (Certifications) -->
+            <div class="bg-white/5 rounded-2xl border border-white/10 p-8">
+               <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <Award class="w-5 h-5 text-yellow-400" />
+                        자격증
+                    </h2>
+                    <button 
+                        v-if="!isAddingCertification"
+                        @click="isAddingCertification = true"
+                        class="text-xs bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-lg text-slate-300 transition-colors flex items-center gap-1"
+                    >
+                        <Plus class="w-3 h-3" /> 추가
+                    </button>
+                </div>
+
+                <div class="space-y-3 mb-4">
+                    <div 
+                        v-for="(cert, index) in resumeData.certifications" 
+                        :key="cert.id" 
+                        class="bg-white/5 p-4 rounded-xl border border-white/5 flex items-center justify-between group hover:border-white/10"
+                    >
+                        <div>
+                            <h3 class="font-bold text-white">{{ cert.name }}</h3>
+                            <p class="text-sm text-slate-400">{{ cert.issuer }}</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="text-sm text-slate-500 font-mono">{{ cert.acquisitionDate }}</span>
+                            <button @click="removeCertification(index)" class="p-2 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100">
+                                <Trash2 class="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add Certification Form -->
+                <div v-if="isAddingCertification" class="bg-white/5 p-5 rounded-xl border border-yellow-500/30 animate-in fade-in slide-in-from-top-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">자격증명</label>
+                            <input type="text" v-model="newCertification.name" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">발급기관</label>
+                            <input type="text" v-model="newCertification.issuer" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                        </div>
+                        <div>
+                            <label class="text-xs text-slate-500 mb-1 block">취득년월</label>
+                            <input type="text" v-model="newCertification.acquisitionDate" placeholder="YYYY.MM" class="w-full bg-[#1e293b] border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none" />
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <button @click="isAddingCertification = false" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white">취소</button>
+                        <button @click="addCertification" class="px-3 py-1.5 bg-yellow-600 hover:bg-yellow-500 text-white text-xs rounded-lg font-bold">추가 완료</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-  </div>
 </template>

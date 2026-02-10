@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import type { FreelancerProject } from '@/api/projectApi';
-import { getProjectDetail } from '@/api/projectApi';
+import type { FreelancerProject } from '@/api/MyPage/projectApi.ts';
+import { getProjectDetail } from '@/api/MyPage/projectApi.ts';
 import { X, Calendar, DollarSign, User as UserIcon, FileText, CreditCard, MessageSquare, Download } from 'lucide-vue-next';
 
 const props = defineProps<{

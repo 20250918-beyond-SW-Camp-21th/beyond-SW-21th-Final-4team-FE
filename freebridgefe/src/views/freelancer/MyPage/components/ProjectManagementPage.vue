@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { Search, Filter, Calendar, DollarSign, User as UserIcon } from 'lucide-vue-next';
-import { getFreelancerProjects, type FreelancerProject } from '@/api/projectApi';
+import { getFreelancerProjects, type FreelancerProject } from '@/api/MyPage/projectApi.ts';
 import { useAuthStore } from '@/stores/authStore';
 
 const authStore = useAuthStore();

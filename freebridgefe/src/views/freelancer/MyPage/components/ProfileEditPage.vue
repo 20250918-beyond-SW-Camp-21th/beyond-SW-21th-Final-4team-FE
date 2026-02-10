@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
-import type { FreelancerProfileDashboard } from '@/api/freelancerApi';
-import { updateFreelancerProfile } from '@/api/freelancerApi';
+import type { FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi.ts';
+import { updateFreelancerProfile } from '@/api/MyPage/freelancerApi.ts';
 import { ArrowLeft, Save, Upload, Plus, X } from 'lucide-vue-next';
 
 const props = defineProps<{

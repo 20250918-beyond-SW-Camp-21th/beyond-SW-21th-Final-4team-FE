@@ -18,13 +18,12 @@ import {
   Edit3,
   Upload,
 } from 'lucide-vue-next';
-import { useAuthStore } from '@/stores/authStore';
-import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/freelancerApi';
+import { useAuthStore } from '@/stores/authStore.ts';
+import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi.ts';
 import ResumeManagementPage from './components/ResumeManagementPage.vue';
 import CompanyEvaluationSummary from './components/CompanyEvaluationSummary.vue';
 import AccountManagementPage from './components/AccountManagementPage.vue';
 import GradeCheckPage from './components/GradeCheckPage.vue';
-import OneOnOneInquiryModal from './components/OneOnOneInquiryModal.vue';
 import ProfileEditPage from './components/ProfileEditPage.vue';
 import ProjectManagementPage from './components/ProjectManagementPage.vue';
 import ProjectDetailModal from './components/ProjectDetailModal.vue';
