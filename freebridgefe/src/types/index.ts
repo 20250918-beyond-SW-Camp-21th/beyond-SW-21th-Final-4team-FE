@@ -15,7 +15,7 @@ export interface User {
     isEmailVerified?: boolean;
     // Freelancer specific
     skills?: string[];
-    hourlyRate?: number;
+    monthlySalary?: number;
     experience?: number; // years
     portfolio?: string;
     bio?: string;
@@ -43,7 +43,7 @@ export interface JobPosting {
     description: string;
     techStack: string[];
     budget: number;
-    duration: number; // weeks
+    duration: number; // months
     status: JobStatus;
     createdAt: Date;
     updatedAt: Date;
