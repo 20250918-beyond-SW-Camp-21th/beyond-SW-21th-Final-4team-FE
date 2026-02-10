@@ -26,6 +26,7 @@ import EmployerProfileManagement from './components/EmployerProfileManagement.vu
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
 import EmployerProjectManagement from './components/EmployerProjectManagement.vue';
 import FreelancerChecklistPage from './components/FreelancerChecklistPage.vue';
+import EmployerApplicantStatus from './components/EmployerApplicantStatus.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -50,7 +51,7 @@ const menuItems = [
     id: 'applicants',
     label: '지원자 현황',
     icon: Users,
-    action: () => router.push({ name: 'employer.applications' }),
+    action: () => (activeTab.value = 'applicants'),
   },
   {
     id: 'checklist',
@@ -82,7 +83,7 @@ const handleNavigate = (path: string) => {
     if (path === 'dashboard') {
         activeTab.value = 'dashboard';
     } else if (path === 'applications') {
-        router.push({ name: 'employer.applications' });
+        activeTab.value = 'applicants';
     }
 }
 </script>
@@ -107,7 +108,7 @@ const handleNavigate = (path: string) => {
             :key="item.id"
             @click="
               () => {
-                if (['dashboard', 'profile', 'checklist', 'projects', 'account'].includes(item.id)) {
+                if (['dashboard', 'profile', 'applicants', 'checklist', 'projects', 'account'].includes(item.id)) {
                   activeTab = item.id;
                 } else {
                   item.action();
@@ -143,6 +144,7 @@ const handleNavigate = (path: string) => {
         <div class="p-8">
             <!-- Dynamic Content Rendering -->
             <EmployerProfileManagement v-if="activeTab === 'profile'" @back="activeTab = 'dashboard'" />
+            <EmployerApplicantStatus v-else-if="activeTab === 'applicants'" @back="activeTab = 'dashboard'" />
             <FreelancerChecklistPage v-else-if="activeTab === 'checklist'" @back="activeTab = 'dashboard'" />
             <EmployerProjectManagement v-else-if="activeTab === 'projects'" @back="activeTab = 'dashboard'" />
             <EmployerAccountManagement v-else-if="activeTab === 'account'" @back="activeTab = 'dashboard'" />
