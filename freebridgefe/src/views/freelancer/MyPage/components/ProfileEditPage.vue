@@ -45,8 +45,13 @@ const removeSkill = (skillToRemove: string) => {
 const handleAvatarUpload = (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
-        // In real app: Upload to server and get URL
-        // Here: Create Object URL
+        if (formData.value.avatar?.startsWith('blob:')) {
+          URL.revokeObjectURL(formData.value.avatar);
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          alert('파일 크기는 5MB 이하만 업로드할 수 있습니다.');
+          return;
+        }
         const objectUrl = URL.createObjectURL(file);
         formData.value.avatar = objectUrl;
     }
@@ -104,7 +109,7 @@ const saveProfile = async () => {
             <div class="col-span-2 space-y-6">
                 <div class="bg-[#1e293b]/50 p-6 rounded-2xl border border-white/5 space-y-4">
                     <h3 class="text-lg font-bold text-white border-b border-white/5 pb-2">기본 정보</h3>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1">
                             <label class="text-xs text-slate-400 font-bold">이름</label>
@@ -165,12 +170,12 @@ const saveProfile = async () => {
                  <div class="bg-[#1e293b]/50 p-6 rounded-2xl border border-white/5 space-y-4">
                     <h3 class="text-lg font-bold text-white border-b border-white/5 pb-2">기술 스택 (Skills)</h3>
                     <div class="flex gap-2">
-                        <input 
-                            v-model="newSkill" 
-                            @keyup.enter="addSkill" 
-                            type="text" 
-                            placeholder="기술 스택 입력 후 Enter" 
-                            class="flex-1 bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" 
+                        <input
+                            v-model="newSkill"
+                            @keyup.enter="addSkill"
+                            type="text"
+                            placeholder="기술 스택 입력 후 Enter"
+                            class="flex-1 bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
                         />
                         <button @click="addSkill" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
                             <Plus class="w-4 h-4" />
@@ -188,8 +193,8 @@ const saveProfile = async () => {
                     <button @click="$emit('back')" class="px-6 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all font-bold">
                         취소
                     </button>
-                    <button 
-                        @click="saveProfile" 
+                    <button
+                        @click="saveProfile"
                         :disabled="isLoading"
                         class="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
                     >

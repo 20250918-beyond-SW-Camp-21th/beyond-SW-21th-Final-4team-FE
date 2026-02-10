@@ -93,9 +93,16 @@ export const getFreelancerProfile = async (userId: string): Promise<FreelancerPr
 export const updateFreelancerProfile = async (userId: string, updatedProfile: Partial<FreelancerProfileDashboard>): Promise<FreelancerProfileDashboard> => {
     return new Promise((resolve) => {
         setTimeout(() => {
-            // Update Mock Data (In-memory update for simulation)
-            Object.assign(MOCK_PROFILE, updatedProfile);
-            resolve(MOCK_PROFILE);
+            // Deep merge for nested objects
+            for (const key of Object.keys(updatedProfile) as (keyof FreelancerProfileDashboard)[]) {
+                const value = updatedProfile[key];
+                if (value && typeof value === 'object' && !Array.isArray(value) && MOCK_PROFILE[key]) {
+                    Object.assign(MOCK_PROFILE[key] as object, value);
+                } else if (value !== undefined) {
+                    (MOCK_PROFILE as any)[key] = value;
+                }
+            }
+            resolve(structuredClone(MOCK_PROFILE));
         }, 800);
     });
 };

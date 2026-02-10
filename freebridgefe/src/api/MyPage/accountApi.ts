@@ -12,7 +12,7 @@ export interface PasswordChange {
 }
 
 export const updateAccountInfo = async (data: Partial<AccountInfo>): Promise<boolean> => {
-    console.log('Update account info:', data);
+    console.log('Update account info requested, keys:', Object.keys(data));
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve(true); // 성공 가정
@@ -21,7 +21,7 @@ export const updateAccountInfo = async (data: Partial<AccountInfo>): Promise<boo
 };
 
 export const changePassword = async (data: PasswordChange): Promise<boolean> => {
-    console.log('Change password:', data);
+    console.log('Change password requested');
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve(true); // 성공 가정

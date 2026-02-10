@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Search, Filter, Calendar, DollarSign, User as UserIcon } from 'lucide-vue-next';
+import { Search, Filter, Calendar, DollarSign, User as UserIcon, ArrowLeft } from 'lucide-vue-next';
 import { getFreelancerProjects, type FreelancerProject } from '@/api/MyPage/projectApi.ts';
 import { useAuthStore } from '@/stores/authStore';
 
 const authStore = useAuthStore();
+
+const emit = defineEmits<{
+  (e: 'openDetail', projectId: number): void;
+  (e: 'back'): void;
+}>();
 
 // 탭 정의
 const tabs = [
@@ -20,27 +25,31 @@ const searchQuery = ref('');
 const projects = ref<FreelancerProject[]>([]);
 
 onMounted(async () => {
-    if (authStore.user?.id) {
-        try {
-            const data = await getFreelancerProjects(authStore.user.id);
-            projects.value = data;
-        } catch (error) {
-            console.error('Failed to load projects:', error);
-        }
-    } else {
-        // Fallback for demo/guest
-         const data = await getFreelancerProjects('guest');
-         projects.value = data;
+  if (authStore.user?.id) {
+    try {
+      const data = await getFreelancerProjects(authStore.user.id);
+      projects.value = data;
+    } catch (error) {
+      console.error('Failed to load projects:', error);
     }
+  } else {
+    // Fallback for demo/guest
+    try {
+      const data = await getFreelancerProjects('guest');
+      projects.value = data;
+    } catch (error) {
+      console.error('Failed to load projects:', error);
+    }
+  }
 });
 
-// 필터링 로직
 const filteredProjects = computed(() => {
-    return projects.value.filter(project => {
-        const matchesTab = activeTab.value === 'all' || project.status === activeTab.value;
-        const matchesSearch = project.title.includes(searchQuery.value) || project.clientName.includes(searchQuery.value);
-        return matchesTab && matchesSearch;
-    });
+  return projects.value.filter(project => {
+    const matchesTab = activeTab.value === 'all' || project.status === activeTab.value;
+    const query = searchQuery.value.toLowerCase();
+    const matchesSearch = !query || project.title.toLowerCase().includes(query) || project.clientName.toLowerCase().includes(query);
+    return matchesTab && matchesSearch;
+  });
 });
 
 const getStatusBadgeClass = (status: string) => {
@@ -66,9 +75,17 @@ const getStatusLabel = (status: string) => {
     <div class="p-8 max-w-7xl mx-auto h-full flex flex-col animate-fade-in-up">
         <!-- Header -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div>
-                <h2 class="text-2xl font-bold text-white mb-2">프로젝트 관리</h2>
-                <p class="text-slate-400 text-sm">진행 중인 프로젝트와 완료된 프로젝트를 한눈에 관리하세요.</p>
+            <div class="flex items-center gap-4">
+                <button
+                    @click="$emit('back')"
+                    class="p-2 hover:bg-white/5 rounded-lg transition-colors"
+                >
+                    <ArrowLeft class="w-5 h-5 text-white/60" />
+                </button>
+                <div>
+                    <h2 class="text-2xl font-bold text-white mb-2">프로젝트 관리</h2>
+                    <p class="text-slate-400 text-sm">진행 중인 프로젝트와 완료된 프로젝트를 한눈에 관리하세요.</p>
+                </div>
             </div>
             
             <!-- Search & Filter -->

@@ -115,9 +115,11 @@ export const getResumeDetail = async (userId: number): Promise<ResumeDetail> => 
 };
 
 export const saveResumeDetail = async (data: ResumeDetail): Promise<boolean> => {
-    console.log('Saving resume data:', data);
+    -    console.log('Saving resume data:', data);
+    +    console.log('Saving resume data requested');
     return new Promise((resolve) => {
         setTimeout(() => {
+            +            Object.assign(MOCK_RESUME_DETAIL, data);
             resolve(true);
         }, 800);
     });

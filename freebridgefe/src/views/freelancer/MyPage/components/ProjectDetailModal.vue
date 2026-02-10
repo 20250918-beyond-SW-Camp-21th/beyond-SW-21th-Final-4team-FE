@@ -37,19 +37,16 @@ const loadProjectDetail = async () => {
     }
 };
 
-watch(() => props.projectId, (newId) => {
-    if (newId && props.isOpen) {
+watch(
+    () => [props.projectId, props.isOpen] as const,
+    ([newId, isOpen]) => {
+      if (newId && isOpen) {
         loadProjectDetail();
         activeTab.value = 'detail';
+      }
     }
-});
+);
 
-watch(() => props.isOpen, (isOpen) => {
-    if (isOpen && props.projectId) {
-        loadProjectDetail();
-        activeTab.value = 'detail';
-    }
-});
 </script>
 
 <template>

@@ -29,21 +29,21 @@ const searchQuery = ref('');
 const sortBy = ref<'latest' | 'rating_high' | 'rating_low'>('latest');
 
 onMounted(async () => {
-    try {
-        isLoading.value = true;
-        const userId = authStore.user?.id || 1;
-        // Mock API Calls
-        const [evalData, rejectionData] = await Promise.all([
-            getEvaluations(userId),
-            getRejectionFeedbacks(userId)
-        ]);
-        evaluations.value = evalData;
-        rejectionFeedbacks.value = rejectionData;
-    } catch (e) {
-        console.error("Failed to fetch data", e);
-    } finally {
-        isLoading.value = false;
-    }
+  try {
+    isLoading.value = true;
+    const userId = authStore.user?.id || 'guest';
+    // Mock API Calls
+    const [evalData, rejectionData] = await Promise.all([
+      getEvaluations(userId),
+      getRejectionFeedbacks(userId)
+    ]);
+    evaluations.value = evalData;
+    rejectionFeedbacks.value = rejectionData;
+  } catch (e) {
+    console.error("Failed to fetch data", e);
+  } finally {
+    isLoading.value = false;
+  }
 });
 
 // Computed: 검색 및 정렬 로직 (프로젝트 후기용)
