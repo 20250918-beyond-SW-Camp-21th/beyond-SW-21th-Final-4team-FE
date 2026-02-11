@@ -61,6 +61,9 @@ export interface EmployerSettlementWithDetails extends EmployerSettlement {
     freelancerName: string;
     freelancerId: number;
     employerId: number;
+    // Calculated fields for UI
+    platformFee: number;      // billingAmount * commissionRate
+    totalAmount: number;      // billingAmount + platformFee
 }
 
 export interface FreelancerSettlementWithDetails extends FreelancerSettlement {
@@ -105,149 +108,20 @@ export const useContractStore = defineStore('contract', () => {
         {
             id: 2,
             contractId: 1002,
-            projectName: 'API 서버 마이그레이션',
-            freelancerId: 2,
-            employerId: 1,
-            startDate: new Date('2026-01-05'),
-            endDate: new Date('2026-03-20'),
-            status: 'COMPLETED',
-            budget: 8000000,
-            commissionRate: 0.04,
-            paymentDay: 10,
-            contractPdfUrl: '/contracts/1002_contract.pdf',
-            signedPdfUrl: '/contracts/1002_signed.pdf',
-            signedDate: new Date('2026-01-05'),
-            employerSignature: 'data:image/png;base64,employer_sig_2',
-            employerSignedDate: new Date('2026-01-03'),
-            freelancerSignature: 'data:image/png;base64,freelancer_sig_2',
-            freelancerSignedDate: new Date('2026-01-05'),
-        },
-        {
-            id: 3,
-            contractId: 1003,
-            projectName: '모바일 앱 개발',
+            projectName: '모바일 결제 시스템 구축',
             freelancerId: 1,
-            employerId: 2,
-            startDate: new Date('2026-01-05'),
-            endDate: new Date('2026-03-20'),
-            status: 'IN_PROGRESS',
-            budget: 10000000,
-            commissionRate: 0.05,
-            paymentDay: 15,
-            contractPdfUrl: '/contracts/1003_contract.pdf',
-            signedPdfUrl: '/contracts/1003_signed.pdf',
-            signedDate: new Date('2026-01-05'),
-            employerSignature: 'data:image/png;base64,employer_sig_3',
-            employerSignedDate: new Date('2026-01-03'),
-            freelancerSignature: 'data:image/png;base64,freelancer_sig_3',
-            freelancerSignedDate: new Date('2026-01-05'),
-        },
-        {
-            id: 4,
-            contractId: 1004,
-            projectName: '웹 쇼핑몰 리뉴얼',
-            freelancerId: 1,
-            employerId: 3,
-            startDate: new Date('2026-01-05'),
-            endDate: new Date('2026-03-20'),
-            status: 'WAITING_SIGNATURE',
-            budget: 12000000,
-            commissionRate: 0.05,
-            paymentDay: 25,
-            contractPdfUrl: '/contracts/1004_contract.pdf',
-            employerSignature: 'data:image/png;base64,employer_sig_4',
-            employerSignedDate: new Date('2026-01-03'),
-            // 프리랜서 아직 서명하지 않음
-        },
-        {
-            id: 5,
-            contractId: 1005,
-            projectName: 'UI/UX 디자인 리뉴얼',
-            freelancerId: 3,
             employerId: 1,
-            startDate: new Date('2026-01-05'),
-            endDate: new Date('2026-03-20'),
-            status: 'IN_PROGRESS',
-            budget: 3500000,
-            commissionRate: 0.05,
-            paymentDay: 10,
-            contractPdfUrl: '/contracts/1005_contract.pdf',
-            signedPdfUrl: '/contracts/1005_signed.pdf',
-            signedDate: new Date('2026-01-05'),
-            employerSignature: 'data:image/png;base64,employer_sig_5',
-            employerSignedDate: new Date('2026-01-03'),
-            freelancerSignature: 'data:image/png;base64,freelancer_sig_5',
-            freelancerSignedDate: new Date('2026-01-05'),
-        },
-        {
-            id: 6,
-            contractId: 1006,
-            projectName: '데이터 분석 대시보드',
-            freelancerId: 4,
-            employerId: 1,
-            startDate: new Date('2026-01-05'),
-            endDate: new Date('2026-03-20'),
-            status: 'COMPLETED',
-            budget: 4000000,
-            commissionRate: 0.04,
-            paymentDay: 25,
-            contractPdfUrl: '/contracts/1006_contract.pdf',
-            signedPdfUrl: '/contracts/1006_signed.pdf',
-            signedDate: new Date('2026-01-05'),
-            employerSignature: 'data:image/png;base64,employer_sig_6',
-            employerSignedDate: new Date('2026-01-03'),
-            freelancerSignature: 'data:image/png;base64,freelancer_sig_6',
-            freelancerSignedDate: new Date('2026-01-05'),
-        },
-        {
-            id: 7,
-            contractId: 1007,
-            projectName: '실시간 채팅 시스템',
-            freelancerId: 2,
-            employerId: 1,
-            startDate: new Date('2026-01-05'),
-            endDate: new Date('2026-03-20'),
-            status: 'WAITING_SIGNATURE',
-            budget: 7000000,
-            commissionRate: 0.05,
-            paymentDay: 15,
-            contractPdfUrl: '/contracts/1007_contract.pdf',
-            employerSignature: 'data:image/png;base64,employer_sig_7',
-            employerSignedDate: new Date('2026-01-03'),
-            // 프리랜서 아직 서명하지 않음
-        },
-        // Sample for DRAFT status (For Freelancer 1)
-        {
-            id: 8,
-            contractId: 1008,
-            projectName: '내부 관리자 페이지',
-            freelancerId: 1,
-            employerId: 2,
-            startDate: new Date('2026-05-01'),
-            endDate: new Date('2026-08-31'),
+            startDate: new Date('2026-03-01'),
+            endDate: new Date('2026-06-30'),
             status: 'WAITING_SIGNATURE',
             budget: 15000000,
             commissionRate: 0.05,
-            paymentDay: 10,
-            contractPdfUrl: '/contracts/1008_contract.pdf',
+            paymentDay: 25,
+            contractPdfUrl: '/contracts/1002_contract.pdf',
+            employerSignature: 'data:image/png;base64,employer_sig_2',
+            employerSignedDate: new Date('2026-02-10'),
+            // 프리랜서 서명 대기 중
         },
-        // Sample for COMPLETED status (For Freelancer 1 - Existing COMPLETED was for f2)
-        {
-            id: 10,
-            contractId: 1010,
-            projectName: '랜딩 페이지 제작',
-            freelancerId: 1,
-            employerId: 3,
-            startDate: new Date('2025-09-01'),
-            endDate: new Date('2025-10-31'),
-            status: 'COMPLETED',
-            budget: 2000000,
-            commissionRate: 0.05,
-            paymentDay: 15,
-            signedDate: new Date('2025-09-01'),
-            contractPdfUrl: '/contracts/1010_contract.pdf',
-
-        }
     ]);
 
     // EmployerSettlements (Invoice - based on entity.md)
@@ -260,8 +134,8 @@ export const useContractStore = defineStore('contract', () => {
             installmentNumber: 1,
             status: 'DISBURSED',
             invoicePdfUrl: '/invoices/es1.pdf',
-            dueDate: new Date('2024-01-31'),
-            paidDate: new Date('2024-01-28'),
+            dueDate: new Date('2026-02-10'),
+            paidDate: new Date('2026-02-08'),
         },
         {
             id: 2,
@@ -270,8 +144,8 @@ export const useContractStore = defineStore('contract', () => {
             installmentNumber: 2,
             status: 'PAID',
             invoicePdfUrl: '/invoices/es2.pdf',
-            dueDate: new Date('2024-02-28'),
-            paidDate: new Date('2024-02-25'),
+            dueDate: new Date('2026-02-15'),
+            paidDate: new Date('2026-02-12'),
         },
         {
             id: 3,
@@ -280,57 +154,7 @@ export const useContractStore = defineStore('contract', () => {
             installmentNumber: 3,
             status: 'ISSUED',
             invoicePdfUrl: '/invoices/es3.pdf',
-            dueDate: new Date('2024-03-31'),
-        },
-        // Contract 2: API 서버 마이그레이션 (3 installments - all completed)
-        {
-            id: 4,
-            contractId: 2,
-            billingAmount: 3000000,
-            installmentNumber: 1,
-            status: 'DISBURSED',
-            invoicePdfUrl: '/invoices/es4.pdf',
-            dueDate: new Date('2023-11-30'),
-            paidDate: new Date('2023-11-25'),
-        },
-        {
-            id: 5,
-            contractId: 2,
-            billingAmount: 2500000,
-            installmentNumber: 2,
-            status: 'DISBURSED',
-            invoicePdfUrl: '/invoices/es5.pdf',
-            dueDate: new Date('2023-12-15'),
-            paidDate: new Date('2023-12-12'),
-        },
-        {
-            id: 6,
-            contractId: 2,
-            billingAmount: 2500000,
-            installmentNumber: 3,
-            status: 'DISBURSED',
-            invoicePdfUrl: '/invoices/es6.pdf',
-            dueDate: new Date('2023-12-31'),
-            paidDate: new Date('2023-12-28'),
-        },
-        // Contract 3: 모바일 앱 개발 (2 issued)
-        {
-            id: 7,
-            contractId: 3,
-            billingAmount: 2000000,
-            installmentNumber: 1,
-            status: 'ISSUED',
-            invoicePdfUrl: '/invoices/es7.pdf',
-            dueDate: new Date('2024-02-29'),
-        },
-        {
-            id: 8,
-            contractId: 3,
-            billingAmount: 6000000,
-            installmentNumber: 2,
-            status: 'ISSUED',
-            invoicePdfUrl: '/invoices/es8.pdf',
-            dueDate: new Date('2024-04-30'),
+            dueDate: new Date('2026-03-25'),
         },
     ]);
 
@@ -376,153 +200,6 @@ export const useContractStore = defineStore('contract', () => {
             installmentNumber: 3,
             expectedPaidDate: new Date('2026-03-25'),
         },
-
-        // === Contract 3: 모바일 앱 개발 (freelancerId: 1) ===
-        // Linked to EmployerSettlement 7 - HOLDING
-        {
-            id: 4,
-            contractId: 3,
-            employerSettlementId: 7,
-            totalAmount: 2000000,
-            tax: 66000,
-            netAmount: 1934000,
-            status: 'HOLDING',
-            installmentNumber: 1,
-            expectedPaidDate: new Date('2026-02-15'),
-        },
-        // Linked to EmployerSettlement 8 - HOLDING
-        {
-            id: 5,
-            contractId: 3,
-            employerSettlementId: 8,
-            totalAmount: 6000000,
-            tax: 198000,
-            netAmount: 5802000,
-            status: 'HOLDING',
-            installmentNumber: 2,
-            expectedPaidDate: new Date('2026-03-15'),
-        },
-
-        // === Contract 10: 랜딩 페이지 제작 (freelancerId: 1, COMPLETED) ===
-        {
-            id: 6,
-            contractId: 10,
-            employerSettlementId: 9,
-            totalAmount: 1000000,
-            tax: 33000,
-            netAmount: 967000,
-            status: 'PAID',
-            installmentNumber: 1,
-            expectedPaidDate: new Date('2025-10-15'),
-            paidDate: new Date('2025-10-15'),
-            receiptPdfUrl: '/receipts/fs6.pdf',
-        },
-        {
-            id: 7,
-            contractId: 10,
-            employerSettlementId: 10,
-            totalAmount: 1000000,
-            tax: 33000,
-            netAmount: 967000,
-            status: 'PAID',
-            installmentNumber: 2,
-            expectedPaidDate: new Date('2025-11-15'),
-            paidDate: new Date('2025-11-15'),
-            receiptPdfUrl: '/receipts/fs7.pdf',
-        },
-
-        // === Contract 2: API 서버 마이그레이션 (freelancerId: 2) ===
-        {
-            id: 8,
-            contractId: 2,
-            employerSettlementId: 4,
-            totalAmount: 3000000,
-            tax: 99000,
-            netAmount: 2901000,
-            status: 'PAID',
-            installmentNumber: 1,
-            expectedPaidDate: new Date('2025-12-10'),
-            paidDate: new Date('2025-12-10'),
-            receiptPdfUrl: '/receipts/fs8.pdf',
-        },
-        {
-            id: 9,
-            contractId: 2,
-            employerSettlementId: 5,
-            totalAmount: 2500000,
-            tax: 82500,
-            netAmount: 2417500,
-            status: 'PAID',
-            installmentNumber: 2,
-            expectedPaidDate: new Date('2026-01-10'),
-            paidDate: new Date('2026-01-10'),
-            receiptPdfUrl: '/receipts/fs9.pdf',
-        },
-        {
-            id: 10,
-            contractId: 2,
-            employerSettlementId: 6,
-            totalAmount: 2500000,
-            tax: 82500,
-            netAmount: 2417500,
-            status: 'PAID',
-            installmentNumber: 3,
-            expectedPaidDate: new Date('2026-02-10'),
-            paidDate: new Date('2026-02-10'),
-            receiptPdfUrl: '/receipts/fs10.pdf',
-        },
-
-        // === Contract 5: UI/UX 디자인 리뉴얼 (freelancerId: 3) ===
-        {
-            id: 11,
-            contractId: 5,
-            employerSettlementId: 11,
-            totalAmount: 1750000,
-            tax: 57750,
-            netAmount: 1692250,
-            status: 'HOLDING',
-            installmentNumber: 1,
-            expectedPaidDate: new Date('2026-02-10'),
-        },
-        {
-            id: 12,
-            contractId: 5,
-            employerSettlementId: 12,
-            totalAmount: 1750000,
-            tax: 57750,
-            netAmount: 1692250,
-            status: 'HOLDING',
-            installmentNumber: 2,
-            expectedPaidDate: new Date('2026-03-10'),
-        },
-
-        // === Contract 6: 데이터 분석 대시보드 (freelancerId: 4, COMPLETED) ===
-        {
-            id: 13,
-            contractId: 6,
-            employerSettlementId: 13,
-            totalAmount: 2000000,
-            tax: 66000,
-            netAmount: 1934000,
-            status: 'PAID',
-            installmentNumber: 1,
-            expectedPaidDate: new Date('2025-11-25'),
-            paidDate: new Date('2025-11-25'),
-            receiptPdfUrl: '/receipts/fs13.pdf',
-        },
-        {
-            id: 14,
-            contractId: 6,
-            employerSettlementId: 14,
-            totalAmount: 2000000,
-            tax: 66000,
-            netAmount: 1934000,
-            status: 'PAID',
-            installmentNumber: 2,
-            expectedPaidDate: new Date('2025-12-25'),
-            paidDate: new Date('2025-12-25'),
-            receiptPdfUrl: '/receipts/fs14.pdf',
-        },
     ]);
 
     // Helper function to get username by id and role
@@ -540,16 +217,22 @@ export const useContractStore = defineStore('contract', () => {
         }));
     });
 
-    // Computed: EmployerSettlements with contract details
+    // Computed: EmployerSettlements with contract details and calculated fields
     const employerSettlementsWithDetails = computed<EmployerSettlementWithDetails[]>(() => {
         return employerSettlements.value.map((settlement) => {
             const contract = contracts.value.find((c) => c.id === settlement.contractId);
+            const commissionRate = contract?.commissionRate || 0.05;
+            const platformFee = Math.floor(settlement.billingAmount * commissionRate);
+            const totalAmount = settlement.billingAmount + platformFee;
+
             return {
                 ...settlement,
                 projectName: contract?.projectName || 'Unknown Project',
                 freelancerName: contract ? getUserName(contract.freelancerId, 'FREELANCER') : 'Unknown',
                 freelancerId: contract?.freelancerId || 0,
                 employerId: contract?.employerId || 0,
+                platformFee,
+                totalAmount,
             };
         });
     });

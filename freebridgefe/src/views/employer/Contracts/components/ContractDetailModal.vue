@@ -13,6 +13,12 @@ defineEmits<{
     (e: 'sign'): void;
 }>();
 
+const statusLabels: Record<string, string> = {
+    WAITING_SIGNATURE: '서명 대기',
+    IN_PROGRESS: '진행 중',
+    COMPLETED: '완료',
+};
+
 const canSign = computed(() => {
     if (props.contract.status !== 'WAITING_SIGNATURE') return false;
     if (props.isFreelancer) {
@@ -54,9 +60,6 @@ const formatCurrency = (amount: number) => {
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-white">계약서 상세</h2>
-                        <div class="text-sm text-white/60">
-                            Contract ID: {{ contract.id }}
-                        </div>
                     </div>
                 </div>
                 <button
@@ -85,7 +88,7 @@ const formatCurrency = (amount: number) => {
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">계약 상태</div>
-                            <div class="text-lg font-medium">{{ contract.status }}</div>
+                            <div class="text-lg font-medium">{{ statusLabels[contract.status] || contract.status }}</div>
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">프리랜서</div>

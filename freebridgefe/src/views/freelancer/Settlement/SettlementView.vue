@@ -17,17 +17,14 @@ import {
   ChevronRight,
   Eye,
   Calendar,
-  CreditCard
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useContractStore, type FreelancerSettlementWithDetails } from '@/stores/contractStore';
 import SettlementDetailModal from './components/SettlementDetailModal.vue';
-import BankAccountModal from './components/BankAccountModal.vue';
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
 
-const showBankAccountModal = ref(false);
 const selectedSettlement = ref<FreelancerSettlementWithDetails | null>(null);
 
 // Filters & Pagination State
@@ -108,8 +105,7 @@ const filteredSettlements = computed(() => {
         result = result.filter((s) => new Date(s.expectedPaidDate) >= threeMonthsAgo);
     }
 
-    // Sort by expectedPaidDate descending
-    result.sort((a, b) => new Date(b.expectedPaidDate).getTime() - new Date(a.expectedPaidDate).getTime());
+    result.sort((a, b) => new Date(a.expectedPaidDate).getTime() - new Date(b.expectedPaidDate).getTime());
     return result;
 });
 
@@ -161,10 +157,6 @@ const handleDownload = (settlement: FreelancerSettlementWithDetails) => {
     // Mock download
     alert(`정산 내역서 다운로드: ${settlement.projectName}`);
 };
-
-const handleSaveAccount = (account: { bankName: string; accountNumber: string }) => {
-    alert(`계좌가 저장되었습니다: ${account.bankName} ${account.accountNumber}`);
-};
 </script>
 
 <template>
@@ -177,21 +169,12 @@ const handleSaveAccount = (account: { bankName: string; accountNumber: string })
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0 }"
     >
-      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-3">
-        <div>
+      <div class="mb-3">
              <h1 class="text-4xl font-bold text-white flex items-center gap-3 mb-2">
                 <Wallet class="w-10 h-10 text-white" />
                 정산 관리
              </h1>
              <p class="text-white/60">수입 내역과 정산을 손쉽게 관리하세요</p>
-        </div>
-        <button
-            @click="showBankAccountModal = true"
-            class="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-medium transition-all border border-white/10 flex items-center gap-2"
-        >
-            <CreditCard class="w-5 h-5" />
-            계좌 관리
-        </button>
       </div>
     </div>
 
@@ -443,12 +426,6 @@ const handleSaveAccount = (account: { bankName: string; accountNumber: string })
     </div>
 
     <!-- Modals -->
-    <!-- Modals -->
-    <BankAccountModal
-        v-if="showBankAccountModal"
-        @save="handleSaveAccount"
-        @close="showBankAccountModal = false"
-    />
     <SettlementDetailModal
         v-if="selectedSettlement"
         :settlement="selectedSettlement"

@@ -9,32 +9,15 @@ import {
     FileText,
     Download,
 } from 'lucide-vue-next';
-
-interface EmployerSettlement {
-    id: string;
-    contractId: string;
-    billingAmount: number;
-    platformFee: number;
-    tax: number;
-    totalAmount: number;
-    installmentNumber: number;
-    status: 'ISSUED' | 'PAID' | 'DISBURSED';
-    invoicePdfUrl: string;
-    projectName: string;
-    freelancerName: string;
-    freelancerId: string;
-    employerId: string;
-    dueDate: Date | string;
-    paidDate?: Date | string;
-}
+import type { EmployerSettlementWithDetails } from '@/stores/contractStore';
 
 const props = defineProps<{
-    settlement: EmployerSettlement;
+    settlement: EmployerSettlementWithDetails;
 }>();
 
 const emit = defineEmits<{
     (e: 'close'): void;
-    (e: 'download', settlement: EmployerSettlement): void;
+    (e: 'download', settlement: EmployerSettlementWithDetails): void;
 }>();
 
 const statusConfig: Record<string, { label: string; icon: typeof CheckCircle; color: string; bg: string }> = {
@@ -131,10 +114,6 @@ const handleDownload = () => {
                             <span class="text-white/60">플랫폼 수수료 (5%)</span>
                             <span class="text-white">{{ formatCurrency(settlement.platformFee) }}</span>
                         </div>
-<!--                        <div class="flex items-center justify-between py-3 border-b border-white/10">-->
-<!--                            <span class="text-white/60"> 소득세 (3.3%)</span>-->
-<!--                            <span class="text-white">{{ formatCurrency(settlement.tax) }}</span>-->
-<!--                        </div>-->
                         <div class="flex items-center justify-between py-3 bg-white/5 px-4 rounded-xl mt-2">
                             <span class="text-white font-medium">총 결제 금액</span>
                             <span class="text-2xl font-bold text-blue-400">{{ formatCurrency(settlement.totalAmount) }}</span>
