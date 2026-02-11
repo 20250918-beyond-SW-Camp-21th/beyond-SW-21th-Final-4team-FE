@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
 import { Star, ClipboardEdit, ArrowLeft } from 'lucide-vue-next';
+import { useAuthStore } from '@/stores/authStore';
+import { useReviewStore } from '@/stores/reviewStore';
 
 const evaluationItems = [
   { key: 'atmosphere', label: '사내 분위기' },
@@ -30,6 +32,8 @@ const form = reactive({
 
 const formError = ref('');
 const formSuccess = ref('');
+const authStore = useAuthStore();
+const reviewStore = useReviewStore();
 
 const selectedProject = computed(() => employerProjects.find((p) => p.id === form.projectId));
 
@@ -76,6 +80,22 @@ const handleSubmit = () => {
   if (!window.confirm('후기를 등록하시겠습니까?')) {
     return;
   }
+
+  if (!selectedProject.value) {
+    formError.value = '프로젝트 정보를 찾을 수 없습니다.';
+    return;
+  }
+
+  reviewStore.addFreelancerToEmployerReview({
+    freelancerId: authStore.user?.id,
+    freelancerName: authStore.user?.name || '프리랜서',
+    companyName: selectedProject.value.companyName,
+    projectName: selectedProject.value.title,
+    atmosphere: form.ratings.atmosphere,
+    requirementDetail: form.ratings.requirementDetail,
+    schedule: form.ratings.schedule,
+    comment: form.comment.trim(),
+  });
 
   formSuccess.value = '후기가 등록되었습니다.';
   resetForm();

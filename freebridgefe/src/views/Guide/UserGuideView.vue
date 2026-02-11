@@ -49,8 +49,8 @@ const employerGuides = [
   },
   {
     icon: FileText,
-    title: '지원 관리',
-    description: '내 공고에 지원한 프리랜서들을 검토하고 채용을 진행합니다.',
+    title: '지원/제안',
+    description: '내 공고에 지원한 프리랜서를 검토하고, 내가 보낸 제안까지 함께 관리합니다.',
     features: [
       '지원자 프로필 및 포트폴리오 상세 검토',
       '지원자와 1:1 채팅 및 인터뷰 요청',
@@ -108,8 +108,8 @@ const freelancerGuides = [
   },
   {
     icon: FileText,
-    title: '내 지원',
-    description: '지원한 프로젝트의 진행 상황을 한눈에 모아봅니다.',
+    title: '내 지원/제안',
+    description: '내가 지원한 프로젝트와 기업으로부터 받은 제안을 한눈에 모아봅니다.',
     features: [
       '지원 상태(대기, 열람, 합격, 불합격) 실시간 추적',
       '지원 취소 및 지원서 수정',

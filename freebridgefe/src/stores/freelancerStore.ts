@@ -87,10 +87,31 @@ export const useFreelancerStore = defineStore('freelancer', () => {
         return proposals.value.filter((p) => p.freelancerId === freelancerId);
     }
 
+    function updateProposalStatus(
+        proposalId: string,
+        status: Proposal['status'],
+        rejectionReason?: string
+    ): boolean {
+        const exists = proposals.value.some((proposal) => proposal.id === proposalId);
+        if (!exists) return false;
+
+        proposals.value = proposals.value.map((proposal) => {
+            if (proposal.id !== proposalId) return proposal;
+            return {
+                ...proposal,
+                status,
+                rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
+            };
+        });
+
+        return true;
+    }
+
     return {
         freelancers,
         proposals,
         addProposal,
         getProposalsByFreelancer,
+        updateProposalStatus,
     };
 });

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue';
 import { Star, ClipboardEdit, ArrowLeft } from 'lucide-vue-next';
+import { useAuthStore } from '@/stores/authStore';
+import { useReviewStore } from '@/stores/reviewStore';
 
 const evaluationItems = [
   { key: 'language', label: '프로그래밍 언어 이해도' },
@@ -36,6 +38,8 @@ const form = reactive({
 
 const formError = ref('');
 const formSuccess = ref('');
+const authStore = useAuthStore();
+const reviewStore = useReviewStore();
 
 const selectedProject = computed(() => employerProjects.find((p) => p.id === form.projectId));
 
@@ -85,6 +89,25 @@ const handleSubmit = () => {
   if (!window.confirm('후기를 등록하시겠습니까?')) {
     return;
   }
+
+  if (!selectedProject.value) {
+    formError.value = '프로젝트 정보를 찾을 수 없습니다.';
+    return;
+  }
+
+  reviewStore.addEmployerToFreelancerReview({
+    employerId: authStore.user?.id,
+    employerName: authStore.user?.companyName || authStore.user?.name || '고용주',
+    freelancerName: selectedProject.value.freelancerName,
+    projectName: selectedProject.value.title,
+    language: form.ratings.language,
+    framework: form.ratings.framework,
+    debugging: form.ratings.debugging,
+    communication: form.ratings.communication,
+    schedule: form.ratings.schedule,
+    dispute: form.ratings.dispute,
+    comment: form.comment.trim(),
+  });
 
   formSuccess.value = '후기가 등록되었습니다.';
   resetForm();
