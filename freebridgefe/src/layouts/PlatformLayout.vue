@@ -31,7 +31,7 @@ const isEmployer = computed(() => currentUser.value?.role === 'EMPLOYER');
 const employerNavItems = [
   { id: 'employer.jobs', path: '/employer/jobs', label: '내 공고', icon: Briefcase },
   { id: 'employer.review', path: '/employer/review', label: '내 리뷰', icon:MessageSquareQuote},
-  { id: 'employer.applications', path: '/employer/applications', label: '지원 관리', icon: FileText },
+  { id: 'employer.applications', path: '/employer/applications', label: '지원/제안', icon: FileText },
   { id: 'employer.freelancers', path: '/employer/freelancers', label: '프리랜서 찾기', icon: Users },
   { id: 'employer.recommended', path: '/employer/recommended', label: '추천 프리랜서', icon: TrendingUp },
   { id: 'employer.contracts', path: '/employer/contracts', label: '계약서', icon: FileCheck },
@@ -41,7 +41,7 @@ const employerNavItems = [
 
 const freelancerNavItems = [
   { id: 'freelancer.browse', path: '/freelancer/jobs', label: '공고', icon: Briefcase },
-  { id: 'freelancer.applications', path: '/freelancer/applications', label: '내 지원', icon: FileText },
+  { id: 'freelancer.applications', path: '/freelancer/applications', label: '내 지원/제안', icon: FileText },
   { id: 'freelancer.contracts', path: '/freelancer/contracts', label: '계약서', icon: FileCheck },
   { id: 'freelancer.settlement', path: '/freelancer/settlement', label: '정산', icon: Wallet },
   { id: 'freelancer.review', path: '/freelancer/review', label: '내 리뷰', icon: MessageSquareQuote },

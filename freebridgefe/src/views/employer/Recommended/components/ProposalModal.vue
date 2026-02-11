@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import { X, Send } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
+import { useJobStore } from '@/stores/jobStore';
 import type { User } from '@/types';
 
 const props = defineProps<{
@@ -16,11 +17,45 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore();
 const freelancerStore = useFreelancerStore();
+const jobStore = useJobStore();
 
 const message = ref('');
+const selectedJobId = ref('');
+
+const employerJobs = computed(() => jobStore.myJobs.filter((job) => job.status === 'OPEN'));
+
+watch(
+  employerJobs,
+  (jobs) => {
+    if (jobs.length === 0) {
+      selectedJobId.value = '';
+      return;
+    }
+
+    const hasSelectedJob = jobs.some((job) => job.id === selectedJobId.value);
+    if (!hasSelectedJob) {
+      selectedJobId.value = jobs[0].id;
+    }
+  },
+  { immediate: true }
+);
+
+const isSubmitDisabled = computed(
+  () => employerJobs.value.length === 0 || !selectedJobId.value || !message.value.trim()
+);
 
 const handleSubmit = () => {
   if (!authStore.user) return;
+  if (!selectedJobId.value) {
+    alert('제안할 프로젝트를 선택해주세요.');
+    return;
+  }
+
+  const trimmedMessage = message.value.trim();
+  if (!trimmedMessage) {
+    alert('제안 메시지를 입력해주세요.');
+    return;
+  }
 
   // Use store action to add proposal
   freelancerStore.addProposal({
@@ -28,7 +63,8 @@ const handleSubmit = () => {
     employerName: authStore.user.companyName || authStore.user.name,
     freelancerId: props.freelancer.id,
     freelancerName: props.freelancer.name,
-    message: message.value,
+    jobId: selectedJobId.value,
+    message: trimmedMessage,
     status: 'PENDING',
   });
 
@@ -76,6 +112,31 @@ const handleSubmit = () => {
 
         <div class="mb-6">
           <label class="block text-sm text-white/80 mb-2">
+            제안할 프로젝트 <span class="text-red-400">*</span>
+          </label>
+          <select
+            v-model="selectedJobId"
+            class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-blue-500 text-white"
+            :disabled="employerJobs.length === 0"
+            required
+          >
+            <option value="" disabled class="text-black">프로젝트를 선택하세요</option>
+            <option
+              v-for="job in employerJobs"
+              :key="job.id"
+              :value="job.id"
+              class="text-black"
+            >
+              {{ job.title }}
+            </option>
+          </select>
+          <p v-if="employerJobs.length === 0" class="mt-2 text-sm text-amber-300">
+            제안 가능한 모집중 프로젝트가 없습니다. 먼저 공고를 등록하거나 상태를 확인해주세요.
+          </p>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-sm text-white/80 mb-2">
             제안 메시지 <span class="text-red-400">*</span>
           </label>
           <textarea
@@ -100,7 +161,9 @@ const handleSubmit = () => {
           </button>
           <button
             type="submit"
+            :disabled="isSubmitDisabled"
             class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl hover:shadow-xl transition-all font-semibold flex items-center justify-center gap-2"
+            :class="isSubmitDisabled ? 'opacity-50 cursor-not-allowed hover:shadow-none' : ''"
             v-motion
             :hover="{ scale: 1.02 }"
             :tap="{ scale: 0.98 }"
