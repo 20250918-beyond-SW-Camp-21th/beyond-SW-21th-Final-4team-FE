@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { TrendingUp, Send, Star } from 'lucide-vue-next';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
@@ -17,6 +17,23 @@ const formatSkills = (skills?: string[]) => {
 const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
 
 const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
+
+// --- Access Control ---
+import { useRouter } from 'vue-router';
+import { Lock, Crown } from 'lucide-vue-next';
+
+const router = useRouter();
+// Mock User Plan: Change to 'PRO' or 'PRIME' to test access, 'FREE' to test restriction.
+// ideally this comes from a userStore or API
+const currentPlan = ref<'FREE' | 'PRO' | 'PRIME'>('FREE'); 
+
+const hasAccess = computed(() => ['PRO', 'PRIME'].includes(currentPlan.value));
+
+const goToUpgrade = () => {
+    // Navigate to MyPage where Account Management is located
+    // Ideally pass a query param to open Account tab directly: /employer/mypage?tab=account
+    router.push({ name: 'employer.mypage', query: { tab: 'account' } });
+};
 </script>
 
 <template>
@@ -29,7 +46,7 @@ const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
       <p class="text-white/60">AI가 선별한 최적의 프리랜서를 만나보세요</p>
     </div>
 
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div v-if="hasAccess" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="freelancer in freelancerStore.freelancers"
         :key="freelancer.id"
@@ -97,6 +114,24 @@ const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Access Restricted UI -->
+    <div v-else class="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+        <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-6">
+            <Lock class="w-10 h-10 text-slate-400" />
+        </div>
+        <h2 class="text-2xl font-bold mb-2 text-white">파트너(Pro) 이상 전용 서비스입니다</h2>
+        <p class="text-slate-400 mb-8 max-w-md mx-auto">
+            AI 기반 맞춤형 프리랜서 추천 기능은 파트너 플랜 이상 구독 시 이용하실 수 있습니다. 지금 바로 업그레이드하고 최적의 인재를 만나보세요.
+        </p>
+        <button 
+            @click="goToUpgrade"
+            class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2 group"
+        >
+            <Crown class="w-5 h-5 group-hover:text-yellow-300 transition-colors" />
+            구독 플랜 업그레이드하기
+        </button>
     </div>
 
     <ProposalModal

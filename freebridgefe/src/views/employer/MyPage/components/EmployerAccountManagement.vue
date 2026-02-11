@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
   ArrowLeft,
@@ -22,10 +22,35 @@ defineEmits<{
 type PlanType = 'FREE' | 'PRO' | 'PRIME';
 
 const accountInfo = ref({
-  name: '김대표',
-  email: 'ceo@techstartup.com',
-  phone: '010-1234-5678',
+  name: '',
+  email: '',
+  phone: '',
 });
+
+const isLoading = ref(false);
+
+const fetchAccountInfo = async () => {
+    isLoading.value = true;
+    try {
+        // TODO: Replace with actual API call
+        // const response = await api.get('/employer/account');
+        // accountInfo.value = response.data;
+        
+        // Mock Data simulation
+        await new Promise(resolve => setTimeout(resolve, 500));
+        accountInfo.value = {
+            name: '김대표',
+            email: 'ceo@techstartup.com',
+            phone: '010-1234-5678',
+        };
+    } catch (error) {
+        console.error('Failed to fetch account info:', error);
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+// onMounted moved below to group fetch calls
 
 const passwordData = ref({
   currentPassword: '',
@@ -41,52 +66,89 @@ const showPasswords = ref({
 
 const currentPlan = ref<PlanType>('PRO');
 
-const plans = {
-  FREE: {
-    name: '무료 플랜',
-    price: '₩0',
-    period: '영구 무료',
-    icon: '🌱',
-    color: 'from-gray-400 to-gray-600',
-    features: ['기본 공고 등록', '제한적 채팅', '월 3개 프로젝트', '기본 지원'],
-  },
-  PRO: {
-    name: '프로 플랜',
-    price: '₩99,000',
-    period: '월',
-    icon: '⚡',
-    color: 'from-blue-500 to-cyan-500',
-    features: [
-      '무제한 공고 등록',
-      '무제한 채팅',
-      '무제한 프로젝트',
-      '우선 지원',
-      '프리랜서 추천',
-      '분석 리포트',
-    ],
-  },
-  PRIME: {
-    name: '프라임 플랜',
-    price: '₩199,000',
-    period: '월',
-    icon: '👑',
-    color: 'from-purple-500 to-pink-500',
-    features: [
-      '프로 플랜 모든 기능',
-      '전담 매니저',
-      '계약서 검토',
-      'VIP 지원',
-      '맞춤형 컨설팅',
-      '우선 매칭',
-    ],
-  },
+interface SubscriptionPlan {
+  name: string;
+  description: string;
+  price: string;
+  period: string;
+  fee: string;
+  icon: string;
+  features: string[];
+}
+
+const plans = ref<Record<string, SubscriptionPlan>>({});
+
+const fetchSubscriptionPlans = async () => {
+    try {
+        // TODO: Replace with actual API call
+        // const response = await api.get('/plans');
+        // plans.value = response.data;
+        
+        // Mock Data simulation
+        await new Promise(resolve => setTimeout(resolve, 500));
+        plans.value = {
+          FREE: {
+            name: '일반',
+            description: '무료 플랜',
+            price: '무료',
+            period: '',
+            fee: '12%',
+            icon: '🌱',
+            features: ['최신순 조회만 가능', '기본 지원'],
+          },
+          PRO: {
+            name: '파트너',
+            description: '프로 플랜',
+            price: '₩39,000',
+            period: '월',
+            fee: '10%',
+            icon: '⚡',
+            features: [
+              '다양한 조회 가능',
+              '추천 기능 제공',
+              '수수료 할인 (10%)',
+            ],
+          },
+          PRIME: {
+            name: '프로 파트너',
+            description: '프라임 플랜',
+            price: '₩99,000',
+            period: '월',
+            fee: '7%',
+            icon: '👑',
+            features: [
+              '다양한 조회 가능',
+              '추천 기능 제공',
+              '파격적 수수료 감면 (7%)',
+              '전담 AI 에이전트 배정'
+            ],
+          },
+        };
+    } catch (error) {
+        console.error('Failed to fetch subscription plans:', error);
+    }
 };
 
-const handleSaveAccountInfo = () => {
-  alert('계정 정보가 저장되었습니다.');
+onMounted(() => {
+    fetchAccountInfo();
+    fetchSubscriptionPlans();
+});
+
+const handleSaveAccountInfo = async () => {
+  try {
+      // TODO: Call API to update account info
+      // await api.put('/employer/account', accountInfo.value);
+      
+      // Mock simulation
+      await new Promise(resolve => setTimeout(resolve, 500));
+      alert('계정 정보가 저장되었습니다.');
+  } catch (error) {
+      console.error('Failed to update account info:', error);
+      alert('저장에 실패했습니다.');
+  }
 };
 
-const handleChangePassword = () => {
+const handleChangePassword = async () => {
   if (passwordData.value.newPassword !== passwordData.value.confirmPassword) {
     alert('새 비밀번호가 일치하지 않습니다.');
     return;
@@ -95,15 +157,38 @@ const handleChangePassword = () => {
     alert('비밀번호는 최소 8자 이상이어야 합니다.');
     return;
   }
-  alert('비밀번호가 변경되었습니다.');
-  passwordData.value = { currentPassword: '', newPassword: '', confirmPassword: '' };
+  
+  try {
+      // TODO: Call API to change password
+      // await api.post('/employer/account/password', { ... });
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      alert('비밀번호가 변경되었습니다.');
+      passwordData.value = { currentPassword: '', newPassword: '', confirmPassword: '' };
+  } catch (error) {
+      console.error('Failed to change password:', error);
+      alert('비밀번호 변경에 실패했습니다.');
+  }
 };
 
-const handlePlanChange = (plan: PlanType) => {
+const handlePlanChange = async (plan: PlanType) => {
   if (plan === currentPlan.value) return;
-  if (confirm(`${plans[plan].name}으로 변경하시겠습니까?`)) {
-    currentPlan.value = plan;
-    alert(`${plans[plan].name}으로 변경되었습니다.`);
+  if (confirm(`${plans.value[plan].name}으로 변경하시겠습니까?`)) {
+    try {
+        // TODO: Call API to change plan
+        // await api.put('/employer/plan', { plan });
+        
+        isLoading.value = true;
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate Purchase/Change delay
+        
+        currentPlan.value = plan;
+        alert(`${plans.value[plan].name}으로 변경되었습니다.`);
+    } catch (error) {
+        console.error('Failed to change plan:', error);
+        alert('플랜 변경에 실패했습니다.');
+    } finally {
+        isLoading.value = false;
+    }
   }
 };
 </script>
@@ -138,10 +223,10 @@ const handlePlanChange = (plan: PlanType) => {
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div
+            <div
             v-for="(plan, planKey) in plans"
             :key="planKey"
-            class="relative rounded-2xl p-6 border-2 transition-all"
+            class="relative rounded-2xl p-6 border-2 transition-all flex flex-col h-full"
             :class="
               currentPlan === planKey
                 ? 'border-blue-500 bg-blue-500/10'
@@ -158,27 +243,35 @@ const handlePlanChange = (plan: PlanType) => {
             </div>
 
             <div class="text-4xl mb-4">{{ plan.icon }}</div>
-            <h3 class="text-xl font-bold mb-2">{{ plan.name }}</h3>
-            <div class="mb-4">
-              <span class="text-3xl font-bold">{{ plan.price }}</span>
-              <span v-if="planKey !== 'FREE'" class="text-white/40 text-sm">/{{ plan.period }}</span>
+            <h3 class="text-xl font-bold mb-1">{{ plan.name }}</h3>
+             <p class="text-sm text-slate-400 mb-4">{{ plan.description }}</p>
+            
+             <div class="mb-4">
+               <div>
+                   <span class="text-3xl font-bold text-white">{{ plan.price }}</span>
+                   <span v-if="plan.period" class="text-sm text-slate-400">/{{ plan.period }}</span>
+               </div>
+               <div class="mt-1">
+                   <span class="text-sm font-bold text-blue-400">{{ plan.fee }}</span>
+                   <span class="text-xs text-slate-500 ml-1">수수료</span>
+               </div>
             </div>
 
-            <ul class="space-y-2 mb-6">
+            <ul class="space-y-3 mb-8 flex-1">
               <li
                 v-for="(feature, idx) in plan.features"
                 :key="idx"
-                class="flex items-center gap-2 text-sm text-white/60"
+                class="flex items-start gap-2 text-sm text-white/80"
               >
-                <Check class="w-4 h-4 text-green-400 flex-shrink-0" />
-                {{ feature }}
+                <Check class="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" />
+                <span>{{ feature }}</span>
               </li>
             </ul>
 
             <button
               @click="handlePlanChange(planKey as PlanType)"
               :disabled="currentPlan === planKey"
-              class="w-full py-3 rounded-lg font-bold transition-all"
+              class="w-full py-3 rounded-lg font-bold transition-all mt-auto"
               :class="
                 currentPlan === planKey
                   ? 'bg-blue-500 text-white cursor-default'
