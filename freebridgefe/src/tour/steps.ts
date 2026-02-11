@@ -32,8 +32,8 @@ export const employerTourSteps: TourStep[] = [
   },
   {
     id: 'employer.applications',
-    title: '지원 관리',
-    description: '프리랜서들의 지원서를 확인하고 검토할 수 있습니다. 지원자의 프로필, 포트폴리오를 확인하고 수락 또는 거절 결정을 내리세요.',
+    title: '지원/제안',
+    description: '내 공고로 들어온 지원서와 내가 보낸 제안을 함께 확인할 수 있습니다. 수락/거절 처리와 제안 상태를 한눈에 관리하세요.',
     route: '/employer/applications',
     selector: '[data-tour="employer.applications"]',
     placement: 'center',
@@ -76,8 +76,8 @@ export const freelancerTourSteps: TourStep[] = [
   },
   {
     id: 'freelancer.applications',
-    title: '내 지원',
-    description: '지원한 프로젝트의 현재 상태를 확인할 수 있습니다. 대기 중, 수락됨, 거절됨 등 지원 결과를 한눈에 파악하세요.',
+    title: '내 지원/제안',
+    description: '내가 보낸 지원서와 기업이 보낸 제안을 함께 확인할 수 있습니다. 대기, 수락, 거절 상태를 한눈에 파악하세요.',
     route: '/freelancer/applications',
     selector: '[data-tour="freelancer.applications"]',
     placement: 'center',
