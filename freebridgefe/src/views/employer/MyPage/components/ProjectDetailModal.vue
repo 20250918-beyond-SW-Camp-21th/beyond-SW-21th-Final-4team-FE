@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import {
   X,
-  User,
+  Users,
   Calendar,
   DollarSign,
   FileText,
@@ -179,6 +178,7 @@ const getFreelancerStatusColor = (status: string) => {
           <button @click="$emit('close')" class="px-6 py-2.5 text-sm font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors">
               닫기
           </button>
+<!--          TODO-->
           <button class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-colors shadow-lg shadow-blue-500/20">
               프로젝트 수정
           </button>

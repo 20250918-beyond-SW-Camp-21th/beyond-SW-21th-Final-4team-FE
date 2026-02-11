@@ -19,11 +19,18 @@ defineEmits<{
 }>();
 
 const isModalOpen = ref(false);
-const selectedProject = ref<any>(null); // Type 'any' for now to fit the extended interface or create a new one
+const selectedProject = ref<Project | null>(null);
 
 // --- Types ---
 type ProjectStatus = 'BEFORE_START' | 'IN_PROGRESS' | 'COMPLETED';
-
+interface FreelancerProfile {
+  id: string;
+  name: string;
+  role: string;
+  status: 'ACTIVE' | 'COMPLETED' | 'TERMINATED';
+  contractPeriod: string;
+  paymentAmount: string;
+}
 interface Project {
   id: string;
   title: string;
@@ -32,7 +39,10 @@ interface Project {
   endDate: string;
   progress: number;
   description: string;
-  budget: string; // Added back for simple info
+  budget: string;
+  freelancers: FreelancerProfile[];
+  contractType?: string;
+  contractDate?: string;
 }
 
 // --- Mock Data ---
@@ -145,10 +155,8 @@ const getProgressColor = (progress: number) => {
 };
 
 const openModal = (project: Project) => {
-    console.log('openModal called with:', project);
-    selectedProject.value = project;
-    isModalOpen.value = true;
-    console.log('isModalOpen:', isModalOpen.value);
+  selectedProject.value = project;
+  isModalOpen.value = true;
 };
 </script>
 

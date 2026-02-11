@@ -150,7 +150,7 @@ const goToUpgrade = () => {
         <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-6">
             <Lock class="w-10 h-10 text-slate-400" />
         </div>
-        <h2 class="text-2xl font-bold mb-2 text-white">파트너(Pro) 이상 전용 서비스입니다</h2>
+        <h2 class="text-2xl font-bold mb-2 text-white">프로 플랜 이상 전용 서비스입니다</h2>
         <p class="text-slate-400 mb-8 max-w-md mx-auto">
             AI 기반 맞춤형 프리랜서 추천 기능은 프로 플랜 이상 구독 시 이용하실 수 있습니다. 지금 바로 업그레이드하고 최적의 인재를 만나보세요.
         </p>

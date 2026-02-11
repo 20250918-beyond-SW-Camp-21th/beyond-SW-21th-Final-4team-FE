@@ -163,10 +163,10 @@ const stats = computed(() => {
     const commCount = reviews.value.filter(r => r.checklist.communication).length;
     const profCount = reviews.value.filter(r => r.checklist.professionalism).length;
 
-    const clarityAvg = ((clarityCount / total) * 5).toFixed(1);
-    const paymentAvg = ((paymentCount / total) * 5).toFixed(1);
-    const commAvg = ((commCount / total) * 5).toFixed(1);
-    const profAvg = ((profCount / total) * 5).toFixed(1);
+    const clarityAvg = total > 0 ? ((clarityCount / total) * 5).toFixed(1) : '0.0';
+    const paymentAvg = total > 0 ? ((paymentCount / total) * 5).toFixed(1) : '0.0';
+    const commAvg = total > 0 ? ((commCount / total) * 5).toFixed(1) : '0.0';
+    const profAvg = total > 0 ? ((profCount / total) * 5).toFixed(1) : '0.0';
 
     return {
         total,
@@ -196,7 +196,7 @@ const stats = computed(() => {
         <div>
           <h1 class="text-2xl font-bold flex items-center gap-2">
             AI 평판 분석 리포트
-            <span class="px-2 py-0.5 rounded textxs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/20 text-xs">BETA</span>
+            <span class="px-2 py-0.5 rounded text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/20">BETA</span>
           </h1>
           <p class="text-sm text-white/40 mt-1">프리랜서 리뷰 데이터를 AI가 분석하여 구체적인 개선 솔루션을 제안합니다.</p>
         </div>
@@ -331,12 +331,12 @@ const stats = computed(() => {
         <p v-if="reviews.length < 3" class="text-yellow-400 mt-2 font-medium">
              현재 리뷰가 {{ reviews.length }}개입니다. 3개 이상부터 분석이 가능합니다.
         </p>
-        <button 
-            @click="analyzeReputation"
-            :disabled="reviews.length < 3"
+        <button
+            `@click`="analyzeReputation"
+            :disabled="reviews.length < 3 || isAnalyzing"
             class="px-8 py-3 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-colors shadow-lg shadow-white/10 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-            분석 리포트 생성하기
+          {{ isAnalyzing ? 'AI 분석 중...' : '분석 리포트 생성하기' }}
         </button>
     </div>
 

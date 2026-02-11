@@ -173,24 +173,26 @@ const handleChangePassword = async () => {
 
 const handlePlanChange = async (plan: PlanType) => {
   if (plan === currentPlan.value) return;
-  if (confirm(`${plans.value[plan].name}으로 변경하시겠습니까?`)) {
+  const selectedPlan = plans.value[plan];
+  if (!selectedPlan) return;
+  if (confirm(`${selectedPlan.name}으로 변경하시겠습니까?`)) {
     try {
-        // TODO: Call API to change plan
-        // await api.put('/employer/plan', { plan });
-        
-        isLoading.value = true;
-        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate Purchase/Change delay
-        
-        currentPlan.value = plan;
-        alert(`${plans.value[plan].name}으로 변경되었습니다.`);
+      // TODO: Call API to change plan
+      // await api.put('/employer/plan', { plan });
+
+      isLoading.value = true;
+      await new Promise(resolve => setTimeout(resolve, 800)); // Simulate Purchase/Change delay
+
+      currentPlan.value = plan;
+      alert(`${selectedPlan.name}으로 변경되었습니다.`);
     } catch (error) {
-        console.error('Failed to change plan:', error);
-        alert('플랜 변경에 실패했습니다.');
+      console.error('Failed to change plan:', error);
+      alert('플랜 변경에 실패했습니다.');
     } finally {
-        isLoading.value = false;
+      isLoading.value = false;
     }
   }
-};
+}
 </script>
 
 <template>

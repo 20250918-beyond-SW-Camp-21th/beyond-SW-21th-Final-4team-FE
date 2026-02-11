@@ -33,6 +33,7 @@ import EmployerProfileManagement from './components/EmployerProfileManagement.vu
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
 import EmployerProjectManagement from './components/EmployerProjectManagement.vue';
 import FreelancerChecklistPage from './components/FreelancerChecklistPage.vue';
+import EmployerApplicantStatus from './components/EmployerApplicantStatus.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -176,6 +177,11 @@ const handleNavigate = (path: string) => {
         activeTab.value = 'applicants';
     }
 }
+
+const safeWebsiteUrl = computed(() => {
+  const url = employerProfile.value.website ?? '';
+  return /^https?:\/\//i.test(url) ? url : '#';
+});
 </script>
 
 <template>
@@ -341,7 +347,7 @@ const handleNavigate = (path: string) => {
                                       <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">웹사이트</label>
                                       <div class="flex items-center gap-2 text-sm truncate">
                                           <Globe class="w-4 h-4 text-slate-400" />
-                                          <a :href="employerProfile.website" target="_blank" class="hover:underline hover:text-blue-400 truncate">{{ employerProfile.website }}</a>
+                                        <a :href="safeWebsiteUrl" target="_blank" rel="noopener noreferrer" class="hover:underline hover:text-blue-400 truncate">{{ safeWebsiteUrl }}</a>
                                       </div>
                                   </div>
                               </div>
@@ -362,8 +368,8 @@ const handleNavigate = (path: string) => {
                                   </div>
                                   <div class="group">
                                       <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">기업 소개</label>
-                                      <p class="text-sm text-slate-300 bg-white/5 p-3 rounded-lg leading-relaxed text-xs">
-                                          {{ employerProfile.description }}
+                                      <p class="text-xs text-slate-300 bg-white/5 p-3 rounded-lg leading-relaxed">
+                                        {{ employerProfile.description }}
                                       </p>
                                   </div>
                               </div>
