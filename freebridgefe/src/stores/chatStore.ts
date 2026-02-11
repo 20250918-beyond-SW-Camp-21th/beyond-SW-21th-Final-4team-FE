@@ -27,7 +27,7 @@ export const useChatStore = defineStore('chat', () => {
             unreadCount: { 'e1': 0, 'f1': 0 },
             relatedJobId: 'job1',
             relatedApplicationId: 'app1',
-            contractId: 1, // Linked to contract #1
+            contractId: 1,
             createdAt: new Date(Date.now() - 2000000),
             updatedAt: new Date(Date.now() - 1000000)
         },
@@ -53,6 +53,8 @@ export const useChatStore = defineStore('chat', () => {
             updatedAt: new Date(Date.now() - 500000)
         }
     ]);
+    // Start Over with better chunk
+
 
     const messages = ref<{ [roomId: string]: ChatMessage[] }>({
         'room1': [
@@ -72,6 +74,19 @@ export const useChatStore = defineStore('chat', () => {
                 content: '안녕하세요, 지원서 잘 보았습니다. 채팅으로 이야기 나누고 싶습니다.',
                 type: 'TEXT',
                 createdAt: new Date(Date.now() - 1000000),
+                readBy: ['e1', 'f1']
+            },
+            {
+                id: 'm-sys-1',
+                roomId: 'room1',
+                senderId: 'e1',
+                content: '프로젝트 계약 요청',
+                type: 'CONTRACT_ALERT',
+                metadata: {
+                    contractId: 101,
+                    status: 'WAITING_SIGNATURE'
+                },
+                createdAt: new Date(Date.now() - 900000),
                 readBy: ['e1', 'f1']
             }
         ],
@@ -102,9 +117,7 @@ export const useChatStore = defineStore('chat', () => {
     // Getters
     const myRooms = computed(() => {
         if (!authStore.user) return [];
-        const myId = String(authStore.user.id);
-        const prefix = authStore.user.role === 'EMPLOYER' ? 'e' : 'f';
-        const myFullId = `${prefix}${myId}`;
+        const myFullId = String(authStore.user.id);
 
         return rooms.value.filter(room => room.participants.includes(myFullId))
             .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
@@ -124,9 +137,7 @@ export const useChatStore = defineStore('chat', () => {
         currentRoomId.value = roomId;
         // Mark as read logic would go here
         if (authStore.user) {
-            const myId = String(authStore.user.id);
-            const prefix = authStore.user.role === 'EMPLOYER' ? 'e' : 'f';
-            const myFullId = `${prefix}${myId}`;
+            const myFullId = String(authStore.user.id);
 
             // Reset unread count
             const roomIndex = rooms.value.findIndex(r => r.id === roomId);
@@ -139,9 +150,7 @@ export const useChatStore = defineStore('chat', () => {
     function sendMessage(content: string, type: ChatMessage['type'] = 'TEXT', metadata?: any) {
         if (!currentRoomId.value || !authStore.user) return;
 
-        const myId = String(authStore.user.id);
-        const prefix = authStore.user.role === 'EMPLOYER' ? 'e' : 'f';
-        const myFullId = `${prefix}${myId}`;
+        const myFullId = String(authStore.user.id);
 
         const newMessage: ChatMessage = {
             id: `m-${Date.now()}`,

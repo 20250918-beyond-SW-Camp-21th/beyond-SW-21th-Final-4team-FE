@@ -1,93 +1,86 @@
 <template>
-    <div class="flex flex-col h-full bg-white border-r border-gray-200">
+    <div class="flex flex-col h-full bg-[#020617] border-r border-white/5 relative">
         <!-- Header -->
-        <div class="p-3 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
-            <h2 class="text-sm font-bold text-gray-700">Messaging</h2>
-            <div class="flex gap-2 text-gray-500">
-                <button class="p-1 hover:bg-gray-100 rounded-full transition-colors"><MoreHorizontalIcon class="w-5 h-5" /></button>
-                <button class="p-1 hover:bg-gray-100 rounded-full transition-colors"><PencilIcon class="w-5 h-5" /></button>
+        <div class="px-4 py-4 flex items-center justify-between sticky top-0 bg-[#020617]/80 backdrop-blur-md z-20 border-b border-white/5">
+            <h2 class="text-lg font-bold text-white tracking-tight">메시지</h2>
+            <div class="flex gap-1 text-slate-400">
+                <button class="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"><MoreHorizontalIcon class="w-5 h-5" /></button>
+                <button class="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"><PencilIcon class="w-5 h-5" /></button>
             </div>
         </div>
 
         <!-- Search -->
-        <div class="px-3 py-2 bg-white">
-            <div class="relative">
-                <SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+        <div class="px-4 pb-4 pt-2 bg-[#020617]">
+            <div class="relative group">
+                <SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-500 transition-colors" />
                 <input 
                     type="text" 
-                    placeholder="Search messages" 
-                    class="w-full pl-9 pr-8 py-1.5 bg-gray-100 border border-transparent rounded-md text-sm focus:border-black focus:bg-white transition-all outline-none placeholder:text-gray-500"
+                    placeholder="대화 검색..." 
+                    class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-transparent rounded-full text-sm text-white focus:bg-slate-800 focus:ring-1 focus:ring-emerald-500/50 transition-all outline-none placeholder:text-slate-600"
                 />
-                <SettingsIcon class="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 cursor-pointer" />
             </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="flex border-b border-gray-200 bg-white">
-            <button 
-                class="flex-1 py-3 text-sm font-semibold border-b-2 transition-colors hover:bg-gray-50 text-emerald-700 border-emerald-700"
-            >
-                Focused
-            </button>
-            <button 
-                class="flex-1 py-3 text-sm font-semibold text-gray-500 border-b-2 border-transparent hover:bg-gray-50 hover:text-gray-700 transition-colors"
-            >
-                Other
-            </button>
-        </div>
-
         <!-- Room List -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar bg-white">
+        <div class="flex-1 overflow-y-auto custom-scrollbar bg-[#020617] p-2 space-y-1">
             <div 
                 v-for="room in chatStore.myRooms" 
                 :key="room.id"
                 @click="chatStore.selectRoom(room.id)"
                 :class="[
-                    'p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-all duration-200 flex gap-3',
-                    chatStore.currentRoomId === room.id ? 'bg-blue-50/30 border-l-[3px] border-l-emerald-700 pl-[9px]' : 'pl-3 border-l-[3px] border-l-transparent'
+                    'p-3 rounded-xl cursor-pointer transition-all duration-200 flex gap-4 items-center group',
+                    chatStore.currentRoomId === room.id 
+                        ? 'bg-slate-800/80 shadow-md ring-1 ring-white/5' 
+                        : 'hover:bg-slate-900/50 hover:shadow-sm'
                 ]"
             >
                 <!-- Avatar -->
-                <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold shrink-0 overflow-hidden">
-                     <img v-if="getOtherParticipantImage(room)" :src="getOtherParticipantImage(room)" class="w-full h-full object-cover" />
-                     <span v-else>{{ getOtherParticipantName(room).charAt(0) }}</span>
+                <div class="relative shrink-0">
+                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 font-bold overflow-hidden border border-white/5 ring-2 ring-[#020617] group-hover:ring-slate-800 transition-all">
+                        <img v-if="getOtherParticipantImage(room)" :src="getOtherParticipantImage(room)" class="w-full h-full object-cover" />
+                        <span v-else>{{ getOtherParticipantName(room).charAt(0) }}</span>
+                    </div>
+                    <!-- Online Status Indicator (Mock) -->
+                     <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#020617] rounded-full"></span>
                 </div>
 
                 <div class="flex-1 min-w-0">
-                    <div class="flex justify-between items-baseline mb-0.5">
-                        <h3 class="font-semibold text-gray-900 truncate text-sm">
+                    <div class="flex justify-between items-center mb-0.5">
+                        <h3 
+                            class="font-semibold text-sm truncate transition-colors"
+                            :class="chatStore.currentRoomId === room.id ? 'text-white' : 'text-slate-200 group-hover:text-white'"
+                        >
                             {{ getOtherParticipantName(room) }}
                         </h3>
-                        <span class="text-xs text-gray-500 whitespace-nowrap ml-1 font-normal">
+                        <span class="text-[11px] text-slate-500 whitespace-nowrap font-medium">
                              {{ formatDate(room.lastMessage?.createdAt) }}
                         </span>
                     </div>
                     
-                    <p class="text-xs text-gray-500 truncate mb-1 line-clamp-1 h-4">
-                        {{ room.relatedJobId ? 'Project Discussion' : 'General Inquiry' }}
-                    </p>
-
                     <div class="flex justify-between items-center">
                         <p 
-                            :class="['text-xs truncate max-w-[160px]', getMyUnreadCount(room) > 0 ? 'font-bold text-gray-800' : 'text-gray-500']"
+                            :class="[
+                                'text-sm truncate max-w-[180px] leading-snug', 
+                                getMyUnreadCount(room) > 0 ? 'font-medium text-slate-100' : 'text-slate-500 group-hover:text-slate-400'
+                            ]"
                         >
-                            {{ room.lastMessage?.senderId === authStore.user?.role + authStore.user?.id ? 'You: ' : '' }}{{ room.lastMessage?.content || 'No messages yet' }}
+                            <span v-if="room.lastMessage?.senderId === authStore.user?.role + authStore.user?.id" class="text-slate-600">나: </span>
+                            {{ room.lastMessage?.content || '대화 없음' }}
                         </p>
-                         <span 
-                            v-if="getMyUnreadCount(room) > 0" 
-                            class="inline-block w-2 h-2 rounded-full bg-emerald-600"
-                        ></span>
+                         <div v-if="getMyUnreadCount(room) > 0" class="px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-sm shadow-emerald-500/20">
+                            {{ getMyUnreadCount(room) }}
+                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Empty State -->
-            <div v-if="chatStore.myRooms.length === 0" class="flex flex-col items-center justify-center p-8 text-center text-gray-500 mt-10">
+            <div v-if="chatStore.myRooms.length === 0" class="flex flex-col items-center justify-center p-8 text-center text-slate-500 mt-10">
                 <MessageSquareOffIcon class="w-16 h-16 mb-4 opacity-20" />
-                <h3 class="text-lg font-semibold text-gray-800 mb-2">No messages yet</h3>
-                <p class="text-sm max-w-[200px] mb-6">Reach out and start a conversation to advance your career</p>
-                <button class="px-4 py-1.5 border border-gray-400 rounded-full text-gray-600 font-medium hover:bg-gray-50 text-sm transition-colors">
-                    Send a message
+                <h3 class="text-lg font-semibold text-slate-300 mb-2">대화 없음</h3>
+                <p class="text-sm max-w-[200px] mb-6">진행 중인 계약 관련 대화가 없습니다.</p>
+                <button class="px-4 py-1.5 border border-slate-600 rounded-full text-slate-400 font-medium hover:bg-white/5 hover:text-white text-sm transition-colors">
+                    메시지 보내기
                 </button>
             </div>
         </div>
@@ -95,6 +88,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useAuthStore } from '@/stores/authStore';
 import { 
@@ -105,7 +99,7 @@ import {
     MessageSquareOff as MessageSquareOffIcon
 } from 'lucide-vue-next';
 import { format } from 'date-fns';
-import { enUS } from 'date-fns/locale'; // Changed to English for LinkedIn style match, or keep ko? User asked for LinkedIn style but language kept as Korean previously. I will stick to mixed or English labels as per the UI screenshot request but maybe Korean data.
+import { ko } from 'date-fns/locale';
 import type { ChatRoom } from '@/types';
 
 const chatStore = useChatStore();
@@ -118,8 +112,7 @@ function getOtherParticipantImage(room: ChatRoom) {
 
 function getOtherParticipantName(room: ChatRoom) {
     if (!authStore.user) return 'Unknown';
-    const myPrefix = authStore.user.role === 'EMPLOYER' ? 'e' : 'f';
-    const myFullId = `${myPrefix}${authStore.user.id}`;
+    const myFullId = String(authStore.user.id);
     
     // Find key in participants that is not me
     const otherId = room.participants.find(id => id !== myFullId);
@@ -128,8 +121,7 @@ function getOtherParticipantName(room: ChatRoom) {
 
 function getMyUnreadCount(room: ChatRoom) {
     if (!authStore.user) return 0;
-    const myPrefix = authStore.user.role === 'EMPLOYER' ? 'e' : 'f';
-    const myFullId = `${myPrefix}${authStore.user.id}`;
+    const myFullId = String(authStore.user.id);
     return room.unreadCount[myFullId] || 0;
 }
 
@@ -139,9 +131,9 @@ function formatDate(date: Date | undefined) {
     const now = new Date();
     // If today, return time. If older, return MMM DD
     if (d.toDateString() === now.toDateString()) {
-        return format(d, 'h:mm a');
+        return format(d, 'a h:mm', { locale: ko });
     }
-    return format(d, 'MMM d');
+    return format(d, 'M월 d일', { locale: ko });
 }
 </script>
 

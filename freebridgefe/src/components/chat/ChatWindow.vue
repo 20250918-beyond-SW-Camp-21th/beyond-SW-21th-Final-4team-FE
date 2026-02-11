@@ -1,42 +1,54 @@
 <template>
     <div class="flex flex-col h-full relative">
         <!-- Chat Header -->
-        <div class="h-16 px-6 border-b border-gray-200 flex items-center justify-between bg-white shrink-0 z-20">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                    {{ otherParticipantName.charAt(0) }}
+        <div class="h-20 px-6 flex items-center justify-between bg-[#0f172a]/95 backdrop-blur-sm border-b border-white/5 shrink-0 z-20">
+            <div class="flex items-center gap-4">
+                <div class="relative">
+                    <div class="w-11 h-11 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 text-lg font-bold border border-white/10 ring-2 ring-slate-900">
+                        {{ otherParticipantName.charAt(0) }}
+                    </div>
+                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
                 </div>
                 <div>
-                    <h2 class="font-bold text-gray-900">{{ otherParticipantName }}</h2>
-                    <p class="text-xs text-green-600 flex items-center gap-1">
-                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> 온라인
+                    <h2 class="font-bold text-lg text-white leading-tight">{{ otherParticipantName }}</h2>
+                    <p class="text-xs text-emerald-500 flex items-center gap-1 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full w-fit mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> 온라인
                     </p>
                 </div>
             </div>
 
-            <!-- Tabs Switcher -->
-            <div class="flex bg-gray-100 p-1 rounded-lg">
+            <!-- Tabs Switcher (Pill Style) -->
+            <div class="flex bg-slate-900 p-1 rounded-full border border-white/5">
                 <button 
                     @click="activeTab = 'CHAT'"
-                    :class="['px-4 py-1.5 text-sm font-medium rounded-md transition-all', activeTab === 'CHAT' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700']"
+                    :class="['px-5 py-2 text-sm font-medium rounded-full transition-all', activeTab === 'CHAT' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200']"
                 >
                     채팅
                 </button>
                 <button 
                     @click="activeTab = 'CONTRACT'"
-                    :class="['px-4 py-1.5 text-sm font-medium rounded-md transition-all flex items-center gap-1.5', activeTab === 'CONTRACT' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700']"
+                    :class="['px-5 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-2', activeTab === 'CONTRACT' ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-400 hover:text-slate-200']"
                 >
-                    <FileTextIcon class="w-3.5 h-3.5" /> 계약
-                    <!-- Notification Dot if contract needs attention -->
+                    <FileTextIcon class="w-4 h-4" /> 계약
                     <span v-if="contractNeedsAttention" class="w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
             </div>
             
-            <!-- Buttons Removed -->
+            <div class="flex gap-2">
+                 <button class="p-2.5 rounded-full bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors border border-white/5">
+                    <PhoneIcon class="w-5 h-5" />
+                 </button>
+                 <button class="p-2.5 rounded-full bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors border border-white/5">
+                    <VideoIcon class="w-5 h-5" />
+                 </button>
+                 <button class="p-2.5 rounded-full bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors border border-white/5">
+                    <MoreHorizontalIcon class="w-5 h-5" />
+                 </button>
+            </div>
         </div>
 
         <!-- Main Content Area -->
-        <div class="flex-1 overflow-hidden relative bg-white">
+        <div class="flex-1 overflow-hidden relative bg-slate-900">
             <!-- Tab: CHAT -->
             <div v-show="activeTab === 'CHAT'" class="h-full flex flex-col">
                 <!-- Messages List -->
@@ -49,27 +61,47 @@
                     </div>
                 </div>
 
-                <!-- Input Area -->
-                <div class="p-4 border-t border-gray-200 bg-white">
-                    <div class="flex items-end gap-2 bg-gray-50 p-2 rounded-xl border border-gray-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 transition-all">
-                        <button class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
-                            <PaperclipIcon class="w-5 h-5" />
+                <!-- Floating Input Area (Instagram Style) -->
+                <div class="p-4 bg-slate-900">
+                    <div class="max-w-4xl mx-auto flex items-center gap-2">
+                        <!-- Quick Actions (Left) -->
+                        <button class="p-2.5 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
+                            <PlusIcon class="w-6 h-6" />
                         </button>
-                        <textarea
-                            v-model="newMessage"
-                            @keydown.enter.prevent="sendMessage"
-                            rows="1"
-                            placeholder="메시지를 입력하세요..."
-                            class="flex-1 bg-transparent border-none focus:ring-0 resize-none py-2 px-1 max-h-32 text-sm"
-                            style="min-height: 40px;"
-                        ></textarea>
-                         <button 
-                            @click="sendMessage"
-                            :disabled="!newMessage.trim()"
-                            class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                        >
-                            <SendIcon class="w-4 h-4" />
-                        </button>
+
+                        <!-- Input Container (Pill) -->
+                        <div class="flex-1 relative bg-slate-800 rounded-full border border-white/5 transition-colors flex items-center px-4 py-1.5 focus-within:bg-slate-700/50">
+                            <textarea
+                                :value="newMessage"
+                                @input="(e) => newMessage = (e.target as HTMLInputElement).value"
+                                @keydown.enter.prevent="sendMessage"
+                                rows="1"
+                                placeholder="메시지를 입력하세요..."
+                                class="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-2.5 max-h-32 min-h-[44px] text-white placeholder-slate-500 leading-relaxed custom-scrollbar text-[15px]"
+                            ></textarea>
+                            
+                            <!-- Business Action Icons inside Pill -->
+                            <div class="flex items-center gap-1.5 ml-2" v-if="!newMessage.trim()">
+                                <button class="p-1.5 text-slate-400 hover:text-emerald-400 transition-colors" title="Request Contract">
+                                    <FileTextIcon class="w-5 h-5" />
+                                </button>
+                                <button class="p-1.5 text-slate-400 hover:text-blue-400 transition-colors" title="Schedule Briefing">
+                                    <CalendarIcon class="w-5 h-5" />
+                                </button>
+                                <button class="p-1.5 text-slate-400 hover:text-yellow-400 transition-colors" title="Discuss Settlement">
+                                    <DollarSignIcon class="w-5 h-5" />
+                                </button>
+                            </div>
+                            
+                            <!-- Send Button (Show only when typing) -->
+                            <button 
+                                v-else
+                                @click="sendMessage"
+                                class="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 transform active:scale-95 ml-1 flex items-center justify-center"
+                            >
+                                <SendIcon class="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -94,7 +126,10 @@ import {
     Video as VideoIcon, 
     MoreHorizontal as MoreHorizontalIcon,
     Paperclip as PaperclipIcon,
-    Send as SendIcon
+    Send as SendIcon,
+    Calendar as CalendarIcon,
+    DollarSign as DollarSignIcon,
+    Plus as PlusIcon
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -113,8 +148,7 @@ const messages = computed(() => chatStore.messages[props.roomId] || []);
 
 const otherParticipantName = computed(() => {
     if (!currentRoom.value || !authStore.user) return 'Unknown';
-    const myPrefix = authStore.user.role === 'EMPLOYER' ? 'e' : 'f';
-    const myFullId = `${myPrefix}${authStore.user.id}`;
+    const myFullId = String(authStore.user.id);
     const otherId = currentRoom.value.participants.find(id => id !== myFullId);
     return otherId ? currentRoom.value.participantNames[otherId] : '알 수 없음';
 });
