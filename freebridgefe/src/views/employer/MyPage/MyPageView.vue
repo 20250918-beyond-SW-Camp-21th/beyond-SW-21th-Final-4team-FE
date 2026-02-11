@@ -33,7 +33,6 @@ import EmployerProfileManagement from './components/EmployerProfileManagement.vu
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
 import EmployerProjectManagement from './components/EmployerProjectManagement.vue';
 import FreelancerChecklistPage from './components/FreelancerChecklistPage.vue';
-import EmployerApplicantStatus from './components/EmployerApplicantStatus.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -103,15 +102,10 @@ watch(activeTab, (newTab) => {
 
 const menuItems = [
   { id: 'dashboard', label: '프로필 관리', icon: Building2, action: () => (activeTab.value = 'dashboard') },
-  {
-    id: 'applicants',
-    label: '지원자 현황',
-    icon: Users,
-    action: () => (activeTab.value = 'applicants'),
-  },
+
   {
     id: 'checklist',
-    label: '프리랜서 체크리스트',
+    label: '리뷰 및 평판 관리',
     icon: ClipboardList,
     action: () => (activeTab.value = 'checklist'),
   },
