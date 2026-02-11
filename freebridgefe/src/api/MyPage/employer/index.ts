@@ -10,6 +10,16 @@ export interface EmployerProfileData {
     phone: string;
     description: string;
     plan?: string;
+    // Stats for Dashboard
+    activeProjects?: number;
+    totalApplicants?: number;
+    contractedFreelancers?: number;
+    avgRating?: number;
+    ratingDetails?: {
+        atmosphere: number;
+        requirementsDetail: number;
+        scheduleAdherence: number;
+    };
 }
 
 export interface Application {
@@ -103,3 +113,35 @@ export const rejectApplication = async (applicationId: string, reason: string): 
 // API 함수 예시 (실제 구현 시 axios 인스턴스 사용)
 // export const fetchEmployerProfile = async (): Promise<EmployerProfileData> => { ... }
 // export const updateEmployerProfile = async (data: EmployerProfileData): Promise<void> => { ... }
+
+// Mock Data for Employer Profile (Session Persistence)
+let employerProfileMock: EmployerProfileData = {
+    companyName: '테크스타트업',
+    industry: 'IT/소프트웨어',
+    size: '10-50명',
+    location: '서울 강남구',
+    website: 'https://techstartup.com',
+    email: 'contact@techstartup.com',
+    phone: '02-1234-5678',
+    description: '우리는 혁신적인 소프트웨어를 만드는 스타트업입니다.',
+    plan: 'PRO',
+    activeProjects: 3,
+    totalApplicants: 45,
+    contractedFreelancers: 8,
+    avgRating: 4.8,
+    ratingDetails: {
+        atmosphere: 4.9,
+        requirementsDetail: 4.7,
+        scheduleAdherence: 4.8,
+    },
+};
+
+export const getEmployerProfile = async (): Promise<EmployerProfileData> => {
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate delay
+    return { ...employerProfileMock };
+};
+
+export const updateEmployerProfile = async (data: EmployerProfileData): Promise<void> => {
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+    employerProfileMock = { ...employerProfileMock, ...data };
+};

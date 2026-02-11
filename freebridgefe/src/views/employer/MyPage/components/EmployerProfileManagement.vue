@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
   ArrowLeft,
@@ -12,15 +12,19 @@ import {
   Globe,
   Briefcase,
   Edit2,
+  Loader2,
 } from 'lucide-vue-next';
 
-import type { EmployerProfileData } from '@/api/MyPage/employer';
+import { getEmployerProfile, updateEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
 
 defineEmits<{
   (e: 'back'): void;
 }>();
 
 const isEditing = ref(false);
+const isLoading = ref(false);
+const isSaving = ref(false);
+
 const profileData = ref<EmployerProfileData>({
   companyName: '',
   industry: '',
@@ -40,21 +44,37 @@ const companySizeOptions = [
   '500명 이상',
 ];
 
-// TODO: API 연동 시 아래와 같이 데이터를 불러오세요.
-// onMounted(async () => {
-//   try {
-//     const response = await axios.get('/api/v1/employer/profile');
-//     profileData.value = response.data;
-//   } catch (error) {
-//     console.error('Failed to fetch profile:', error);
-//   }
-// });
+const fetchProfile = async () => {
+  isLoading.value = true;
+  try {
+    const data = await getEmployerProfile();
+    profileData.value = data;
+  } catch (error) {
+    console.error('Failed to fetch profile:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
 
-const handleSave = () => {
-  isEditing.value = false;
-  alert('프로필이 저장되었습니다.');
+onMounted(() => {
+  fetchProfile();
+});
+
+const handleSave = async () => {
+  isSaving.value = true;
+  try {
+    await updateEmployerProfile(profileData.value);
+    isEditing.value = false;
+    // alert('프로필이 저장되었습니다.'); // Optional: Use toast notification instead if available
+  } catch (error) {
+    console.error('Failed to save profile:', error);
+    alert('저장에 실패했습니다.');
+  } finally {
+    isSaving.value = false;
+  }
 };
 </script>
+
 
 <template>
   <div class="max-w-4xl mx-auto px-4 md:px-8 py-8 text-white">
@@ -90,10 +110,12 @@ const handleSave = () => {
         </button>
         <button
           @click="handleSave"
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+          :disabled="isSaving"
+          class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Save class="w-4 h-4" />
-          저장
+          <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
+          <Save v-else class="w-4 h-4" />
+          {{ isSaving ? '저장 중...' : '저장' }}
         </button>
       </div>
     </div>
