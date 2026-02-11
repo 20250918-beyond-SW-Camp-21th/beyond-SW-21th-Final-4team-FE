@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { User, Proposal } from '@/types';
+import { useChatStore } from '@/stores/chatStore';
 
 export const useFreelancerStore = defineStore('freelancer', () => {
     const freelancers = ref<User[]>([
@@ -92,17 +93,40 @@ export const useFreelancerStore = defineStore('freelancer', () => {
         status: Proposal['status'],
         rejectionReason?: string
     ): boolean {
-        const exists = proposals.value.some((proposal) => proposal.id === proposalId);
-        if (!exists) return false;
+        const index = proposals.value.findIndex(p => p.id === proposalId);
+        if (index === -1) return false;
 
-        proposals.value = proposals.value.map((proposal) => {
-            if (proposal.id !== proposalId) return proposal;
-            return {
-                ...proposal,
-                status,
-                rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
+        const proposal = proposals.value[index];
+
+        // Update local state
+        proposals.value[index] = {
+            ...proposal,
+            status,
+            rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
+        };
+
+        if (status === 'ACCEPTED') {
+            const chatStore = useChatStore();
+            const employerId = proposals.value[index].employerId;
+            const freelancerId = proposals.value[index].freelancerId;
+            const jobId = proposals.value[index].jobId; // Capture possibly undefined jobId
+
+            const context: any = {
+                relatedProposalId: proposalId
             };
-        });
+            if (jobId) {
+                context.relatedJobId = jobId;
+            }
+
+            chatStore.createRoom(
+                [employerId, freelancerId],
+                {
+                    [employerId]: proposals.value[index].employerName || 'Employer',
+                    [freelancerId]: proposals.value[index].freelancerName || 'Freelancer'
+                },
+                context
+            );
+        }
 
         return true;
     }
