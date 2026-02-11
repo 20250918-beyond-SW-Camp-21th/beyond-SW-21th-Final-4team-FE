@@ -16,137 +16,16 @@ import {
     AlertCircle,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { useContractStore, type EmployerSettlementWithDetails } from '@/stores/contractStore';
 import SettlementDetailModal from './components/SettlementDetailModal.vue';
 import { useNow } from '@vueuse/core';
 
 const now = useNow();
 
-interface EmployerSettlement {
-    id: string;
-    contractId: string;
-    billingAmount: number;
-    platformFee: number;
-    tax: number;
-    totalAmount: number;
-    installmentNumber: number;
-    status: 'ISSUED' | 'PAID' | 'DISBURSED';
-    invoicePdfUrl: string;
-    projectName: string;
-    freelancerName: string;
-    freelancerId: string;
-    employerId: string;
-    dueDate: Date | string;
-    paidDate?: Date | string;
-}
-
 const authStore = useAuthStore();
+const contractStore = useContractStore();
 
-// Mock data for employer settlements
-const allSettlements = ref<EmployerSettlement[]>([
-    {
-        id: 'es1',
-        contractId: 'c1',
-        billingAmount: 1500000,
-        platformFee: 75000,
-        tax: 157500,
-        totalAmount: 1732500,
-        installmentNumber: 1,
-        status: 'DISBURSED',
-        invoicePdfUrl: '/invoices/es1.pdf',
-        projectName: 'SaaS 대시보드 리뉴얼',
-        freelancerName: '김프론트',
-        freelancerId: 'f1',
-        employerId: 'e1',
-        dueDate: new Date('2026-02-15'), // THIS_MONTH
-        paidDate: new Date('2026-02-12'),
-    },
-    {
-        id: 'es2',
-        contractId: 'c1',
-        billingAmount: 2000000,
-        platformFee: 100000,
-        tax: 210000,
-        totalAmount: 2310000,
-        installmentNumber: 2,
-        status: 'PAID',
-        invoicePdfUrl: '/invoices/es2.pdf',
-        projectName: 'SaaS 대시보드 리뉴얼',
-        freelancerName: '김프론트',
-        freelancerId: 'f1',
-        employerId: 'e1',
-        dueDate: new Date('2026-02-25'), // THIS_MONTH
-        paidDate: new Date('2026-02-22'),
-    },
-    {
-        id: 'es3',
-        contractId: 'c1',
-        billingAmount: 1500000,
-        platformFee: 75000,
-        tax: 157500,
-        totalAmount: 1732500,
-        installmentNumber: 3,
-        status: 'ISSUED',
-        invoicePdfUrl: '/invoices/es3.pdf',
-        projectName: 'SaaS 대시보드 리뉴얼',
-        freelancerName: '김프론트',
-        freelancerId: 'f1',
-        employerId: 'e1',
-        dueDate: new Date('2026-02-28'), // THIS_MONTH
-    },
-    {
-        id: 'es4',
-        contractId: 'c2',
-        billingAmount: 3000000,
-        platformFee: 150000,
-        tax: 315000,
-        totalAmount: 3465000,
-        installmentNumber: 1,
-        status: 'DISBURSED',
-        invoicePdfUrl: '/invoices/es4.pdf',
-        projectName: 'API 서버 마이그레이션',
-        freelancerName: '이백엔드',
-        freelancerId: 'f2',
-        employerId: 'e1',
-        dueDate: new Date('2026-01-15'), // LAST_MONTH
-        paidDate: new Date('2026-01-12'),
-    },
-    {
-        id: 'es5',
-        contractId: 'c2',
-        billingAmount: 2500000,
-        platformFee: 125000,
-        tax: 262500,
-        totalAmount: 2887500,
-        installmentNumber: 2,
-        status: 'DISBURSED',
-        invoicePdfUrl: '/invoices/es5.pdf',
-        projectName: 'API 서버 마이그레이션',
-        freelancerName: '이백엔드',
-        freelancerId: 'f2',
-        employerId: 'e1',
-        dueDate: new Date('2026-01-20'), // LAST_MONTH
-        paidDate: new Date('2026-01-18'),
-    },
-    {
-        id: 'es6',
-        contractId: 'c2',
-        billingAmount: 2500000,
-        platformFee: 125000,
-        tax: 262500,
-        totalAmount: 2887500,
-        installmentNumber: 3,
-        status: 'DISBURSED',
-        invoicePdfUrl: '/invoices/es6.pdf',
-        projectName: 'API 서버 마이그레이션',
-        freelancerName: '이백엔드',
-        freelancerId: 'f2',
-        employerId: 'e1',
-        dueDate: new Date('2025-12-20'), // LAST_3_MONTHS
-        paidDate: new Date('2025-12-18'),
-    }
-]);
-
-const selectedSettlement = ref<EmployerSettlement | null>(null);
+const selectedSettlement = ref<EmployerSettlementWithDetails | null>(null);
 const selectedStatus = ref<string>('ALL');
 const isDropdownOpen = ref(false);
 const currentPage = ref(1);
@@ -176,10 +55,11 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle }> 
 
 // Filter settlements by current employer
 const mySettlements = computed(() => {
-    if (!authStore.user) return allSettlements.value || [];
-    // Temporarily show all settlements for development
-    return allSettlements.value || [];
-    // return allSettlements.value.filter((s) => s.employerId === authStore.user!.id);
+    const settlements = contractStore.employerSettlementsWithDetails || [];
+    if (!authStore.user) return settlements;
+    // Filter by employer ID (temporarily showing all for development)
+    // return settlements.filter((s) => s.employerId === Number(authStore.user!.id));
+    return settlements;
 });
 
 // Get next upcoming settlement (first ISSUED settlement by due date)
@@ -230,8 +110,8 @@ const filteredSettlements = computed(() => {
         result = result.filter((s) => new Date(s.dueDate) >= threeMonthsAgo);
     }
 
-    // Sort by due date descending
-    result.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+    // Sort by due date ascending (upcoming payments first)
+    result.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
     return result;
 });
 
@@ -290,7 +170,7 @@ watch(selectedDateRange, () => {
     currentPage.value = 1;
 });
 
-const handleDownload = (settlement: EmployerSettlement) => {
+const handleDownload = (settlement: EmployerSettlementWithDetails) => {
     // Mock download - in real app, this would download from invoicePdfUrl
     console.log('Downloading invoice:', settlement.invoicePdfUrl);
     alert(`청구서 다운로드: ${settlement.projectName} - ${settlement.installmentNumber}차`);
