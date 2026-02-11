@@ -50,7 +50,7 @@ const getApplications = (jobId: string) => {
         :enter="{ opacity: 1, y: 0 }"
     >
       <div>
-        <h1 class="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
+        <h1 class="text-4xl font-bold mb-3 text-white">
           내 프로젝트 공고
         </h1>
         <p class="text-white/60">등록한 프로젝트를 관리하세요</p>

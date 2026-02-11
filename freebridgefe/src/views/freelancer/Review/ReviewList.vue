@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { Star, MessageSquareQuote, UserCheck, ClipboardEdit, Pencil, Trash2, X } from 'lucide-vue-next';
+import { useReviewStore, type FreelancerToEmployerReview } from '@/stores/reviewStore';
+
+const reviewStore = useReviewStore();
 
 const freelancerEvaluationItems = [
   { key: 'atmosphere', label: '사내 분위기' },
@@ -18,128 +21,23 @@ const employerEvaluationItems = [
 ] as const;
 
 type FreelancerRatingKey = typeof freelancerEvaluationItems[number]['key'];
-type EmployerRatingKey = typeof employerEvaluationItems[number]['key'];
+type FreelancerEditableReview = FreelancerToEmployerReview & Record<FreelancerRatingKey, number>;
 
-type FreelancerReviewBase = Record<FreelancerRatingKey, number> & {
-  id: string;
-  projectName: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
-};
-
-type EmployerReviewBase = Record<EmployerRatingKey, number> & {
-  id: string;
-  projectName: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
-};
-
-const freelancerToEmployerReviews = ref<Array<
-  FreelancerReviewBase & {
-    companyName: string;
-  }
->>([
-  {
-    id: 'fe-1',
-    companyName: '프리브릿지',
-    projectName: '대시보드 고도화',
-    rating: 4.6,
-    atmosphere: 5,
-    requirementDetail: 4,
-    schedule: 4,
-    comment:
-      '요구사항이 명확했고 커뮤니케이션이 원활했습니다. 일정 조율도 합리적으로 진행되었습니다.',
-    createdAt: '2024-09-20',
-  },
-  {
-    id: 'fe-2',
-    companyName: '브랜드랩',
-    projectName: '브랜딩 UI 리뉴얼',
-    rating: 4.2,
-    atmosphere: 4,
-    requirementDetail: 4,
-    schedule: 4,
-    comment:
-      '프로젝트 범위 변경이 있었지만 합리적으로 합의되었습니다. 전반적으로 만족스러웠습니다.',
-    createdAt: '2024-07-28',
-  },
-  {
-    id: 'fe-3',
-    companyName: '인사이트웍스',
-    projectName: '리포트 자동화 구축',
-    rating: 4.7,
-    atmosphere: 5,
-    requirementDetail: 5,
-    schedule: 4,
-    comment:
-      '요구사항 문서가 잘 정리되어 있었고 결정이 빨라 진행이 매끄러웠습니다.',
-    createdAt: '2024-06-18',
-  },
-  {
-    id: 'fe-4',
-    companyName: '클라우드나우',
-    projectName: '클라우드 마이그레이션',
-    rating: 4.1,
-    atmosphere: 4,
-    requirementDetail: 3,
-    schedule: 5,
-    comment:
-      '일정 준수는 훌륭했고 협업 분위기도 좋았습니다. 요구사항은 초기에 보완이 필요했습니다.',
-    createdAt: '2024-05-02',
-  },
-]);
-
-const employerToFreelancerReviews: Array<
-  EmployerReviewBase & {
-    reviewerName: string;
-  }
-> = [
-  {
-    id: 'ef-1',
-    reviewerName: '프리브릿지',
-    projectName: '모바일 앱 리팩토링',
-    rating: 4.7,
-    language: 5,
-    framework: 5,
-    debugging: 4,
-    communication: 5,
-    schedule: 4,
-    dispute: 5,
-    comment:
-      '업무 결과물의 퀄리티가 높았고 커뮤니케이션도 원활했습니다.',
-    createdAt: '2024-10-03',
-  },
-  {
-    id: 'ef-2',
-    reviewerName: '브랜드랩',
-    projectName: 'API 성능 개선',
-    rating: 4.3,
-    language: 4,
-    framework: 4,
-    debugging: 4,
-    communication: 4,
-    schedule: 4,
-    dispute: 5,
-    comment:
-      '요구사항 대응이 빠르고 일정 준수가 좋았습니다.',
-    createdAt: '2024-08-12',
-  },
-];
+const freelancerToEmployerReviews = computed(() => reviewStore.freelancerToEmployerReviews);
+const employerToFreelancerReviews = computed(() =>
+  reviewStore.employerToFreelancerReviews.map((review) => ({
+    ...review,
+    reviewerName: review.employerName,
+  }))
+);
 
 const editingReviewId = ref<string | null>(null);
-const editForm = ref<(FreelancerReviewBase & { companyName: string }) | null>(null);
+const editForm = ref<FreelancerEditableReview | null>(null);
 
-const toReviewForm = (review: FreelancerReviewBase & { companyName: string }) =>
-  JSON.parse(JSON.stringify(review)) as FreelancerReviewBase & { companyName: string };
+const toReviewForm = (review: FreelancerToEmployerReview) =>
+  JSON.parse(JSON.stringify(review)) as FreelancerEditableReview;
 
-const computeOverallRating = (review: FreelancerReviewBase) => {
-  const total = freelancerEvaluationItems.reduce((sum, item) => sum + review[item.key], 0);
-  return Number((total / freelancerEvaluationItems.length).toFixed(1));
-};
-
-const startEdit = (review: FreelancerReviewBase & { companyName: string }) => {
+const startEdit = (review: FreelancerToEmployerReview) => {
   editingReviewId.value = review.id;
   editForm.value = toReviewForm(review);
 };
@@ -152,16 +50,22 @@ const cancelEdit = () => {
 const saveEdit = () => {
   if (!editForm.value) return;
   if (!window.confirm('후기를 수정하시겠습니까?')) return;
-  const index = freelancerToEmployerReviews.value.findIndex((r) => r.id === editForm.value?.id);
-  if (index === -1) return;
-  editForm.value.rating = computeOverallRating(editForm.value);
-  freelancerToEmployerReviews.value[index] = toReviewForm(editForm.value);
+
+  reviewStore.updateFreelancerToEmployerReview(editForm.value.id, {
+    companyName: editForm.value.companyName,
+    projectName: editForm.value.projectName,
+    atmosphere: editForm.value.atmosphere,
+    requirementDetail: editForm.value.requirementDetail,
+    schedule: editForm.value.schedule,
+    comment: editForm.value.comment,
+  });
+
   cancelEdit();
 };
 
 const deleteReview = (id: string) => {
   if (!window.confirm('후기를 삭제하시겠습니까?')) return;
-  freelancerToEmployerReviews.value = freelancerToEmployerReviews.value.filter((review) => review.id !== id);
+  reviewStore.deleteFreelancerToEmployerReview(id);
   if (editingReviewId.value === id) {
     cancelEdit();
   }

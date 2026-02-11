@@ -79,6 +79,7 @@ export interface Proposal {
     jobId?: string;
     message: string;
     status: ApplicationStatus;
+    rejectionReason?: string;
     createdAt: Date;
 }
 
