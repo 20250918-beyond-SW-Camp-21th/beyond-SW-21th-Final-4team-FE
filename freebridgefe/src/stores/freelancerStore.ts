@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import type { User, Proposal } from '@/types';
+import { useChatStore } from '@/stores/chatStore';
 
 export const useFreelancerStore = defineStore('freelancer', () => {
     const freelancers = ref<User[]>([
@@ -92,17 +93,36 @@ export const useFreelancerStore = defineStore('freelancer', () => {
         status: Proposal['status'],
         rejectionReason?: string
     ): boolean {
-        const exists = proposals.value.some((proposal) => proposal.id === proposalId);
-        if (!exists) return false;
+        const index = proposals.value.findIndex(p => p.id === proposalId);
+        if (index === -1) return false;
 
-        proposals.value = proposals.value.map((proposal) => {
-            if (proposal.id !== proposalId) return proposal;
-            return {
-                ...proposal,
-                status,
-                rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
-            };
-        });
+        const proposal = proposals.value[index];
+
+        // Update local state
+        proposals.value[index] = {
+            ...proposal,
+            status,
+            rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
+        };
+
+        // Trigger Chat Room Creation if ACCEPTED (Logic from local changes)
+        if (status === 'ACCEPTED') {
+            const chatStore = useChatStore();
+            const employerId = proposal.employerId;
+            const freelancerId = proposal.freelancerId;
+
+            chatStore.createRoom(
+                [employerId, freelancerId],
+                {
+                    [employerId]: proposal.employerName || 'Employer',
+                    [freelancerId]: proposal.freelancerName || 'Freelancer'
+                },
+                {
+                    relatedJobId: proposal.jobId,
+                    relatedProposalId: proposal.id
+                }
+            );
+        }
 
         return true;
     }

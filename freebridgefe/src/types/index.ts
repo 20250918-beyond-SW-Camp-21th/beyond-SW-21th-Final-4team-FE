@@ -87,3 +87,30 @@ export interface RejectionReason {
     type: 'SKILL_MISMATCH' | 'LACK_EXPERIENCE' | 'SCHEDULE_MISMATCH' | 'OTHER';
     customReason?: string;
 }
+
+export type MessageType = 'TEXT' | 'IMAGE' | 'FILE' | 'SYSTEM' | 'CONTRACT_ALERT';
+
+export interface ChatMessage {
+    id: string;
+    roomId: string;
+    senderId: string; // 'SYSTEM' or userId
+    content: string;
+    type: MessageType;
+    metadata?: any; // e.g., { contractId: 1001, status: 'SIGNED' }
+    createdAt: Date;
+    readBy: string[];
+}
+
+export interface ChatRoom {
+    id: string;
+    participants: string[]; // [EmployerId, FreelancerId] e.g. ['e1', 'f1']
+    participantNames: { [userId: string]: string }; // Cached names
+    lastMessage?: ChatMessage;
+    unreadCount: { [userId: string]: number };
+    relatedJobId?: string;
+    relatedApplicationId?: string;
+    relatedProposalId?: string;
+    contractId?: number; // Linked contract ID if exists
+    createdAt: Date;
+    updatedAt: Date;
+}
