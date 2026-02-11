@@ -145,7 +145,7 @@ function formatDate(date: Date | undefined) {
     background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #e5e7eb;
+    background-color: var(--scroll-thumb-color);
     border-radius: 20px;
 }
 </style>

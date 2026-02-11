@@ -8,7 +8,7 @@
 
         <div class="p-6 flex-1">
             <!-- Case 1: No Contract -->
-            <!-- Case 1: No Contract -->
+
             <div v-if="!currentContract" class="flex flex-col items-center justify-center h-full text-center space-y-4">
                 <div class="w-20 h-20 rounded-2xl bg-slate-800/50 flex items-center justify-center mb-2">
                     <FileTextIcon class="w-10 h-10 text-slate-600" />

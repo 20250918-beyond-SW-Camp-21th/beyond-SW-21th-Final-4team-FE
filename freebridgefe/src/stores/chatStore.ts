@@ -53,9 +53,6 @@ export const useChatStore = defineStore('chat', () => {
             updatedAt: new Date(Date.now() - 500000)
         }
     ]);
-    // Start Over with better chunk
-
-
     const messages = ref<{ [roomId: string]: ChatMessage[] }>({
         'room1': [
             {
