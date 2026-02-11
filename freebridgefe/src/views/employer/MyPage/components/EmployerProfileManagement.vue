@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
   ArrowLeft,
   Building2,
+  Crown,
   Mail,
   Phone,
   MapPin,
@@ -25,6 +26,14 @@ const isEditing = ref(false);
 const isLoading = ref(false);
 const isSaving = ref(false);
 
+const PLAN_LABELS: Record<string, string> = {
+  FREE: '무료 플랜',
+  PRO: '프로 플랜',
+  PRIME: '프라임 플랜',
+  PARTNER: '프로 플랜',
+  ENTERPRISE: '프라임 플랜',
+};
+
 const profileData = ref<EmployerProfileData>({
   companyName: '',
   industry: '',
@@ -34,6 +43,7 @@ const profileData = ref<EmployerProfileData>({
   email: '',
   phone: '',
   description: '',
+  plan: 'FREE',
 });
 
 const companySizeOptions = [
@@ -58,6 +68,11 @@ const fetchProfile = async () => {
 
 onMounted(() => {
   fetchProfile();
+});
+
+const subscriptionPlanText = computed(() => {
+  const normalizedPlan = (profileData.value.plan ?? 'FREE').toUpperCase();
+  return PLAN_LABELS[normalizedPlan] ?? normalizedPlan;
 });
 
 const handleSave = async () => {
@@ -144,6 +159,18 @@ const handleSave = async () => {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Subscription Plan -->
+          <div>
+            <label class="text-xs text-white/50 mb-2 block flex items-center gap-2">
+              <Crown class="w-4 h-4" />
+              구독 등급
+            </label>
+            <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+              {{ subscriptionPlanText }}
+            </div>
+            <p class="text-[11px] text-white/40 mt-2">등급 변경은 계정 관리 메뉴에서 가능합니다.</p>
+          </div>
+
           <!-- Industry -->
           <div>
             <label class="text-xs text-white/50 mb-2 block flex items-center gap-2">

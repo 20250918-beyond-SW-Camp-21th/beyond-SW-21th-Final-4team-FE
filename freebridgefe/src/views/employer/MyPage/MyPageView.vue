@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+﻿<script setup lang="ts">
+import { computed, ref, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
@@ -39,6 +39,14 @@ const authStore = useAuthStore();
 
 const activeTab = ref('dashboard');
 
+const PLAN_LABELS: Record<string, string> = {
+  FREE: '무료 플랜',
+  PRO: '프로 플랜',
+  PRIME: '프라임 플랜',
+  PARTNER: '프로 플랜',
+  ENTERPRISE: '프라임 플랜',
+};
+
 const employerProfile = ref<EmployerProfileData>({
   companyName: '',
   industry: '',
@@ -48,7 +56,7 @@ const employerProfile = ref<EmployerProfileData>({
   email: '',
   phone: '',
   description: '',
-  plan: '',
+  plan: 'FREE',
   activeProjects: 0,
   totalApplicants: 0,
   contractedFreelancers: 0,
@@ -89,6 +97,46 @@ const fetchProfile = async () => {
   }
 };
 
+const subscriptionPlanText = computed(() => {
+  const normalizedPlan = (employerProfile.value.plan ?? 'FREE').toUpperCase();
+  return PLAN_LABELS[normalizedPlan] ?? normalizedPlan;
+});
+
+const normalizedPlanKey = computed<'FREE' | 'PRO' | 'PRIME'>(() => {
+  const normalizedPlan = (employerProfile.value.plan ?? 'FREE').toUpperCase();
+  if (normalizedPlan === 'PARTNER') return 'PRO';
+  if (normalizedPlan === 'ENTERPRISE') return 'PRIME';
+  if (normalizedPlan === 'PRO' || normalizedPlan === 'PRIME') return normalizedPlan;
+  return 'FREE';
+});
+
+const subscriptionPlanTone = computed(() => {
+  if (normalizedPlanKey.value === 'PRO') {
+    return {
+      wrap: 'border-yellow-400/40 bg-yellow-500/15',
+      icon: 'text-yellow-300',
+      label: 'text-yellow-200/80',
+      value: 'text-yellow-100',
+    };
+  }
+
+  if (normalizedPlanKey.value === 'PRIME') {
+    return {
+      wrap: 'border-red-400/40 bg-red-500/15',
+      icon: 'text-red-300',
+      label: 'text-red-200/80',
+      value: 'text-red-100',
+    };
+  }
+
+  return {
+    wrap: 'border-blue-400/40 bg-blue-500/15',
+    icon: 'text-blue-300',
+    label: 'text-blue-200/80',
+    value: 'text-blue-100',
+  };
+});
+
 onMounted(() => {
   fetchProfile();
 });
@@ -101,7 +149,6 @@ watch(activeTab, (newTab) => {
 
 const menuItems = [
   { id: 'dashboard', label: '프로필 관리', icon: Building2, action: () => (activeTab.value = 'dashboard') },
-
   {
     id: 'checklist',
     label: '리뷰 및 평판 관리',
@@ -194,7 +241,6 @@ const handleNavigate = (path: string) => {
             
             <!-- Dashboard View -->
             <div v-else-if="activeTab === 'dashboard'" class="space-y-8">
-              
               <!-- 1. Profile Section (Detailed) -->
               <div 
                 class="bg-[#1e293b]/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm"
@@ -230,9 +276,14 @@ const handleNavigate = (path: string) => {
                           </div>
 
                           <h2 class="text-2xl font-bold mb-2">{{ employerProfile.companyName }}</h2>
-                          <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/20 mb-6">
-                              {{ employerProfile.plan || 'PARTNER' }}
-                          </span>
+                          <div
+                              class="mb-5 inline-flex items-center gap-2 rounded-full border backdrop-blur-xl px-3 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
+                              :class="subscriptionPlanTone.wrap"
+                          >
+                              <Crown class="w-3.5 h-3.5" :class="subscriptionPlanTone.icon" />
+                              <span class="text-[10px] tracking-[0.14em] uppercase" :class="subscriptionPlanTone.label">Plan</span>
+                              <span class="text-xs font-semibold" :class="subscriptionPlanTone.value">{{ subscriptionPlanText }}</span>
+                          </div>
 
                            <!-- Core Stats -->
                           <div class="w-full grid grid-cols-2 gap-4">
@@ -383,12 +434,12 @@ const handleNavigate = (path: string) => {
                           <ArrowRight class="w-full h-full text-white" />
                       </div>
 
-                      <!-- Step 4: 완료/평가 (Completed) -->
+                      <!-- Step 4: 완료/종결 (Completed) -->
                       <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
                            <div class="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-slate-700 transition-all border border-white/5">
                               <CheckCircle class="w-5 h-5 text-slate-400 group-hover:text-white" />
                           </div>
-                          <span class="text-sm text-slate-400 mb-1">완료/평가</span>
+                          <span class="text-sm text-slate-400 mb-1">완료/종결</span>
                           <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.completed || 0 }}</span>
                       </div>
                   </div>
@@ -408,10 +459,10 @@ const handleNavigate = (path: string) => {
                          <div class="flex items-center justify-between mb-6">
                             <h3 class="text-lg font-bold flex items-center gap-2">
                                 <Star class="w-5 h-5 text-yellow-500" />
-                                고용주 평가
+                                고용주 평점
                             </h3>
                             <div class="flex items-center gap-2 bg-yellow-500/10 px-3 py-1 rounded-lg border border-yellow-500/20">
-                                <span class="text-sm text-yellow-500 font-bold">전체 평균</span>
+                                <span class="text-sm text-yellow-500 font-bold">전체 평점</span>
                                 <Star class="w-4 h-4 text-yellow-500 fill-yellow-500" />
                                 <span class="text-lg font-bold text-white">{{ employerProfile.avgRating }}</span>
                                 <span class="text-xs text-slate-400">/ 5.0</span>
@@ -449,22 +500,6 @@ const handleNavigate = (path: string) => {
                          </div>
                      </div>
 
-                     <!-- Freelancer Checklist Preview -->
-                     <button 
-                         @click="activeTab = 'checklist'"
-                         class="w-full bg-gradient-to-r from-indigo-500/10 to-blue-500/10 hover:from-indigo-500/20 hover:to-blue-500/20 border border-indigo-500/20 rounded-2xl p-6 flex items-center justify-between group transition-all"
-                     >
-                        <div class="flex items-center gap-4">
-                            <div class="p-3 bg-indigo-500/20 rounded-xl group-hover:scale-110 transition-transform">
-                                <ClipboardList class="w-6 h-6 text-indigo-400" />
-                            </div>
-                            <div class="text-left">
-                                <h4 class="font-bold text-lg text-white group-hover:text-indigo-300 transition-colors">프리랜서 체크리스트 확인하기</h4>
-                                <p class="text-sm text-slate-400">관심있는 프리랜서를 확인하고 프로젝트를 제안해보세요.</p>
-                            </div>
-                        </div>
-                        <ArrowRight class="w-5 h-5 text-indigo-400 group-hover:translate-x-1 transition-transform" />
-                     </button>
                 </div>
 
                 <!-- Right: CS Center & Manager (1/3) -->
@@ -476,8 +511,8 @@ const handleNavigate = (path: string) => {
                      <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 relative overflow-hidden">
                          <div class="relative z-10">
                              <span class="text-xs font-bold bg-white/20 px-2 py-1 rounded text-white mb-2 inline-block">NOTICE</span>
-                             <h4 class="font-bold text-white text-lg mb-2">프리랜서 계약 시<br/>법률 가이드 무상 제공</h4>
-                             <p class="text-xs text-blue-100 mb-4">표준계약서 작성부터 법적 효력까지<br/>전문 변호사가 검수한 가이드를 확인하세요.</p>
+                             <h4 class="font-bold text-white text-lg mb-2">프리랜서 계약 시 <br/>법률 자문 AI Agent 제공</h4>
+                             <p class="text-xs text-blue-100 mb-4">표준계약서 작성부터 리스크 점검까지<br/>법률 자문 AI Agent 가이드를 확인하세요.</p>
                              <button class="text-xs font-bold text-white hover:underline flex items-center gap-1">
                                  자세히 보기 <ArrowRight class="w-3 h-3" />
                              </button>
@@ -496,3 +531,4 @@ const handleNavigate = (path: string) => {
 
   </div>
 </template>
+

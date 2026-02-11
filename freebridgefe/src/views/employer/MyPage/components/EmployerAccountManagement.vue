@@ -88,8 +88,8 @@ const fetchSubscriptionPlans = async () => {
         await new Promise(resolve => setTimeout(resolve, 500));
         plans.value = {
           FREE: {
-            name: '일반',
-            description: '무료 플랜',
+            name: '무료 플랜',
+            description: '부담 없이 시작하는 기본 구독',
             price: '무료',
             period: '',
             fee: '12%',
@@ -97,8 +97,8 @@ const fetchSubscriptionPlans = async () => {
             features: ['최신순 조회만 가능', '기본 지원'],
           },
           PRO: {
-            name: '파트너',
-            description: '프로 플랜',
+            name: '프로 플랜',
+            description: '채용 효율을 높이는 인기 구독',
             price: '₩39,000',
             period: '월',
             fee: '10%',
@@ -110,8 +110,8 @@ const fetchSubscriptionPlans = async () => {
             ],
           },
           PRIME: {
-            name: '프로 파트너',
-            description: '프라임 플랜',
+            name: '프라임 플랜',
+            description: '빠른 매칭을 위한 최상위 구독',
             price: '₩99,000',
             period: '월',
             fee: '7%',
@@ -205,7 +205,7 @@ const handlePlanChange = async (plan: PlanType) => {
       </button>
       <div>
         <h1 class="text-2xl font-bold">고용주 계정 관리</h1>
-        <p class="text-sm text-white/40 mt-1">계정 정보 및 구독 플랜을 관리하세요</p>
+        <p class="text-sm text-white/40 mt-1">계정 정보 및 구독플랜을 관리하세요</p>
       </div>
     </div>
 
@@ -219,7 +219,7 @@ const handlePlanChange = async (plan: PlanType) => {
       >
         <h2 class="text-lg font-bold mb-6 flex items-center gap-2">
           <Crown class="w-5 h-5 text-yellow-400" />
-          구독 플랜
+          구독플랜
         </h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

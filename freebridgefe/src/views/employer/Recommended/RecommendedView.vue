@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { TrendingUp, Send, Star } from 'lucide-vue-next';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
+import { getEmployerProfile } from '@/api/MyPage/employer';
 import ProposalModal from './components/ProposalModal.vue';
 import type { User } from '@/types';
 
@@ -23,11 +24,39 @@ import { useRouter } from 'vue-router';
 import { Lock, Crown } from 'lucide-vue-next';
 
 const router = useRouter();
-// Mock User Plan: Change to 'PRO' or 'PRIME' to test access, 'FREE' to test restriction.
-// ideally this comes from a userStore or API
-const currentPlan = ref<'FREE' | 'PRO' | 'PRIME'>('FREE'); 
+
+type PlanType = 'FREE' | 'PRO' | 'PRIME';
+const currentPlan = ref<PlanType>('FREE');
+
+const normalizePlan = (plan?: string): PlanType => {
+  const normalizedPlan = (plan ?? 'FREE').trim().toUpperCase();
+
+  if (['PRO', 'PARTNER', '프로 플랜'.toUpperCase()].includes(normalizedPlan)) {
+    return 'PRO';
+  }
+
+  if (['PRIME', 'ENTERPRISE', '프라임 플랜'.toUpperCase()].includes(normalizedPlan)) {
+    return 'PRIME';
+  }
+
+  return 'FREE';
+};
+
+const fetchCurrentPlan = async () => {
+  try {
+    const profile = await getEmployerProfile();
+    currentPlan.value = normalizePlan(profile.plan);
+  } catch (error) {
+    console.error('Failed to fetch employer plan:', error);
+    currentPlan.value = 'FREE';
+  }
+};
 
 const hasAccess = computed(() => ['PRO', 'PRIME'].includes(currentPlan.value));
+
+onMounted(() => {
+  fetchCurrentPlan();
+});
 
 const goToUpgrade = () => {
     // Navigate to MyPage where Account Management is located
@@ -123,7 +152,7 @@ const goToUpgrade = () => {
         </div>
         <h2 class="text-2xl font-bold mb-2 text-white">파트너(Pro) 이상 전용 서비스입니다</h2>
         <p class="text-slate-400 mb-8 max-w-md mx-auto">
-            AI 기반 맞춤형 프리랜서 추천 기능은 파트너 플랜 이상 구독 시 이용하실 수 있습니다. 지금 바로 업그레이드하고 최적의 인재를 만나보세요.
+            AI 기반 맞춤형 프리랜서 추천 기능은 프로 플랜 이상 구독 시 이용하실 수 있습니다. 지금 바로 업그레이드하고 최적의 인재를 만나보세요.
         </p>
         <button 
             @click="goToUpgrade"
