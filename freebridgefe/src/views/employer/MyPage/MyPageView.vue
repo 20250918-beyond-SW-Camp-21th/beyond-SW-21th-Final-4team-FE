@@ -38,7 +38,6 @@ const router = useRouter();
 const authStore = useAuthStore();
 
 const activeTab = ref('dashboard');
-const isInquiryOpen = ref(false);
 
 const employerProfile = ref<EmployerProfileData>({
   companyName: '',
@@ -114,12 +113,6 @@ const menuItems = [
     label: '프로젝트 관리',
     icon: Briefcase,
     action: () => (activeTab.value = 'projects'),
-  },
-  {
-    id: 'inquiry',
-    label: '1:1 문의',
-    icon: MessageSquare,
-    action: () => (isInquiryOpen.value = true),
   },
   {
     id: 'account',
@@ -501,45 +494,5 @@ const handleNavigate = (path: string) => {
       </div>
     </div>
 
-    <!-- Inquiry Dialog -->
-    <div v-if="isInquiryOpen" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="isInquiryOpen = false">
-      <div
-        class="bg-[#1e293b] rounded-2xl border border-white/10 p-8 max-w-md w-full"
-        v-motion
-        :initial="{ scale: 0.9, opacity: 0 }"
-        :enter="{ scale: 1, opacity: 1 }"
-      >
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-xl font-bold">1:1 문의</h3>
-          <button
-            @click="isInquiryOpen = false"
-            class="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <X class="w-5 h-5 text-white/60" />
-          </button>
-        </div>
-        <div class="space-y-4">
-          <div>
-            <label class="text-sm text-slate-400 mb-2 block">제목</label>
-            <input
-              type="text"
-              class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
-              placeholder="문의 제목을 입력하세요"
-            />
-          </div>
-          <div>
-            <label class="text-sm text-slate-400 mb-2 block">내용</label>
-            <textarea
-              rows="5"
-              class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors resize-none"
-              placeholder="문의 내용을 입력하세요"
-            ></textarea>
-          </div>
-          <button class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold transition-colors">
-            문의하기
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
