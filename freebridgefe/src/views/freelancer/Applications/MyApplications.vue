@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import {
   FileText,
   AlertCircle,
@@ -82,16 +82,30 @@ const formatDate = (date: Date | string) => {
   return new Date(date).toLocaleDateString('ko-KR');
 };
 
+const actionFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null);
+
 const handleAcceptProposal = (proposalId: string) => {
   if (!window.confirm('이 제안을 수락하시겠습니까?')) return;
-  freelancerStore.updateProposalStatus(proposalId, 'ACCEPTED');
+  const updated = freelancerStore.updateProposalStatus(proposalId, 'ACCEPTED');
+  if (!updated) {
+    actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
+    alert('제안 상태 변경에 실패했습니다.');
+    return;
+  }
+  actionFeedback.value = { type: 'success', message: '제안을 수락했습니다. 상태가 수락됨으로 변경되었습니다.' };
   alert('제안을 수락했습니다.');
 };
 
 const handleRejectProposal = (proposalId: string) => {
   const reason = window.prompt('거절 사유를 입력해 주세요. (선택)');
   if (reason === null) return;
-  freelancerStore.updateProposalStatus(proposalId, 'REJECTED', reason.trim() || undefined);
+  const updated = freelancerStore.updateProposalStatus(proposalId, 'REJECTED', reason.trim() || undefined);
+  if (!updated) {
+    actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
+    alert('제안 상태 변경에 실패했습니다.');
+    return;
+  }
+  actionFeedback.value = { type: 'success', message: '제안을 거절했습니다. 상태가 거절됨으로 변경되었습니다.' };
   alert('제안을 거절했습니다.');
 };
 </script>
@@ -108,6 +122,18 @@ const handleRejectProposal = (proposalId: string) => {
         내 지원/제안
       </h1>
       <p class="text-white/60">기업이 보낸 제안과 내가 보낸 지원서를 한눈에 확인하세요</p>
+    </div>
+
+    <div
+      v-if="actionFeedback"
+      class="mb-6 rounded-2xl border px-5 py-4 text-sm font-medium"
+      :class="
+        actionFeedback.type === 'success'
+          ? 'bg-green-500/10 border-green-500/30 text-green-300'
+          : 'bg-red-500/10 border-red-500/30 text-red-300'
+      "
+    >
+      {{ actionFeedback.message }}
     </div>
 
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
@@ -236,7 +262,14 @@ const handleRejectProposal = (proposalId: string) => {
           <div
             v-for="(proposal, index) in receivedProposals"
             :key="proposal.id"
-            class="bg-white/5 border border-white/10 rounded-2xl p-6"
+            class="bg-white/5 border rounded-2xl p-6"
+            :class="
+              proposal.status === 'ACCEPTED'
+                ? 'border-green-500/30'
+                : proposal.status === 'REJECTED'
+                  ? 'border-red-500/30'
+                  : 'border-white/10'
+            "
             v-motion
             :initial="{ opacity: 0, y: 10 }"
             :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
@@ -300,7 +333,7 @@ const handleRejectProposal = (proposalId: string) => {
             </div>
 
             <div
-              v-if="proposal.status === 'REJECTED' && proposal.rejectionReason"
+              v-if="proposal.status === 'REJECTED'"
               class="pt-4 border-t border-white/10"
             >
               <div class="text-sm text-white/60 mb-2 flex items-center gap-2">
@@ -308,7 +341,7 @@ const handleRejectProposal = (proposalId: string) => {
                 거절 사유
               </div>
               <div class="text-sm bg-red-500/10 border border-red-500/20 p-4 rounded-2xl text-red-300">
-                {{ proposal.rejectionReason }}
+                {{ proposal.rejectionReason || '사유가 입력되지 않았습니다.' }}
               </div>
             </div>
           </div>

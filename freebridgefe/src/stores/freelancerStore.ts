@@ -91,15 +91,20 @@ export const useFreelancerStore = defineStore('freelancer', () => {
         proposalId: string,
         status: Proposal['status'],
         rejectionReason?: string
-    ) {
-        const index = proposals.value.findIndex((proposal) => proposal.id === proposalId);
-        if (index === -1) return;
+    ): boolean {
+        const exists = proposals.value.some((proposal) => proposal.id === proposalId);
+        if (!exists) return false;
 
-        proposals.value[index] = {
-            ...proposals.value[index],
-            status,
-            rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
-        };
+        proposals.value = proposals.value.map((proposal) => {
+            if (proposal.id !== proposalId) return proposal;
+            return {
+                ...proposal,
+                status,
+                rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
+            };
+        });
+
+        return true;
     }
 
     return {
