@@ -73,13 +73,9 @@ export const useJobStore = defineStore('job', () => {
     // Getters
     const myJobs = computed(() => {
         if (!authStore.user) return [];
-
-        const currentEmployerId = String(authStore.user.id);
-        const currentEmployerName = authStore.user.companyName || authStore.user.name;
-
-        return jobPostings.value.filter(
-            (job) => String(job.employerId) === currentEmployerId || job.employerName === currentEmployerName
-        );
+                const currentEmployerId = String(authStore.user.id);
+                    return jobPostings.value.filter(
+                        (job) => String(job.employerId) === currentEmployerId);
     });
 
     const getJobById = (id: string) => jobPostings.value.find(j => j.id === id);
