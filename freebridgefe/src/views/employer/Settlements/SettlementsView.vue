@@ -55,11 +55,10 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle }> 
 
 // Filter settlements by current employer
 const mySettlements = computed(() => {
-    const settlements = contractStore.employerSettlementsWithDetails || [];
-    if (!authStore.user) return settlements;
-    // Filter by employer ID (temporarily showing all for development)
-    // return settlements.filter((s) => s.employerId === Number(authStore.user!.id));
-    return settlements;
+    if (!authStore.user) return [];
+    return contractStore.employerSettlementsWithDetails.filter(
+        (s) => s.employerId === Number(authStore.user!.id)
+    );
 });
 
 // Get next upcoming settlement (first ISSUED settlement by due date)

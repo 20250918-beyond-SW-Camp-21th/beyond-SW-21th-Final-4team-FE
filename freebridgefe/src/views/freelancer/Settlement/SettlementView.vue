@@ -105,8 +105,6 @@ const filteredSettlements = computed(() => {
         result = result.filter((s) => new Date(s.expectedPaidDate) >= threeMonthsAgo);
     }
 
-    // Sort by expectedPaidDate descending
-    // Sort by expected paid date ascending (upcoming payments first)
     result.sort((a, b) => new Date(a.expectedPaidDate).getTime() - new Date(b.expectedPaidDate).getTime());
     return result;
 });
