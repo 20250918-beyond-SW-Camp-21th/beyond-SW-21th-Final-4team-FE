@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import type { JobPosting, Application } from '@/types';
+import { useChatStore } from '@/stores/chatStore';
 
 export const useJobStore = defineStore('job', () => {
     const authStore = useAuthStore();
@@ -73,9 +74,9 @@ export const useJobStore = defineStore('job', () => {
     // Getters
     const myJobs = computed(() => {
         if (!authStore.user) return [];
-                const currentEmployerId = String(authStore.user.id);
-                    return jobPostings.value.filter(
-                        (job) => String(job.employerId) === currentEmployerId);
+        const currentEmployerId = String(authStore.user.id);
+        return jobPostings.value.filter(
+            (job) => String(job.employerId) === currentEmployerId);
     });
 
     const getJobById = (id: string) => jobPostings.value.find(j => j.id === id);
@@ -123,6 +124,28 @@ export const useJobStore = defineStore('job', () => {
                 status,
                 rejectionReason
             };
+            if (status === 'ACCEPTED') {
+                const chatStore = useChatStore();
+                const app = applications.value[index];
+                const job = getJobById(app.jobId);
+
+                if (job) {
+                    const employerId = String(job.employerId);
+                    const freelancerId = String(app.freelancerId);
+
+                    chatStore.createRoom(
+                        [employerId, freelancerId],
+                        {
+                            [employerId]: job.employerName || 'Employer',
+                            [freelancerId]: app.freelancerName || 'Freelancer'
+                        },
+                        {
+                            relatedJobId: job.id,
+                            relatedApplicationId: app.id
+                        }
+                    );
+                }
+            }
         }
     }
 

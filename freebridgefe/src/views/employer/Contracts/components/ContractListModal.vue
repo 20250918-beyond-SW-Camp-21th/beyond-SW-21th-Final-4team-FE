@@ -37,12 +37,6 @@ const statusLabels: Record<string, { label: string; className: string }> = {
     },
 };
 
-const calculateProgress = (contract: ContractDocument) => {
-    if (contract.milestones.length === 0) return 0;
-    const completed = contract.milestones.filter((m) => m.status === 'COMPLETED').length;
-    return Math.round((completed / contract.milestones.length) * 100);
-};
-
 const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('ko-KR');
 };
@@ -139,30 +133,6 @@ const handleBackdropClick = () => {
                                 statusLabels.DRAFT.label
                             }}
                         </span>
-                    </div>
-
-                    <!-- Progress -->
-                    <div class="mb-3">
-                        <div class="flex items-center justify-between text-sm mb-1.5">
-                            <span class="text-white/60 flex items-center gap-1.5">
-                                <Clock class="w-3.5 h-3.5" />
-                                마일스톤
-                                {{
-                                    contract.milestones.filter(
-                                        (m) => m.status === 'COMPLETED'
-                                    ).length
-                                }}/{{ contract.milestones.length }}
-                            </span>
-                            <span class="font-semibold text-white"
-                                >{{ calculateProgress(contract) }}%</span
-                            >
-                        </div>
-                        <div class="h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div
-                                class="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all"
-                                :style="{ width: `${calculateProgress(contract)}%` }"
-                            />
-                        </div>
                     </div>
 
                     <!-- Footer info -->

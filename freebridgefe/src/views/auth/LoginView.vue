@@ -25,7 +25,7 @@ const handleLogin = (e: Event) => {
   // Mock Login Logic
   if (email.value === 'employer@test.com' && password.value === 'test1234') {
     const user: User = {
-      id: 'e1',
+      id: 1,
       name: '스타트업 A',
       companyName: '스타트업 A',
       email: 'employer@test.com',
@@ -35,7 +35,7 @@ const handleLogin = (e: Event) => {
     router.push('/employer/dashboard'); // TODO: Create this route later
   } else if (email.value === 'freelancer@test.com' && password.value === 'test1234') {
     const user: User = {
-      id: 'f1',
+      id: 1,
       name: '김프론트',
       email: 'freelancer@test.com',
       role: 'FREELANCER',

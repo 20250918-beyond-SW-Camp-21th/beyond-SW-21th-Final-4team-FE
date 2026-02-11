@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
+import DockedChatContainer from '@/components/chat/docked/DockedChatContainer.vue';
 import {
   Briefcase,
   FileText,
@@ -17,6 +19,7 @@ import {
   MessageSquareQuote,
   HelpCircle,
   Receipt,
+  MessageSquare,
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -30,6 +33,7 @@ const isEmployer = computed(() => currentUser.value?.role === 'EMPLOYER');
 // Navigation Items
 const employerNavItems = [
   { id: 'employer.jobs', path: '/employer/jobs', label: '내 공고', icon: Briefcase },
+  { id: 'chat', path: '/chat', label: '메시지', icon: MessageSquare },
   { id: 'employer.review', path: '/employer/review', label: '내 리뷰', icon:MessageSquareQuote},
   { id: 'employer.applications', path: '/employer/applications', label: '지원/제안', icon: FileText },
   { id: 'employer.freelancers', path: '/employer/freelancers', label: '프리랜서 찾기', icon: Users },
@@ -41,6 +45,7 @@ const employerNavItems = [
 
 const freelancerNavItems = [
   { id: 'freelancer.browse', path: '/freelancer/jobs', label: '공고', icon: Briefcase },
+  { id: 'chat', path: '/chat', label: '메시지', icon: MessageSquare },
   { id: 'freelancer.applications', path: '/freelancer/applications', label: '내 지원/제안', icon: FileText },
   { id: 'freelancer.contracts', path: '/freelancer/contracts', label: '계약서', icon: FileCheck },
   { id: 'freelancer.settlement', path: '/freelancer/settlement', label: '정산', icon: Wallet },
@@ -60,8 +65,8 @@ const handleOpenGuide = () => {
   isMobileMenuOpen.value = false;
 };
 
-const navigate = (path: string) => {
-  router.push(path);
+const navigate = (item: any) => {
+  router.push(item.path);
   isMobileMenuOpen.value = false;
 };
 
@@ -94,7 +99,7 @@ onMounted(() => {
             <button
               v-for="(item, index) in navItems"
               :key="item.id"
-              @click="navigate(item.path)"
+              @click="navigate(item)"
               class="shrink-0 relative flex items-center gap-2 px-4 py-2.5 rounded-full transition-all whitespace-nowrap"
               :class="isActive(item.path) ? 'text-white' : 'text-white/60 hover:text-white hover:bg-white/5'"
               :data-tour="item.id"
@@ -183,7 +188,7 @@ onMounted(() => {
           <button
             v-for="(item, index) in navItems"
             :key="item.id"
-            @click="navigate(item.path)"
+            @click="navigate(item)"
             class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
             :class="isActive(item.path) ? 'bg-white text-black' : 'text-white/60 hover:text-white hover:bg-white/5'"
             v-motion="{
@@ -228,6 +233,9 @@ onMounted(() => {
         </transition>
       </router-view>
     </main>
+
+    <!-- Global Docked Chat -->
+    <DockedChatContainer class="hidden lg:flex" />
   </div>
 </template>
 

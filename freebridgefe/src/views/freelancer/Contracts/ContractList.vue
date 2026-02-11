@@ -113,16 +113,6 @@ const statusConfig: Record<
     },
 };
 
-// Calculate progress based on contract status (Mock logic matching Employer view)
-const calculateProgress = (contract: ContractWithDetails) => {
-    switch (contract.status) {
-        case 'WAITING_SIGNATURE': return 10;
-        case 'IN_PROGRESS': return 50;
-        case 'COMPLETED': return 100;
-        default: return 0;
-    }
-};
-
 const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('ko-KR');
 };
@@ -169,7 +159,7 @@ const openSignModal = (contract: ContractWithDetails) => {
     >
       <div class="flex items-center gap-3 mb-3">
         <FileText class="w-10 h-10 text-white" />
-        <h1 class="text-4xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
+        <h1 class="text-4xl font-bold text-white">
           내 계약서
         </h1>
       </div>
@@ -303,24 +293,6 @@ const openSignModal = (contract: ContractWithDetails) => {
                     <div class="text-white/60 flex items-center gap-2">
                         <Sparkles class="w-4 h-4" />
                         고용주: {{ contract.employerName }}
-                    </div>
-                </div>
-
-                <!-- Progress Bar -->
-                <div class="mb-8">
-                    <div class="flex items-center justify-between mb-4">
-                        <span class="text-white/60 font-medium">전체 진행률</span>
-                        <span class="text-3xl font-bold"
-                            >{{ calculateProgress(contract) }}%</span
-                        >
-                    </div>
-                    <div
-                        class="h-4 bg-white/10 rounded-full overflow-hidden backdrop-blur-xl"
-                    >
-                        <div
-                            class="h-full bg-blue-500 rounded-full shadow-lg transition-all duration-1000 ease-out"
-                            :style="{ width: `${calculateProgress(contract)}%` }"
-                        ></div>
                     </div>
                 </div>
 
