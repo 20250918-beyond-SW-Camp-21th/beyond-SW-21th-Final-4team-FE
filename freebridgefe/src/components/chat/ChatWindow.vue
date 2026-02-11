@@ -74,7 +74,7 @@
                             <textarea
                                 :value="newMessage"
                                 @input="(e) => newMessage = (e.target as HTMLInputElement).value"
-                                @keydown.enter.prevent="sendMessage"
+                                @keydown.enter.exact.prevent="sendMessage"
                                 rows="1"
                                 placeholder="메시지를 입력하세요..."
                                 class="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-2.5 max-h-32 min-h-[44px] text-white placeholder-slate-500 leading-relaxed custom-scrollbar text-[15px]"
@@ -165,7 +165,7 @@ function getSenderName(senderId: string) {
 
 function sendMessage() {
     if (!newMessage.value.trim()) return;
-    chatStore.sendMessage(newMessage.value);
+    chatStore.sendMessage(newMessage.value, 'TEXT', undefined, props.roomId);
     newMessage.value = '';
     scrollToBottom();
 }

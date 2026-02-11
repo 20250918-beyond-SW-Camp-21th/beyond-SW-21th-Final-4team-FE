@@ -105,22 +105,26 @@ export const useFreelancerStore = defineStore('freelancer', () => {
             rejectionReason: status === 'REJECTED' ? rejectionReason : undefined,
         };
 
-        // Trigger Chat Room Creation if ACCEPTED (Logic from local changes)
         if (status === 'ACCEPTED') {
             const chatStore = useChatStore();
-            const employerId = proposal.employerId;
-            const freelancerId = proposal.freelancerId;
+            const employerId = proposals.value[index].employerId;
+            const freelancerId = proposals.value[index].freelancerId;
+            const jobId = proposals.value[index].jobId; // Capture possibly undefined jobId
+
+            const context: any = {
+                relatedProposalId: proposalId
+            };
+            if (jobId) {
+                context.relatedJobId = jobId;
+            }
 
             chatStore.createRoom(
                 [employerId, freelancerId],
                 {
-                    [employerId]: proposal.employerName || 'Employer',
-                    [freelancerId]: proposal.freelancerName || 'Freelancer'
+                    [employerId]: proposals.value[index].employerName || 'Employer',
+                    [freelancerId]: proposals.value[index].freelancerName || 'Freelancer'
                 },
-                {
-                    relatedJobId: proposal.jobId,
-                    relatedProposalId: proposal.id
-                }
+                context
             );
         }
 

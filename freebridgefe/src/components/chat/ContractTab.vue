@@ -224,7 +224,7 @@ function openSignatureModal() {
 
 function requestContract() {
     // Logic to send a system message or notification to employer
-    chatStore.sendMessage('상대방에게 계약서 작성을 요청했습니다.', 'SYSTEM');
+    chatStore.sendSystemMessage(props.roomId, '상대방에게 계약서 작성을 요청했습니다.', 'SYSTEM');
     alert('고용주에게 계약서 작성을 요청했습니다.');
 }
 </script>

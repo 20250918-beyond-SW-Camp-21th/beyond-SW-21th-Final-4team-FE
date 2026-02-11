@@ -64,7 +64,7 @@ const props = defineProps<{
 
 const authStore = useAuthStore();
 
-const isSystem = computed(() => props.message.type === 'SYSTEM' || props.message.type === 'CONTRACT_ALERT');
+const isSystem = computed(() => props.message.type === 'SYSTEM');
 
 const isMine = computed(() => {
     if (!authStore.user) return false;

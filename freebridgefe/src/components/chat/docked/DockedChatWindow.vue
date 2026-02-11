@@ -200,17 +200,8 @@ function closeWindow() {
 
 function sendMessage() {
     if (!newMessage.value.trim()) return;
-    // We need to set currentRoomId temporarily or refactor sendMessage to accept roomId
-    // For now, let's assume sendMessage uses currentRoomId, so we might need a workaround or update store.
-    // Actually, looking at store, sendMessage takes content and uses currentRoomId. 
-    // We should fix store to accept roomId or set it.
-    // Let's quickly update store or just select room before sending? 
-    // Better: Update store to accept roomId. But for now, let's try selecting room briefly.
-    // Simulating:
-    const originalRoomId = chatStore.currentRoomId;
-    chatStore.selectRoom(props.roomId);
-    chatStore.sendMessage(newMessage.value);
-    // Restore? No, staying selected is fine or we can manage it.
+    
+    chatStore.sendMessage(newMessage.value, 'TEXT', undefined, props.roomId);
     newMessage.value = '';
     scrollToBottom();
 }

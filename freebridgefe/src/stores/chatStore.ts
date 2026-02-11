@@ -147,41 +147,56 @@ export const useChatStore = defineStore('chat', () => {
         }
     }
 
-    function sendMessage(content: string, type: ChatMessage['type'] = 'TEXT', metadata?: any) {
-        if (!currentRoomId.value || !authStore.user) return;
+    function sendMessage(content: string, type: ChatMessage['type'] = 'TEXT', metadata?: any, roomId?: string, senderIdOverride?: string) {
 
-        const myFullId = String(authStore.user.id);
+        const targetRoomId = roomId ?? currentRoomId.value;
+        if (!targetRoomId) return;
+
+        // If no user is logged in, only allow sending if it's a system message override
+        if (!authStore.user && !senderIdOverride) return;
+
+        const senderId = senderIdOverride || String(authStore.user?.id);
 
         const newMessage: ChatMessage = {
             id: `m-${Date.now()}`,
-            roomId: currentRoomId.value,
-            senderId: myFullId,
+            roomId: targetRoomId,
+            senderId: senderId,
             content,
             type,
             metadata,
             createdAt: new Date(),
-            readBy: [myFullId]
+            readBy: [] // System messages might be read by everyone instantly, but let's stick to standard
         };
 
-        // Add to messages list
-        if (!messages.value[currentRoomId.value]) {
-            messages.value[currentRoomId.value] = [];
+        // If it's a real user, add them to readBy
+        if (authStore.user && senderId === String(authStore.user.id)) {
+            newMessage.readBy.push(senderId);
         }
-        messages.value[currentRoomId.value].push(newMessage);
+
+        // Add to messages list
+        if (!messages.value[targetRoomId]) {
+            messages.value[targetRoomId] = [];
+        }
+        messages.value[targetRoomId].push(newMessage);
 
         // Update Room info
-        const roomIndex = rooms.value.findIndex(r => r.id === currentRoomId.value);
+        const roomIndex = rooms.value.findIndex(r => r.id === targetRoomId);
         if (roomIndex !== -1) {
             rooms.value[roomIndex].lastMessage = newMessage;
             rooms.value[roomIndex].updatedAt = new Date();
 
-            // Increment unread for others
+            // Increment unread for others (skip if system message?)
+            // Usually system messages also increment unread count for participants
             rooms.value[roomIndex].participants.forEach(p => {
-                if (p !== myFullId) {
+                if (p !== senderId) {
                     rooms.value[roomIndex].unreadCount[p] = (rooms.value[roomIndex].unreadCount[p] || 0) + 1;
                 }
             });
         }
+    }
+
+    function sendSystemMessage(roomId: string, content: string, type: ChatMessage['type'] = 'SYSTEM') {
+        sendMessage(content, type, undefined, roomId, 'SYSTEM');
     }
 
     function createRoom(participants: string[], names: { [key: string]: string }, context: any) {
@@ -190,6 +205,7 @@ export const useChatStore = defineStore('chat', () => {
             r.participants.every(p => participants.includes(p)) &&
             participants.every(p => r.participants.includes(p)) &&
             // Optional: strict check including JobID if we want separate rooms per job
+            r.relatedJobId !== undefined && context.relatedJobId !== undefined &&
             r.relatedJobId === context.relatedJobId
         );
 
@@ -199,17 +215,19 @@ export const useChatStore = defineStore('chat', () => {
 
         const newRoomId = `room-${Date.now()}`;
         const newRoom: ChatRoom = {
+            ...context, // Apply context first (so it doesn't override critical fields)
             id: newRoomId,
             participants,
             participantNames: names,
             unreadCount: {},
-            ...context, // relatedJobId, relatedApplicationId etc.
             createdAt: new Date(),
             updatedAt: new Date()
         };
 
         // Initialize unread counts
-        participants.forEach(p => newRoom.unreadCount[p] = 0);
+        participants.forEach(p => {
+            newRoom.unreadCount[p] = 0;
+        });
 
         rooms.value.unshift(newRoom);
         messages.value[newRoomId] = [
@@ -268,6 +286,7 @@ export const useChatStore = defineStore('chat', () => {
         currentRoom,
         selectRoom,
         sendMessage,
+        sendSystemMessage,
         createRoom,
         // Docking exports
         isRoomListOpen,

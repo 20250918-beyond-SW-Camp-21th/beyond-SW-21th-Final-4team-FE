@@ -22,7 +22,7 @@
                      <img :src="userAvatar" class="w-6 h-6 rounded-full border border-gray-200" />
                     <span class="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border-2 border-white rounded-full"></span>
                 </div>
-                <span class="font-bold text-gray-700 text-sm">Messaging</span>
+                <span class="font-bold text-gray-700 text-sm">메시지</span>
                 <ChevronUpIcon class="w-4 h-4 text-gray-500" />
             </button>
 

@@ -64,7 +64,7 @@
                                 getMyUnreadCount(room) > 0 ? 'font-medium text-slate-100' : 'text-slate-500 group-hover:text-slate-400'
                             ]"
                         >
-                            <span v-if="room.lastMessage?.senderId === authStore.user?.role + authStore.user?.id" class="text-slate-600">나: </span>
+                            <span v-if="room.lastMessage?.senderId === String(authStore.user?.id)" class="text-slate-600">나: </span>
                             {{ room.lastMessage?.content || '대화 없음' }}
                         </p>
                          <div v-if="getMyUnreadCount(room) > 0" class="px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-sm shadow-emerald-500/20">
