@@ -22,6 +22,8 @@ import {
   Globe,
   ArrowRight,
   ClipboardList,
+  Mail,
+  Phone,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
@@ -56,6 +58,13 @@ const employerProfile = ref<EmployerProfileData>({
     atmosphere: 0,
     requirementsDetail: 0,
     scheduleAdherence: 0,
+  },
+  projectStatusCounts: {
+    reviewing: 0,
+    recruiting: 0,
+    meeting: 0,
+    inProgress: 0,
+    completed: 0
   }
 });
 
@@ -174,7 +183,7 @@ const handleNavigate = (path: string) => {
 
       <!-- Main Content -->
       <div class="flex-1 overflow-y-auto">
-        <div class="p-8">
+        <div class="p-8 w-[70%] mx-auto">
             <!-- Dynamic Content Rendering -->
             <EmployerProfileManagement v-if="activeTab === 'profile'" @back="activeTab = 'dashboard'" />
             <EmployerApplicantStatus v-else-if="activeTab === 'applicants'" @back="activeTab = 'dashboard'" />
@@ -183,248 +192,244 @@ const handleNavigate = (path: string) => {
             <EmployerAccountManagement v-else-if="activeTab === 'account'" @back="activeTab = 'dashboard'" />
             
             <!-- Dashboard View -->
-            <div v-else-if="activeTab === 'dashboard'" class="space-y-6">
-              <!-- Profile Header (Apple Style) -->
-              <div
-                class="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-xl rounded-3xl border border-white/10 p-8 relative overflow-hidden group"
+            <div v-else-if="activeTab === 'dashboard'" class="space-y-8">
+              
+              <!-- 1. Profile Top Bar (Horizontal) -->
+              <div 
+                class="bg-[#1e293b]/50 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm"
                 v-motion
-                :initial="{ opacity: 0, y: 20 }"
+                :initial="{ opacity: 0, y: -20 }"
                 :enter="{ opacity: 1, y: 0 }"
               >
-                <!-- Decorative Background Glow -->
-                <div class="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-blue-500/20 transition-all duration-700"></div>
-
-                <div class="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-8">
-                  <!-- Profile Image -->
-                  <div class="relative">
-                    <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-white/10 shadow-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-4xl font-bold text-white">
-                         <!-- Use first letter of company name as fallback avatar -->
-                         {{ employerProfile.companyName.charAt(0) }}
+                <div class="flex items-center gap-6 w-full md:w-auto">
+                    <div class="relative">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xl font-bold border-2 border-white/20 shadow-lg">
+                            {{ employerProfile.companyName.charAt(0) }}
+                        </div>
+                        <div class="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-[#1e293b]"></div>
                     </div>
-                    <div class="absolute -bottom-2 -right-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg border border-white/20">
-                      {{ employerProfile.plan }}
-                    </div>
-                  </div>
-
-                  <!-- Profile Info -->
-                  <div class="flex-1 text-center md:text-left space-y-4">
                     <div>
-                      <h2 class="text-3xl font-bold text-white mb-2">{{ employerProfile.companyName }}</h2>
-                      <p class="text-slate-400 text-lg">{{ employerProfile.description }}</p>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h2 class="text-xl font-bold text-white">{{ employerProfile.companyName }}</h2>
+                            <span class="px-2 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/20 font-bold tracking-wider">
+                                {{ employerProfile.plan || 'PARTNER' }}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-4 text-xs text-slate-400">
+                             <span class="flex items-center gap-1"><Building2 class="w-3 h-3" /> {{ employerProfile.industry }}</span>
+                             <span class="flex items-center gap-1"><Users class="w-3 h-3" /> {{ employerProfile.size }}</span>
+                             <span class="flex items-center gap-1"><Star class="w-3 h-3 text-yellow-500" /> {{ employerProfile.avgRating }}</span>
+                        </div>
                     </div>
-                    
-                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 text-sm text-slate-300">
-                      <span class="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
-                        <Briefcase class="w-4 h-4 text-blue-400" />
-                        {{ employerProfile.industry }}
-                      </span>
-                      <span class="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
-                        <MapPin class="w-4 h-4 text-purple-400" />
-                        {{ employerProfile.location }}
-                      </span>
-                      <a 
-                        v-if="employerProfile.website" 
-                        :href="employerProfile.website" 
-                        target="_blank" 
-                        class="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full border border-white/5 hover:bg-white/10 transition-colors"
-                      >
-                        <Globe class="w-4 h-4 text-green-400" />
-                        웹사이트
-                      </a>
-                    </div>
-                  </div>
+                </div>
 
-                  <!-- Edit Button -->
-                  <button
-                    @click="activeTab = 'profile'"
-                    class="px-6 py-3 bg-white text-slate-900 rounded-full font-bold hover:bg-slate-100 transition-colors shadow-lg shadow-white/5 flex items-center gap-2"
-                  >
-                    <Settings class="w-5 h-5" />
-                    프로필 관리
-                  </button>
+                <div class="flex items-center gap-3 w-full md:w-auto justify-end">
+                    <button 
+                         @click="activeTab = 'profile'"
+                         class="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg text-sm font-medium transition-colors border border-white/10 flex items-center gap-2"
+                    >
+                        <Settings class="w-4 h-4" />
+                        정보 수정
+                    </button>
+
                 </div>
               </div>
 
-              <!-- Main Content Grid -->
-              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Left Details Column (2/3 width) -->
-                <div class="lg:col-span-2 space-y-6">
-                  
-                  <!-- Ratings & Atmosphere Section (Highlighted) -->
-                  <div 
-                    class="bg-[#1e293b]/50 rounded-3xl border border-white/10 p-8 backdrop-blur-sm"
-                    v-motion
-                    :initial="{ opacity: 0, y: 20 }"
-                    :enter="{ opacity: 1, y: 0, transition: { delay: 0.1 } }"
-                  >
-                    <div class="flex items-center gap-3 mb-8">
-                      <div class="p-2 bg-yellow-500/10 rounded-xl">
-                        <Star class="w-6 h-6 text-yellow-500" />
-                      </div>
-                      <h3 class="text-xl font-bold">기업 상세 평가</h3>
-                    </div>
-
-                    <div class="flex flex-col md:flex-row gap-8 items-center">
-                      <!-- Total Rating -->
-                      <div class="text-center p-6 bg-gradient-to-b from-white/5 to-transparent rounded-2xl border border-white/5 min-w-[200px]">
-                        <div class="text-5xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent mb-2">
-                          {{ employerProfile.avgRating }}
-                        </div>
-                        <div class="flex items-center justify-center gap-1 mb-2">
-                           <Star v-for="i in 5" :key="i" class="w-4 h-4" :class="i <= Math.round(employerProfile.avgRating || 0) ? 'text-yellow-500 fill-yellow-500' : 'text-slate-600'" />
-                        </div>
-                        <p class="text-sm text-slate-400">종합 평점</p>
-                      </div>
-
-                      <!-- Detailed Ratings -->
-                      <div class="flex-1 w-full space-y-5">
-                         <!-- Atmosphere -->
-                         <div>
-                           <div class="flex justify-between text-sm mb-2">
-                             <span class="text-slate-300 flex items-center gap-2">
-                               <Users class="w-4 h-4 text-blue-400" /> 사내 분위기
-                             </span>
-                             <span class="font-bold text-white">{{ employerProfile.ratingDetails?.atmosphere || 0 }}</span>
-                           </div>
-                           <div class="h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                             <div class="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.atmosphere || 0) * 20}%` }"></div>
-                           </div>
-                         </div>
-
-                         <!-- Requirements Detail -->
-                         <div>
-                           <div class="flex justify-between text-sm mb-2">
-                             <span class="text-slate-300 flex items-center gap-2">
-                               <FileText class="w-4 h-4 text-purple-400" /> 요구사항 디테일
-                             </span>
-                             <span class="font-bold text-white">{{ employerProfile.ratingDetails?.requirementsDetail || 0 }}</span>
-                           </div>
-                           <div class="h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                             <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.requirementsDetail || 0) * 20}%` }"></div>
-                           </div>
-                         </div>
-
-                         <!-- Schedule Adherence -->
-                         <div>
-                           <div class="flex justify-between text-sm mb-2">
-                             <span class="text-slate-300 flex items-center gap-2">
-                               <Calendar class="w-4 h-4 text-green-400" /> 일정 준수
-                             </span>
-                             <span class="font-bold text-white">{{ employerProfile.ratingDetails?.scheduleAdherence || 0 }}</span>
-                           </div>
-                           <div class="h-2 bg-slate-700/50 rounded-full overflow-hidden">
-                             <div class="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.scheduleAdherence || 0) * 20}%` }"></div>
-                           </div>
-                         </div>
-                      </div>
-                    </div>
+              <!-- 2. Project Status Board (Elancer Style Flow) -->
+              <div 
+                class="bg-[#1e293b]/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm relative overflow-hidden"
+                v-motion
+                :initial="{ opacity: 0, scale: 0.95 }"
+                :enter="{ opacity: 1, scale: 1, transition: { delay: 0.1 } }"
+              >
+                  <div class="flex items-center justify-between mb-8">
+                      <h3 class="text-lg font-bold flex items-center gap-2">
+                          <Briefcase class="w-5 h-5 text-blue-400" />
+                          프로젝트 진행 현황
+                      </h3>
+                      <button @click="activeTab = 'projects'" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                          전체보기 <ArrowRight class="w-3 h-3" />
+                      </button>
                   </div>
 
-                  <!-- Freelancer Checklist (Integrated) -->
-                  <div 
-                     class="bg-[#1e293b]/50 rounded-3xl border border-white/10 p-8 backdrop-blur-sm"
-                     v-motion
-                     :initial="{ opacity: 0, y: 20 }"
-                     :enter="{ opacity: 1, y: 0, transition: { delay: 0.2 } }"
-                   >
-                     <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center gap-3">
-                            <div class="p-2 bg-indigo-500/10 rounded-xl">
-                              <ClipboardList class="w-6 h-6 text-indigo-400" />
+                  <!-- Status Steps -->
+                  <div class="grid grid-cols-5 gap-4 relative z-10">
+                      <!-- Step 1 -->
+                      <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+                          <div class="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-slate-700 transition-all border border-white/5">
+                              <ClipboardList class="w-5 h-5 text-slate-400 group-hover:text-white" />
+                          </div>
+                          <span class="text-sm text-slate-400 mb-1">검수 중</span>
+                          <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.reviewing || 0 }}</span>
+                      </div>
+                      
+                      <!-- Arrow -->
+                      <div class="hidden md:flex items-center justify-center absolute left-[20%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
+                          <ArrowRight class="w-full h-full text-white" />
+                      </div>
+
+                      <!-- Step 2 -->
+                      <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+                          <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all border border-blue-500/20">
+                              <Users class="w-5 h-5 text-blue-400" />
+                          </div>
+                          <span class="text-sm text-blue-400 mb-1 font-medium">지원자 모집</span>
+                          <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.recruiting || 0 }}</span>
+                      </div>
+
+                      <!-- Arrow -->
+                      <div class="hidden md:flex items-center justify-center absolute left-[40%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
+                          <ArrowRight class="w-full h-full text-white" />
+                      </div>
+
+                      <!-- Step 3 -->
+                      <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+                          <div class="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all border border-purple-500/20">
+                              <MessageSquare class="w-5 h-5 text-purple-400" />
+                          </div>
+                          <span class="text-sm text-purple-400 mb-1 font-medium">미팅/계약</span>
+                          <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.meeting || 0 }}</span>
+                      </div>
+
+                       <!-- Arrow -->
+                       <div class="hidden md:flex items-center justify-center absolute left-[60%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
+                          <ArrowRight class="w-full h-full text-white" />
+                      </div>
+
+                      <!-- Step 4 -->
+                      <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group relative">
+                          <div class="absolute inset-0 bg-green-500/5 rounded-xl blur-xl"></div>
+                          <div class="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-green-500/20 transition-all border border-green-500/20 relative z-10">
+                              <Briefcase class="w-5 h-5 text-green-400" />
+                          </div>
+                          <span class="text-sm text-green-400 mb-1 font-medium relative z-10">진행중</span>
+                          <span class="text-2xl font-bold text-white relative z-10">{{ employerProfile.projectStatusCounts?.inProgress || 0 }}</span>
+                      </div>
+
+                       <!-- Arrow -->
+                       <div class="hidden md:flex items-center justify-center absolute left-[80%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
+                          <ArrowRight class="w-full h-full text-white" />
+                      </div>
+
+                      <!-- Step 5 -->
+                      <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
+                           <div class="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-slate-700 transition-all border border-white/5">
+                              <CheckCircle class="w-5 h-5 text-slate-400 group-hover:text-white" />
+                          </div>
+                          <span class="text-sm text-slate-400 mb-1">완료/평가</span>
+                          <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.completed || 0 }}</span>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 3. Bottom Grid (Review, Checklist, Account) -->
+              <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Evaluation & Checklist (2/3) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Detailed Ratings (Preserved from prev version but more compact) -->
+                     <div 
+                        class="bg-[#1e293b]/50 rounded-2xl border border-white/10 p-6 backdrop-blur-sm"
+                        v-motion
+                        :initial="{ opacity: 0, y: 20 }"
+                        :enter="{ opacity: 1, y: 0, transition: { delay: 0.2 } }"
+                      >
+                         <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+                            <Star class="w-5 h-5 text-yellow-500" />
+                            기업 상세 평가
+                         </h3>
+                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Rating Items -->
+                            <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm text-slate-400">사내 분위기</span>
+                                    <span class="font-bold">{{ employerProfile.ratingDetails?.atmosphere }}</span>
+                                </div>
+                                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                     <div class="h-full bg-blue-500 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.atmosphere || 0) * 20}%` }"></div>
+                                </div>
                             </div>
-                            <h3 class="text-xl font-bold">프리랜서 체크리스트</h3>
+                            <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm text-slate-400">급여 만족도</span>
+                                    <span class="font-bold">{{ employerProfile.ratingDetails?.requirementsDetail }}</span>
+                                </div>
+                                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                     <div class="h-full bg-purple-500 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.requirementsDetail || 0) * 20}%` }"></div>
+                                </div>
+                            </div>
+                            <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm text-slate-400">일정 준수</span>
+                                    <span class="font-bold">{{ employerProfile.ratingDetails?.scheduleAdherence }}</span>
+                                </div>
+                                <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                                     <div class="h-full bg-green-500 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.scheduleAdherence || 0) * 20}%` }"></div>
+                                </div>
+                            </div>
+                         </div>
+                     </div>
+
+                     <!-- Freelancer Checklist Preview -->
+                     <button 
+                         @click="activeTab = 'checklist'"
+                         class="w-full bg-gradient-to-r from-indigo-500/10 to-blue-500/10 hover:from-indigo-500/20 hover:to-blue-500/20 border border-indigo-500/20 rounded-2xl p-6 flex items-center justify-between group transition-all"
+                     >
+                        <div class="flex items-center gap-4">
+                            <div class="p-3 bg-indigo-500/20 rounded-xl group-hover:scale-110 transition-transform">
+                                <ClipboardList class="w-6 h-6 text-indigo-400" />
+                            </div>
+                            <div class="text-left">
+                                <h4 class="font-bold text-lg text-white group-hover:text-indigo-300 transition-colors">프리랜서 체크리스트 확인하기</h4>
+                                <p class="text-sm text-slate-400">관심있는 프리랜서를 확인하고 프로젝트를 제안해보세요.</p>
+                            </div>
+                        </div>
+                        <ArrowRight class="w-5 h-5 text-indigo-400 group-hover:translate-x-1 transition-transform" />
+                     </button>
+                </div>
+
+                <!-- Right: CS Center & Manager (1/3) -->
+                <div class="space-y-6">
+                     <!-- Account Manager -->
+                     <div 
+                         class="bg-[#1e293b]/50 rounded-2xl border border-white/10 p-6 backdrop-blur-sm"
+                         v-motion
+                         :initial="{ opacity: 0, x: 20 }"
+                         :enter="{ opacity: 1, x: 0, transition: { delay: 0.3 } }"
+                    >
+                        <h4 class="text-sm font-bold text-slate-400 mb-4">전담 매니저</h4>
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center">
+                                <User class="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <div class="font-bold text-white">김상담 매니저</div>
+                                <div class="text-xs text-slate-400">평일 10:00 - 18:00</div>
+                            </div>
                         </div>
                         <button 
-                            @click="activeTab = 'checklist'"
-                            class="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-1"
+                             @click="isInquiryOpen = true"
+                             class="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white transition-colors"
                         >
-                            전체보기 <ArrowRight class="w-4 h-4" />
+                            1:1 문의하기
                         </button>
-                      </div>
+                     </div>
 
-                      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors cursor-pointer group">
-                             <CheckCircle class="w-8 h-8 text-green-400 mb-2 group-hover:scale-110 transition-transform" />
-                             <span class="text-2xl font-bold text-white mb-1">12</span>
-                             <span class="text-xs text-slate-400">검토 완료</span>
-                        </div>
-                        <div class="bg-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors cursor-pointer group">
-                             <Award class="w-8 h-8 text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
-                             <span class="text-2xl font-bold text-white mb-1">5</span>
-                             <span class="text-xs text-slate-400">추천 프리랜서</span>
-                        </div>
-                        <div class="bg-white/5 rounded-2xl p-4 flex flex-col items-center justify-center text-center hover:bg-white/10 transition-colors cursor-pointer group">
-                             <Star class="w-8 h-8 text-yellow-400 mb-2 group-hover:scale-110 transition-transform" />
-                             <span class="text-2xl font-bold text-white mb-1">8</span>
-                             <span class="text-xs text-slate-400">즐겨찾기</span>
-                        </div>
-                      </div>
-                   </div>
-
+                     <!-- Notice / Banners -->
+                     <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 relative overflow-hidden">
+                         <div class="relative z-10">
+                             <span class="text-xs font-bold bg-white/20 px-2 py-1 rounded text-white mb-2 inline-block">NOTICE</span>
+                             <h4 class="font-bold text-white text-lg mb-2">프리랜서 계약 시<br/>법률 가이드 무상 제공</h4>
+                             <p class="text-xs text-blue-100 mb-4">표준계약서 작성부터 법적 효력까지<br/>전문 변호사가 검수한 가이드를 확인하세요.</p>
+                             <button class="text-xs font-bold text-white hover:underline flex items-center gap-1">
+                                 자세히 보기 <ArrowRight class="w-3 h-3" />
+                             </button>
+                         </div>
+                         <!-- Decorative circles -->
+                         <div class="absolute -bottom-4 -right-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                         <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl"></div>
+                     </div>
                 </div>
 
-                <!-- Right Sidebar Column (1/3 width) - Stats & Compact Projects -->
-                <div class="space-y-6">
-                   <!-- Stats Compact Cards -->
-                   <div class="grid grid-cols-2 gap-4">
-                      <div class="bg-[#1e293b]/50 rounded-2xl p-5 border border-white/10 backdrop-blur-sm">
-                          <div class="text-slate-400 text-xs mb-1">진행중 프로젝트</div>
-                          <div class="text-2xl font-bold text-white">{{ employerProfile.activeProjects }}<span class="text-sm font-normal text-slate-500 ml-1">개</span></div>
-                      </div>
-                      <div class="bg-[#1e293b]/50 rounded-2xl p-5 border border-white/10 backdrop-blur-sm">
-                          <div class="text-slate-400 text-xs mb-1">총 지원자</div>
-                          <div class="text-2xl font-bold text-white">{{ employerProfile.totalApplicants }}<span class="text-sm font-normal text-slate-500 ml-1">명</span></div>
-                      </div>
-                      <div class="col-span-2 bg-[#1e293b]/50 rounded-2xl p-5 border border-white/10 backdrop-blur-sm flex items-center justify-between">
-                          <div>
-                              <div class="text-slate-400 text-xs mb-1">계약 프리랜서</div>
-                              <div class="text-2xl font-bold text-white">{{ employerProfile.contractedFreelancers }}<span class="text-sm font-normal text-slate-500 ml-1">명</span></div>
-                          </div>
-                          <div class="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
-                              <Users class="w-6 h-6 text-purple-400" />
-                          </div>
-                      </div>
-                   </div>
-
-                   <!-- Project Status (Minimized) -->
-                   <div class="bg-[#1e293b]/50 rounded-3xl border border-white/10 p-6 backdrop-blur-sm h-full">
-                      <div class="flex items-center justify-between mb-4">
-                        <h4 class="font-bold text-base">프로젝트 현황</h4>
-                        <button @click="activeTab = 'projects'" class="text-xs text-slate-500 hover:text-white">관리</button>
-                      </div>
-                      
-                      <div class="space-y-3">
-                         <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                            <div class="flex items-center gap-3">
-                               <div class="w-2 h-2 rounded-full bg-blue-500"></div>
-                               <span class="text-sm text-slate-300">모집중</span>
-                            </div>
-                            <span class="font-bold">2건</span>
-                         </div>
-                         <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                            <div class="flex items-center gap-3">
-                               <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                               <span class="text-sm text-slate-300">진행중</span>
-                            </div>
-                            <span class="font-bold">3건</span>
-                         </div>
-                         <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5">
-                            <div class="flex items-center gap-3">
-                               <div class="w-2 h-2 rounded-full bg-slate-500"></div>
-                               <span class="text-sm text-slate-300">완료</span>
-                            </div>
-                            <span class="font-bold">15건</span>
-                         </div>
-                      </div>
-                      
-                      <div class="mt-6 pt-6 border-t border-white/10">
-                        <p class="text-xs text-slate-500 text-center">
-                           최근 30일간 5개의 프로젝트가<br>성공적으로 완료되었습니다.
-                        </p>
-                      </div>
-                   </div>
-
-                </div>
               </div>
             </div>
         </div>

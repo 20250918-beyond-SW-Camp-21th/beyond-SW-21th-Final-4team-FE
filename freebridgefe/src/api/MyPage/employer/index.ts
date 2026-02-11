@@ -20,6 +20,13 @@ export interface EmployerProfileData {
         requirementsDetail: number;
         scheduleAdherence: number;
     };
+    projectStatusCounts?: {
+        reviewing: number;
+        recruiting: number;
+        meeting: number;
+        inProgress: number;
+        completed: number;
+    };
 }
 
 export interface Application {
@@ -134,6 +141,13 @@ let employerProfileMock: EmployerProfileData = {
         requirementsDetail: 4.7,
         scheduleAdherence: 4.8,
     },
+    projectStatusCounts: {
+        reviewing: 2,
+        recruiting: 1,
+        meeting: 3,
+        inProgress: 5,
+        completed: 12
+    }
 };
 
 export const getEmployerProfile = async (): Promise<EmployerProfileData> => {
