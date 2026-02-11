@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
   User,
@@ -33,12 +33,24 @@ import EmployerProfileManagement from './components/EmployerProfileManagement.vu
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
 import EmployerProjectManagement from './components/EmployerProjectManagement.vue';
 import FreelancerChecklistPage from './components/FreelancerChecklistPage.vue';
-import EmployerApplicantStatus from './components/EmployerApplicantStatus.vue';
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 
 const activeTab = ref('dashboard');
+
+const updateTabFromQuery = () => {
+    const tab = route.query.tab as string;
+    const validTabs = ['dashboard', 'profile', 'applicants', 'checklist', 'projects', 'account'];
+    if (tab && validTabs.includes(tab)) {
+        activeTab.value = tab;
+    }
+};
+
+watch(() => route.query.tab, () => {
+    updateTabFromQuery();
+});
 
 const PLAN_LABELS: Record<string, string> = {
   FREE: '무료 플랜',
@@ -140,6 +152,7 @@ const subscriptionPlanTone = computed(() => {
 
 onMounted(() => {
   fetchProfile();
+  updateTabFromQuery();
 });
 
 watch(activeTab, (newTab) => {
@@ -347,7 +360,8 @@ const safeWebsiteUrl = computed(() => {
                                       <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">웹사이트</label>
                                       <div class="flex items-center gap-2 text-sm truncate">
                                           <Globe class="w-4 h-4 text-slate-400" />
-                                        <a :href="safeWebsiteUrl" target="_blank" rel="noopener noreferrer" class="hover:underline hover:text-blue-400 truncate">{{ safeWebsiteUrl }}</a>
+                                        <a v-if="safeWebsiteUrl !== '#'" :href="safeWebsiteUrl" target="_blank" rel="noopener noreferrer" class="hover:underline hover:text-blue-400 truncate">{{ employerProfile.website }}</a>
+                                        <span v-else class="text-slate-500">미등록</span>
                                       </div>
                                   </div>
                               </div>

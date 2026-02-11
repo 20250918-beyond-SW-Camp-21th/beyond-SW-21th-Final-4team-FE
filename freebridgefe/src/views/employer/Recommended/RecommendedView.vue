@@ -42,17 +42,23 @@ const normalizePlan = (plan?: string): PlanType => {
   return 'FREE';
 };
 
+
+const planLoading = ref(true);
+
 const fetchCurrentPlan = async () => {
+  planLoading.value = true;
   try {
     const profile = await getEmployerProfile();
     currentPlan.value = normalizePlan(profile.plan);
   } catch (error) {
     console.error('Failed to fetch employer plan:', error);
     currentPlan.value = 'FREE';
+  } finally {
+    planLoading.value = false;
   }
 };
 
-const hasAccess = computed(() => ['PRO', 'PRIME'].includes(currentPlan.value));
+const hasAccess = computed(() => !planLoading.value && ['PRO', 'PRIME'].includes(currentPlan.value));
 
 onMounted(() => {
   fetchCurrentPlan();
@@ -75,7 +81,39 @@ const goToUpgrade = () => {
       <p class="text-white/60">AI가 선별한 최적의 프리랜서를 만나보세요</p>
     </div>
 
-    <div v-if="hasAccess" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Loading Skeleton -->
+    <div v-if="planLoading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div 
+        v-for="n in 6" 
+        :key="n" 
+        class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 animate-pulse"
+      >
+        <div class="flex items-start gap-4 mb-4">
+          <div class="w-16 h-16 rounded-full bg-white/10"></div>
+          <div class="flex-1 space-y-2">
+            <div class="h-6 bg-white/10 rounded w-3/4"></div>
+            <div class="h-4 bg-white/10 rounded w-1/4"></div>
+          </div>
+        </div>
+        <div class="space-y-2 mb-4">
+          <div class="h-4 bg-white/10 rounded"></div>
+          <div class="h-4 bg-white/10 rounded w-5/6"></div>
+        </div>
+        <div class="flex gap-2 mb-4">
+          <div class="h-6 w-16 bg-white/10 rounded-full"></div>
+          <div class="h-6 w-16 bg-white/10 rounded-full"></div>
+        </div>
+        <div class="pt-4 border-t border-white/10 flex justify-between items-center">
+          <div class="h-4 w-24 bg-white/10 rounded"></div>
+          <div class="flex gap-2">
+            <div class="w-10 h-10 bg-white/10 rounded-lg"></div>
+            <div class="w-24 h-10 bg-white/10 rounded-lg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="hasAccess" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="freelancer in freelancerStore.freelancers"
         :key="freelancer.id"

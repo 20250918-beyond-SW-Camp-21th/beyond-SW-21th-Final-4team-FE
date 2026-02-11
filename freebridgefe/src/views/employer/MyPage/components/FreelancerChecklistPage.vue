@@ -332,7 +332,7 @@ const stats = computed(() => {
              현재 리뷰가 {{ reviews.length }}개입니다. 3개 이상부터 분석이 가능합니다.
         </p>
         <button
-            `@click`="analyzeReputation"
+            @click="analyzeReputation"
             :disabled="reviews.length < 3 || isAnalyzing"
             class="px-8 py-3 bg-white text-slate-900 font-bold rounded-xl hover:bg-slate-200 transition-colors shadow-lg shadow-white/10 mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
         >
