@@ -10,6 +10,7 @@ export interface EmployerProfileData {
     phone: string;
     description: string;
     plan?: string;
+    logoUrl?: string;
     // Stats for Dashboard
     activeProjects?: number;
     totalApplicants?: number;
@@ -21,9 +22,8 @@ export interface EmployerProfileData {
         scheduleAdherence: number;
     };
     projectStatusCounts?: {
-        reviewing: number;
-        recruiting: number;
-        meeting: number;
+        posted: number;
+        screening: number;
         inProgress: number;
         completed: number;
     };
@@ -136,15 +136,15 @@ let employerProfileMock: EmployerProfileData = {
     totalApplicants: 45,
     contractedFreelancers: 8,
     avgRating: 4.8,
+    logoUrl: '',
     ratingDetails: {
         atmosphere: 4.9,
         requirementsDetail: 4.7,
         scheduleAdherence: 4.8,
     },
     projectStatusCounts: {
-        reviewing: 2,
-        recruiting: 1,
-        meeting: 3,
+        posted: 2,
+        screening: 3,
         inProgress: 5,
         completed: 12
     }

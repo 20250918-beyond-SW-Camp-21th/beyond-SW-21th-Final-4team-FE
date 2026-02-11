@@ -24,6 +24,7 @@ import {
   ClipboardList,
   Mail,
   Phone,
+  Camera,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
@@ -60,13 +61,26 @@ const employerProfile = ref<EmployerProfileData>({
     scheduleAdherence: 0,
   },
   projectStatusCounts: {
-    reviewing: 0,
-    recruiting: 0,
-    meeting: 0,
+    posted: 0,
+    screening: 0,
     inProgress: 0,
     completed: 0
   }
 });
+
+const handleLogoUpdate = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        // Mock upload: Convert to Base64 (normally upload to server and get URL)
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            employerProfile.value.logoUrl = e.target?.result as string;
+            // TODO: Call API to update logo
+        };
+        reader.readAsDataURL(file);
+    }
+};
 
 const fetchProfile = async () => {
   try {
@@ -194,45 +208,130 @@ const handleNavigate = (path: string) => {
             <!-- Dashboard View -->
             <div v-else-if="activeTab === 'dashboard'" class="space-y-8">
               
-              <!-- 1. Profile Top Bar (Horizontal) -->
+              <!-- 1. Profile Section (Detailed) -->
               <div 
-                class="bg-[#1e293b]/50 border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm"
+                class="bg-[#1e293b]/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm"
                 v-motion
                 :initial="{ opacity: 0, y: -20 }"
                 :enter="{ opacity: 1, y: 0 }"
               >
-                <div class="flex items-center gap-6 w-full md:w-auto">
-                    <div class="relative">
-                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-xl font-bold border-2 border-white/20 shadow-lg">
-                            {{ employerProfile.companyName.charAt(0) }}
-                        </div>
-                        <div class="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-[#1e293b]"></div>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <h2 class="text-xl font-bold text-white">{{ employerProfile.companyName }}</h2>
-                            <span class="px-2 py-0.5 rounded text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/20 font-bold tracking-wider">
-                                {{ employerProfile.plan || 'PARTNER' }}
-                            </span>
-                        </div>
-                        <div class="flex items-center gap-4 text-xs text-slate-400">
-                             <span class="flex items-center gap-1"><Building2 class="w-3 h-3" /> {{ employerProfile.industry }}</span>
-                             <span class="flex items-center gap-1"><Users class="w-3 h-3" /> {{ employerProfile.size }}</span>
-                             <span class="flex items-center gap-1"><Star class="w-3 h-3 text-yellow-500" /> {{ employerProfile.avgRating }}</span>
-                        </div>
-                    </div>
-                </div>
+                  <div class="flex flex-col md:flex-row gap-8">
+                      <!-- Left: Logo & Core Info -->
+                      <div class="w-full md:w-1/3 flex flex-col items-center text-center border-b md:border-b-0 md:border-r border-white/10 pb-8 md:pb-0 md:pr-8">
+                          <!-- Logo Upload -->
+                          <div class="relative group cursor-pointer mb-4">
+                              <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-white/10 shadow-xl bg-slate-800 flex items-center justify-center">
+                                  <img 
+                                      v-if="employerProfile.logoUrl" 
+                                      :src="employerProfile.logoUrl" 
+                                      alt="Company Logo" 
+                                      class="w-full h-full object-cover"
+                                  />
+                                  <div v-else class="text-4xl font-bold text-white/20">
+                                      {{ employerProfile.companyName.charAt(0) }}
+                                  </div>
+                              </div>
+                              
+                              <!-- Hover Overlay -->
+                              <div class="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div class="flex flex-col items-center text-white text-xs">
+                                      <Camera class="w-6 h-6 mb-1" />
+                                      <span>변경</span>
+                                  </div>
+                              </div>
+                              <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" @change="handleLogoUpdate" />
+                          </div>
 
-                <div class="flex items-center gap-3 w-full md:w-auto justify-end">
-                    <button 
-                         @click="activeTab = 'profile'"
-                         class="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-lg text-sm font-medium transition-colors border border-white/10 flex items-center gap-2"
-                    >
-                        <Settings class="w-4 h-4" />
-                        정보 수정
-                    </button>
+                          <h2 class="text-2xl font-bold mb-2">{{ employerProfile.companyName }}</h2>
+                          <span class="px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/20 mb-6">
+                              {{ employerProfile.plan || 'PARTNER' }}
+                          </span>
 
-                </div>
+                           <!-- Core Stats -->
+                          <div class="w-full grid grid-cols-2 gap-4">
+                              <div class="bg-white/5 rounded-xl p-3">
+                                  <div class="text-xs text-slate-400 mb-1">진행 프로젝트</div>
+                                  <div class="text-xl font-bold">{{ employerProfile.activeProjects }}</div>
+                              </div>
+                              <div class="bg-white/5 rounded-xl p-3">
+                                  <div class="text-xs text-slate-400 mb-1">평균 평점</div>
+                                  <div class="text-xl font-bold text-yellow-500">{{ employerProfile.avgRating }}</div>
+                              </div>
+                          </div>
+                      </div>
+
+                      <!-- Right: Detailed Info -->
+                      <div class="w-full md:w-2/3 space-y-6">
+                          <div class="flex items-center justify-between mb-4">
+                              <h3 class="text-lg font-bold flex items-center gap-2">
+                                  <Building2 class="w-5 h-5 text-blue-400" />
+                                  기업 정보
+                              </h3>
+                              <button 
+                                   @click="activeTab = 'profile'"
+                                   class="text-xs text-slate-400 hover:text-white flex items-center gap-1 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5"
+                              >
+                                  <Settings class="w-3 h-3" />
+                                  정보 수정
+                              </button>
+                          </div>
+
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <div class="space-y-4">
+                                  <div class="group">
+                                      <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">업종</label>
+                                      <div class="flex items-center gap-2 text-sm">
+                                          <Briefcase class="w-4 h-4 text-slate-400" />
+                                          {{ employerProfile.industry }}
+                                      </div>
+                                  </div>
+                                  <div class="group">
+                                      <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">규모</label>
+                                      <div class="flex items-center gap-2 text-sm">
+                                          <Users class="w-4 h-4 text-slate-400" />
+                                          {{ employerProfile.size }}
+                                      </div>
+                                  </div>
+                                  <div class="group">
+                                      <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">위치</label>
+                                      <div class="flex items-center gap-2 text-sm">
+                                          <MapPin class="w-4 h-4 text-slate-400" />
+                                          {{ employerProfile.location }}
+                                      </div>
+                                  </div>
+                                  <div class="group">
+                                      <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">웹사이트</label>
+                                      <div class="flex items-center gap-2 text-sm truncate">
+                                          <Globe class="w-4 h-4 text-slate-400" />
+                                          <a :href="employerProfile.website" target="_blank" class="hover:underline hover:text-blue-400 truncate">{{ employerProfile.website }}</a>
+                                      </div>
+                                  </div>
+                              </div>
+                              <div class="space-y-4">
+                                  <div class="group">
+                                      <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">이메일</label>
+                                      <div class="flex items-center gap-2 text-sm">
+                                          <Mail class="w-4 h-4 text-slate-400" />
+                                          {{ employerProfile.email }}
+                                      </div>
+                                  </div>
+                                  <div class="group">
+                                      <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">연락처</label>
+                                      <div class="flex items-center gap-2 text-sm">
+                                          <Phone class="w-4 h-4 text-slate-400" />
+                                          {{ employerProfile.phone }}
+                                      </div>
+                                  </div>
+                                  <div class="group">
+                                      <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">기업 소개</label>
+                                      <p class="text-sm text-slate-300 bg-white/5 p-3 rounded-lg leading-relaxed text-xs">
+                                          {{ employerProfile.description }}
+                                      </p>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
               </div>
 
               <!-- 2. Project Status Board (Elancer Style Flow) -->
@@ -253,50 +352,36 @@ const handleNavigate = (path: string) => {
                   </div>
 
                   <!-- Status Steps -->
-                  <div class="grid grid-cols-5 gap-4 relative z-10">
-                      <!-- Step 1 -->
+                  <div class="grid grid-cols-4 gap-4 relative z-10">
+                      <!-- Step 1: 접수중 (Posted) -->
                       <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
-                          <div class="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-slate-700 transition-all border border-white/5">
-                              <ClipboardList class="w-5 h-5 text-slate-400 group-hover:text-white" />
+                          <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all border border-blue-500/20">
+                              <ClipboardList class="w-5 h-5 text-blue-400" />
                           </div>
-                          <span class="text-sm text-slate-400 mb-1">검수 중</span>
-                          <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.reviewing || 0 }}</span>
+                          <span class="text-sm text-blue-400 mb-1 font-medium">접수중</span>
+                          <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.posted || 0 }}</span>
                       </div>
                       
                       <!-- Arrow -->
-                      <div class="hidden md:flex items-center justify-center absolute left-[20%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
+                      <div class="hidden md:flex items-center justify-center absolute left-[25%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
                           <ArrowRight class="w-full h-full text-white" />
                       </div>
 
-                      <!-- Step 2 -->
+                      <!-- Step 2: 심사중 (Screening) -->
                       <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
-                          <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-blue-500/20 transition-all border border-blue-500/20">
-                              <Users class="w-5 h-5 text-blue-400" />
+                          <div class="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all border border-purple-500/20">
+                              <Users class="w-5 h-5 text-purple-400" />
                           </div>
-                          <span class="text-sm text-blue-400 mb-1 font-medium">지원자 모집</span>
-                          <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.recruiting || 0 }}</span>
+                          <span class="text-sm text-purple-400 mb-1 font-medium">심사중</span>
+                          <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.screening || 0 }}</span>
                       </div>
 
                       <!-- Arrow -->
-                      <div class="hidden md:flex items-center justify-center absolute left-[40%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
+                      <div class="hidden md:flex items-center justify-center absolute left-[50%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
                           <ArrowRight class="w-full h-full text-white" />
                       </div>
 
-                      <!-- Step 3 -->
-                      <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
-                          <div class="w-12 h-12 rounded-full bg-purple-500/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-purple-500/20 transition-all border border-purple-500/20">
-                              <MessageSquare class="w-5 h-5 text-purple-400" />
-                          </div>
-                          <span class="text-sm text-purple-400 mb-1 font-medium">미팅/계약</span>
-                          <span class="text-2xl font-bold text-white">{{ employerProfile.projectStatusCounts?.meeting || 0 }}</span>
-                      </div>
-
-                       <!-- Arrow -->
-                       <div class="hidden md:flex items-center justify-center absolute left-[60%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
-                          <ArrowRight class="w-full h-full text-white" />
-                      </div>
-
-                      <!-- Step 4 -->
+                      <!-- Step 3: 진행중 (In Progress) -->
                       <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group relative">
                           <div class="absolute inset-0 bg-green-500/5 rounded-xl blur-xl"></div>
                           <div class="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-green-500/20 transition-all border border-green-500/20 relative z-10">
@@ -307,11 +392,11 @@ const handleNavigate = (path: string) => {
                       </div>
 
                        <!-- Arrow -->
-                       <div class="hidden md:flex items-center justify-center absolute left-[80%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
+                       <div class="hidden md:flex items-center justify-center absolute left-[75%] top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 opacity-20">
                           <ArrowRight class="w-full h-full text-white" />
                       </div>
 
-                      <!-- Step 5 -->
+                      <!-- Step 4: 완료/평가 (Completed) -->
                       <div class="flex flex-col items-center justify-center p-4 rounded-xl hover:bg-white/5 transition-colors cursor-pointer group">
                            <div class="w-12 h-12 rounded-full bg-slate-700/50 flex items-center justify-center mb-3 group-hover:scale-110 group-hover:bg-slate-700 transition-all border border-white/5">
                               <CheckCircle class="w-5 h-5 text-slate-400 group-hover:text-white" />
@@ -333,10 +418,18 @@ const handleNavigate = (path: string) => {
                         :initial="{ opacity: 0, y: 20 }"
                         :enter="{ opacity: 1, y: 0, transition: { delay: 0.2 } }"
                       >
-                         <h3 class="text-lg font-bold mb-6 flex items-center gap-2">
-                            <Star class="w-5 h-5 text-yellow-500" />
-                            기업 상세 평가
-                         </h3>
+                         <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-bold flex items-center gap-2">
+                                <Star class="w-5 h-5 text-yellow-500" />
+                                고용주 평가
+                            </h3>
+                            <div class="flex items-center gap-2 bg-yellow-500/10 px-3 py-1 rounded-lg border border-yellow-500/20">
+                                <span class="text-sm text-yellow-500 font-bold">전체 평균</span>
+                                <Star class="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                <span class="text-lg font-bold text-white">{{ employerProfile.avgRating }}</span>
+                                <span class="text-xs text-slate-400">/ 5.0</span>
+                            </div>
+                         </div>
                          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <!-- Rating Items -->
                             <div class="bg-white/5 rounded-xl p-4 border border-white/5">
@@ -390,29 +483,7 @@ const handleNavigate = (path: string) => {
                 <!-- Right: CS Center & Manager (1/3) -->
                 <div class="space-y-6">
                      <!-- Account Manager -->
-                     <div 
-                         class="bg-[#1e293b]/50 rounded-2xl border border-white/10 p-6 backdrop-blur-sm"
-                         v-motion
-                         :initial="{ opacity: 0, x: 20 }"
-                         :enter="{ opacity: 1, x: 0, transition: { delay: 0.3 } }"
-                    >
-                        <h4 class="text-sm font-bold text-slate-400 mb-4">전담 매니저</h4>
-                        <div class="flex items-center gap-4 mb-4">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center">
-                                <User class="w-6 h-6 text-white" />
-                            </div>
-                            <div>
-                                <div class="font-bold text-white">김상담 매니저</div>
-                                <div class="text-xs text-slate-400">평일 10:00 - 18:00</div>
-                            </div>
-                        </div>
-                        <button 
-                             @click="isInquiryOpen = true"
-                             class="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white transition-colors"
-                        >
-                            1:1 문의하기
-                        </button>
-                     </div>
+
 
                      <!-- Notice / Banners -->
                      <div class="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 relative overflow-hidden">
