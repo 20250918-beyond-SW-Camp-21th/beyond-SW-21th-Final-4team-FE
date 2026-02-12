@@ -11,7 +11,7 @@ pipeline {
 
         // [Manifest Repo] - New Repository (Separate Credential)
         CRED_ID_MANIFEST = 'github-manifest-key' 
-        MANIFEST_REPO_URL = 'https://github.com/20250918-beyond-SW-Camp-21th/beyond-SW-21th-Final-4team-Manifest-file.git'
+        MANIFEST_REPO_URL = 'git@github.com:20250918-beyond-SW-Camp-21th/beyond-SW-21th-Final-4team-Manifest-file.git'
         
         // Docker
         IMAGE_NAME = 'o2ppo/freebrfront001'
@@ -50,7 +50,7 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${env.DOCKER_CRED_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh "docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} ."
-                        sh "echo ${DOCKER_PASS} | docker login -u ${DOCKER_USER} --password-stdin"
+                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                         sh "docker push ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
                         sh "docker tag ${env.IMAGE_NAME}:${env.IMAGE_TAG} ${env.IMAGE_NAME}:latest"
                         sh "docker push ${env.IMAGE_NAME}:latest"
@@ -64,9 +64,7 @@ pipeline {
                 script {
                     sshagent(credentials: ["${env.CRED_ID_MANIFEST}"]) {
                         sh """
-                            # 1. Configure Git
-                            git config user.name "Jenkins Frontend Bot"
-                            git config user.email "${env.GIT_EMAIL}"
+                            # 1. Setup SSH
                             mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
                             # 2. Clone Manifest Repository
@@ -75,21 +73,23 @@ pipeline {
                             git clone ${env.MANIFEST_REPO_URL} manifest-repo
                             
                             cd manifest-repo
+
+                            # Configure Git
+                            git config user.name "Jenkins Frontend Bot"
+                            git config user.email "${env.GIT_EMAIL}"
                             
-                            # 3. Check/Create Manifest Files
-                            # If manifest repo is empty, copy from current workspace (Code Repo)
+                            # 3. Check for Manifest Files
                             if [ ! -f frontend-deployment.yml ]; then
-                                echo "Manifest file not found in remote. Copying from Code Repo..."
-                                cp -r ../kube-folder/* . || echo "No local kube-folder found, skipping copy."
+                                echo "Error: frontend-deployment.yml not found in manifest repo!"
+                                exit 1
                             fi
 
                             # 4. Update Image Tag
-                            if [ -f frontend-deployment.yml ]; then
-                                echo "Updating frontend-deployment.yml..."
-                                sed -i 's|image: ${env.IMAGE_NAME}:.*|image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}|g' frontend-deployment.yml
-                                
-                                # Verify change
-                                cat frontend-deployment.yml | grep "image:"
+                            echo "Updating frontend-deployment.yml..."
+                            sed -i 's|image: ${env.IMAGE_NAME}:.*|image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}|g' frontend-deployment.yml
+                            
+                            # Verify change
+                            cat frontend-deployment.yml | grep "image:"
                                 
                                 # 5. Commit & Push
                                 git add .
@@ -97,13 +97,8 @@ pipeline {
                                     git commit -m "[Jenkins] Update image to ${env.IMAGE_TAG}"
                                     git push origin main
                                     echo "Manifest Repo Updated!"
-                                else
                                     echo "No changes to push."
                                 fi
-                            else
-                                echo "Error: frontend-deployment.yml still not found!"
-                                exit 1
-                            fi
                         """
                     }
                 }
@@ -120,9 +115,19 @@ pipeline {
                             
                             # Ensure kubectl is installed (Simplified check)
                             if ! command -v kubectl > /dev/null 2>&1; then
+                                echo "Installing kubectl..."
                                 curl -LO "https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl"
                                 chmod +x kubectl
-                                mv kubectl /usr/local/bin/ || mkdir -p $HOME/bin && mv kubectl $HOME/bin/ && export PATH=$HOME/bin:$PATH
+                                
+                                # Try installing to global path, fall back to user local bin
+                                if mv kubectl /usr/local/bin/ > /dev/null 2>&1; then
+                                    echo "Installed kubectl to /usr/local/bin"
+                                else
+                                    echo "Cannot install to /usr/local/bin. Installing to $HOME/bin"
+                                    mkdir -p $HOME/bin
+                                    mv kubectl $HOME/bin/ || exit 1
+                                    export PATH=$HOME/bin:$PATH
+                                fi
                             fi
                             
                             echo "Deploying to Server B..."
