@@ -1,10 +1,10 @@
 # Build stage
 FROM node:18-alpine as build-stage
 WORKDIR /app
-COPY package*.json ./
+COPY freebridgefe/package*.json ./
 RUN npm install
-COPY . .
-RUN npm run build
+COPY freebridgefe/ .
+RUN npx vite build
 
 # Production stage
 FROM nginx:stable-alpine as production-stage

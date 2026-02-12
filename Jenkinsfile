@@ -12,7 +12,7 @@ pipeline {
         CRED_ID_FE = 'github-fe-key' // 프론트엔드용 SSH 키 ID (쓰기 권한 필요)
 
         // 이미지 정보
-        IMAGE_NAME = 'o2ppo/freeBrfront001'
+        IMAGE_NAME = 'o2ppo/freebrfront001'
         DOCKER_CRED_ID = 'dockerhub-credentials'
         
         // Git 설정
@@ -23,20 +23,7 @@ pipeline {
     }
 
     stages {
-        // 1. 환경 변수 설정 및 연결 확인
-        stage('Setup & Check') {
-            steps {
-                script {
-                    // Git Commit Hash 추출 (Short)
-                    env.GIT_COMMIT_HASH = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-                    env.IMAGE_TAG = "${currentBuild.number}-${env.GIT_COMMIT_HASH}"
-                    
-                    echo "📡 빌드 정보 확인: ${env.IMAGE_TAG}"
-                }
-            }
-        }
-
-        // 2. 코드 다운로드 (Checkout)
+        // 1. 코드 다운로드 (Checkout)
         // Jenkins Pipeline의 기본 checkout scm 동작 또는 명시적 checkout 사용
         stage('Checkout Code') {
             steps {
@@ -47,6 +34,19 @@ pipeline {
                 checkout scm
                 
                 echo "소스코드 다운로드 완료"
+            }
+        }
+
+        // 2. 환경 변수 설정 및 연결 확인
+        stage('Setup & Check') {
+            steps {
+                script {
+                    // Git Commit Hash 추출 (Short)
+                    env.GIT_COMMIT_HASH = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    env.IMAGE_TAG = "${currentBuild.number}-${env.GIT_COMMIT_HASH}"
+                    
+                    echo "📡 빌드 정보 확인: ${env.IMAGE_TAG}"
+                }
             }
         }
 
