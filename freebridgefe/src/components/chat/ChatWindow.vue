@@ -71,11 +71,15 @@
                 <div class="p-4 bg-slate-900/95 backdrop-blur-sm border-t border-white/5 shrink-0">
                     <div class="max-w-4xl mx-auto flex items-center gap-2">
                         <!-- Quick Actions (Left) -->
-                        <label class="p-2.5 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors cursor-pointer">
+                        <label
+                            class="p-2.5 rounded-full bg-slate-800 text-slate-400 transition-colors"
+                            :class="isReadOnly ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'hover:text-white hover:bg-slate-700 cursor-pointer'"
+                        >
                             <PlusIcon class="w-6 h-6" />
                             <input
                                 type="file"
                                 class="hidden"
+                                :disabled="isReadOnly"
                                 @change="handleFileUpload"
                             />
                         </label>
@@ -186,6 +190,7 @@ function sendMessage() {
 }
 
 function handleFileUpload(event: Event) {
+    if (isReadOnly.value) return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
