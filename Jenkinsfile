@@ -123,7 +123,7 @@ pipeline {
         }
 
         // 5. 원격 배포 (Server B)
-        stage('Deploy to Server B') {
+        stage('Deploy to Server B ( Eric Pc )') {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
