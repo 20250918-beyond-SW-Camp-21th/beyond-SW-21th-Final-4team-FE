@@ -234,9 +234,6 @@ const fadeInUp = {
           <div class="absolute inset-0 flex items-center">
             <div class="w-full border-t border-white/10" />
           </div>
-          <div class="relative flex justify-center text-sm">
-            <span class="px-4 bg-black/50 text-white/50 backdrop-blur-sm">또는</span>
-          </div>
         </div>
 
         <!-- Signup Links -->
