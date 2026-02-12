@@ -125,6 +125,7 @@ import { useAuthStore } from '@/stores/authStore';
 import MessageBubble from './MessageBubble.vue';
 import ContractTab from './ContractTab.vue';
 import { 
+    FileText as FileTextIcon,
     LogOut as LogOutIcon,
     Paperclip as PaperclipIcon,
     Send as SendIcon,
