@@ -1,13 +1,13 @@
 <template>
     <!-- 3-Column Grid Layout: Sidebar(320px) - Chat(1fr) - InfoPanel(320px) -->
-    <div class="grid grid-cols-[320px_1fr_320px] h-[calc(100vh-64px)] overflow-hidden bg-slate-950">
+    <div class="grid grid-cols-[320px_1fr_320px] h-[calc(100vh-64px)] overflow-hidden bg-slate-950 min-h-0">
         <!-- 1. Left Sidebar: Room List -->
         <div class="border-r border-white/5 flex flex-col bg-[#020617] relative z-10 w-[320px]">
             <ChatSidebar />
         </div>
 
         <!-- Main Chat Area -->
-        <div class="flex-1 flex flex-col min-w-0 bg-slate-950">
+        <div class="flex-1 flex flex-col min-w-0 bg-slate-950 min-h-0">
             <template v-if="chatStore.currentRoomId">
                 <ChatWindow :roomId="chatStore.currentRoomId" />
             </template>
@@ -15,7 +15,7 @@
                 <div class="flex-1 flex flex-col items-center justify-center bg-slate-950 relative overflow-hidden">
                     <!-- Background Pattern -->
                     <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900/50 via-slate-950 to-slate-950 pointer-events-none"></div>
-                    
+
                     <div class="relative z-10 text-center space-y-4 p-8">
                         <div class="w-20 h-20 bg-slate-900/80 rounded-3xl flex items-center justify-center mx-auto mb-6 ring-1 ring-white/10 shadow-2xl shadow-emerald-900/20">
                             <MessageSquareIcon class="w-10 h-10 text-slate-500" />

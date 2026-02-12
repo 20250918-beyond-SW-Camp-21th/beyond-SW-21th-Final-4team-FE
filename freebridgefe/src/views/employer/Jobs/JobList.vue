@@ -80,13 +80,9 @@ const getApplications = (jobId: string) => {
         </div>
         <h3 class="text-2xl font-semibold mb-3 text-white">등록된 공고가 없습니다</h3>
         <p class="text-white/60 mb-8">첫 프로젝트 공고를 등록해보세요</p>
-        <button
-            @click="showCreateModal = true"
-            class="px-8 py-4 bg-white text-black rounded-full font-semibold inline-flex items-center gap-2 hover:scale-105 nav-button"
-        >
-            <Plus class="w-5 h-5" />
-            공고 등록하기
-        </button>
+        <div class="text-xs text-white/50">
+            오른쪽 상단의 공고 등록 버튼을 사용하세요
+        </div>
     </div>
     
     <div v-else class="grid gap-6">
