@@ -129,10 +129,38 @@ pipeline {
             cleanWs()
         }
         success {
-            echo " 배포 파이프라인이 정상 작동합니다!"
+            withCredentials([string(credentialsId: 'discord', variable: 'DISCORD')]) {
+                discordSend(
+                    description: """
+                        **빌드 성공!** :tada:
+                        
+                        **제목**: ${currentBuild.displayName}
+                        **결과**: :white_check_mark: ${currentBuild.currentResult}
+                        **실행 시간**: ${currentBuild.duration / 1000}s
+                        **링크**: [빌드 결과 보기](${env.BUILD_URL})
+                    """.stripIndent(),
+                    result: 'SUCCESS',
+                    title: "${env.JOB_NAME} 빌드 성공!", 
+                    webhookURL: "$DISCORD"
+                )
+            }
         }
         failure {
-            echo "배포 파이프라인 실패하였습니다"
+            withCredentials([string(credentialsId: 'discord', variable: 'DISCORD')]) {
+                discordSend(
+                    description: """
+                        **빌드 실패!** :x:
+                        
+                        **제목**: ${currentBuild.displayName}
+                        **결과**: :x: ${currentBuild.currentResult}
+                        **실행 시간**: ${currentBuild.duration / 1000}s
+                        **링크**: [빌드 결과 보기](${env.BUILD_URL})
+                    """.stripIndent(),
+                    result: 'FAILURE',
+                    title: "${env.JOB_NAME} 빌드 실패!", 
+                    webhookURL: "$DISCORD"
+                )
+            }
         }
     }
 }
