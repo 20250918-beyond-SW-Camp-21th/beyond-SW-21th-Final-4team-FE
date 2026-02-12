@@ -16,14 +16,14 @@
             <button 
                 v-if="!chatStore.isRoomListOpen"
                 @click="chatStore.toggleRoomList"
-                class="bg-white border border-gray-200 shadow-lg rounded-t-lg px-4 py-2 flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                class="w-72 h-12 bg-[#0f172a] border border-white/10 shadow-lg rounded-t-lg px-4 py-2 flex items-center justify-between gap-2 hover:bg-white/5 transition-colors"
             >
                 <div class="relative">
-                     <img :src="userAvatar" class="w-6 h-6 rounded-full border border-gray-200" />
-                    <span class="absolute bottom-0 right-0 w-2 h-2 bg-green-500 border-2 border-white rounded-full"></span>
+                     <img :src="userAvatar" class="w-6 h-6 rounded-full border border-white/10" />
+                    <span class="absolute bottom-0 right-0 w-2 h-2 bg-emerald-500 border-2 border-[#0f172a] rounded-full"></span>
                 </div>
-                <span class="font-bold text-gray-700 text-sm">메시지</span>
-                <ChevronUpIcon class="w-4 h-4 text-gray-500" />
+                <span class="font-bold text-slate-200 text-sm">메시지</span>
+                <ChevronUpIcon class="w-4 h-4 text-slate-400" />
             </button>
 
             <!-- Room List Window -->
