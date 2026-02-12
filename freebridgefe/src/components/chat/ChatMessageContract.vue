@@ -181,6 +181,9 @@ function handleSignature(signatureDataUrl: string) {
     }
 
     contractStore.updateContract(contractDetails.value.id, updates);
+    if (props.message?.roomId) {
+        chatStore.updateRoomContract(props.message.roomId, contractDetails.value.id);
+    }
     isSignatureOpen.value = false;
 }
 
@@ -189,6 +192,7 @@ function rejectContract() {
     if (!confirm('계약을 거절하시겠습니까?')) return;
     contractStore.updateContract(contractDetails.value.id, { status: 'REJECTED' });
     if (props.message?.roomId) {
+        chatStore.updateRoomContract(props.message.roomId, contractDetails.value.id);
         chatStore.sendSystemMessage(props.message.roomId, '계약이 거절되었습니다.');
     }
 }

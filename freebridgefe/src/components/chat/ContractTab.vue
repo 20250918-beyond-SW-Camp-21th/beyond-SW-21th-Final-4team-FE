@@ -113,8 +113,26 @@
                     <ClockIcon class="w-5 h-5 text-rose-400" />
                     <span class="font-bold text-rose-400">계약이 거절되었습니다</span>
                 </div>
-                <div class="p-6 text-sm text-slate-300">
-                    상대방이 계약을 거절했습니다. 새로운 조건으로 다시 제안할 수 있습니다.
+                <div class="p-6 space-y-4">
+                    <div class="text-sm text-slate-300">
+                        상대방이 계약을 거절했습니다. 새로운 조건으로 다시 제안할 수 있습니다.
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <button
+                            v-if="isEmployer"
+                            @click="initiateContract"
+                            class="w-full py-2.5 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
+                        >
+                            계약서 다시 작성하기
+                        </button>
+                        <button
+                            v-else
+                            @click="requestContract(true)"
+                            class="w-full py-2.5 bg-slate-800 border border-white/10 text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-700 hover:text-white transition-colors"
+                        >
+                            계약서 다시 요청하기
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -374,10 +392,13 @@ function openSignatureModal() {
     isSignatureModalOpen.value = true;
 }
 
-function requestContract() {
+function requestContract(isRetry = false) {
     // Logic to send a system message or notification to employer
-    chatStore.sendSystemMessage(props.roomId, '상대방에게 계약서 작성을 요청했습니다.', 'SYSTEM');
-    alert('고용주에게 계약서 작성을 요청했습니다.');
+    const message = isRetry
+        ? '상대방에게 계약서 작성을 다시 요청했습니다.'
+        : '상대방에게 계약서 작성을 요청했습니다.';
+    chatStore.sendSystemMessage(props.roomId, message, 'SYSTEM');
+    alert(isRetry ? '고용주에게 계약서 작성을 다시 요청했습니다.' : '고용주에게 계약서 작성을 요청했습니다.');
 }
 
 function closeCreateModal() {
@@ -469,6 +490,7 @@ function handleSignature(signatureDataUrl: string) {
     }
 
     contractStore.updateContract(currentContract.value.id, updates);
+    chatStore.updateRoomContract(props.roomId, currentContract.value.id);
     isSignatureModalOpen.value = false;
 }
 
@@ -478,6 +500,7 @@ function rejectContract() {
     contractStore.updateContract(currentContract.value.id, {
         status: 'REJECTED'
     });
+    chatStore.updateRoomContract(props.roomId, currentContract.value.id);
     chatStore.sendSystemMessage(props.roomId, '계약이 거절되었습니다.');
 }
 </script>

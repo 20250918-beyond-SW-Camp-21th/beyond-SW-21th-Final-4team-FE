@@ -196,4 +196,11 @@ function scrollToBottom() {
 // Scroll to bottom on mount and when messages change
 onMounted(scrollToBottom);
 watch(messages, scrollToBottom, { deep: true });
+
+watch(
+    () => props.roomId,
+    () => {
+        activeTab.value = 'CHAT';
+    }
+);
 </script>
