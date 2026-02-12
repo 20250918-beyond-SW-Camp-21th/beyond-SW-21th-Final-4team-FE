@@ -138,12 +138,30 @@ export const useChatStore = defineStore('chat', () => {
     const currentRoomId = ref<string | null>(null);
 
     // Getters
+    function normalizeIdForRoom(room: ChatRoom, id: string): string {
+        const raw = String(id);
+        if (/^[ef]\d+$/i.test(raw)) return raw.toLowerCase();
+        const possibleEmployer = `e${raw}`;
+        const possibleFreelancer = `f${raw}`;
+        if (room.participantNames[possibleEmployer]) return possibleEmployer;
+        if (room.participantNames[possibleFreelancer]) return possibleFreelancer;
+        return raw;
+    }
+
     const myRooms = computed(() => {
         if (!authStore.user) return [];
         const myIds = getMyParticipantIds();
 
-        return rooms.value.filter(room => room.participants.some((id) => myIds.includes(String(id))))
-            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        return rooms.value.filter((room) => {
+            const normalizedMyIds = myIds.map((id) => normalizeIdForRoom(room, id));
+            const isParticipant = room.participants
+                .map((id) => normalizeIdForRoom(room, String(id)))
+                .some((id) => normalizedMyIds.includes(id));
+            const hasLeft = (room.leftBy || [])
+                .map((id) => normalizeIdForRoom(room, String(id)))
+                .some((id) => normalizedMyIds.includes(id));
+            return isParticipant && !hasLeft;
+        }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     });
 
     const currentMessages = computed(() => {
@@ -178,6 +196,10 @@ export const useChatStore = defineStore('chat', () => {
 
         const targetRoomId = roomId ?? currentRoomId.value;
         if (!targetRoomId) return;
+
+        if (type !== 'SYSTEM' && isRoomReadOnly(targetRoomId)) {
+            return;
+        }
 
         // If no user is logged in, only allow sending if it's a system message override
         if (!authStore.user && !senderIdOverride) return;
@@ -335,6 +357,58 @@ export const useChatStore = defineStore('chat', () => {
         openDockedRooms.value = [];
     }
 
+    function isRoomReadOnly(roomId: string): boolean {
+        const room = rooms.value.find((r) => r.id === roomId);
+        if (!room || !authStore.user) return false;
+
+        const myIds = getMyParticipantIds().map((id) => normalizeIdForRoom(room, id));
+        const leftBy = (room.leftBy || []).map((id) => normalizeIdForRoom(room, String(id)));
+        return leftBy.some((id) => !myIds.includes(id));
+    }
+
+    function leaveRoom(roomId: string) {
+        const roomIndex = rooms.value.findIndex((room) => room.id === roomId);
+        if (roomIndex === -1) return;
+
+        const room = rooms.value[roomIndex];
+        const myIds = getMyParticipantIds();
+        const leaverName = authStore.user?.name || '상대방';
+
+        // Notify others before marking leave
+        sendSystemMessage(roomId, `${leaverName}님이 채팅방을 나갔습니다.`, 'SYSTEM');
+
+        const currentLeftBy = room.leftBy || [];
+        const primaryId = getCurrentChatParticipantId();
+        const leftBy = Array.from(new Set([
+            ...currentLeftBy.map((id) => normalizeIdForRoom(room, String(id))),
+            ...(primaryId ? [normalizeIdForRoom(room, primaryId)] : []),
+            ...myIds.map((id) => normalizeIdForRoom(room, String(id)))
+        ]));
+
+        const participantIds = Array.from(new Set(
+            room.participants.map((id) => normalizeIdForRoom(room, String(id)))
+        ));
+        const hasEveryoneLeft = participantIds.every((id) => leftBy.includes(id));
+
+        if (hasEveryoneLeft) {
+            rooms.value = rooms.value.filter((r) => r.id !== roomId);
+            if (messages.value[roomId]) {
+                delete messages.value[roomId];
+            }
+        } else {
+            rooms.value[roomIndex] = {
+                ...room,
+                leftBy,
+                updatedAt: new Date()
+            };
+        }
+
+        if (currentRoomId.value === roomId) {
+            currentRoomId.value = null;
+        }
+        openDockedRooms.value = openDockedRooms.value.filter((room) => room.roomId !== roomId);
+    }
+
     function updateRoomContract(roomId: string, contractId: number | null) {
         const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
         if (roomIndex === -1) return;
@@ -367,6 +441,8 @@ export const useChatStore = defineStore('chat', () => {
         minimizeDockedRoom,
         resetChatUIState,
         resetDockedUIState,
+        leaveRoom,
+        isRoomReadOnly,
         updateRoomContract
     };
 });
