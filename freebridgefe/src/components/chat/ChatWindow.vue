@@ -123,6 +123,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
+import { useContractStore } from '@/stores/contractStore';
 import { useAuthStore } from '@/stores/authStore';
 import MessageBubble from './MessageBubble.vue';
 import ContractTab from './ContractTab.vue';
@@ -144,6 +145,7 @@ const props = defineProps<{
 
 const chatStore = useChatStore();
 const authStore = useAuthStore();
+const contractStore = useContractStore();
 
 const activeTab = ref<'CHAT' | 'CONTRACT'>('CHAT');
 const newMessage = ref('');
@@ -160,8 +162,15 @@ const otherParticipantName = computed(() => {
 });
 
 const contractNeedsAttention = computed(() => {
-    // Logic to check if contract needs signature
-    return false; // Implement based on contractStore
+    if (!currentRoom.value || !authStore.user) return false;
+    const contractId = currentRoom.value.contractId;
+    if (!contractId) return false;
+    const contract = contractStore.contracts.find((c) => c.id === contractId);
+    if (!contract || contract.status !== 'WAITING_SIGNATURE') return false;
+    if (authStore.user.role === 'EMPLOYER') {
+        return !contract.employerSignedDate;
+    }
+    return !contract.freelancerSignedDate;
 });
 
 function getSenderName(senderId: string) {

@@ -17,6 +17,7 @@ const statusLabels: Record<string, string> = {
     WAITING_SIGNATURE: '서명 대기',
     IN_PROGRESS: '진행 중',
     COMPLETED: '완료',
+    REJECTED: '거절됨',
 };
 
 const canSign = computed(() => {

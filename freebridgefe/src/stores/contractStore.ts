@@ -10,7 +10,7 @@ export interface Contract {
     employerId: number;
     startDate: Date | string;
     endDate: Date | string;
-    status: 'WAITING_SIGNATURE' | 'IN_PROGRESS' | 'COMPLETED';
+    status: 'WAITING_SIGNATURE' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
     budget: number;
     commissionRate: number;
     paymentDay: number;                       // 매월 정기 지급일 (예: 10, 25)
