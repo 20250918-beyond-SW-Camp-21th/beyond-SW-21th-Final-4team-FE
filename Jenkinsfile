@@ -45,7 +45,13 @@ pipeline {
                     env.GIT_COMMIT_HASH = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     env.IMAGE_TAG = "${currentBuild.number}-${env.GIT_COMMIT_HASH}"
                     
+                    // [New] 브랜치 이름 동적 감지 (origin/dev -> dev)
+                    // Multibranch Pipeline(BRANCH_NAME) 또는 일반 Pipeline(GIT_BRANCH) 대응
+                    def rawBranch = env.BRANCH_NAME ?: (env.GIT_BRANCH ?: 'main')
+                    env.TARGET_BRANCH = rawBranch.replace('origin/', '')
+                    
                     echo "📡 빌드 정보 확인: ${env.IMAGE_TAG}"
+                    echo "🌿 타겟 브랜치: ${env.TARGET_BRANCH}"
                 }
             }
         }
@@ -82,10 +88,10 @@ pipeline {
                             mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
 
                             # 최신 상태 가져오기 (충돌 방지)
-                            git pull origin main --rebase
+                            git pull origin ${env.TARGET_BRANCH} --rebase
 
                             # 타겟 파일: kube-folder/frontend-deployment.yml
-                            if [ -f kube_folder/frontend-deployment.yml ]; then
+                            if [ -f kube-folder/frontend-deployment.yml ]; then
                                 echo "📝 Manifest 파일 수정 중..."
                                 
                                 # sed를 사용하여 이미지 태그 업데이트
@@ -101,7 +107,7 @@ pipeline {
                                 if ! git diff --cached --quiet; then
                                     # [skip ci]를 메시지에 포함하여 무한 빌드 루프 방지
                                     git commit -m "[Frontend] Update image tag to ${env.IMAGE_TAG} [skip ci]"
-                                    git push origin main
+                                    git push origin ${env.TARGET_BRANCH}
                                     echo "Manifest 업데이트 및 푸시 완료!"
                                 else
                                     echo "변경사항 없음 (Skipping push)."

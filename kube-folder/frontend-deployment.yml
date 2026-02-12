@@ -18,4 +18,4 @@ spec:
       - name: frontend
         image: o2ppo/freebrfront001:latest # Jenkins 파이프라인이 자동으로 업데이트함
         ports:
-        - containerPort: 80
+        - containerPort: 8080
