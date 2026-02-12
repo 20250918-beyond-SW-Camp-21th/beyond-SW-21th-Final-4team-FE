@@ -48,7 +48,7 @@
         </div>
 
         <!-- Main Content Area -->
-        <div class="flex-1 overflow-hidden relative bg-slate-900">
+        <div class="flex-1 min-h-0 overflow-hidden relative bg-slate-900">
             <!-- Tab: CHAT -->
             <div v-show="activeTab === 'CHAT'" class="h-full flex flex-col min-h-0">
                 <!-- Messages List -->
@@ -68,7 +68,7 @@
                 </div>
 
                 <!-- Floating Input Area (Instagram Style) -->
-                <div class="p-4 bg-slate-900">
+                <div class="p-4 bg-slate-900/95 backdrop-blur-sm border-t border-white/5 shrink-0">
                     <div class="max-w-4xl mx-auto flex items-center gap-2">
                         <!-- Quick Actions (Left) -->
                         <button class="p-2.5 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
@@ -83,7 +83,7 @@
                                 @keydown.enter.exact.prevent="sendMessage"
                                 rows="1"
                                 placeholder="메시지를 입력하세요..."
-                                class="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-2.5 max-h-32 min-h-[44px] text-white placeholder-slate-500 leading-relaxed custom-scrollbar text-[15px]"
+                                class="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-2.5 h-[44px] max-h-[44px] min-h-[44px] overflow-y-auto text-white placeholder-slate-500 leading-relaxed custom-scrollbar text-[15px]"
                             ></textarea>
                             
                             <!-- Business Action Icons inside Pill -->
