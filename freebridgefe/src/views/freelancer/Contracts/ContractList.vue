@@ -42,6 +42,7 @@ const statusFilters = [
     { value: 'WAITING_SIGNATURE', label: '서명 대기' },
     { value: 'IN_PROGRESS', label: '진행 중' },
     { value: 'COMPLETED', label: '완료' },
+    { value: 'REJECTED', label: '거절됨' },
 ];
 
 const myContracts = computed(() => {
@@ -110,6 +111,11 @@ const statusConfig: Record<
         label: '완료',
         bgColor: 'bg-green-500',
         icon: CheckCircle,
+    },
+    REJECTED: {
+        label: '거절됨',
+        bgColor: 'bg-rose-500',
+        icon: Clock,
     },
 };
 

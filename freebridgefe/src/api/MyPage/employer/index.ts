@@ -111,7 +111,7 @@ export const rejectApplication = async (applicationId: string, reason: string): 
     await new Promise((resolve) => setTimeout(resolve, 500));
 };
 
-export const getEmployerProfile = async (): Promise<EmployerProfileData> => {
+export const getEmployerProfile = async (_employerId?: string | number): Promise<EmployerProfileData> => {
     await new Promise((resolve) => setTimeout(resolve, 300));
     return getMockEmployerProfile() as EmployerProfileData;
 };

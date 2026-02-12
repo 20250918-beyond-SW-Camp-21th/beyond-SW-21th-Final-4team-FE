@@ -265,7 +265,7 @@ const handleProfileClick = () => {
         return;
     }
 
-    getEmployerProfile()
+    getEmployerProfile(otherId)
         .then((profile) => {
             employerProfile.value = {
                 companyName: profile.companyName || employerProfile.value.companyName,

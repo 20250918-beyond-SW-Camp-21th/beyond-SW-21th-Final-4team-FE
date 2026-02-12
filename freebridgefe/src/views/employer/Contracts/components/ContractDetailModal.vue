@@ -17,6 +17,7 @@ const statusLabels: Record<string, string> = {
     WAITING_SIGNATURE: '서명 대기',
     IN_PROGRESS: '진행 중',
     COMPLETED: '완료',
+    REJECTED: '거절됨',
 };
 
 const canSign = computed(() => {
@@ -85,6 +86,10 @@ const formatCurrency = (amount: number) => {
                             <div class="text-lg font-medium">
                                 {{ contract.projectName }}
                             </div>
+                        </div>
+                        <div v-if="contract.projectId">
+                            <div class="text-sm text-white/60 mb-1">프로젝트 ID</div>
+                            <div class="text-lg font-medium">{{ contract.projectId }}</div>
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">계약 상태</div>

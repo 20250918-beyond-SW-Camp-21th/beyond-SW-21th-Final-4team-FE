@@ -45,6 +45,7 @@
                     <div>
                         <h4 class="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">프로젝트명</h4>
                         <p class="text-lg font-bold text-white">{{ currentContract.projectName }}</p>
+                        <p v-if="currentContract.projectId" class="text-xs text-slate-500 mt-1">프로젝트 ID · {{ currentContract.projectId }}</p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -84,16 +85,53 @@
                              <FileIcon class="w-4 h-4" /> 계약서 미리보기 (PDF)
                         </button>
                         
-                        <button 
-                            v-if="!hasSigned"
-                            @click="openSignatureModal"
-                            class="w-full py-2.5 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
-                        >
-                            <PenToolIcon class="w-4 h-4" /> 내 서명하기
-                        </button>
+                        <template v-if="!hasSigned">
+                            <button 
+                                @click="openSignatureModal"
+                                class="w-full py-2.5 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
+                            >
+                                <PenToolIcon class="w-4 h-4" /> 서명하고 수락하기
+                            </button>
+                            <button
+                                v-if="!isEmployer"
+                                @click="rejectContract"
+                                class="w-full py-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-300 font-semibold rounded-lg hover:bg-rose-500/20 transition-colors flex items-center justify-center gap-2"
+                            >
+                                거절하기
+                            </button>
+                        </template>
                         <div v-else class="text-center py-2 text-sm text-emerald-500 font-medium bg-emerald-500/10 rounded-lg border border-emerald-500/20">
                             이미 서명을 완료했습니다. 상대방을 기다리는 중입니다.
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Case 2.5: Rejected Contract -->
+            <div v-else-if="currentContract.status === 'REJECTED'" class="bg-slate-900 rounded-xl shadow-lg border border-white/5 overflow-hidden">
+                <div class="bg-rose-500/10 px-6 py-4 border-b border-rose-500/20 flex items-center gap-3">
+                    <ClockIcon class="w-5 h-5 text-rose-400" />
+                    <span class="font-bold text-rose-400">계약이 거절되었습니다</span>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="text-sm text-slate-300">
+                        상대방이 계약을 거절했습니다. 새로운 조건으로 다시 제안할 수 있습니다.
+                    </div>
+                    <div class="flex flex-col gap-3">
+                        <button
+                            v-if="isEmployer"
+                            @click="initiateContract"
+                            class="w-full py-2.5 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2"
+                        >
+                            계약서 다시 작성하기
+                        </button>
+                        <button
+                            v-else
+                            @click="requestContract(true)"
+                            class="w-full py-2.5 bg-slate-800 border border-white/10 text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-700 hover:text-white transition-colors"
+                        >
+                            계약서 다시 요청하기
+                        </button>
                     </div>
                 </div>
             </div>
@@ -105,6 +143,7 @@
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <h3 class="text-lg font-bold text-white">{{ currentContract.projectName }}</h3>
+                            <p v-if="currentContract.projectId" class="text-xs text-slate-500 mt-1">프로젝트 ID · {{ currentContract.projectId }}</p>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 mt-2">
                                 {{ currentContract.status === 'IN_PROGRESS' ? '진행중' : '완료됨' }}
                             </span>
@@ -160,13 +199,114 @@
             </div>
         </div>
     </div>
+
+    <!-- Create Contract Modal -->
+    <div
+        v-if="isCreateModalOpen"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+    >
+        <div class="w-full max-w-xl rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-6 text-white shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-bold">계약서 작성</h3>
+                <button class="text-slate-400 hover:text-white text-sm" @click="closeCreateModal">닫기</button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs text-slate-400">프로젝트명</label>
+                    <input
+                        v-model="createForm.projectName"
+                        type="text"
+                        class="mt-2 w-full rounded-xl bg-slate-800/80 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-400/60"
+                        placeholder="프로젝트명을 입력하세요"
+                    />
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400">프로젝트 고유번호</label>
+                    <input
+                        v-model="createForm.projectId"
+                        type="text"
+                        readonly
+                        class="mt-2 w-full rounded-xl bg-slate-800/80 border border-white/10 px-4 py-2.5 text-sm text-slate-300 focus:outline-none"
+                    />
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-400">시작일</label>
+                        <input
+                            v-model="createForm.startDate"
+                            type="date"
+                            class="mt-2 w-full rounded-xl bg-slate-800/80 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-400/60"
+                        />
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400">종료일</label>
+                        <input
+                            v-model="createForm.endDate"
+                            type="date"
+                            class="mt-2 w-full rounded-xl bg-slate-800/80 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-400/60"
+                        />
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-slate-400">총 계약금액</label>
+                        <input
+                            v-model.number="createForm.budget"
+                            type="number"
+                            min="0"
+                            class="mt-2 w-full rounded-xl bg-slate-800/80 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-400/60"
+                            placeholder="예: 10000000"
+                        />
+                    </div>
+                    <div>
+                        <label class="text-xs text-slate-400">지급일</label>
+                        <input
+                            v-model.number="createForm.paymentDay"
+                            type="number"
+                            min="1"
+                            max="31"
+                            class="mt-2 w-full rounded-xl bg-slate-800/80 border border-white/10 px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-400/60"
+                            placeholder="예: 25"
+                        />
+                    </div>
+                </div>
+                <div v-if="createError" class="text-xs text-rose-400">{{ createError }}</div>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button
+                    class="flex-1 py-3 rounded-xl bg-white/10 border border-white/10 text-sm font-semibold text-white hover:bg-white/20 transition-colors"
+                    @click="closeCreateModal"
+                >
+                    취소
+                </button>
+                <button
+                    class="flex-1 py-3 rounded-xl bg-emerald-600 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors"
+                    @click="createContract"
+                >
+                    작성 완료
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <SignaturePadModal
+        v-if="isSignatureModalOpen && authStore.user"
+        :signerName="authStore.user.name"
+        @sign="handleSignature"
+        @close="isSignatureModalOpen = false"
+    />
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useContractStore } from '@/stores/contractStore';
+import { useJobStore } from '@/stores/jobStore';
+import { useFreelancerStore } from '@/stores/freelancerStore';
+import SignaturePadModal from '@/views/employer/Contracts/components/SignaturePadModal.vue';
 import { 
     FileText as FileTextIcon, 
     Clock as ClockIcon, 
@@ -184,6 +324,8 @@ const props = defineProps<{
 const authStore = useAuthStore();
 const chatStore = useChatStore();
 const contractStore = useContractStore();
+const jobStore = useJobStore();
+const freelancerStore = useFreelancerStore();
 
 const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
 const currentContract = computed(() => {
@@ -192,12 +334,28 @@ const currentContract = computed(() => {
 });
 
 const isEmployer = computed(() => authStore.user?.role === 'EMPLOYER');
+const isCreateModalOpen = ref(false);
+const isSignatureModalOpen = ref(false);
+const createError = ref('');
+const createForm = ref({
+    projectName: '',
+    projectId: '',
+    startDate: '',
+    endDate: '',
+    budget: 0,
+    paymentDay: 25
+});
 
 const hasSigned = computed(() => {
     if (!currentContract.value || !authStore.user) return false;
     return isEmployer.value 
         ? !!currentContract.value.employerSignedDate 
         : !!currentContract.value.freelancerSignedDate;
+});
+
+const otherParticipantId = computed(() => {
+    if (!currentRoom.value) return null;
+    return chatStore.getOtherParticipantId(currentRoom.value) || null;
 });
 
 function formatCurrency(amount: number) {
@@ -209,22 +367,140 @@ function formatDate(date: Date | string) {
 }
 
 function initiateContract() {
-    // Logic to open modal to create contract
-    alert('계약서 작성 모달이 열립니다. (구현 예정)');
-    // After creation, it would mimic:
-    // contractStore.addContract(...)
-    // chatStore.updateRoomContract(...)
+    if (!isEmployer.value) return;
+    const proposalId = currentRoom.value?.relatedProposalId ?? null;
+    const proposal = proposalId
+        ? freelancerStore.proposals.find((item) => item.id === proposalId)
+        : null;
+    const jobId = currentRoom.value?.relatedJobId ?? proposal?.jobId ?? '';
+    const job = jobId ? jobStore.getJobById(jobId) : null;
+
+    createForm.value = {
+        projectName: job?.title || proposal?.message?.slice(0, 24) || '프로젝트 계약',
+        projectId: jobId || '',
+        startDate: '',
+        endDate: '',
+        budget: 0,
+        paymentDay: 25
+    };
+    createError.value = '';
+    isCreateModalOpen.value = true;
 }
 
 function openSignatureModal() {
-     alert('서명 패드가 열립니다. (구현 예정)');
-    // After signature:
-    // contractStore.updateContract(id, { ...signedDate: new Date() })
+    if (!currentContract.value) return;
+    isSignatureModalOpen.value = true;
 }
 
-function requestContract() {
+function requestContract(isRetry = false) {
     // Logic to send a system message or notification to employer
-    chatStore.sendSystemMessage(props.roomId, '상대방에게 계약서 작성을 요청했습니다.', 'SYSTEM');
-    alert('고용주에게 계약서 작성을 요청했습니다.');
+    const message = isRetry
+        ? '상대방에게 계약서 작성을 다시 요청했습니다.'
+        : '상대방에게 계약서 작성을 요청했습니다.';
+    chatStore.sendSystemMessage(props.roomId, message, 'SYSTEM');
+    alert(isRetry ? '고용주에게 계약서 작성을 다시 요청했습니다.' : '고용주에게 계약서 작성을 요청했습니다.');
+}
+
+function closeCreateModal() {
+    isCreateModalOpen.value = false;
+}
+
+function parseParticipantId(participantId: string | null) {
+    if (!participantId) return null;
+    const match = String(participantId).match(/^([ef])(\d+)$/i);
+    if (match) {
+        return { role: match[1].toUpperCase(), id: Number(match[2]) };
+    }
+    const numericId = Number(participantId);
+    return Number.isNaN(numericId) ? null : { role: null, id: numericId };
+}
+
+function createContract() {
+    if (!authStore.user || !currentRoom.value || !otherParticipantId.value) return;
+    if (!createForm.value.projectName.trim()) {
+        createError.value = '프로젝트명을 입력해주세요.';
+        return;
+    }
+    if (!createForm.value.startDate || !createForm.value.endDate) {
+        createError.value = '계약 기간을 선택해주세요.';
+        return;
+    }
+    if (createForm.value.budget <= 0) {
+        createError.value = '계약 금액을 입력해주세요.';
+        return;
+    }
+
+    const other = parseParticipantId(otherParticipantId.value);
+    if (!other?.id) {
+        createError.value = '상대방 정보를 찾을 수 없습니다.';
+        return;
+    }
+
+    const nextId = Math.max(0, ...contractStore.contracts.map((c) => c.id)) + 1;
+    const contract = {
+        id: nextId,
+        contractId: 1000 + nextId,
+        projectName: createForm.value.projectName.trim(),
+        projectId: createForm.value.projectId || undefined,
+        freelancerId: authStore.user.role === 'EMPLOYER' ? other.id : Number(authStore.user.id),
+        employerId: authStore.user.role === 'EMPLOYER' ? Number(authStore.user.id) : other.id,
+        startDate: new Date(createForm.value.startDate),
+        endDate: new Date(createForm.value.endDate),
+        status: 'WAITING_SIGNATURE' as const,
+        budget: createForm.value.budget,
+        commissionRate: 0.05,
+        paymentDay: createForm.value.paymentDay || 25,
+        contractPdfUrl: `/contracts/${1000 + nextId}_contract.pdf`,
+        employerSignature: authStore.user.role === 'EMPLOYER' ? 'signed-by-employer' : undefined,
+        employerSignedDate: authStore.user.role === 'EMPLOYER' ? new Date() : undefined
+    };
+
+    contractStore.addContract(contract);
+    chatStore.updateRoomContract(props.roomId, contract.id);
+    chatStore.sendMessage(
+        '프로젝트 계약 요청',
+        'CONTRACT_ALERT',
+        { contractId: contract.id, status: 'WAITING_SIGNATURE' },
+        props.roomId
+    );
+    chatStore.sendSystemMessage(props.roomId, '계약서가 작성되어 전송되었습니다.');
+
+    isCreateModalOpen.value = false;
+}
+
+function handleSignature(signatureDataUrl: string) {
+    if (!currentContract.value || !authStore.user) return;
+
+    const updates: Record<string, any> = {};
+    if (isEmployer.value) {
+        updates.employerSignature = signatureDataUrl;
+        updates.employerSignedDate = new Date();
+    } else {
+        updates.freelancerSignature = signatureDataUrl;
+        updates.freelancerSignedDate = new Date();
+    }
+
+    const nextEmployerSigned = updates.employerSignedDate || currentContract.value.employerSignedDate;
+    const nextFreelancerSigned = updates.freelancerSignedDate || currentContract.value.freelancerSignedDate;
+
+    if (nextEmployerSigned && nextFreelancerSigned) {
+        updates.status = 'IN_PROGRESS';
+        updates.signedDate = new Date();
+        chatStore.sendSystemMessage(props.roomId, '계약서 서명이 완료되었습니다.');
+    }
+
+    contractStore.updateContract(currentContract.value.id, updates);
+    chatStore.updateRoomContract(props.roomId, currentContract.value.id);
+    isSignatureModalOpen.value = false;
+}
+
+function rejectContract() {
+    if (!currentContract.value) return;
+    if (!confirm('계약을 거절하시겠습니까?')) return;
+    contractStore.updateContract(currentContract.value.id, {
+        status: 'REJECTED'
+    });
+    chatStore.updateRoomContract(props.roomId, currentContract.value.id);
+    chatStore.sendSystemMessage(props.roomId, '계약이 거절되었습니다.');
 }
 </script>

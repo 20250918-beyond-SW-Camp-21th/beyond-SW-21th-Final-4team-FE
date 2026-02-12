@@ -106,7 +106,7 @@ export const useChatStore = defineStore('chat', () => {
                 content: '프로젝트 계약 요청',
                 type: 'CONTRACT_ALERT',
                 metadata: {
-                    contractId: 101,
+                    contractId: 2,
                     status: 'WAITING_SIGNATURE'
                 },
                 createdAt: new Date(Date.now() - 900000),
@@ -335,6 +335,15 @@ export const useChatStore = defineStore('chat', () => {
         openDockedRooms.value = [];
     }
 
+    function updateRoomContract(roomId: string, contractId: number | null) {
+        const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
+        if (roomIndex === -1) return;
+        rooms.value[roomIndex] = {
+            ...rooms.value[roomIndex],
+            contractId: contractId ?? undefined
+        };
+    }
+
     return {
         rooms,
         messages,
@@ -357,6 +366,7 @@ export const useChatStore = defineStore('chat', () => {
         closeDockedRoom,
         minimizeDockedRoom,
         resetChatUIState,
-        resetDockedUIState
+        resetDockedUIState,
+        updateRoomContract
     };
 });
