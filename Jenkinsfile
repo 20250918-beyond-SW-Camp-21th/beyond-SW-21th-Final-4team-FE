@@ -108,13 +108,17 @@ pipeline {
             }
         }
 
-        stage('Deploy to Server B') {
+        stage('Deploy to Server Eric pc') {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
                         sh '''
                             export KUBECONFIG=$KUBECONFIG
                             chmod 600 $KUBECONFIG
+                            
+                            # Fix Kubeconfig server URL (typo and incorrect IP)
+                            sed -i 's|https:/192.168.0.28|https://192.168.0.12|g' $KUBECONFIG
+                            sed -i 's|https:/|https://|g' $KUBECONFIG
                             
                             # Ensure kubectl is installed (Simplified check)
                             if ! command -v kubectl > /dev/null 2>&1; then
