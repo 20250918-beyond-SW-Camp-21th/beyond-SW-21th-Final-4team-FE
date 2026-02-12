@@ -59,34 +59,62 @@ const goBack = () => {
 
 const isFindPasswordModalOpen = ref(false);
 const resetEmail = ref('');
-const isResetting = ref(false);
-const resetSuccess = ref(false);
+const step = ref<'EMAIL' | 'VERIFY' | 'PASSWORD'>('EMAIL');
+const verificationCode = ref('');
+const newPassword = ref('');
+const confirmPassword = ref('');
+const isProcessing = ref(false);
 
 const openFindPasswordModal = () => {
   isFindPasswordModalOpen.value = true;
   resetEmail.value = '';
-  resetSuccess.value = false;
-  isResetting.value = false;
+  step.value = 'EMAIL';
+  verificationCode.value = '';
+  newPassword.value = '';
+  confirmPassword.value = '';
+  error.value = '';
 };
 
 const closeFindPasswordModal = () => {
   isFindPasswordModalOpen.value = false;
 };
 
-const handlePasswordReset = async () => {
-  isResetting.value = true;
-  // Simulate API call
-  // TODO: Implement SMTP email sending via backend API (Future Requirement)
+const handleSendCode = async () => {
+  isProcessing.value = true;
+  // TODO: Implement SMTP email sending via backend API
   await new Promise(resolve => setTimeout(resolve, 1500));
-  isResetting.value = false;
-  resetSuccess.value = true;
+  isProcessing.value = false;
+  step.value = 'VERIFY';
+};
+
+const handleVerifyCode = async () => {
+  isProcessing.value = true;
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  isProcessing.value = false;
   
-  // Close modal after success (optional delay)
-  setTimeout(() => {
-    if(isFindPasswordModalOpen.value) {
-      // closeFindPasswordModal(); // Uncomment if you want to auto-close
-    }
-  }, 2000);
+  if (verificationCode.value === '123456') {
+    step.value = 'PASSWORD';
+    error.value = '';
+  } else {
+    error.value = '인증번호가 올바르지 않습니다.';
+  }
+};
+
+const handlePasswordChange = async () => {
+  if (newPassword.value !== confirmPassword.value) {
+    error.value = '비밀번호가 일치하지 않습니다.';
+    return;
+  }
+  
+  isProcessing.value = true;
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  isProcessing.value = false;
+  
+  // Success
+  closeFindPasswordModal();
+  email.value = resetEmail.value; // Auto-fill login email
+  password.value = newPassword.value; // Auto-fill new password
+  alert('비밀번호가 성공적으로 변경되었습니다. 다시 로그인해 주세요.');
 };
 
 // Animation variants for v-motion
@@ -306,11 +334,13 @@ const fadeInUp = {
 
         <h2 class="text-2xl font-bold mb-2">비밀번호 찾기</h2>
         <p class="text-white/60 mb-6 text-sm">
-          가입하신 이메일 주소를 입력해 주세요.<br/>
-          비밀번호 재설정 링크를 보내드립니다.
+          <span v-if="step === 'EMAIL'">가입하신 이메일 주소를 입력해 주세요.<br/>인증번호를 보내드립니다.</span>
+          <span v-else-if="step === 'VERIFY'">이메일로 전송된 인증번호 6자리를 입력해 주세요.</span>
+          <span v-else-if="step === 'PASSWORD'">새로운 비밀번호를 입력해 주세요.</span>
         </p>
 
-        <form @submit.prevent="handlePasswordReset" class="space-y-4">
+        <!-- Step 1: Email Input -->
+        <form v-if="step === 'EMAIL'" @submit.prevent="handleSendCode" class="space-y-4">
           <div>
             <label class="block text-sm font-medium mb-2 text-white/80">이메일</label>
             <div class="relative">
@@ -324,21 +354,81 @@ const fadeInUp = {
               />
             </div>
           </div>
-
-          <div v-if="resetSuccess" class="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-            </svg>
-            <span>재설정 링크가 전송되었습니다!</span>
-          </div>
-
           <button
             type="submit"
-            :disabled="isResetting || resetSuccess"
+            :disabled="isProcessing"
             class="w-full py-3 bg-white text-black rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            <span v-if="isResetting" class="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
-            <span>{{ isResetting ? '전송 중...' : (resetSuccess ? '전송 완료' : '링크 전송하기') }}</span>
+            <span v-if="isProcessing" class="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
+            <span>{{ isProcessing ? '전송 중...' : '인증번호 받기' }}</span>
+          </button>
+        </form>
+
+        <!-- Step 2: Verification Code -->
+        <form v-if="step === 'VERIFY'" @submit.prevent="handleVerifyCode" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-2 text-white/80">인증번호</label>
+            <input
+              type="text"
+              v-model="verificationCode"
+              placeholder="123456"
+              maxlength="6"
+              class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-white/30 transition-colors text-white placeholder:text-white/30 text-center tracking-widest text-lg"
+              required
+            />
+          </div>
+           <div v-if="error" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
+            {{ error }}
+          </div>
+          <button
+            type="submit"
+            :disabled="isProcessing"
+            class="w-full py-3 bg-white text-black rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <span v-if="isProcessing" class="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
+            <span>{{ isProcessing ? '확인 중...' : '인증하기' }}</span>
+          </button>
+          <button 
+            type="button" 
+            @click="step = 'EMAIL'"
+            class="w-full py-2 text-sm text-white/40 hover:text-white transition-colors"
+          >
+            이메일 다시 입력하기
+          </button>
+        </form>
+
+        <!-- Step 3: New Password -->
+        <form v-if="step === 'PASSWORD'" @submit.prevent="handlePasswordChange" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-2 text-white/80">새 비밀번호</label>
+            <input
+              type="password"
+              v-model="newPassword"
+              placeholder="••••••••"
+              class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-white/30 transition-colors text-white placeholder:text-white/30"
+              required
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2 text-white/80">비밀번호 확인</label>
+            <input
+              type="password"
+              v-model="confirmPassword"
+              placeholder="••••••••"
+              class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-white/30 transition-colors text-white placeholder:text-white/30"
+              required
+            />
+          </div>
+           <div v-if="error" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
+            {{ error }}
+          </div>
+          <button
+            type="submit"
+            :disabled="isProcessing"
+            class="w-full py-3 bg-white text-black rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <span v-if="isProcessing" class="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
+            <span>{{ isProcessing ? '변경 중...' : '비밀번호 변경' }}</span>
           </button>
         </form>
       </div>
