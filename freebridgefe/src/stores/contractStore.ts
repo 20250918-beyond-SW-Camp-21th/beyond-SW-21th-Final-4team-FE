@@ -5,6 +5,7 @@ import { ref, computed } from 'vue';
 export interface Contract {
     id: number;
     contractId: number;
+    projectId?: string;
     projectName: string;
     freelancerId: number;
     employerId: number;

@@ -45,6 +45,7 @@
                     <div>
                         <h4 class="text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">프로젝트명</h4>
                         <p class="text-lg font-bold text-white">{{ currentContract.projectName }}</p>
+                        <p v-if="currentContract.projectId" class="text-xs text-slate-500 mt-1">프로젝트 ID · {{ currentContract.projectId }}</p>
                     </div>
 
                     <div class="grid grid-cols-2 gap-4">
@@ -124,6 +125,7 @@
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <h3 class="text-lg font-bold text-white">{{ currentContract.projectName }}</h3>
+                            <p v-if="currentContract.projectId" class="text-xs text-slate-500 mt-1">프로젝트 ID · {{ currentContract.projectId }}</p>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 mt-2">
                                 {{ currentContract.status === 'IN_PROGRESS' ? '진행중' : '완료됨' }}
                             </span>
@@ -201,6 +203,15 @@
                         placeholder="프로젝트명을 입력하세요"
                     />
                 </div>
+                <div>
+                    <label class="text-xs text-slate-400">프로젝트 고유번호</label>
+                    <input
+                        v-model="createForm.projectId"
+                        type="text"
+                        readonly
+                        class="mt-2 w-full rounded-xl bg-slate-800/80 border border-white/10 px-4 py-2.5 text-sm text-slate-300 focus:outline-none"
+                    />
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="text-xs text-slate-400">시작일</label>
@@ -275,6 +286,8 @@ import { computed, ref } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useContractStore } from '@/stores/contractStore';
+import { useJobStore } from '@/stores/jobStore';
+import { useFreelancerStore } from '@/stores/freelancerStore';
 import SignaturePadModal from '@/views/employer/Contracts/components/SignaturePadModal.vue';
 import { 
     FileText as FileTextIcon, 
@@ -293,6 +306,8 @@ const props = defineProps<{
 const authStore = useAuthStore();
 const chatStore = useChatStore();
 const contractStore = useContractStore();
+const jobStore = useJobStore();
+const freelancerStore = useFreelancerStore();
 
 const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
 const currentContract = computed(() => {
@@ -306,6 +321,7 @@ const isSignatureModalOpen = ref(false);
 const createError = ref('');
 const createForm = ref({
     projectName: '',
+    projectId: '',
     startDate: '',
     endDate: '',
     budget: 0,
@@ -334,8 +350,16 @@ function formatDate(date: Date | string) {
 
 function initiateContract() {
     if (!isEmployer.value) return;
+    const proposalId = currentRoom.value?.relatedProposalId ?? null;
+    const proposal = proposalId
+        ? freelancerStore.proposals.find((item) => item.id === proposalId)
+        : null;
+    const jobId = currentRoom.value?.relatedJobId ?? proposal?.jobId ?? '';
+    const job = jobId ? jobStore.getJobById(jobId) : null;
+
     createForm.value = {
-        projectName: currentRoom.value?.relatedJobId ? `프로젝트 ${currentRoom.value.relatedJobId}` : '프로젝트 계약',
+        projectName: job?.title || proposal?.message?.slice(0, 24) || '프로젝트 계약',
+        projectId: jobId || '',
         startDate: '',
         endDate: '',
         budget: 0,
@@ -396,6 +420,7 @@ function createContract() {
         id: nextId,
         contractId: 1000 + nextId,
         projectName: createForm.value.projectName.trim(),
+        projectId: createForm.value.projectId || undefined,
         freelancerId: authStore.user.role === 'EMPLOYER' ? other.id : Number(authStore.user.id),
         employerId: authStore.user.role === 'EMPLOYER' ? Number(authStore.user.id) : other.id,
         startDate: new Date(createForm.value.startDate),

@@ -24,6 +24,9 @@
                 <p class="text-xs text-slate-500">프로젝트명</p>
                 <p class="text-sm text-slate-300 font-medium truncate">{{ contractProjectName }}</p>
             </div>
+            <div v-if="contractProjectId" class="text-xs text-slate-500">
+                프로젝트 ID · {{ contractProjectId }}
+            </div>
 
             <div class="pt-2 flex gap-2">
                 <button
@@ -101,6 +104,7 @@ const contractDetails = computed(() => {
 const isEmployer = computed(() => authStore.user?.role === 'EMPLOYER');
 const contractTitle = computed(() => contractDetails.value?.projectName || '프로젝트 표준 계약');
 const contractProjectName = computed(() => contractDetails.value?.projectName || '계약 정보 없음');
+const contractProjectId = computed(() => contractDetails.value?.projectId || '');
 
 const statusLabel = computed(() => {
     const status = contractDetails.value?.status;

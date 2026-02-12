@@ -87,6 +87,10 @@ const formatCurrency = (amount: number) => {
                                 {{ contract.projectName }}
                             </div>
                         </div>
+                        <div v-if="contract.projectId">
+                            <div class="text-sm text-white/60 mb-1">프로젝트 ID</div>
+                            <div class="text-lg font-medium">{{ contract.projectId }}</div>
+                        </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">계약 상태</div>
                             <div class="text-lg font-medium">{{ statusLabels[contract.status] || contract.status }}</div>
