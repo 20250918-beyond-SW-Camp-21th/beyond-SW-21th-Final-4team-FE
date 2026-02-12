@@ -18,7 +18,6 @@ pipeline {
         // Git 설정
         GIT_EMAIL = 'lmjayoul@gmail.com'
         
-
         // script 블록 안에서 실행해야 하므로 초기값은 빈 문자열로 두고 stage에서 설정
     }
 
@@ -122,8 +121,8 @@ pipeline {
             }
         }
 
-        // 5. 원격 배포 (Server B)
-        stage('Deploy to Server B ( Eric Pc )') {
+        // 5. 원격 배포 (Server B) - Eric PC
+        stage('Deploy to Server B') {
             steps {
                 script {
                     withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
@@ -131,7 +130,7 @@ pipeline {
                             export KUBECONFIG=$KUBECONFIG
                             
                             # kubectl 존재 확인 및 설치 (보안 강화)
-                            if command -v kubectl &> /dev/null; then
+                            if command -v kubectl > /dev/null 2>&1; then
                                 echo "Using pre-installed kubectl"
                             else
                                 KUBECTL_VER="v1.31.0"
