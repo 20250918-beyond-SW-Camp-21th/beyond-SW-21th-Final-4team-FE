@@ -48,6 +48,12 @@
                 >
                     새로운 대화를 시작해보세요.
                 </div>
+                <div
+                    v-else-if="isReadOnly"
+                    class="mb-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-slate-300"
+                >
+                    상대방이 채팅방을 나갔습니다. 이 채팅은 읽기 전용입니다.
+                </div>
                  <div v-for="msg in messages" :key="msg.id" class="mb-3">
                     <div 
                         :class="['flex flex-col', isMyMessage(msg) ? 'items-end' : 'items-start']"
@@ -79,10 +85,11 @@
                         class="flex-1 bg-transparent border-none focus:ring-0 resize-none text-sm max-h-20 text-white placeholder-slate-500"
                         placeholder="Write a message..."
                          style="min-height: 32px;"
+                        :disabled="isReadOnly"
                     ></textarea>
                     <button 
                         @click="sendMessage"
-                        :disabled="!newMessage.trim()"
+                        :disabled="!newMessage.trim() || isReadOnly"
                         class="p-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
                     >
                         <SendIcon class="w-3 h-3" />
@@ -128,6 +135,7 @@ const messagesContainer = ref<HTMLElement | null>(null);
 const room = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
 const messages = computed(() => chatStore.messages[props.roomId] || []);
 const nonSystemMessages = computed(() => messages.value.filter((msg) => msg.type !== 'SYSTEM'));
+const isReadOnly = computed(() => chatStore.isRoomReadOnly(props.roomId));
 
 const otherParticipantName = computed(() => {
     if (!room.value || !authStore.user) return 'Unknown';

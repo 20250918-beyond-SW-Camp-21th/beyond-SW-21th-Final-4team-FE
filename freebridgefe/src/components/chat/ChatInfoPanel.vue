@@ -6,7 +6,6 @@
                 <div class="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 text-3xl font-bold border-4 border-slate-800 ring-2 ring-emerald-500/50">
                     {{ otherParticipantName.charAt(0) }}
                 </div>
-                <span class="absolute bottom-1 right-1 w-5 h-5 bg-emerald-500 border-4 border-slate-900 rounded-full"></span>
             </div>
             
             <h2 class="text-xl font-bold text-white mb-1">{{ otherParticipantName }}</h2>
@@ -56,24 +55,22 @@
         <div class="p-6">
             <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">공유된 파일</h3>
             <div class="space-y-3">
-                <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer group">
+                <div
+                    v-for="file in sharedFiles"
+                    :key="file.id"
+                    class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                >
                     <div class="p-2 rounded bg-slate-800 text-slate-400 group-hover:text-emerald-400 transition-colors">
                         <FileTextIcon class="w-5 h-5" />
                     </div>
                     <div class="flex-1 overflow-hidden">
-                        <p class="text-sm text-slate-300 font-medium truncate group-hover:text-white">계약서_초안_v2.pdf</p>
-                        <p class="text-xs text-slate-500">2.4 MB • 오늘</p>
+                        <p class="text-sm text-slate-300 font-medium truncate group-hover:text-white">{{ file.name }}</p>
+                        <p class="text-xs text-slate-500">{{ formatFileMeta(file) }}</p>
                     </div>
                 </div>
-                
-                <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer group">
-                    <div class="p-2 rounded bg-slate-800 text-slate-400 group-hover:text-blue-400 transition-colors">
-                        <ImageIcon class="w-5 h-5" />
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <p class="text-sm text-slate-300 font-medium truncate group-hover:text-white">디자인_시스템.fig</p>
-                        <p class="text-xs text-slate-500">14.2 MB • 어제</p>
-                    </div>
+
+                <div v-if="sharedFiles.length === 0" class="text-xs text-slate-500">
+                    아직 공유된 파일이 없습니다.
                 </div>
             </div>
         </div>
@@ -202,6 +199,19 @@ const jobDetail = ref({
     budget: '정보 없음',
     duration: '정보 없음'
 });
+const sharedFiles = computed(() => {
+    if (!currentRoom.value) return [];
+    const roomMessages = chatStore.messages[currentRoom.value.id] || [];
+    return roomMessages
+        .filter((msg) => msg.type === 'FILE')
+        .map((msg) => ({
+            id: msg.id,
+            name: msg.metadata?.fileName || msg.content || '파일',
+            size: msg.metadata?.fileSize,
+            createdAt: msg.createdAt
+        }))
+        .reverse();
+});
 
 const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
 
@@ -308,4 +318,15 @@ const handleProposalDetail = () => {
 
     isJobDetailOpen.value = true;
 };
+
+function formatFileMeta(file: { size?: number; createdAt: Date }) {
+    const sizeLabel = typeof file.size === 'number'
+        ? `${Math.max(1, Math.round(file.size / 1024))} KB`
+        : '파일';
+    const dateLabel = new Date(file.createdAt).toLocaleDateString('ko-KR', {
+        month: 'short',
+        day: 'numeric'
+    });
+    return `${sizeLabel} • ${dateLabel}`;
+}
 </script>

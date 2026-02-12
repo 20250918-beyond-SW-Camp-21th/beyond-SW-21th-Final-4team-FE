@@ -112,6 +112,7 @@ export interface ChatRoom {
     relatedApplicationId?: string;
     relatedProposalId?: string;
     contractId?: number; // Linked contract ID if exists
+    leftBy?: string[]; // Users who left the room
     createdAt: Date;
     updatedAt: Date;
 }
