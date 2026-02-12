@@ -50,9 +50,9 @@
         <!-- Main Content Area -->
         <div class="flex-1 overflow-hidden relative bg-slate-900">
             <!-- Tab: CHAT -->
-            <div v-show="activeTab === 'CHAT'" class="h-full flex flex-col">
+            <div v-show="activeTab === 'CHAT'" class="h-full flex flex-col min-h-0">
                 <!-- Messages List -->
-                <div class="flex-1 overflow-y-auto p-6" ref="messagesContainer">
+                <div class="flex-1 min-h-0 overflow-y-auto p-6" ref="messagesContainer">
                     <div
                         v-if="nonSystemMessages.length === 0"
                         class="h-full min-h-[220px] flex items-center justify-center text-slate-400 text-sm"
