@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { TrendingUp, Send, Star } from 'lucide-vue-next';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import { useFavoritesStore } from '@/stores/favoritesStore';
+import { getEmployerProfile } from '@/api/MyPage/employer';
 import ProposalModal from './components/ProposalModal.vue';
 import type { User } from '@/types';
 
@@ -17,6 +18,57 @@ const formatSkills = (skills?: string[]) => {
 const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
 
 const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
+
+// --- Access Control ---
+import { useRouter } from 'vue-router';
+import { Lock, Crown } from 'lucide-vue-next';
+
+const router = useRouter();
+
+type PlanType = 'FREE' | 'PRO' | 'PRIME';
+const currentPlan = ref<PlanType>('FREE');
+
+const normalizePlan = (plan?: string): PlanType => {
+  const normalizedPlan = (plan ?? 'FREE').trim().toUpperCase();
+
+  if (['PRO', 'PARTNER', '프로 플랜'.toUpperCase()].includes(normalizedPlan)) {
+    return 'PRO';
+  }
+
+  if (['PRIME', 'ENTERPRISE', '프라임 플랜'.toUpperCase()].includes(normalizedPlan)) {
+    return 'PRIME';
+  }
+
+  return 'FREE';
+};
+
+
+const planLoading = ref(true);
+
+const fetchCurrentPlan = async () => {
+  planLoading.value = true;
+  try {
+    const profile = await getEmployerProfile();
+    currentPlan.value = normalizePlan(profile.plan);
+  } catch (error) {
+    console.error('Failed to fetch employer plan:', error);
+    currentPlan.value = 'FREE';
+  } finally {
+    planLoading.value = false;
+  }
+};
+
+const hasAccess = computed(() => !planLoading.value && ['PRO', 'PRIME'].includes(currentPlan.value));
+
+onMounted(() => {
+  fetchCurrentPlan();
+});
+
+const goToUpgrade = () => {
+    // Navigate to MyPage where Account Management is located
+    // Ideally pass a query param to open Account tab directly: /employer/mypage?tab=account
+    router.push({ name: 'employer.mypage', query: { tab: 'account' } });
+};
 </script>
 
 <template>
@@ -29,7 +81,39 @@ const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
       <p class="text-white/60">AI가 선별한 최적의 프리랜서를 만나보세요</p>
     </div>
 
-    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Loading Skeleton -->
+    <div v-if="planLoading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div 
+        v-for="n in 6" 
+        :key="n" 
+        class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 animate-pulse"
+      >
+        <div class="flex items-start gap-4 mb-4">
+          <div class="w-16 h-16 rounded-full bg-white/10"></div>
+          <div class="flex-1 space-y-2">
+            <div class="h-6 bg-white/10 rounded w-3/4"></div>
+            <div class="h-4 bg-white/10 rounded w-1/4"></div>
+          </div>
+        </div>
+        <div class="space-y-2 mb-4">
+          <div class="h-4 bg-white/10 rounded"></div>
+          <div class="h-4 bg-white/10 rounded w-5/6"></div>
+        </div>
+        <div class="flex gap-2 mb-4">
+          <div class="h-6 w-16 bg-white/10 rounded-full"></div>
+          <div class="h-6 w-16 bg-white/10 rounded-full"></div>
+        </div>
+        <div class="pt-4 border-t border-white/10 flex justify-between items-center">
+          <div class="h-4 w-24 bg-white/10 rounded"></div>
+          <div class="flex gap-2">
+            <div class="w-10 h-10 bg-white/10 rounded-lg"></div>
+            <div class="w-24 h-10 bg-white/10 rounded-lg"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="hasAccess" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="freelancer in freelancerStore.freelancers"
         :key="freelancer.id"
@@ -97,6 +181,24 @@ const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Access Restricted UI -->
+    <div v-else class="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+        <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mb-6">
+            <Lock class="w-10 h-10 text-slate-400" />
+        </div>
+        <h2 class="text-2xl font-bold mb-2 text-white">프로 플랜 이상 전용 서비스입니다</h2>
+        <p class="text-slate-400 mb-8 max-w-md mx-auto">
+            AI 기반 맞춤형 프리랜서 추천 기능은 프로 플랜 이상 구독 시 이용하실 수 있습니다. 지금 바로 업그레이드하고 최적의 인재를 만나보세요.
+        </p>
+        <button 
+            @click="goToUpgrade"
+            class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2 group"
+        >
+            <Crown class="w-5 h-5 group-hover:text-yellow-300 transition-colors" />
+            구독 플랜 업그레이드하기
+        </button>
     </div>
 
     <ProposalModal

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
   ArrowLeft,
   Building2,
+  Crown,
   Mail,
   Phone,
   MapPin,
@@ -12,29 +13,83 @@ import {
   Globe,
   Briefcase,
   Edit2,
+  Loader2,
 } from 'lucide-vue-next';
+
+import { getEmployerProfile, updateEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
 
 defineEmits<{
   (e: 'back'): void;
 }>();
 
 const isEditing = ref(false);
-const profileData = ref({
-  companyName: '테크스타트업',
-  industry: 'IT/소프트웨어',
-  size: '50-100명',
-  location: '서울 강남구',
-  website: 'https://techstartup.com',
-  email: 'contact@techstartup.com',
-  phone: '02-1234-5678',
-  description: '혁신적인 기술로 세상을 변화시키는 스타트업입니다.',
+const isLoading = ref(false);
+const isSaving = ref(false);
+
+const PLAN_LABELS: Record<string, string> = {
+  FREE: '무료 플랜',
+  PRO: '프로 플랜',
+  PRIME: '프라임 플랜',
+  PARTNER: '프로 플랜',
+  ENTERPRISE: '프라임 플랜',
+};
+
+const profileData = ref<EmployerProfileData>({
+  companyName: '',
+  industry: '',
+  size: '',
+  location: '',
+  website: '',
+  email: '',
+  phone: '',
+  description: '',
+  plan: 'FREE',
 });
 
-const handleSave = () => {
-  isEditing.value = false;
-  alert('프로필이 저장되었습니다.');
+const companySizeOptions = [
+  '1-10명',
+  '10-50명',
+  '50-100명',
+  '100-500명',
+  '500명 이상',
+];
+
+const fetchProfile = async () => {
+  isLoading.value = true;
+  try {
+    const data = await getEmployerProfile();
+    profileData.value = data;
+  } catch (error) {
+    console.error('Failed to fetch profile:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchProfile();
+});
+
+const subscriptionPlanText = computed(() => {
+  const normalizedPlan = (profileData.value.plan ?? 'FREE').toUpperCase();
+  return PLAN_LABELS[normalizedPlan] ?? normalizedPlan;
+});
+
+const handleSave = async () => {
+  isSaving.value = true;
+  try {
+    await updateEmployerProfile(profileData.value);
+    isEditing.value = false;
+    // alert('프로필이 저장되었습니다.'); // Optional: Use toast notification instead if available
+  } catch (error) {
+    console.error('Failed to save profile:', error);
+    alert('저장에 실패했습니다.');
+  } finally {
+    isSaving.value = false;
+  }
 };
 </script>
+
 
 <template>
   <div class="max-w-4xl mx-auto px-4 md:px-8 py-8 text-white">
@@ -70,10 +125,12 @@ const handleSave = () => {
         </button>
         <button
           @click="handleSave"
-          class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2"
+          :disabled="isSaving"
+          class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Save class="w-4 h-4" />
-          저장
+          <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
+          <Save v-else class="w-4 h-4" />
+          {{ isSaving ? '저장 중...' : '저장' }}
         </button>
       </div>
     </div>
@@ -102,6 +159,18 @@ const handleSave = () => {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Subscription Plan -->
+          <div>
+            <label class="text-xs text-white/50 mb-2 block flex items-center gap-2">
+              <Crown class="w-4 h-4" />
+              구독 등급
+            </label>
+            <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+              {{ subscriptionPlanText }}
+            </div>
+            <p class="text-[11px] text-white/40 mt-2">등급 변경은 계정 관리 메뉴에서 가능합니다.</p>
+          </div>
+
           <!-- Industry -->
           <div>
             <label class="text-xs text-white/50 mb-2 block flex items-center gap-2">
@@ -128,11 +197,9 @@ const handleSave = () => {
               v-model="profileData.size"
               class="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors appearance-none"
             >
-              <option value="1-10명">1-10명</option>
-              <option value="10-50명">10-50명</option>
-              <option value="50-100명">50-100명</option>
-              <option value="100-500명">100-500명</option>
-              <option value="500명 이상">500명 이상</option>
+              <option v-for="option in companySizeOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
             </select>
             <div v-else class="text-white/80">{{ profileData.size }}</div>
           </div>
