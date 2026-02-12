@@ -44,6 +44,16 @@ const isSubmitDisabled = computed(
   () => employerJobs.value.length === 0 || !selectedJobId.value || !message.value.trim()
 );
 
+const getNormalizedEmployerId = () => {
+  if (!authStore.user) return '';
+
+  const rawId = String(authStore.user.id);
+  if (/^[ef]\d+$/i.test(rawId)) {
+    return rawId;
+  }
+  return `e${rawId}`;
+};
+
 const handleSubmit = () => {
   if (!authStore.user) return;
   if (!selectedJobId.value) {
@@ -59,7 +69,7 @@ const handleSubmit = () => {
 
   // Use store action to add proposal
   freelancerStore.addProposal({
-    employerId: authStore.user.id,
+    employerId: getNormalizedEmployerId(),
     employerName: authStore.user.companyName || authStore.user.name,
     freelancerId: props.freelancer.id,
     freelancerName: props.freelancer.name,

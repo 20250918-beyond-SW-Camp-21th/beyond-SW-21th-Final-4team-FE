@@ -27,6 +27,11 @@ const emit = defineEmits<{
 const authStore = useAuthStore();
 const currentUser = authStore.user;
 
+const verificationPassword = ref('');
+const verificationError = ref('');
+const isVerifying = ref(false);
+const isProfileVerified = ref(false);
+
 const accountInfo = ref({
     id: currentUser?.id || 1,
     name: currentUser?.name || '김프론트',
@@ -56,6 +61,10 @@ const notifications = ref({
 const twoFactorEnabled = ref(false);
 
 const handleSaveAccountInfo = async () => {
+    if (!isProfileVerified.value) {
+        alert('비밀번호 확인 후 내 정보를 수정할 수 있습니다.');
+        return;
+    }
     try {
         const success = await updateAccountInfo(accountInfo.value);
         if (success) {
@@ -71,6 +80,44 @@ const handleSaveAccountInfo = async () => {
     } catch (e) {
         alert('오류가 발생했습니다.');
     }
+};
+
+const handleVerifyIdentity = async () => {
+    verificationError.value = '';
+    const currentPassword = authStore.user?.password;
+
+    if (!verificationPassword.value.trim()) {
+        verificationError.value = '비밀번호를 입력해 주세요.';
+        return;
+    }
+
+    if (!currentPassword) {
+        verificationError.value = '로그인한 계정의 비밀번호 정보를 찾을 수 없습니다. 다시 로그인해 주세요.';
+        isProfileVerified.value = false;
+        return;
+    }
+
+    try {
+        isVerifying.value = true;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+
+        if (verificationPassword.value !== currentPassword) {
+            verificationError.value = '비밀번호가 올바르지 않습니다.';
+            isProfileVerified.value = false;
+            return;
+        }
+
+        isProfileVerified.value = true;
+        verificationPassword.value = '';
+    } finally {
+        isVerifying.value = false;
+    }
+};
+
+const resetProfileVerification = () => {
+    isProfileVerified.value = false;
+    verificationPassword.value = '';
+    verificationError.value = '';
 };
 
 const handleChangePassword = async () => {
@@ -122,6 +169,52 @@ const handleChangePassword = async () => {
     </div>
 
     <div class="space-y-6">
+        <div
+            v-if="!isProfileVerified"
+            class="bg-white/5 rounded-2xl border border-white/10 p-8"
+            v-motion
+            :initial="{ opacity: 0, y: 20 }"
+            :enter="{ opacity: 1, y: 0 }"
+        >
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <Lock class="w-5 h-5 text-blue-400" />
+                    비밀번호 확인
+                </h2>
+            </div>
+            <p class="text-sm text-slate-400 mb-4">
+                보안을 위해 비밀번호를 한 번 더 입력해 주세요.
+            </p>
+            <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+                <Key class="w-4 h-4 text-slate-400" />
+                <input
+                    type="password"
+                    v-model="verificationPassword"
+                    class="bg-transparent border-none outline-none w-full text-white text-sm"
+                    placeholder="비밀번호를 입력하세요"
+                    @keyup.enter="handleVerifyIdentity"
+                />
+            </div>
+            <p v-if="verificationError" class="text-sm text-red-400 mt-2">{{ verificationError }}</p>
+            <button
+                @click="handleVerifyIdentity"
+                :disabled="isVerifying"
+                class="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+                {{ isVerifying ? '확인 중...' : '확인' }}
+            </button>
+        </div>
+
+        <div v-else class="flex justify-end">
+            <button
+                @click="resetProfileVerification"
+                class="text-xs text-slate-400 hover:text-white transition-colors"
+            >
+                다시 인증하기
+            </button>
+        </div>
+
+        <div v-if="isProfileVerified" class="space-y-6">
         <!-- Account Information -->
         <div
             class="bg-white/5 rounded-2xl border border-white/10 p-8"
@@ -351,6 +444,7 @@ const handleChangePassword = async () => {
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
   </div>

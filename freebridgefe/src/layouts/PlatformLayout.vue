@@ -25,6 +25,7 @@ import {
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const chatStore = useChatStore();
 const isMobileMenuOpen = ref(false);
 
 const currentUser = computed(() => authStore.user);
@@ -54,6 +55,7 @@ const freelancerNavItems = [
 ];
 
 const navItems = computed(() => isEmployer.value ? employerNavItems : freelancerNavItems);
+const isChatRoute = computed(() => route.path.startsWith('/chat'));
 
 const handleLogout = () => {
   authStore.logout();
@@ -75,6 +77,18 @@ const isActive = (path: string) => route.path.startsWith(path);
 onMounted(() => {
   // Tour auto-start logic removed
 });
+
+watch(
+  () => route.path,
+  (newPath, oldPath) => {
+    const wasChatRoute = oldPath?.startsWith('/chat');
+    const isNowChatRoute = newPath.startsWith('/chat');
+
+    if (wasChatRoute && !isNowChatRoute) {
+      chatStore.resetDockedUIState();
+    }
+  }
+);
 </script>
 
 <template>
@@ -227,15 +241,14 @@ onMounted(() => {
           leave-active-class="transition ease-in duration-150"
           leave-from-class="opacity-100 translate-y-0"
           leave-to-class="opacity-0 translate-y-4"
-          mode="out-in"
         >
-          <component :is="Component" />
+          <component :is="Component" :key="route.fullPath" />
         </transition>
       </router-view>
     </main>
 
     <!-- Global Docked Chat -->
-    <DockedChatContainer class="hidden lg:flex" />
+    <DockedChatContainer v-if="!isChatRoute" class="hidden lg:flex" />
   </div>
 </template>
 

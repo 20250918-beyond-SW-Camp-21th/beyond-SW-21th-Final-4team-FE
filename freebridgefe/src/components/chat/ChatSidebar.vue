@@ -64,7 +64,7 @@
                                 getMyUnreadCount(room) > 0 ? 'font-medium text-slate-100' : 'text-slate-500 group-hover:text-slate-400'
                             ]"
                         >
-                            <span v-if="room.lastMessage?.senderId === String(authStore.user?.id)" class="text-slate-600">나: </span>
+                            <span v-if="room.lastMessage?.senderId === chatStore.getCurrentChatParticipantId()" class="text-slate-600">나: </span>
                             {{ room.lastMessage?.content || '대화 없음' }}
                         </p>
                          <div v-if="getMyUnreadCount(room) > 0" class="px-1.5 py-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white shadow-sm shadow-emerald-500/20">
@@ -112,17 +112,13 @@ function getOtherParticipantImage(room: ChatRoom) {
 
 function getOtherParticipantName(room: ChatRoom) {
     if (!authStore.user) return 'Unknown';
-    const myFullId = String(authStore.user.id);
-    
-    // Find key in participants that is not me
-    const otherId = room.participants.find(id => id !== myFullId);
+    const otherId = chatStore.getOtherParticipantId(room);
     return otherId && room.participantNames[otherId] ? room.participantNames[otherId] : '알 수 없음';
 }
 
 function getMyUnreadCount(room: ChatRoom) {
     if (!authStore.user) return 0;
-    const myFullId = String(authStore.user.id);
-    return room.unreadCount[myFullId] || 0;
+    return chatStore.getMyParticipantIds().reduce((total, id) => total + (room.unreadCount[id] || 0), 0);
 }
 
 function formatDate(date: Date | undefined) {

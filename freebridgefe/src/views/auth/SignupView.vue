@@ -143,6 +143,7 @@ const handleSubmit = async () => {
       id: isEmployer.value ? 'e-new' : 'f-new',
       name: formData.value.name,
       email: formData.value.email,
+      password: formData.value.password,
       role: role.value,
       createdAt: new Date(),
       agreedToTermsAt: new Date(),

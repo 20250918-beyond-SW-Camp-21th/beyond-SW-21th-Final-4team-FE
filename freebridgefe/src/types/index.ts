@@ -11,6 +11,7 @@ export interface User {
     role: UserRole;
     name: string;
     email: string;
+    password?: string;
     avatar?: string;
     createdAt?: string | Date;
     agreedToTermsAt?: string | Date;

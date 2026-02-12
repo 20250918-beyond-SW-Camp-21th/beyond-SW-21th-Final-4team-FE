@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { getEmployerProfile } from '@/api/MyPage/employer'
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -184,8 +185,22 @@ const router = createRouter({
     routes
 })
 
+const normalizeEmployerPlan = (plan?: string): 'FREE' | 'PRO' | 'PRIME' => {
+    const normalizedPlan = (plan ?? 'FREE').trim().toUpperCase()
+
+    if (['PRO', 'PARTNER', '프로 플랜'.toUpperCase()].includes(normalizedPlan)) {
+        return 'PRO'
+    }
+
+    if (['PRIME', 'ENTERPRISE', '프라임 플랜'.toUpperCase()].includes(normalizedPlan)) {
+        return 'PRIME'
+    }
+
+    return 'FREE'
+}
+
 // Navigation Guard
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore()
 
     // Check auth requirement
@@ -202,6 +217,24 @@ router.beforeEach((to, _from, next) => {
             next('/freelancer/jobs')
         }
         return
+    }
+
+    if (to.name === 'employer.recommended' && authStore.user?.role === 'EMPLOYER') {
+        try {
+            const profile = await getEmployerProfile()
+            const normalizedPlan = normalizeEmployerPlan(profile.plan)
+
+            if (!['PRO', 'PRIME'].includes(normalizedPlan)) {
+                alert('추천 프리랜서 기능은 프로 플랜 이상에서만 사용할 수 있습니다. 구독 레벨을 높여주세요.')
+                next({ name: 'employer.mypage', query: { tab: 'account' } })
+                return
+            }
+        } catch (error) {
+            console.error('Failed to validate subscription plan for recommended page:', error)
+            alert('구독 정보를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.')
+            next('/employer/dashboard')
+            return
+        }
     }
 
     next()

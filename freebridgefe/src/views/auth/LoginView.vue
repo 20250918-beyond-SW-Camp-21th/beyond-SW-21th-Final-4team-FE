@@ -29,6 +29,7 @@ const handleLogin = (e: Event) => {
       name: '스타트업 A',
       companyName: '스타트업 A',
       email: 'employer@test.com',
+      password: password.value,
       role: 'EMPLOYER',
     };
     authStore.login(user);
@@ -38,6 +39,7 @@ const handleLogin = (e: Event) => {
       id: 1,
       name: '김프론트',
       email: 'freelancer@test.com',
+      password: password.value,
       role: 'FREELANCER',
     };
     authStore.login(user);

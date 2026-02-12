@@ -15,12 +15,14 @@ import {
   XCircle,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { useRouter } from 'vue-router';
 import { useJobStore } from '@/stores/jobStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import type { Application, ApplicationStatus } from '@/types';
 import RejectionModal from './components/RejectionModal.vue';
 
 const authStore = useAuthStore();
+const router = useRouter();
 const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
 const rejectingApp = ref<Application | null>(null);
@@ -92,7 +94,13 @@ const getJobTitle = (jobId?: string) => {
 
 const handleAccept = (app: Application) => {
   if (confirm(`${app.freelancerName}님의 지원을 수락하시겠습니까?`)) {
-    jobStore.updateApplicationStatus(app.id, 'ACCEPTED');
+    const roomId = jobStore.updateApplicationStatus(app.id, 'ACCEPTED');
+    if (roomId) {
+      const shouldMove = confirm('채팅방이 생성되었습니다. 이동하겠습니까?');
+      if (shouldMove) {
+        router.push('/chat');
+      }
+    }
     alert('지원이 수락되었습니다!');
   }
 };
