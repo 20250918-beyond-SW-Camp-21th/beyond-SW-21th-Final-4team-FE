@@ -123,6 +123,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
 import { useChatStore } from '@/stores/chatStore';
 import { useContractStore } from '@/stores/contractStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -143,6 +144,7 @@ const props = defineProps<{
 const chatStore = useChatStore();
 const authStore = useAuthStore();
 const contractStore = useContractStore();
+const router = useRouter();
 
 const activeTab = ref<'CHAT' | 'CONTRACT'>('CHAT');
 const newMessage = ref('');
@@ -175,6 +177,7 @@ function handleLeaveRoom() {
     if (!props.roomId) return;
     if (!confirm('이 채팅방에서 나가시겠습니까?')) return;
     chatStore.leaveRoom(props.roomId);
+    router.push('/chat');
 }
 
 function getSenderName(senderId: string) {
