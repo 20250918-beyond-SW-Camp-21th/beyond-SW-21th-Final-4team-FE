@@ -7,9 +7,13 @@
                     <div class="w-11 h-11 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 text-lg font-bold border border-white/10 ring-2 ring-slate-900">
                         {{ otherParticipantName.charAt(0) }}
                     </div>
+                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-900 rounded-full"></span>
                 </div>
                 <div>
                     <h2 class="font-bold text-lg text-white leading-tight">{{ otherParticipantName }}</h2>
+                    <p class="text-xs text-emerald-500 flex items-center gap-1 font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full w-fit mt-0.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> 온라인
+                    </p>
                 </div>
             </div>
 
@@ -31,33 +35,29 @@
             </div>
             
             <div class="flex gap-2">
-                 <button
-                    @click="handleLeaveRoom"
-                    class="w-10 h-10 rounded-full bg-[#111827] text-slate-300 hover:text-white hover:bg-[#0f172a] transition-colors border border-white/5 flex items-center justify-center"
-                    title="대화 나가기"
-                 >
-                    <LogOutIcon class="w-5 h-5" />
+                 <button class="p-2.5 rounded-full bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors border border-white/5">
+                    <PhoneIcon class="w-5 h-5" />
+                 </button>
+                 <button class="p-2.5 rounded-full bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors border border-white/5">
+                    <VideoIcon class="w-5 h-5" />
+                 </button>
+                 <button class="p-2.5 rounded-full bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors border border-white/5">
+                    <MoreHorizontalIcon class="w-5 h-5" />
                  </button>
             </div>
         </div>
 
         <!-- Main Content Area -->
-        <div class="flex-1 min-h-0 overflow-hidden relative bg-slate-900">
+        <div class="flex-1 overflow-hidden relative bg-slate-900">
             <!-- Tab: CHAT -->
-            <div v-show="activeTab === 'CHAT'" class="h-full flex flex-col min-h-0">
+            <div v-show="activeTab === 'CHAT'" class="h-full flex flex-col">
                 <!-- Messages List -->
-                <div class="flex-1 min-h-0 overflow-y-auto p-6" ref="messagesContainer">
+                <div class="flex-1 overflow-y-auto p-6" ref="messagesContainer">
                     <div
                         v-if="nonSystemMessages.length === 0"
                         class="h-full min-h-[220px] flex items-center justify-center text-slate-400 text-sm"
                     >
                         새로운 대화를 시작해보세요.
-                    </div>
-                    <div
-                        v-else-if="isReadOnly"
-                        class="mb-4 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-300"
-                    >
-                        상대방이 채팅방을 나갔습니다. 이 채팅은 읽기 전용입니다.
                     </div>
                     <div v-for="msg in messages" :key="msg.id">
                         <MessageBubble 
@@ -68,21 +68,12 @@
                 </div>
 
                 <!-- Floating Input Area (Instagram Style) -->
-                <div class="p-4 bg-slate-900/95 backdrop-blur-sm border-t border-white/5 shrink-0">
+                <div class="p-4 bg-slate-900">
                     <div class="max-w-4xl mx-auto flex items-center gap-2">
                         <!-- Quick Actions (Left) -->
-                        <label
-                            class="p-2.5 rounded-full bg-slate-800 text-slate-400 transition-colors"
-                            :class="isReadOnly ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'hover:text-white hover:bg-slate-700 cursor-pointer'"
-                        >
+                        <button class="p-2.5 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors">
                             <PlusIcon class="w-6 h-6" />
-                            <input
-                                type="file"
-                                class="hidden"
-                                :disabled="isReadOnly"
-                                @change="handleFileUpload"
-                            />
-                        </label>
+                        </button>
 
                         <!-- Input Container (Pill) -->
                         <div class="flex-1 relative bg-slate-800 rounded-full border border-white/5 transition-colors flex items-center px-4 py-1.5 focus-within:bg-slate-700/50">
@@ -92,19 +83,27 @@
                                 @keydown.enter.exact.prevent="sendMessage"
                                 rows="1"
                                 placeholder="메시지를 입력하세요..."
-                                class="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-2.5 h-[44px] max-h-[44px] min-h-[44px] overflow-y-auto text-white placeholder-slate-500 leading-relaxed custom-scrollbar text-[15px]"
-                                :disabled="isReadOnly"
+                                class="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-2.5 max-h-32 min-h-[44px] text-white placeholder-slate-500 leading-relaxed custom-scrollbar text-[15px]"
                             ></textarea>
                             
                             <!-- Business Action Icons inside Pill -->
-                            <div class="flex items-center gap-1.5 ml-2" v-if="!newMessage.trim()"></div>
+                            <div class="flex items-center gap-1.5 ml-2" v-if="!newMessage.trim()">
+                                <button class="p-1.5 text-slate-400 hover:text-emerald-400 transition-colors" title="Request Contract">
+                                    <FileTextIcon class="w-5 h-5" />
+                                </button>
+                                <button class="p-1.5 text-slate-400 hover:text-blue-400 transition-colors" title="Schedule Briefing">
+                                    <CalendarIcon class="w-5 h-5" />
+                                </button>
+                                <button class="p-1.5 text-slate-400 hover:text-yellow-400 transition-colors" title="Discuss Settlement">
+                                    <DollarSignIcon class="w-5 h-5" />
+                                </button>
+                            </div>
                             
                             <!-- Send Button (Show only when typing) -->
                             <button 
                                 v-else
                                 @click="sendMessage"
-                                :disabled="isReadOnly"
-                                class="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 transform active:scale-95 ml-1 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                                class="p-2 bg-blue-600 text-white rounded-full hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20 transform active:scale-95 ml-1 flex items-center justify-center"
                             >
                                 <SendIcon class="w-4 h-4" />
                             </button>
@@ -129,10 +128,14 @@ import { useAuthStore } from '@/stores/authStore';
 import MessageBubble from './MessageBubble.vue';
 import ContractTab from './ContractTab.vue';
 import { 
-    FileText as FileTextIcon,
-    LogOut as LogOutIcon,
+    FileText as FileTextIcon, 
+    Phone as PhoneIcon, 
+    Video as VideoIcon, 
+    MoreHorizontal as MoreHorizontalIcon,
     Paperclip as PaperclipIcon,
     Send as SendIcon,
+    Calendar as CalendarIcon,
+    DollarSign as DollarSignIcon,
     Plus as PlusIcon
 } from 'lucide-vue-next';
 
@@ -151,7 +154,6 @@ const messagesContainer = ref<HTMLElement | null>(null);
 const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
 const messages = computed(() => chatStore.messages[props.roomId] || []);
 const nonSystemMessages = computed(() => messages.value.filter((msg) => msg.type !== 'SYSTEM'));
-const isReadOnly = computed(() => chatStore.isRoomReadOnly(props.roomId));
 
 const otherParticipantName = computed(() => {
     if (!currentRoom.value || !authStore.user) return 'Unknown';
@@ -171,12 +173,6 @@ const contractNeedsAttention = computed(() => {
     return !contract.freelancerSignedDate;
 });
 
-function handleLeaveRoom() {
-    if (!props.roomId) return;
-    if (!confirm('이 채팅방에서 나가시겠습니까?')) return;
-    chatStore.leaveRoom(props.roomId);
-}
-
 function getSenderName(senderId: string) {
     if (senderId === 'SYSTEM') return 'System';
     return currentRoom.value?.participantNames[senderId] || 'Unknown';
@@ -186,23 +182,6 @@ function sendMessage() {
     if (!newMessage.value.trim()) return;
     chatStore.sendMessage(newMessage.value, 'TEXT', undefined, props.roomId);
     newMessage.value = '';
-    scrollToBottom();
-}
-
-function handleFileUpload(event: Event) {
-    if (isReadOnly.value) return;
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    chatStore.sendMessage(
-        file.name,
-        'FILE',
-        { fileName: file.name, fileSize: file.size, fileType: file.type },
-        props.roomId
-    );
-
-    input.value = '';
     scrollToBottom();
 }
 
