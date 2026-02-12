@@ -50,8 +50,8 @@ pipeline {
                     def rawBranch = env.BRANCH_NAME ?: (env.GIT_BRANCH ?: 'main')
                     env.TARGET_BRANCH = rawBranch.replace('origin/', '')
                     
-                    echo "📡 빌드 정보 확인: ${env.IMAGE_TAG}"
-                    echo "🌿 타겟 브랜치: ${env.TARGET_BRANCH}"
+                    echo " 빌드 정보 확인: ${env.IMAGE_TAG}"
+                    echo " 타겟 브랜치: ${env.TARGET_BRANCH}"
                 }
             }
         }
@@ -92,7 +92,7 @@ pipeline {
 
                             # 타겟 파일: kube-folder/frontend-deployment.yml
                             if [ -f kube-folder/frontend-deployment.yml ]; then
-                                echo "📝 Manifest 파일 수정 중..."
+                                echo " Manifest 파일 수정 중..."
                                 
                                 # sed를 사용하여 이미지 태그 업데이트
                                 # Linux 환경에서는 -i 뒤에 빈 문자열 '' 없이 사용 가능하지만, 
