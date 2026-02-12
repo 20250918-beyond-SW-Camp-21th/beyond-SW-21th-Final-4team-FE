@@ -97,7 +97,7 @@ pipeline {
                                 # sed를 사용하여 이미지 태그 업데이트
                                 # Linux 환경에서는 -i 뒤에 빈 문자열 '' 없이 사용 가능하지만, 
                                 # 일부 환경(macOS 등) 호환성을 위해 주의 필요. Jenkins(Linux)는 보통 바로 사용.
-                                sed -i 's|image: ${env.IMAGE_NAME}:.*|image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}|g' kube_folder/frontend-deployment.yml
+                                sed -i 's|image: ${env.IMAGE_NAME}:.*|image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}|g' kube-folder/frontend-deployment.yml
                                 
                                 # 변경사항 확인
                                 cat kube-folder/frontend-deployment.yml | grep "image:"
@@ -117,6 +117,46 @@ pipeline {
                                 exit 1
                             fi
                         """
+                    }
+                }
+            }
+        }
+
+        // 5. 원격 배포 (Server B)
+        stage('Deploy to Server B') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
+                        sh '''
+                            export KUBECONFIG=$KUBECONFIG
+                            
+                            # kubectl 존재 확인 및 설치
+                            if ! command -v kubectl &> /dev/null; then
+                                echo "kubectl not found. Downloading..."
+                                curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                                chmod +x kubectl
+                                mkdir -p $HOME/bin
+                                mv kubectl $HOME/bin/
+                                export PATH=$HOME/bin:$PATH
+                            fi
+                            
+                            echo "Server B로 배포 시작 (Using kubeconfig: $KUBECONFIG)..."
+                            
+                            # 권한 조정 (Jenkins 임시 파일 문제 방지)
+                            chmod 600 $KUBECONFIG
+                            
+                            # 클러스터 연결 확인
+                            kubectl cluster-info
+                            
+                            # 배포 적용
+                            kubectl apply -f kube-folder/frontend-deployment.yml
+                            kubectl apply -f kube-folder/frontend-service.yml
+                            
+                            # 롤아웃 재시작 (이미지 갱신 강제)
+                            kubectl rollout restart deployment/frontend-deployment
+                            
+                            echo "배포 명령 전송 완료!"
+                        '''
                     }
                 }
             }
