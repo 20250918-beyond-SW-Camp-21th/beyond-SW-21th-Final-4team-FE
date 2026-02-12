@@ -23,8 +23,6 @@
                 <h3 class="font-bold text-white text-sm">Messaging</h3>
             </div>
             <div class="flex items-center gap-3 text-slate-400">
-                <button class="hover:text-white"><MoreHorizontalIcon class="w-4 h-4" /></button>
-                <button class="hover:text-white"><EditIcon class="w-4 h-4" /></button>
                 <button @click.stop="isMinimized = !isMinimized" class="hover:text-white">
                     <ChevronUpIcon v-if="isMinimized" class="w-4 h-4" />
                     <ChevronDownIcon v-else class="w-4 h-4" />
@@ -88,8 +86,6 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useAuthStore } from '@/stores/authStore';
 import { 
-    MoreHorizontal as MoreHorizontalIcon, 
-    Edit as EditIcon, 
     ChevronUp as ChevronUpIcon,
     ChevronDown as ChevronDownIcon,
     Search as SearchIcon
