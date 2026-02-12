@@ -42,6 +42,12 @@
         <div v-show="!minimized" class="flex-1 flex flex-col overflow-hidden bg-slate-900">
             <!-- Messages -->
             <div class="flex-1 overflow-y-auto p-3 custom-scrollbar" ref="messagesContainer">
+                 <div
+                    v-if="nonSystemMessages.length === 0"
+                    class="h-full min-h-[120px] flex items-center justify-center text-slate-400 text-xs"
+                >
+                    새로운 대화를 시작해보세요.
+                </div>
                  <div v-for="msg in messages" :key="msg.id" class="mb-3">
                     <div 
                         :class="['flex flex-col', isMyMessage(msg) ? 'items-end' : 'items-start']"
@@ -121,17 +127,17 @@ const messagesContainer = ref<HTMLElement | null>(null);
 
 const room = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
 const messages = computed(() => chatStore.messages[props.roomId] || []);
+const nonSystemMessages = computed(() => messages.value.filter((msg) => msg.type !== 'SYSTEM'));
 
 const otherParticipantName = computed(() => {
     if (!room.value || !authStore.user) return 'Unknown';
-    const myFullId = String(authStore.user.id);
-    const otherId = room.value.participants.find(id => id !== myFullId);
+    const otherId = chatStore.getOtherParticipantId(room.value);
     return otherId && room.value.participantNames[otherId] ? room.value.participantNames[otherId] : 'User';
 });
 
 function isMyMessage(msg: ChatMessage) {
     if (!authStore.user) return false;
-    return msg.senderId === String(authStore.user.id);
+    return chatStore.getMyParticipantIds().includes(msg.senderId);
 }
 
 function formatTime(date: Date) {

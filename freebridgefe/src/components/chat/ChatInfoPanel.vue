@@ -16,41 +16,31 @@
                 <button class="flex-1 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-white/5">
                     프로필
                 </button>
-                <button class="flex-1 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors shadow-lg shadow-emerald-900/20">
-                    채용하기
-                </button>
             </div>
         </div>
 
-        <!-- Contract Project Summary -->
+        <!-- Proposed Project Summary -->
         <div class="p-6 border-b border-white/5">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider">진행 중인 프로젝트</h3>
-                <button class="text-xs text-blue-400 hover:text-blue-300">전체 보기</button>
+                <h3 class="text-sm font-bold text-white uppercase tracking-wider">현재 제안된 프로젝트</h3>
             </div>
-            
-            <div class="bg-slate-800/50 rounded-xl p-4 border border-white/5 hover:border-white/10 transition-colors cursor-pointer group">
+
+            <div class="bg-slate-800/50 rounded-xl p-4 border border-white/5 hover:border-white/10 transition-colors">
                 <div class="flex justify-between items-start mb-2">
                     <div class="p-2 rounded-lg bg-blue-500/10 text-blue-400">
                         <CodeIcon class="w-5 h-5" />
                     </div>
-                    <span class="px-2 py-1 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                        진행중
+                    <span class="px-2 py-1 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        제안됨
                     </span>
                 </div>
-                
-                <h4 class="font-bold text-slate-200 mb-1 group-hover:text-white transition-colors">모바일 앱 디자인 개편</h4>
-                <p class="text-xs text-slate-500 mb-4">마감일: 2024년 10월 24일</p>
-                
-                <div class="space-y-1.5">
-                    <div class="flex justify-between text-xs text-slate-400">
-                        <span>진행률</span>
-                        <span>65%</span>
-                    </div>
-                    <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                        <div class="h-full bg-blue-500 w-[65%] rounded-full"></div>
-                    </div>
-                </div>
+
+                <h4 class="font-bold text-slate-200 mb-1">{{ proposedProject.title }}</h4>
+                <p class="text-xs text-slate-500 mb-4">{{ proposedProject.summary }}</p>
+
+                <button class="w-full py-2 text-sm font-medium text-white bg-slate-700/80 hover:bg-slate-700 rounded-lg transition-colors">
+                    상세보기
+                </button>
             </div>
         </div>
 
@@ -103,8 +93,23 @@ const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.room
 
 const otherParticipantName = computed(() => {
     if (!currentRoom.value || !authStore.user) return 'Unknown';
-    const myFullId = String(authStore.user.id);
-    const otherId = currentRoom.value.participants.find(id => id !== myFullId);
-    return otherId ? currentRoom.value.participantNames[otherId] : '알 수 없음';
+    const otherId = chatStore.getOtherParticipantId(currentRoom.value);
+    return otherId ? (currentRoom.value.participantNames[otherId] || '알 수 없음') : '알 수 없음';
+});
+
+const proposedProject = computed(() => {
+    if (!currentRoom.value) {
+        return {
+            title: '제안된 프로젝트가 없습니다',
+            summary: '현재 채팅에 연결된 제안 프로젝트를 찾을 수 없습니다.',
+        };
+    }
+
+    return {
+        title: currentRoom.value.relatedJobId ? `프로젝트 #${currentRoom.value.relatedJobId}` : '프로젝트 제안',
+        summary: currentRoom.value.relatedProposalId
+            ? `제안 ID: ${currentRoom.value.relatedProposalId}`
+            : '현재 제안된 프로젝트의 상세 정보를 확인하세요.',
+    };
 });
 </script>

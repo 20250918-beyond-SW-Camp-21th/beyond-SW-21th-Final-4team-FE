@@ -53,6 +53,12 @@
             <div v-show="activeTab === 'CHAT'" class="h-full flex flex-col">
                 <!-- Messages List -->
                 <div class="flex-1 overflow-y-auto p-6" ref="messagesContainer">
+                    <div
+                        v-if="nonSystemMessages.length === 0"
+                        class="h-full min-h-[220px] flex items-center justify-center text-slate-400 text-sm"
+                    >
+                        새로운 대화를 시작해보세요.
+                    </div>
                     <div v-for="msg in messages" :key="msg.id">
                         <MessageBubble 
                             :message="msg" 
@@ -145,12 +151,12 @@ const messagesContainer = ref<HTMLElement | null>(null);
 
 const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
 const messages = computed(() => chatStore.messages[props.roomId] || []);
+const nonSystemMessages = computed(() => messages.value.filter((msg) => msg.type !== 'SYSTEM'));
 
 const otherParticipantName = computed(() => {
     if (!currentRoom.value || !authStore.user) return 'Unknown';
-    const myFullId = String(authStore.user.id);
-    const otherId = currentRoom.value.participants.find(id => id !== myFullId);
-    return otherId ? currentRoom.value.participantNames[otherId] : '알 수 없음';
+    const otherId = chatStore.getOtherParticipantId(currentRoom.value);
+    return otherId ? (currentRoom.value.participantNames[otherId] || '알 수 없음') : '알 수 없음';
 });
 
 const contractNeedsAttention = computed(() => {

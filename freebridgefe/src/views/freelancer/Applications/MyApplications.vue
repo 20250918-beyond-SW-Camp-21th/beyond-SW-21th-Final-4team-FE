@@ -13,11 +13,13 @@ import {
   Inbox,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { useRouter } from 'vue-router';
 import { useJobStore } from '@/stores/jobStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import type { ApplicationStatus } from '@/types';
 
 const authStore = useAuthStore();
+const router = useRouter();
 const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
 
@@ -86,11 +88,15 @@ const actionFeedback = ref<{ type: 'success' | 'error'; message: string } | null
 
 const handleAcceptProposal = (proposalId: string) => {
   if (!window.confirm('이 제안을 수락하시겠습니까?')) return;
-  const updated = freelancerStore.updateProposalStatus(proposalId, 'ACCEPTED');
-  if (!updated) {
+  const roomId = freelancerStore.updateProposalStatus(proposalId, 'ACCEPTED');
+  if (!roomId) {
     actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
     alert('제안 상태 변경에 실패했습니다.');
     return;
+  }
+  const shouldMove = confirm('채팅방이 생성되었습니다. 이동하겠습니까?');
+  if (shouldMove) {
+    router.push('/chat');
   }
   actionFeedback.value = { type: 'success', message: '제안을 수락했습니다. 상태가 수락됨으로 변경되었습니다.' };
   alert('제안을 수락했습니다.');

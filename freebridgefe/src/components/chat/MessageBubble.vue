@@ -53,6 +53,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import type { ChatMessage } from '@/types';
 import { format } from 'date-fns';
 import ChatMessageContract from './ChatMessageContract.vue';
@@ -63,13 +64,13 @@ const props = defineProps<{
 }>();
 
 const authStore = useAuthStore();
+const chatStore = useChatStore();
 
 const isSystem = computed(() => props.message.type === 'SYSTEM');
 
 const isMine = computed(() => {
     if (!authStore.user) return false;
-    const myFullId = String(authStore.user.id);
-    return props.message.senderId === myFullId;
+    return chatStore.getMyParticipantIds().includes(props.message.senderId);
 });
 
 function formatTime(date: Date) {

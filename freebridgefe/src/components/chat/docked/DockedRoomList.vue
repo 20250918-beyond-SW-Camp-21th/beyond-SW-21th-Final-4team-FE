@@ -113,9 +113,8 @@ function openRoom(roomId: string) {
 }
 
 function getOtherParticipantName(room: ChatRoom) {
-     if (!authStore.user) return 'Unknown';
-    const myFullId = String(authStore.user.id);
-    const otherId = room.participants.find(id => id !== myFullId);
+    if (!authStore.user) return 'Unknown';
+    const otherId = chatStore.getOtherParticipantId(room);
     return otherId && room.participantNames[otherId] ? room.participantNames[otherId] : 'User';
 }
 

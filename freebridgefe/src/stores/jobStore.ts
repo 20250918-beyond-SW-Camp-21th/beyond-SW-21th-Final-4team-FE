@@ -116,37 +116,43 @@ export const useJobStore = defineStore('job', () => {
         applications.value.push(newApp);
     }
 
-    function updateApplicationStatus(id: string, status: Application['status'], rejectionReason?: string) {
+    function updateApplicationStatus(id: string, status: Application['status'], rejectionReason?: string): string | null {
         const index = applications.value.findIndex(app => app.id === id);
-        if (index !== -1) {
-            applications.value[index] = {
-                ...applications.value[index],
-                status,
-                rejectionReason
-            };
-            if (status === 'ACCEPTED') {
-                const chatStore = useChatStore();
-                const app = applications.value[index];
-                const job = getJobById(app.jobId);
+        if (index === -1) return null;
 
-                if (job) {
-                    const employerId = String(job.employerId);
-                    const freelancerId = String(app.freelancerId);
+        applications.value[index] = {
+            ...applications.value[index],
+            status,
+            rejectionReason
+        };
 
-                    chatStore.createRoom(
-                        [employerId, freelancerId],
-                        {
-                            [employerId]: job.employerName || 'Employer',
-                            [freelancerId]: app.freelancerName || 'Freelancer'
-                        },
-                        {
-                            relatedJobId: job.id,
-                            relatedApplicationId: app.id
-                        }
-                    );
-                }
+        if (status === 'ACCEPTED') {
+            const chatStore = useChatStore();
+            const app = applications.value[index];
+            const job = getJobById(app.jobId);
+
+            if (job) {
+                const employerId = String(job.employerId);
+                const freelancerId = String(app.freelancerId);
+
+                const roomId = chatStore.createRoom(
+                    [employerId, freelancerId],
+                    {
+                        [employerId]: job.employerName || 'Employer',
+                        [freelancerId]: app.freelancerName || 'Freelancer'
+                    },
+                    {
+                        relatedJobId: job.id,
+                        relatedApplicationId: app.id
+                    }
+                );
+
+                chatStore.selectRoom(roomId);
+                return roomId;
             }
         }
+
+        return null;
     }
 
     return {

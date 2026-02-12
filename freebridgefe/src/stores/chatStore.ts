@@ -6,6 +6,32 @@ import type { ChatRoom, ChatMessage } from '@/types';
 export const useChatStore = defineStore('chat', () => {
     const authStore = useAuthStore();
 
+    function getCurrentChatParticipantId(): string | null {
+        if (!authStore.user) return null;
+
+        const rawId = String(authStore.user.id);
+        if (/^[ef]\d+$/i.test(rawId)) {
+            return rawId;
+        }
+
+        const prefix = authStore.user.role === 'EMPLOYER' ? 'e' : 'f';
+        return `${prefix}${rawId}`;
+    }
+
+    function getMyParticipantIds(): string[] {
+        if (!authStore.user) return [];
+
+        const rawId = String(authStore.user.id);
+        const normalizedId = getCurrentChatParticipantId();
+
+        return Array.from(new Set([rawId, normalizedId].filter(Boolean) as string[]));
+    }
+
+    function getOtherParticipantId(room: ChatRoom): string | undefined {
+        const myIds = getMyParticipantIds();
+        return room.participants.find((id) => !myIds.includes(String(id)));
+    }
+
     // Mock Data
     const rooms = ref<ChatRoom[]>([
         {
@@ -114,9 +140,9 @@ export const useChatStore = defineStore('chat', () => {
     // Getters
     const myRooms = computed(() => {
         if (!authStore.user) return [];
-        const myFullId = String(authStore.user.id);
+        const myIds = getMyParticipantIds();
 
-        return rooms.value.filter(room => room.participants.includes(myFullId))
+        return rooms.value.filter(room => room.participants.some((id) => myIds.includes(String(id))))
             .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     });
 
@@ -134,12 +160,16 @@ export const useChatStore = defineStore('chat', () => {
         currentRoomId.value = roomId;
         // Mark as read logic would go here
         if (authStore.user) {
-            const myFullId = String(authStore.user.id);
+            const myIds = getMyParticipantIds();
 
             // Reset unread count
             const roomIndex = rooms.value.findIndex(r => r.id === roomId);
             if (roomIndex !== -1) {
-                rooms.value[roomIndex].unreadCount[myFullId] = 0;
+                myIds.forEach((id) => {
+                    if (id in rooms.value[roomIndex].unreadCount) {
+                        rooms.value[roomIndex].unreadCount[id] = 0;
+                    }
+                });
             }
         }
     }
@@ -152,7 +182,7 @@ export const useChatStore = defineStore('chat', () => {
         // If no user is logged in, only allow sending if it's a system message override
         if (!authStore.user && !senderIdOverride) return;
 
-        const senderId = senderIdOverride || String(authStore.user?.id);
+        const senderId = senderIdOverride || getCurrentChatParticipantId() || String(authStore.user?.id);
 
         const newMessage: ChatMessage = {
             id: `m-${Date.now()}`,
@@ -166,7 +196,7 @@ export const useChatStore = defineStore('chat', () => {
         };
 
         // If it's a real user, add them to readBy
-        if (authStore.user && senderId === String(authStore.user.id)) {
+        if (authStore.user && getMyParticipantIds().includes(senderId)) {
             newMessage.readBy.push(senderId);
         }
 
@@ -197,10 +227,29 @@ export const useChatStore = defineStore('chat', () => {
     }
 
     function createRoom(participants: string[], names: { [key: string]: string }, context: any) {
+        const myIds = getMyParticipantIds();
+        const myNormalizedId = getCurrentChatParticipantId();
+        const normalizedParticipants = Array.from(
+            new Set(
+                participants.map((participantId) => {
+                    const id = String(participantId);
+                    if (myNormalizedId && myIds.includes(id)) {
+                        return myNormalizedId;
+                    }
+                    return id;
+                })
+            )
+        );
+        const normalizedNames = Object.entries(names).reduce<{ [key: string]: string }>((acc, [id, name]) => {
+            const normalizedId = myNormalizedId && myIds.includes(String(id)) ? myNormalizedId : String(id);
+            acc[normalizedId] = name;
+            return acc;
+        }, {});
+
         // Check if room already exists
         const existingRoom = rooms.value.find(r =>
-            r.participants.every(p => participants.includes(p)) &&
-            participants.every(p => r.participants.includes(p)) &&
+            r.participants.every(p => normalizedParticipants.includes(p)) &&
+            normalizedParticipants.every(p => r.participants.includes(p)) &&
             // Optional: strict check including JobID if we want separate rooms per job
             r.relatedJobId !== undefined && context.relatedJobId !== undefined &&
             r.relatedJobId === context.relatedJobId
@@ -214,15 +263,15 @@ export const useChatStore = defineStore('chat', () => {
         const newRoom: ChatRoom = {
             ...context, // Apply context first (so it doesn't override critical fields)
             id: newRoomId,
-            participants,
-            participantNames: names,
+            participants: normalizedParticipants,
+            participantNames: normalizedNames,
             unreadCount: {},
             createdAt: new Date(),
             updatedAt: new Date()
         };
 
         // Initialize unread counts
-        participants.forEach(p => {
+        normalizedParticipants.forEach(p => {
             newRoom.unreadCount[p] = 0;
         });
 
@@ -235,7 +284,7 @@ export const useChatStore = defineStore('chat', () => {
                 content: '채팅방이 생성되었습니다.',
                 type: 'SYSTEM',
                 createdAt: new Date(),
-                readBy: participants
+                readBy: normalizedParticipants
             }
         ];
 
@@ -261,6 +310,7 @@ export const useChatStore = defineStore('chat', () => {
             }
             openDockedRooms.value.push({ roomId, minimized: false });
         }
+        selectRoom(roomId);
     }
 
     function closeDockedRoom(roomId: string) {
@@ -274,6 +324,17 @@ export const useChatStore = defineStore('chat', () => {
         }
     }
 
+    function resetChatUIState() {
+        currentRoomId.value = null;
+        isRoomListOpen.value = false;
+        openDockedRooms.value = [];
+    }
+
+    function resetDockedUIState() {
+        isRoomListOpen.value = false;
+        openDockedRooms.value = [];
+    }
+
     return {
         rooms,
         messages,
@@ -285,12 +346,17 @@ export const useChatStore = defineStore('chat', () => {
         sendMessage,
         sendSystemMessage,
         createRoom,
+        getCurrentChatParticipantId,
+        getMyParticipantIds,
+        getOtherParticipantId,
         // Docking exports
         isRoomListOpen,
         openDockedRooms,
         toggleRoomList,
         openDockedRoom,
         closeDockedRoom,
-        minimizeDockedRoom
+        minimizeDockedRoom,
+        resetChatUIState,
+        resetDockedUIState
     };
 });
