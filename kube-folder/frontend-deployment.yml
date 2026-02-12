@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: nginx:latest # 실제 이미지로 교체 필요
+        image: o2ppo/freeBrfront001:latest # Jenkins 파이프라인이 자동으로 업데이트함
         ports:
         - containerPort: 80
