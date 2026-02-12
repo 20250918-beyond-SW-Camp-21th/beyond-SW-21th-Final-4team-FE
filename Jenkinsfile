@@ -130,10 +130,30 @@ pipeline {
                         sh '''
                             export KUBECONFIG=$KUBECONFIG
                             
-                            # kubectl 존재 확인 및 설치
-                            if ! command -v kubectl &> /dev/null; then
-                                echo "kubectl not found. Downloading..."
-                                curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                            # kubectl 존재 확인 및 설치 (보안 강화)
+                            if command -v kubectl &> /dev/null; then
+                                echo "Using pre-installed kubectl"
+                            else
+                                KUBECTL_VER="v1.31.0"
+                                echo "kubectl not found. Downloading version ${KUBECTL_VER}..."
+                                
+                                # Binary 다운로드
+                                curl -LO "https://dl.k8s.io/release/${KUBECTL_VER}/bin/linux/amd64/kubectl"
+                                if [ ! -s kubectl ]; then
+                                    echo "Error: Verified download failed (empty or missing file)."
+                                    exit 1
+                                fi
+
+                                # Checksum 다운로드
+                                curl -LO "https://dl.k8s.io/release/${KUBECTL_VER}/bin/linux/amd64/kubectl.sha256"
+                                
+                                # Checksum 검증
+                                echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+                                if [ $? -ne 0 ]; then
+                                    echo "Error: Checksum verification failed!"
+                                    exit 1
+                                fi
+                                
                                 chmod +x kubectl
                                 mkdir -p $HOME/bin
                                 mv kubectl $HOME/bin/
@@ -153,7 +173,7 @@ pipeline {
                             kubectl apply -f kube-folder/frontend-service.yml
                             
                             # 롤아웃 재시작 (이미지 갱신 강제)
-                            kubectl rollout restart deployment/frontend-deployment
+                            kubectl rollout restart deployment/frontend
                             
                             echo "배포 명령 전송 완료!"
                         '''
