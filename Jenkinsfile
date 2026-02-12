@@ -79,17 +79,19 @@ pipeline {
                             git config user.email "${env.GIT_EMAIL}"
                             
                             # 3. Check for Manifest Files
-                            if [ ! -f frontend-deployment.yml ]; then
-                                echo "Error: frontend-deployment.yml not found in manifest repo!"
+                            if [ ! -f kube-folder/frontend-deployment.yml ]; then
+                                echo "Error: kube-folder/frontend-deployment.yml not found in manifest repo!"
+                                echo "Current directory structure:"
+                                ls -R
                                 exit 1
                             fi
 
                             # 4. Update Image Tag
-                            echo "Updating frontend-deployment.yml..."
-                            sed -i 's|image: ${env.IMAGE_NAME}:.*|image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}|g' frontend-deployment.yml
+                            echo "Updating kube-folder/frontend-deployment.yml..."
+                            sed -i 's|image: ${env.IMAGE_NAME}:.*|image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}|g' kube-folder/frontend-deployment.yml
                             
                             # Verify change
-                            cat frontend-deployment.yml | grep "image:"
+                            cat kube-folder/frontend-deployment.yml | grep "image:"
                                 
                                 # 5. Commit & Push
                                 git add .
@@ -97,6 +99,7 @@ pipeline {
                                     git commit -m "[Jenkins] Update image to ${env.IMAGE_TAG}"
                                     git push origin main
                                     echo "Manifest Repo Updated!"
+                                else
                                     echo "No changes to push."
                                 fi
                         """
@@ -137,9 +140,9 @@ pipeline {
                             cd manifest-repo
                             
                             # Apply all manifests
-                            kubectl apply -f frontend-deployment.yml
-                            kubectl apply -f frontend-service.yml
-                            # kubectl apply -f frontend-ingress.yml || true
+                            kubectl apply -f kube-folder/frontend-deployment.yml
+                            kubectl apply -f kube-folder/frontend-service.yml
+                            # kubectl apply -f kube-folder/frontend-ingress.yml || true
                             
                             # Restart rollout to ensure image pull
                             kubectl rollout restart deployment/frontend
