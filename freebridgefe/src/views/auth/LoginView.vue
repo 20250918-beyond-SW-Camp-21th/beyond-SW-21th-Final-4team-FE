@@ -257,13 +257,6 @@ const fadeInUp = {
           </button>
         </form>
 
-        <!-- Divider -->
-        <div class="relative my-8">
-          <div class="absolute inset-0 flex items-center">
-            <div class="w-full border-t border-white/10" />
-          </div>
-        </div>
-
         <!-- Signup Links -->
         <div
           v-motion
@@ -271,9 +264,12 @@ const fadeInUp = {
           :enter="{ opacity: 1, transition: { delay: 800 } }"
           class="space-y-3"
         >
-          <p class="text-center text-white/50 text-sm mb-4">
-            아직 계정이 없으신가요?
-          </p>
+          <!-- Divider with Text -->
+          <div class="flex items-center gap-4 my-8">
+             <div class="h-px bg-white/10 flex-1" />
+             <span class="text-white/50 text-sm">아직 계정이 없으신가요?</span>
+             <div class="h-px bg-white/10 flex-1" />
+          </div>
           <button
             @click="navigateToSignup('FREELANCER')"
             class="w-full py-3 border border-white/20 text-white rounded-2xl hover:bg-white/5 transition-all font-medium hover:scale-102 active:scale-98"
