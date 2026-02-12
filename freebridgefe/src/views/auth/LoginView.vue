@@ -64,6 +64,7 @@ const verificationCode = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
 const isProcessing = ref(false);
+const modalError = ref('');
 
 const openFindPasswordModal = () => {
   isFindPasswordModalOpen.value = true;
@@ -72,15 +73,17 @@ const openFindPasswordModal = () => {
   verificationCode.value = '';
   newPassword.value = '';
   confirmPassword.value = '';
-  error.value = '';
+  modalError.value = '';
 };
 
 const closeFindPasswordModal = () => {
   isFindPasswordModalOpen.value = false;
+  modalError.value = '';
 };
 
 const handleSendCode = async () => {
   isProcessing.value = true;
+  modalError.value = '';
   // TODO: Implement SMTP email sending via backend API
   await new Promise(resolve => setTimeout(resolve, 1500));
   isProcessing.value = false;
@@ -89,33 +92,99 @@ const handleSendCode = async () => {
 
 const handleVerifyCode = async () => {
   isProcessing.value = true;
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  isProcessing.value = false;
-  
-  if (verificationCode.value === '123456') {
+  modalError.value = '';
+
+  // TODO: MOCK implementation - REPLACE with actual backend verification endpoint
+  // Example:
+  // try {
+  //   await api.post('/auth/verify-code', { code: verificationCode.value });
+  //   step.value = 'PASSWORD';
+  // } catch (err) {
+  //   modalError.value = err.response?.data?.message || '인증에 실패했습니다.';
+  // }
+
+  try {
+    // Simulate server API call
+    await new Promise((resolve, reject) => {
+      setTimeout(() => {
+        // Mock server-side validation logic
+        if (verificationCode.value === '123456') {
+          resolve(true);
+        } else {
+          // Simulate server error response for invalid code
+          reject(new Error('인증번호가 올바르지 않습니다.'));
+        }
+      }, 1000);
+    });
+
+    // Success (Server returned 200 OK)
     step.value = 'PASSWORD';
-    error.value = '';
-  } else {
-    error.value = '인증번호가 올바르지 않습니다.';
+  } catch (err: any) {
+    // Failure (Server returned error)
+    console.error('Mobile verification failed:', err);
+    modalError.value = err.message || '서버 통신 오류가 발생했습니다.';
+  } finally {
+    isProcessing.value = false;
   }
 };
 
 const handlePasswordChange = async () => {
+  // 1. Reset Error
+  modalError.value = '';
+
+  // 2. Validate Password Match
   if (newPassword.value !== confirmPassword.value) {
-    error.value = '비밀번호가 일치하지 않습니다.';
+    modalError.value = '비밀번호가 일치하지 않습니다.';
+    return;
+  }
+
+  // 3. Validate Password Strength
+  // Min 8 chars, at least one uppercase, one lowercase, one number, and one special character
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!passwordRegex.test(newPassword.value)) {
+    modalError.value = '비밀번호는 8자 이상이어야 하며, 대소문자, 숫자, 특수문자를 포함해야 합니다.';
     return;
   }
   
+  // 4. API Call (Simulated)
   isProcessing.value = true;
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  isProcessing.value = false;
-  
-  // Success
-  closeFindPasswordModal();
-  email.value = resetEmail.value; // Auto-fill login email
-  password.value = newPassword.value; // Auto-fill new password
-  alert('비밀번호가 성공적으로 변경되었습니다. 다시 로그인해 주세요.');
+  try {
+    // TODO: Replace with actual backend API call to update password
+    // await api.post('/auth/reset-password', { 
+    //   email: resetEmail.value, 
+    //   code: verificationCode.value,
+    //   newPassword: newPassword.value 
+    // });
+    
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulated delay
+
+    // 5. Success Handling
+    closeFindPasswordModal();
+    email.value = resetEmail.value; // Auto-fill login email
+    password.value = newPassword.value; // Auto-fill new password
+    alert('비밀번호가 성공적으로 변경되었습니다. 다시 로그인해 주세요.');
+
+  } catch (err: any) {
+    // 6. Error Handling
+    console.error('Password reset failed:', err);
+    modalError.value = err.message || '비밀번호 변경 중 오류가 발생했습니다.';
+  } finally {
+    // 7. Cleanup
+    isProcessing.value = false;
+  }
 };
+
+// ... (existing code)
+
+// Template changes for displaying modalError instead of error in the modal
+// In Step 2: Verification Code form
+  // <div v-if="modalError" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
+  //   {{ modalError }}
+  // </div>
+// In Step 3: New Password form
+  // <div v-if="modalError" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
+  //   {{ modalError }}
+  // </div>
 
 // Animation variants for v-motion
 const fadeInUp = {
@@ -373,8 +442,8 @@ const fadeInUp = {
               required
             />
           </div>
-           <div v-if="error" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
-            {{ error }}
+           <div v-if="modalError" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
+            {{ modalError }}
           </div>
           <button
             type="submit"
@@ -415,8 +484,8 @@ const fadeInUp = {
               required
             />
           </div>
-           <div v-if="error" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
-            {{ error }}
+           <div v-if="modalError" class="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-xl text-sm">
+            {{ modalError }}
           </div>
           <button
             type="submit"
