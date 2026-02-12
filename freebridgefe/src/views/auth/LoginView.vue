@@ -57,6 +57,38 @@ const goBack = () => {
   router.push('/');
 };
 
+const isFindPasswordModalOpen = ref(false);
+const resetEmail = ref('');
+const isResetting = ref(false);
+const resetSuccess = ref(false);
+
+const openFindPasswordModal = () => {
+  isFindPasswordModalOpen.value = true;
+  resetEmail.value = '';
+  resetSuccess.value = false;
+  isResetting.value = false;
+};
+
+const closeFindPasswordModal = () => {
+  isFindPasswordModalOpen.value = false;
+};
+
+const handlePasswordReset = async () => {
+  isResetting.value = true;
+  // Simulate API call
+  // TODO: Implement SMTP email sending via backend API (Future Requirement)
+  await new Promise(resolve => setTimeout(resolve, 1500));
+  isResetting.value = false;
+  resetSuccess.value = true;
+  
+  // Close modal after success (optional delay)
+  setTimeout(() => {
+    if(isFindPasswordModalOpen.value) {
+      // closeFindPasswordModal(); // Uncomment if you want to auto-close
+    }
+  }, 2000);
+};
+
 // Animation variants for v-motion
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -176,7 +208,11 @@ const fadeInUp = {
               <input type="checkbox" class="rounded bg-white/5 border-white/10" />
               <span class="text-white/60">로그인 상태 유지</span>
             </label>
-            <button type="button" class="text-white/80 hover:text-white transition-colors">
+            <button 
+              type="button" 
+              @click="openFindPasswordModal"
+              class="text-white/80 hover:text-white transition-colors"
+            >
               비밀번호 찾기
             </button>
           </div>
@@ -246,6 +282,68 @@ const fadeInUp = {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Find Password Modal -->
+    <div v-if="isFindPasswordModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div 
+        class="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        @click="closeFindPasswordModal"
+      ></div>
+      
+      <div 
+        v-motion
+        :initial="{ opacity: 0, scale: 0.9 }"
+        :enter="{ opacity: 1, scale: 1 }"
+        class="relative bg-[#111] border border-white/10 rounded-3xl p-8 w-full max-w-md shadow-2xl"
+      >
+        <button 
+          @click="closeFindPasswordModal"
+          class="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <h2 class="text-2xl font-bold mb-2">비밀번호 찾기</h2>
+        <p class="text-white/60 mb-6 text-sm">
+          가입하신 이메일 주소를 입력해 주세요.<br/>
+          비밀번호 재설정 링크를 보내드립니다.
+        </p>
+
+        <form @submit.prevent="handlePasswordReset" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-2 text-white/80">이메일</label>
+            <div class="relative">
+              <Mail class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+              <input
+                type="email"
+                v-model="resetEmail"
+                placeholder="your@email.com"
+                class="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-white/30 transition-colors text-white placeholder:text-white/30"
+                required
+              />
+            </div>
+          </div>
+
+          <div v-if="resetSuccess" class="bg-green-500/10 border border-green-500/20 text-green-400 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            <span>재설정 링크가 전송되었습니다!</span>
+          </div>
+
+          <button
+            type="submit"
+            :disabled="isResetting || resetSuccess"
+            class="w-full py-3 bg-white text-black rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <span v-if="isResetting" class="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin"></span>
+            <span>{{ isResetting ? '전송 중...' : (resetSuccess ? '전송 완료' : '링크 전송하기') }}</span>
+          </button>
+        </form>
       </div>
     </div>
   </div>
