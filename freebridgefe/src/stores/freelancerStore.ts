@@ -154,7 +154,7 @@ export const useFreelancerStore = defineStore('freelancer', () => {
             return roomId;
         }
 
-        return null;
+        return 'UPDATED';
     }
 
     return {
