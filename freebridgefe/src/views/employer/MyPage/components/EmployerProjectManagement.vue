@@ -129,6 +129,11 @@ const filteredProjects = computed(() => {
   });
 });
 
+const resetFilters = () => {
+  searchTerm.value = '';
+  statusFilter.value = 'ALL';
+};
+
 const getProgressColor = (progress: number) => {
     if (progress <= 30) {
         return {
@@ -194,7 +199,8 @@ const openModal = (project: Project) => {
         </div>
 
         <!-- Search -->
-        <div class="relative w-full md:w-64">
+        <div class="flex items-center gap-3 w-full md:w-auto">
+          <div class="relative w-full md:w-64">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
             <input
               type="text"
@@ -202,6 +208,14 @@ const openModal = (project: Project) => {
               v-model="searchTerm"
               class="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-blue-500 transition-colors text-xs"
             />
+          </div>
+          <button
+            type="button"
+            @click="resetFilters"
+            class="px-3 py-2 text-xs rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+          >
+            필터 초기화
+          </button>
         </div>
     </div>
 

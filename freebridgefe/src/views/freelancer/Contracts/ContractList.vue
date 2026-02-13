@@ -136,6 +136,13 @@ const currentSortLabel = computed(() => {
     return sortOptions.find((o) => o.value === sortOption.value)?.label || '정렬';
 });
 
+const resetFilters = () => {
+    searchQuery.value = '';
+    selectedStatus.value = 'ALL';
+    sortOption.value = 'most_recent';
+    isDropdownOpen.value = false;
+};
+
 const handleFreelancerSign = (signatureDataUrl: string) => {
     if (!signingContractId.value) return;
     contractStore.updateContract(signingContractId.value, {
@@ -195,7 +202,14 @@ const openSignModal = (contract: ContractWithDetails) => {
                 </div>
 
                 <!-- Sort Dropdown -->
-                <div class="relative">
+                <div class="relative flex items-center gap-3">
+                    <button
+                        type="button"
+                        @click="resetFilters"
+                        class="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm"
+                    >
+                        필터 초기화
+                    </button>
                     <button
                         @click="isDropdownOpen = !isDropdownOpen"
                         class="flex items-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors min-w-[160px] justify-between"

@@ -161,6 +161,14 @@ const currentStatusLabel = computed(() => {
     return statusFilters.find((f) => f.value === selectedStatus.value)?.label || '전체';
 });
 
+const resetFilters = () => {
+    searchQuery.value = '';
+    selectedStatus.value = 'ALL';
+    selectedDateRange.value = 'ALL';
+    currentPage.value = 1;
+    isDropdownOpen.value = false;
+};
+
 watch(searchQuery, () => {
     currentPage.value = 1;
 });
@@ -333,6 +341,14 @@ const goToPage = (page: number) => {
                 <div class="text-white/60 text-sm">
                     {{ filteredSettlements.length }}개의 정산 내역
                 </div>
+
+                <button
+                    type="button"
+                    @click="resetFilters"
+                    class="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm"
+                >
+                    필터 초기화
+                </button>
 
                 <!-- Status Dropdown -->
                 <div class="relative z-30">

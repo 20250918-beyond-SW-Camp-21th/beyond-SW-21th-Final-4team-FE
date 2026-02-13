@@ -69,6 +69,13 @@ const applyFilters = () => {
   searchTerm.value = searchTermInput.value;
   favoriteOnly.value = favoriteOnlyInput.value;
 };
+
+const resetFilters = () => {
+  searchTermInput.value = '';
+  favoriteOnlyInput.value = false;
+  searchTerm.value = '';
+  favoriteOnly.value = false;
+};
 </script>
 
 <template>
@@ -183,7 +190,7 @@ const applyFilters = () => {
         enter: { opacity: 1, y: 0, transition: { delay: 100 } }
       }"
     >
-      <div class="grid gap-4 lg:grid-cols-[1fr_auto_auto]">
+      <div class="grid gap-4 lg:grid-cols-[1fr_auto_auto_auto]">
         <div class="relative">
           <Search class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
           <input
@@ -209,6 +216,13 @@ const applyFilters = () => {
           class="px-6 py-4 bg-blue-500 text-white rounded-2xl font-semibold hover:bg-blue-400 transition-colors"
         >
           검색
+        </button>
+        <button
+          type="button"
+          @click="resetFilters"
+          class="px-6 py-4 bg-white/5 border border-white/10 text-white/70 rounded-2xl font-semibold hover:bg-white/10 hover:text-white transition-colors"
+        >
+          필터 초기화
         </button>
       </div>
     </div>

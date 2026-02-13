@@ -96,6 +96,12 @@ const averageScore = computed(() => {
     const total = evaluations.value.reduce((sum, e) => sum + e.score, 0);
     return (total / evaluations.value.length).toFixed(1);
 });
+
+const resetFilters = () => {
+    searchQuery.value = '';
+    sortBy.value = 'latest';
+    activeTab.value = 'project';
+};
 </script>
 
 <template>
@@ -167,6 +173,13 @@ const averageScore = computed(() => {
                 <option value="rating_low">평점 낮은순</option>
             </select>
         </div>
+        <button
+            type="button"
+            @click="resetFilters"
+            class="px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors text-sm"
+        >
+            필터 초기화
+        </button>
     </div>
 
     <!-- Loading State -->

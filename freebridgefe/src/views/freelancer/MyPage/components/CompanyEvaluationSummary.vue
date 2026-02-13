@@ -75,6 +75,10 @@ const overallRating = computed(() => {
     if (mockReviews.length === 0) return 0;
     return mockReviews.reduce((sum, r) => sum + r.rating, 0) / mockReviews.length;
 });
+
+const resetFilters = () => {
+    filter.value = 'ALL';
+};
 </script>
 
 <template>
@@ -179,6 +183,13 @@ const overallRating = computed(() => {
                     :class="filter === opt.id ? 'bg-white text-black' : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white'"
                 >
                     {{ opt.label }}
+                </button>
+                <button
+                    type="button"
+                    @click="resetFilters"
+                    class="px-4 py-2 rounded-full text-sm font-medium bg-white/5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                    초기화
                 </button>
             </div>
         </div>
