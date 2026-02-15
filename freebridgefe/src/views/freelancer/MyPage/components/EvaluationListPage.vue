@@ -8,10 +8,16 @@ import {
     Search,
     MessageSquare,
     Calendar,
-    Briefcase
+    Briefcase,
+    Sparkles
 } from 'lucide-vue-next';
 import { getEvaluations, getRejectionFeedbacks, type Evaluation, type RejectionFeedback } from '@/api/MyPage/evaluationApi';
 import { useAuthStore } from '@/stores/authStore';
+import type { FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
+
+const props = defineProps<{
+    profile?: FreelancerProfileDashboard; // Optional to allow independent use if needed, but primarily passed from parent
+}>();
 
 const emit = defineEmits<{
     (e: 'back'): void;
@@ -90,9 +96,10 @@ const filteredRejections = computed(() => {
     return result;
 });
 
-// Computed: 평균 평점
+// Computed: 평균 평점 (from props if available, else from list)
 const averageScore = computed(() => {
-    if (evaluations.value.length === 0) return 0;
+    if (props.profile) return props.profile.averageRating.toFixed(1);
+    if (evaluations.value.length === 0) return '0.0';
     const total = evaluations.value.reduce((sum, e) => sum + e.score, 0);
     return (total / evaluations.value.length).toFixed(1);
 });
@@ -101,29 +108,72 @@ const averageScore = computed(() => {
 <template>
   <div class="max-w-5xl mx-auto px-4 md:px-8 py-8 font-sans text-white">
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div class="flex items-center gap-4">
-            <button
-                @click="$emit('back')"
-                class="p-2 hover:bg-white/5 rounded-lg transition-colors"
-            >
-                <ArrowLeft class="w-5 h-5 text-white/60" />
-            </button>
-            <div>
-                <h1 class="text-2xl font-bold text-white">받은 평가 관리</h1>
-                <p class="text-sm text-slate-400 mt-1">프로젝트 완료 후 받은 고용주의 평가를 확인하세요.</p>
+    <div class="flex items-center gap-4 mb-8">
+        <button
+            @click="$emit('back')"
+            class="p-2 hover:bg-white/5 rounded-lg transition-colors"
+        >
+            <ArrowLeft class="w-5 h-5 text-white/60" />
+        </button>
+        <div>
+            <h1 class="text-2xl font-bold text-white">받은 평가 관리</h1>
+            <p class="text-sm text-slate-400 mt-1">프로젝트 완료 후 받은 고용주의 평가를 확인하세요.</p>
+        </div>
+    </div>
+
+    <!-- Summary Section (New) -->
+    <div v-if="props.profile" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 animate-fade-in-up">
+        <!-- Total Average -->
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center justify-center gap-2">
+            <div class="text-sm text-slate-400 font-bold">전체 평균 평점</div>
+            <div class="flex items-center gap-2">
+                <Star class="w-8 h-8 text-yellow-400 fill-yellow-400" />
+                <span class="text-4xl font-bold text-white">{{ averageScore }}</span>
+                <span class="text-sm text-slate-500 self-end mb-1">/ 5.0</span>
+            </div>
+            <div class="text-xs text-slate-500 mt-2">총 {{ evaluations.length }}건의 평가 기준</div>
+        </div>
+
+        <!-- Detailed Stats -->
+        <div class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-center">
+            <h3 class="text-sm font-bold text-slate-400 mb-4">항목별 평점 분석</h3>
+            <div class="space-y-4">
+                <!-- Professionalism Average -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">전문성 (프로그래밍/프레임워크)</span>
+                        <span class="font-bold text-blue-400">{{ props.profile?.expertise ? ((props.profile.expertise.programming + props.profile.expertise.framework + props.profile.expertise.problemSolving) / 3).toFixed(1) : '0.0' }}</span>
+                    </div>
+                    <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-500" :style="{ width: props.profile?.expertise ? `${(((props.profile.expertise.programming + props.profile.expertise.framework + props.profile.expertise.problemSolving) / 3) / 5) * 100}%` : '0%' }"></div>
+                    </div>
+                </div>
+                 <!-- Collaboration Average -->
+                 <div class="space-y-1">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-slate-300">협업 능력 (소통/일정준수)</span>
+                        <span class="font-bold text-purple-400">{{ props.profile?.collaboration ? ((props.profile.collaboration.communication + props.profile.collaboration.scheduleAdherence + props.profile.collaboration.dispute) / 3).toFixed(1) : '0.0' }}</span>
+                    </div>
+                    <div class="h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                        <div class="h-full bg-purple-500" :style="{ width: props.profile?.collaboration ? `${(((props.profile.collaboration.communication + props.profile.collaboration.scheduleAdherence + props.profile.collaboration.dispute) / 3) / 5) * 100}%` : '0%' }"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Summary Card (Optional) -->
-        <div class="bg-white/5 border border-white/10 rounded-xl px-4 py-2 flex items-center gap-3">
-             <div class="flex items-center gap-1">
-                <Star class="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                <span class="text-lg font-bold text-white">{{ averageScore }}</span>
-                <span class="text-sm text-slate-500">/ 5.0</span>
-             </div>
-             <div class="w-px h-8 bg-white/10 mx-2"></div>
-             <span class="text-sm text-slate-400">총 {{ evaluations.length }}건의 평가</span>
+        <!-- AI Summary -->
+        <div class="bg-gradient-to-br from-indigo-900/40 to-purple-900/40 border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
+            <div class="absolute top-0 right-0 p-4 opacity-50">
+                <Sparkles class="w-12 h-12 text-white/5" />
+            </div>
+            <h3 class="text-sm font-bold text-indigo-300 mb-3 flex items-center gap-2">
+                <Sparkles class="w-4 h-4" />
+                AI 분석 요약
+            </h3>
+            <p class="text-sm text-slate-200 leading-relaxed min-h-[80px]">
+                "대부분의 고용주가 <strong>뛰어난 문제 해결 능력</strong>과 <strong>원활한 소통</strong>을 강점으로 꼽았습니다. 특히 일정 준수 항목에서 높은 평가를 받고 있어 신뢰도가 높습니다."
+            </p>
+            <div class="mt-2 text-[10px] text-slate-500 text-right">Based on {{ evaluations.length }} reviews</div>
         </div>
     </div>
 

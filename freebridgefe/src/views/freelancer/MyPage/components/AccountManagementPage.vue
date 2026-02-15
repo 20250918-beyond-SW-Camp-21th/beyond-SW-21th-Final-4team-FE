@@ -8,13 +8,10 @@ import {
     Phone,
     Lock,
     Bell,
-    Shield,
-    Save,
     Eye,
     EyeOff,
-    Smartphone,
     Key,
-    AlertCircle
+    Save
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -53,12 +50,12 @@ const showPasswords = ref({
 
 const notifications = ref({
     email: true,
-    sms: false,
+
     push: true,
     marketing: false,
 });
 
-const twoFactorEnabled = ref(false);
+
 
 const handleSaveAccountInfo = async () => {
     if (!isProfileVerified.value) {
@@ -372,7 +369,7 @@ const handleChangePassword = async () => {
                  <div
                     v-for="(item, key) in {
                         email: { label: '이메일 알림', desc: '프로젝트 제안 및 중요 공지를 이메일로 받습니다' },
-                        sms: { label: 'SMS 알림', desc: '긴급 알림을 문자로 받습니다' },
+
                         push: { label: '푸시 알림', desc: '브라우저 푸시 알림을 받습니다' },
                         marketing: { label: '마케팅 정보 수신', desc: '프로모션 및 이벤트 정보를 받습니다' }
                     }"
@@ -397,54 +394,7 @@ const handleChangePassword = async () => {
             </div>
         </div>
 
-        <!-- Security Settings -->
-        <div
-            class="bg-white/5 rounded-2xl border border-white/10 p-8"
-            v-motion
-            :initial="{ opacity: 0, y: 20 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: 300 } }"
-        >
-            <h2 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                <Shield class="w-5 h-5 text-green-400" />
-                보안 설정
-            </h2>
 
-             <div class="space-y-4">
-                <div class="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/5">
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <Smartphone class="w-4 h-4 text-green-400" />
-                            <h3 class="font-semibold text-white text-sm">2단계 인증 (2FA)</h3>
-                        </div>
-                        <p class="text-xs text-slate-400">로그인 시 추가 보안 인증을 요구합니다</p>
-                    </div>
-                    <button
-                        @click="twoFactorEnabled = !twoFactorEnabled"
-                        class="relative w-12 h-6 rounded-full transition-colors"
-                        :class="twoFactorEnabled ? 'bg-green-500' : 'bg-slate-600'"
-                    >
-                        <div
-                            class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform"
-                            :class="twoFactorEnabled ? 'translate-x-6' : ''"
-                        />
-                    </button>
-                </div>
-
-                <div class="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                    <div class="flex items-start gap-3">
-                        <AlertCircle class="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <h3 class="font-semibold text-orange-300 text-sm mb-1">계정 보안 팁</h3>
-                            <ul class="text-xs text-orange-200/80 space-y-1">
-                                <li>• 정기적으로 비밀번호를 변경하세요</li>
-                                <li>• 다른 사이트와 동일한 비밀번호를 사용하지 마세요</li>
-                                <li>• 2단계 인증을 활성화하여 계정을 보호하세요</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
         </div>
     </div>
   </div>
