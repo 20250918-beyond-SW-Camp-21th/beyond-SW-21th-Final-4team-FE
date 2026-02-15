@@ -105,7 +105,12 @@ const state: MockProfileState = {
             fileUrl: '#',
             fileName: 'Portfolio_2024_v2.pdf',
             lastUpdated: '2024.02.10'
-        }
+        },
+        aiSummary: {
+            title: "문제 해결 능력이 뛰어나고 <span class='text-indigo-400'>원활한 소통</span>이 강점입니다.",
+            description: "대부분의 고용주가 귀하의 일정 준수와 문제 해결 역량을 높게 평가했습니다. 특히 협업 과정에서의 적극적인 태도가 프로젝트 성공에 기여했다는 피드백이 많습니다."
+        },
+        topPercentile: 10
     },
     employerProfile: {
         companyName: '테크스타트업',

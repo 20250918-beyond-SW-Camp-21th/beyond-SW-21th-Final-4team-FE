@@ -39,6 +39,11 @@ export interface FreelancerProfileDashboard {
         fileName: string;
         lastUpdated: string;
     };
+    aiSummary: {
+        title: string;
+        description: string;
+    };
+    topPercentile: number;
 }
 
 export const getFreelancerProfile = async (userId: string): Promise<FreelancerProfileDashboard> => {
