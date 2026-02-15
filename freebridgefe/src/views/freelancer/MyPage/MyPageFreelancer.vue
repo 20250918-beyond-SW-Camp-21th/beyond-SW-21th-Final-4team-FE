@@ -140,6 +140,9 @@ const onFileChange = (event: Event) => {
     const file = target.files?.[0];
     
     if (file) {
+        if (profile.value.portfolio.fileUrl) {
+            URL.revokeObjectURL(profile.value.portfolio.fileUrl);
+        }
         // Create object URL for the file
         const fileUrl = URL.createObjectURL(file);
         
@@ -155,9 +158,12 @@ const onFileChange = (event: Event) => {
 };
 
 const downloadPortfolio = () => {
-    if (profile.value.portfolio.fileUrl) {
+    const fileUrl = profile.value.portfolio.fileUrl;
+    const isValid = fileUrl && typeof fileUrl === 'string' && fileUrl.trim() !== '' && fileUrl !== '#';
+
+    if (isValid) {
         const link = document.createElement('a');
-        link.href = profile.value.portfolio.fileUrl;
+        link.href = fileUrl!;
         link.download = profile.value.portfolio.fileName || 'portfolio.pdf';
         document.body.appendChild(link);
         link.click();

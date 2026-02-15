@@ -151,10 +151,11 @@ const handleAiAnalysis = () => {
     </div>
 
     <!-- Content: Evaluation Summary (3-Column Layout) -->
-    <div v-if="activeTab === 'evaluation' && props.profile" class="space-y-8 animate-fade-in-up">
+    <div v-if="activeTab === 'evaluation'" class="space-y-8 animate-fade-in-up">
         
-        <!-- Top: AI Insight Action / Banner -->
-        <div class="min-h-[180px]">
+        <template v-if="props.profile">
+            <!-- Top: AI Insight Action / Banner -->
+            <div class="min-h-[180px]">
             <!-- State 1: AI Insight Result -->
             <div v-if="showAiAnalysis" class="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-white/10 rounded-3xl p-8 relative overflow-hidden animate-fade-in">
                 <div class="flex flex-col gap-4">
@@ -163,7 +164,7 @@ const handleAiAnalysis = () => {
                         <span class="text-sm font-bold uppercase tracking-wider">AI Insight</span>
                     </div>
                     <div class="space-y-2">
-                        <h2 class="text-2xl font-bold text-white leading-tight" v-html="props.profile.aiSummary?.title || '데이터가 충분하지 않습니다.'"></h2>
+                        <h2 class="text-2xl font-bold text-white leading-tight">{{ props.profile.aiSummary?.title || '데이터가 충분하지 않습니다.' }}</h2>
                         <p class="text-slate-300 leading-relaxed max-w-3xl">
                             {{ props.profile.aiSummary?.description || '평가 분석을 위해 더 많은 프로젝트를 완료해주세요.' }}
                         </p>
@@ -298,6 +299,12 @@ const handleAiAnalysis = () => {
                  </div>
             </div>
 
+        </div>
+        </template>
+        
+        <div v-else class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border border-white/10 border-dashed text-slate-400 animate-fade-in">
+             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4 opacity-70"></div>
+             <p>평가 데이터를 불러오는 중입니다...</p>
         </div>
     </div>
 

@@ -94,6 +94,7 @@ export interface RejectionFeedback {
     projectName: string;
     reason: string;
     createdAt: string;
+    tags?: string[];
 }
 
 export const MOCK_REJECTION_FEEDBACKS: RejectionFeedback[] = [
@@ -102,14 +103,16 @@ export const MOCK_REJECTION_FEEDBACKS: RejectionFeedback[] = [
         companyName: '넥스트레벨',
         projectName: '쇼핑몰 고도화 프로젝트',
         reason: '포트폴리오는 훌륭했으나, 저희가 현재 도입하려는 Vue 3 Composition API 경험이 다소 부족해 보여 아쉽게도 함께하지 못하게 되었습니다.',
-        createdAt: '2025-12-05'
+        createdAt: '2025-12-05',
+        tags: ['기술 스택 불일치']
     },
     {
         id: 2,
         companyName: 'Global IT',
         projectName: '사내 메신저 개발',
         reason: '제시해주신 견적이 저희 내부 예산 범위를 초과하여 부득이하게 계약을 진행하기 어렵게 되었습니다.',
-        createdAt: '2025-11-10'
+        createdAt: '2025-11-10',
+        tags: ['예산 초과']
     }
 ];
 

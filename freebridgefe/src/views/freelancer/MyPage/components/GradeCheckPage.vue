@@ -329,7 +329,7 @@ const getGradeBadgeColor = (grade: string) => {
                     : 'bg-white/5 border-white/10'"
             >
                 <!-- Background Pattern -->
-                <div v-if="calculatedGrade" class="absolute inset-0 bg-[url('@/assets/noise.png')] opacity-20 mix-blend-overlay"></div>
+
                 <div v-if="calculatedGrade" class="absolute -top-20 -right-20 w-64 h-64 bg-white/20 rounded-full blur-3xl"></div>
                 <div v-if="calculatedGrade" class="absolute -bottom-20 -left-20 w-64 h-64 bg-black/20 rounded-full blur-3xl"></div>
 
