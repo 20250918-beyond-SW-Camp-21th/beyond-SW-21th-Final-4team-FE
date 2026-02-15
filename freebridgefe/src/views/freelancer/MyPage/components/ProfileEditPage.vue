@@ -127,8 +127,8 @@ const saveProfile = async () => {
                             <input v-model.number="formData.careerYears" type="number" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
                         </div>
                          <div class="space-y-1">
-                            <label class="text-xs text-slate-400 font-bold">희망 평균 단가 (월)</label>
-                            <input v-model="formData.salary" type="text" placeholder="ex) 월 800만원" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
+                            <label class="text-xs text-slate-400 font-bold">희망 시급 (시간당)</label>
+                            <input v-model="formData.salary" type="number" placeholder="ex) 50000" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
                         </div>
                     </div>
 

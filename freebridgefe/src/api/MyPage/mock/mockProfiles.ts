@@ -5,7 +5,7 @@ export interface MockFreelancerProfile {
     job: string;
     introduction: string;
     careerYears: number;
-    salary: string;
+    salary: number;
     workConditions: {
         type: string;
         startDate: string;
@@ -77,7 +77,7 @@ const state: MockProfileState = {
         job: '개발자',
         introduction: '사용자 경험을 최우선으로 생각하는 프론트엔드 개발자입니다. 유지보수성과 확장성을 고려해 코드를 작성합니다.',
         careerYears: 5,
-        salary: '월 800만원',
+        salary: 50000,
         workConditions: {
             type: '개인',
             startDate: '2024-02-01',

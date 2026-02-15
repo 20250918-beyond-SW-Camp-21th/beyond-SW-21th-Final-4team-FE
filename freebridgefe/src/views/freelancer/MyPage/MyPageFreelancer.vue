@@ -17,6 +17,7 @@ import {
   Check,
   Edit3,
   Upload,
+  Download,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore.ts';
 import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi.ts';
@@ -52,7 +53,7 @@ const profile = ref<FreelancerProfileDashboard>({
     job: '',
     introduction: '',
     careerYears: 0,
-    salary: '',
+    salary: 0,
     workConditions: {
         type: '',
         startDate: '',
@@ -252,23 +253,13 @@ const handlePortfolioUpload = () => {
                              <div class="flex justify-between items-center text-sm">
                                 <span class="text-slate-500 font-medium w-24">희망 몸값</span>
                                 <div class="flex-1 flex justify-end">
-                                    <span class="text-white font-bold">{{ profile.salary }}</span>
+                                    <span class="text-white font-bold">{{ profile.salary.toLocaleString() }}원/시간</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                     <div class="bg-[#0F172A]/50 border-t border-white/5 py-3 px-6 rounded-b-2xl flex justify-center items-center">
-                        <button class="text-xs text-slate-400 flex items-center gap-1 group">
-                            최신 업데이트 프로필로 정확한 추천 정보를 받으세요!
-                            <span 
-                                @click="activeTab = 'edit'"
-                                class="font-bold text-white underline underline-offset-2 ml-1 decoration-slate-500 group-hover:decoration-white transition-all cursor-pointer"
-                            >
-                                프로필 업데이트하기
-                            </span>
-                        </button>
-                    </div>
+
                 </div>
             </div>
 
@@ -357,7 +348,7 @@ const handlePortfolioUpload = () => {
                 <div class="bg-[#1e293b]/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm h-full flex flex-col">
                     <div class="flex justify-between items-center mb-6">
                         <h4 class="font-bold text-base text-white">고용주 평가</h4>
-                        <button class="text-slate-500 hover:text-white transition-colors"><Plus class="w-4 h-4" /></button>
+                        <button @click="activeTab = 'evaluation'" class="text-slate-500 hover:text-white transition-colors"><Plus class="w-4 h-4" /></button>
                     </div>
                     <div class="flex gap-4 mb-4 flex-1">
                         <div class="w-24 h-24 bg-slate-800 rounded-xl flex items-center justify-center border border-white/5 flex-col gap-1">
@@ -434,7 +425,7 @@ const handlePortfolioUpload = () => {
                 <div class="bg-[#1e293b]/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm h-full flex flex-col">
                     <div class="flex justify-between items-center mb-6">
                         <h4 class="font-bold text-base text-white">포트폴리오</h4>
-                        <button class="text-slate-500 hover:text-white transition-colors"><Upload class="w-4 h-4" /></button>
+                        <button @click="handlePortfolioUpload" class="text-slate-500 hover:text-white transition-colors"><Upload class="w-4 h-4" /></button>
                     </div>
                     <div class="flex-1 flex flex-col items-center justify-center text-center space-y-4 py-4">
                         <div class="w-full bg-white/5 border border-dashed border-white/10 rounded-xl p-4 flex items-center justify-between group hover:border-blue-500/50 hover:bg-blue-500/5 transition-all cursor-pointer">
@@ -447,8 +438,8 @@ const handlePortfolioUpload = () => {
                                     <div class="text-xs text-slate-500">2.4 MB • 2024.02.01 업데이트</div>
                                 </div>
                             </div>
-                            <button class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-slate-400 hover:bg-blue-500 hover:text-white transition-all">
-                                <Briefcase class="w-4 h-4" /> <!-- Using Briefcase as download icon placeholder since Download icon might not be imported. Will check imports. -->
+                            <button @click="alert('포트폴리오 다운로드 시작')" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-slate-400 hover:bg-blue-500 hover:text-white transition-all">
+                                <Download class="w-4 h-4" />
                             </button>
                         </div>
                         

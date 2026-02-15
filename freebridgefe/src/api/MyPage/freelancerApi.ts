@@ -10,7 +10,7 @@ export interface FreelancerProfileDashboard {
     job: string;
     introduction: string;
     careerYears: number;
-    salary: string;
+    salary: number;
     workConditions: {
         type: string;
         startDate: string;
