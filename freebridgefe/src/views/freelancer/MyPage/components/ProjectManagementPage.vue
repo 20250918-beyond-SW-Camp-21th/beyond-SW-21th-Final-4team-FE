@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { Search, Filter, Calendar, DollarSign, User as UserIcon, ArrowLeft } from 'lucide-vue-next';
-import { getFreelancerProjects, type FreelancerProject } from '@/api/MyPage/projectApi.ts';
+import { Search, Calendar, DollarSign, User as UserIcon, ArrowLeft } from 'lucide-vue-next';
+import { getFreelancerProjects, type FreelancerProject } from '@/api/MyPage/projectApi';
 import { useAuthStore } from '@/stores/authStore';
 
 const authStore = useAuthStore();
@@ -99,9 +99,7 @@ const getStatusLabel = (status: string) => {
                         class="bg-[#1e293b] border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 w-64"
                     />
                 </div>
-                <button class="p-2 bg-[#1e293b] border border-white/10 rounded-lg text-slate-400 hover:text-white hover:border-white/30 transition-colors">
-                    <Filter class="w-4 h-4" />
-                </button>
+
             </div>
         </div>
 

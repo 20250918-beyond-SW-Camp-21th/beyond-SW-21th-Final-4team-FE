@@ -5,7 +5,7 @@ export interface MockFreelancerProfile {
     job: string;
     introduction: string;
     careerYears: number;
-    salary: string;
+    salary: number;
     workConditions: {
         type: string;
         startDate: string;
@@ -77,7 +77,7 @@ const state: MockProfileState = {
         job: '개발자',
         introduction: '사용자 경험을 최우선으로 생각하는 프론트엔드 개발자입니다. 유지보수성과 확장성을 고려해 코드를 작성합니다.',
         careerYears: 5,
-        salary: '월 800만원',
+        salary: 50000,
         workConditions: {
             type: '개인',
             startDate: '2024-02-01',
@@ -105,7 +105,12 @@ const state: MockProfileState = {
             fileUrl: '#',
             fileName: 'Portfolio_2024_v2.pdf',
             lastUpdated: '2024.02.10'
-        }
+        },
+        aiSummary: {
+            title: "문제 해결 능력이 뛰어나고 원활한 소통이 강점입니다.",
+            description: "대부분의 고용주가 귀하의 일정 준수와 문제 해결 역량을 높게 평가했습니다. 특히 협업 과정에서의 적극적인 태도가 프로젝트 성공에 기여했다는 피드백이 많습니다."
+        },
+        topPercentile: 10
     },
     employerProfile: {
         companyName: '테크스타트업',

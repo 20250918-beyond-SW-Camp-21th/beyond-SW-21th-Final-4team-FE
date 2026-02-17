@@ -10,7 +10,7 @@ export interface FreelancerProfileDashboard {
     job: string;
     introduction: string;
     careerYears: number;
-    salary: string;
+    salary: number;
     workConditions: {
         type: string;
         startDate: string;
@@ -39,6 +39,11 @@ export interface FreelancerProfileDashboard {
         fileName: string;
         lastUpdated: string;
     };
+    aiSummary?: {
+        title: string;
+        description: string;
+    };
+    topPercentile?: number;
 }
 
 export const getFreelancerProfile = async (userId: string): Promise<FreelancerProfileDashboard> => {

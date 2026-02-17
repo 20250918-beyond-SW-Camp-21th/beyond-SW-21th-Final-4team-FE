@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
-import { ArrowLeft, Award, GraduationCap, CheckCircle, Info, Save, Loader2 } from 'lucide-vue-next';
+import { 
+    ArrowLeft, 
+    Award, 
+    GraduationCap, 
+    CheckCircle, 
+    Info, 
+    Save, 
+    Loader2,
+    Briefcase
+} from 'lucide-vue-next';
 import { 
     type GradeLevel, 
     type EducationType, 
@@ -21,10 +30,10 @@ const emit = defineEmits<{
 }>();
 
 const selectedType = ref<'education' | 'certification'>('education');
-const education = ref<EducationType>('전문학사'); // Default to first option or handle empty
-const yearsOfExperience = ref<number>(0);
-const certification = ref<CertificationType>('산업기사'); // Default
-const certYears = ref<number>(0);
+const education = ref<EducationType | ''>(''); 
+const yearsOfExperience = ref<number | ''>('');
+const certification = ref<CertificationType | ''>(''); 
+const certYears = ref<number | ''>('');
 const calculatedGrade = ref<GradeLevel>('');
 
 const educationOptions = ref<EducationOption[]>([]);
@@ -61,11 +70,14 @@ const handleCalculate = async () => {
     calculatedGrade.value = ''; // Reset result
     
     try {
+        // Simulate slight delay for effect
+        await new Promise(resolve => setTimeout(resolve, 600));
+
         const result = await calculateGrade({
             type: selectedType.value,
-            education: selectedType.value === 'education' ? education.value : undefined,
-            certification: selectedType.value === 'certification' ? certification.value : undefined,
-            yearsOfExperience: selectedType.value === 'education' ? yearsOfExperience.value : certYears.value
+            education: selectedType.value === 'education' ? (education.value as EducationType) : undefined,
+            certification: selectedType.value === 'certification' ? (certification.value as CertificationType) : undefined,
+            yearsOfExperience: selectedType.value === 'education' ? Number(yearsOfExperience.value) : Number(certYears.value)
         });
         calculatedGrade.value = result;
     } catch (error) {
@@ -82,9 +94,9 @@ const handleSave = async () => {
     try {
         await saveGrade({
             type: selectedType.value,
-            education: selectedType.value === 'education' ? education.value : undefined,
-            certification: selectedType.value === 'certification' ? certification.value : undefined,
-            yearsOfExperience: selectedType.value === 'education' ? yearsOfExperience.value : certYears.value,
+            education: selectedType.value === 'education' ? (education.value as EducationType) : undefined,
+            certification: selectedType.value === 'certification' ? (certification.value as CertificationType) : undefined,
+            yearsOfExperience: selectedType.value === 'education' ? Number(yearsOfExperience.value) : Number(certYears.value),
             grade: calculatedGrade.value
         });
         alert('등급 정보가 성공적으로 저장되었습니다.');
@@ -98,295 +110,281 @@ const handleSave = async () => {
 
 const getGradeColor = (grade: GradeLevel) => {
     switch (grade) {
-        case '특급': return 'from-purple-600 to-pink-600';
-        case '고급': return 'from-blue-500 to-cyan-500';
-        case '중급': return 'from-green-500 to-emerald-500';
-        case '초급': return 'from-slate-500 to-slate-600';
-        default: return 'from-slate-700 to-slate-800';
+        case '특급': return 'from-purple-600 to-pink-600 shadow-purple-500/30';
+        case '고급': return 'from-blue-500 to-cyan-500 shadow-blue-500/30';
+        case '중급': return 'from-emerald-500 to-teal-500 shadow-emerald-500/30';
+        case '초급': return 'from-slate-500 to-slate-600 shadow-slate-500/30';
+        default: return 'from-slate-700 to-slate-800 shadow-slate-900/10';
     }
 };
 
 const getGradeBadgeColor = (grade: string) => {
     switch (grade) {
-        case '특급': return 'bg-purple-600';
-        case '고급': return 'bg-blue-500';
-        case '중급': return 'bg-green-500';
-        case '초급': return 'bg-slate-500';
+        case '특급': return 'bg-purple-500 shadow-lg shadow-purple-500/50';
+        case '고급': return 'bg-blue-500 shadow-lg shadow-blue-500/50';
+        case '중급': return 'bg-emerald-500 shadow-lg shadow-emerald-500/50';
+        case '초급': return 'bg-slate-500 shadow-lg shadow-slate-500/50';
         default: return 'bg-slate-700';
     }
 };
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 md:px-8 py-8 font-sans text-white">
+  <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 font-sans text-white">
     <!-- Header -->
-    <div class="flex items-center gap-4 mb-8">
+    <div class="flex items-center gap-4 mb-10">
         <button
             @click="$emit('back')"
-            class="p-2 hover:bg-white/5 rounded-lg transition-colors"
-            v-motion
-            :hover="{ scale: 1.1 }"
-            :tap="{ scale: 0.9 }"
+            class="p-2 hover:bg-white/5 rounded-full transition-colors"
         >
-            <ArrowLeft class="w-5 h-5 text-white/60" />
+            <ArrowLeft class="w-6 h-6 text-white/80" />
         </button>
         <div>
-            <h1 class="text-2xl font-bold text-white">회원 등급 조회</h1>
-            <p class="text-sm text-slate-400 mt-1">학력/경력 또는 자격증 정보를 입력하여 등급을 확인하세요</p>
+            <h1 class="text-3xl font-bold text-white tracking-tight">회원 등급 조회</h1>
+            <p class="text-base text-slate-400 mt-1">학력, 경력, 자격증 정보를 바탕으로 나의 등급을 확인해보세요.</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Input Form -->
-        <div class="lg:col-span-2 space-y-6">
-            <!-- Type Selection -->
-            <div
-                class="bg-white/5 rounded-2xl border border-white/10 p-6"
-                v-motion
-                :initial="{ opacity: 0, y: 20 }"
-                :enter="{ opacity: 1, y: 0 }"
-            >
-                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <Award class="w-5 h-5 text-yellow-400" />
-                    등급 산정 방식 선택
-                </h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <button
-                        @click="selectedType = 'education'; calculatedGrade = ''"
-                        class="p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center text-center"
-                        :class="selectedType === 'education'
-                            ? 'border-blue-500 bg-blue-500/10'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10'"
-                    >
-                        <GraduationCap
-                            class="w-8 h-8 mb-2"
-                            :class="selectedType === 'education' ? 'text-blue-400' : 'text-slate-400'"
-                        />
-                        <div
-                            class="font-semibold"
-                            :class="selectedType === 'education' ? 'text-blue-300' : 'text-slate-300'"
-                        >
-                            학경력자
-                        </div>
-                        <div class="text-xs text-slate-500 mt-1">학력 + 경력</div>
-                    </button>
-                    <button
-                        @click="selectedType = 'certification'; calculatedGrade = ''"
-                        class="p-4 rounded-xl border-2 transition-all flex flex-col items-center justify-center text-center"
-                        :class="selectedType === 'certification'
-                            ? 'border-green-500 bg-green-500/10'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10'"
-                    >
-                        <Award
-                            class="w-8 h-8 mb-2"
-                            :class="selectedType === 'certification' ? 'text-green-400' : 'text-slate-400'"
-                        />
-                        <div
-                            class="font-semibold"
-                            :class="selectedType === 'certification' ? 'text-green-300' : 'text-slate-300'"
-                        >
-                            자격자
-                        </div>
-                        <div class="text-xs text-slate-500 mt-1">자격증 + 경력</div>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Education Form -->
-            <div
-                v-if="selectedType === 'education'"
-                class="bg-white/5 rounded-2xl border border-white/10 p-6"
-                v-motion
-                :initial="{ opacity: 0, y: 20 }"
-                :enter="{ opacity: 1, y: 0 }"
-            >
-                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <GraduationCap class="w-5 h-5 text-blue-400" />
-                    학력 및 경력 정보
-                </h2>
-
-                <div class="space-y-4">
-                     <div>
-                        <label class="text-sm text-slate-400 mb-2 block">최종 학력</label>
-                        <select
-                            v-model="education"
-                            @change="calculatedGrade = ''"
-                            class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
-                        >
-                            <option value="" disabled>선택하세요</option>
-                            <option 
-                                v-for="opt in educationOptions" 
-                                :key="opt.value" 
-                                :value="opt.value" 
-                                class="text-black"
-                            >
-                                {{ opt.label }}
-                            </option>
-                        </select>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <!-- Left Column: Input Form -->
+        <div class="lg:col-span-7 space-y-6 animate-fade-in-up">
+            
+            <!-- Type Selection Cards -->
+            <div class="grid grid-cols-2 gap-4">
+                <button
+                    @click="selectedType = 'education'; calculatedGrade = ''"
+                    class="relative p-6 rounded-3xl border transition-all duration-300 flex flex-col items-center justify-center text-center group overflow-hidden"
+                    :class="selectedType === 'education'
+                        ? 'bg-blue-500/20 border-blue-500/50 shadow-lg shadow-blue-500/10'
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'"
+                >
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" v-if="selectedType !== 'education'"></div>
+                    <div class="p-3 bg-blue-500/20 rounded-2xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                        <GraduationCap class="w-8 h-8 text-blue-400" />
                     </div>
-                    <div>
-                        <label class="text-sm text-slate-400 mb-2 block">경력 연수 (년)</label>
-                        <input
-                            type="number"
-                            min="0"
-                            v-model.number="yearsOfExperience"
-                            @input="calculatedGrade = ''"
-                            class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
-                            placeholder="경력 연수를 입력하세요"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <!-- Certification Form -->
-            <div
-                v-if="selectedType === 'certification'"
-                class="bg-white/5 rounded-2xl border border-white/10 p-6"
-                v-motion
-                :initial="{ opacity: 0, y: 20 }"
-                :enter="{ opacity: 1, y: 0 }"
-            >
-                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <Award class="w-5 h-5 text-green-400" />
-                    자격증 및 경력 정보
-                </h2>
-
-                 <div class="space-y-4">
-                     <div>
-                        <label class="text-sm text-slate-400 mb-2 block">자격증</label>
-                        <select
-                            v-model="certification"
-                            @change="calculatedGrade = ''"
-                            class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-green-500 transition-colors"
-                        >
-                             <option value="" disabled>선택하세요</option>
-                             <option 
-                                v-for="opt in certificationOptions" 
-                                :key="opt.value" 
-                                :value="opt.value" 
-                                class="text-black"
-                            >
-                                {{ opt.label }}
-                            </option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-sm text-slate-400 mb-2 block">경력 연수 (년)</label>
-                        <input
-                            type="number"
-                            min="0"
-                            v-model.number="certYears"
-                            @input="calculatedGrade = ''"
-                            class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-green-500 transition-colors"
-                            placeholder="경력 연수를 입력하세요"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <button
-                @click="handleCalculate"
-                :disabled="(selectedType === 'education' ? !education : !certification) || isLoading"
-                class="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center gap-2"
-                v-motion
-                :hover="{ scale: 1.02 }"
-                :tap="{ scale: 0.98 }"
-            >
-                <Loader2 v-if="isLoading" class="w-5 h-5 animate-spin" />
-                <span v-else>등급 계산하기</span>
-            </button>
-        </div>
-
-         <!-- Right Column - Result & Guide -->
-        <div class="space-y-6">
-             <div
-                class="rounded-2xl p-6 text-center min-h-[200px] flex flex-col items-center justify-center transition-colors duration-500"
-                :class="`bg-gradient-to-br ${getGradeColor(calculatedGrade)}`"
-                v-motion
-                :initial="{ opacity: 0, scale: 0.9 }"
-                :enter="{ opacity: 1, scale: 1 }"
-            >
-                <template v-if="calculatedGrade">
-                    <CheckCircle class="w-12 h-12 text-white mb-4" />
-                    <div class="text-sm text-white/80 mb-2">귀하의 등급은</div>
-                    <div class="text-5xl font-bold text-white mb-2">{{ calculatedGrade }}</div>
-                    <div class="text-sm text-white/80 mb-6">입니다</div>
+                    <div class="font-bold text-lg text-white mb-1">학경력자</div>
+                    <div class="text-xs text-slate-400">학력 + 경력 기준 산정</div>
                     
-                    <div class="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 text-left">
-                        <Info class="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-                        <div>
-                            <h4 class="text-red-400 font-bold text-sm mb-1">허위 정보 입력 시 주의사항</h4>
-                            <p class="text-xs text-red-300/80 leading-relaxed">
-                                해당 등급은 입력하신 정보를 바탕으로 산정됩니다. 
-                                실제 정보와 다를 경우 <span class="text-red-400 font-bold decoration-wavy underline">고용주와의 법적 분쟁 및 손해배상 청구</span>의 대상이 될 수 있습니다.
-                            </p>
-                        </div>
+                    <div v-if="selectedType === 'education'" class="absolute top-4 right-4">
+                        <CheckCircle class="w-5 h-5 text-blue-400 fill-blue-400/20" />
                     </div>
+                </button>
 
-                     <button
-                        @click="handleSave"
-                        :disabled="isSaving"
-                        class="px-6 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm font-semibold transition-colors flex items-center gap-2 mx-auto"
-                    >
-                        <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
-                        <Save v-else class="w-4 h-4" />
-                        등급 정보 저장
-                    </button>
-                </template>
-                <template v-else>
-                     <Award class="w-12 h-12 text-white/40 mb-4" />
-                    <div class="text-white/60">정보를 입력하고</div>
-                    <div class="text-white/60">등급을 계산해보세요</div>
-                </template>
+                <button
+                    @click="selectedType = 'certification'; calculatedGrade = ''"
+                    class="relative p-6 rounded-3xl border transition-all duration-300 flex flex-col items-center justify-center text-center group overflow-hidden"
+                    :class="selectedType === 'certification'
+                        ? 'bg-emerald-500/20 border-emerald-500/50 shadow-lg shadow-emerald-500/10'
+                        : 'bg-white/5 border-white/10 hover:bg-white/10'"
+                >
+                    <div class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" v-if="selectedType !== 'certification'"></div>
+                     <div class="p-3 bg-emerald-500/20 rounded-2xl mb-3 group-hover:scale-110 transition-transform duration-300">
+                        <Award class="w-8 h-8 text-emerald-400" />
+                    </div>
+                    <div class="font-bold text-lg text-white mb-1">자격자</div>
+                    <div class="text-xs text-slate-400">자격증 + 경력 기준 산정</div>
+
+                    <div v-if="selectedType === 'certification'" class="absolute top-4 right-4">
+                        <CheckCircle class="w-5 h-5 text-emerald-400 fill-emerald-400/20" />
+                    </div>
+                </button>
             </div>
 
-             <div
-                class="bg-white/5 rounded-2xl border border-white/10 p-6"
-                v-motion
-                :initial="{ opacity: 0, y: 20 }"
-                :enter="{ opacity: 1, y: 0, transition: { delay: 100 } }"
-            >
-                <h3 class="text-sm font-bold text-white mb-4 flex items-center gap-2">
-                    <Info class="w-4 h-4 text-blue-400" />
-                    등급 안내
-                </h3>
-                  <div class="space-y-2">
-                    <div v-for="grade in ['특급', '고급', '중급', '초급']" :key="grade" class="flex items-center gap-2">
-                        <div class="w-3 h-3 rounded-full" :class="getGradeBadgeColor(grade)"></div>
-                        <span class="text-xs text-slate-300">{{ grade }}</span>
+            <!-- Input Fields -->
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+                <!-- Education Inputs -->
+                <div v-if="selectedType === 'education'" class="space-y-6 animate-fade-in">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-6">
+                        <GraduationCap class="w-5 h-5 text-blue-400" />
+                        학력 및 경력 정보 입력
+                    </h2>
+                     <div class="space-y-2">
+                        <label class="text-xs text-slate-400 font-bold ml-1">최종 학력</label>
+                        <div class="relative">
+                            <select
+                                v-model="education"
+                                @change="calculatedGrade = ''"
+                                class="w-full bg-[#1e293b]/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500/50 focus:bg-[#1e293b] transition-all appearance-none"
+                            >
+                                <option value="" disabled selected>선택하세요</option>
+                                <option 
+                                    v-for="opt in educationOptions" 
+                                    :key="opt.value" 
+                                    :value="opt.value"
+                                    class="bg-[#1e293b]"
+                                >
+                                    {{ opt.label }}
+                                </option>
+                            </select>
+                            <div class="absolute right-4 top-3.5 pointer-events-none text-slate-500">▼</div>
+                        </div>
                     </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-slate-400 font-bold ml-1">IT 분야 경력 (년)</label>
+                        <div class="relative">
+                            <Briefcase class="w-4 h-4 text-slate-500 absolute left-4 top-3.5" />
+                            <input
+                                type="number"
+                                min="0"
+                                v-model.number="yearsOfExperience"
+                                @input="calculatedGrade = ''"
+                                class="w-full bg-[#1e293b]/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white text-sm outline-none focus:border-blue-500/50 focus:bg-[#1e293b] transition-all"
+                                placeholder="예: 3"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Certification Inputs -->
+                <div v-if="selectedType === 'certification'" class="space-y-6 animate-fade-in">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2 mb-6">
+                        <Award class="w-5 h-5 text-emerald-400" />
+                        자격증 및 경력 정보 입력
+                    </h2>
+                     <div class="space-y-2">
+                        <label class="text-xs text-slate-400 font-bold ml-1">보유 자격증</label>
+                        <div class="relative">
+                            <select
+                                v-model="certification"
+                                @change="calculatedGrade = ''"
+                                class="w-full bg-[#1e293b]/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 focus:bg-[#1e293b] transition-all appearance-none"
+                            >
+                                 <option value="" disabled selected>선택하세요</option>
+                                 <option 
+                                    v-for="opt in certificationOptions" 
+                                    :key="opt.value" 
+                                    :value="opt.value"
+                                    class="bg-[#1e293b]"
+                                >
+                                    {{ opt.label }}
+                                </option>
+                            </select>
+                            <div class="absolute right-4 top-3.5 pointer-events-none text-slate-500">▼</div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-xs text-slate-400 font-bold ml-1">IT 분야 경력 (년)</label>
+                        <div class="relative">
+                            <Briefcase class="w-4 h-4 text-slate-500 absolute left-4 top-3.5" />
+                            <input
+                                type="number"
+                                min="0"
+                                v-model.number="certYears"
+                                @input="calculatedGrade = ''"
+                                class="w-full bg-[#1e293b]/50 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 focus:bg-[#1e293b] transition-all"
+                                placeholder="예: 3"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-white/5">
+                    <button
+                        @click="handleCalculate"
+                        :disabled="(selectedType === 'education' ? !education : !certification) || isLoading"
+                        class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 disabled:shadow-none flex items-center justify-center gap-2"
+                    >
+                        <Loader2 v-if="isLoading" class="w-5 h-5 animate-spin" />
+                        <span v-else>나의 등급 계산하기</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Grade Criteria Table -->
+             <div class="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+                <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                    <Info class="w-5 h-5 text-slate-400" />
+                    등급 산정 기준표
+                </h3>
+                 <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead>
+                            <tr class="border-b border-white/10">
+                                <th class="py-3 px-4 text-slate-300 font-bold w-20">등급</th>
+                                <th class="py-3 px-4 text-slate-300 font-semibold">학경력자 기준</th>
+                                <th class="py-3 px-4 text-slate-300 font-semibold">자격자 기준</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5">
+                             <tr v-for="item in criteriaList" :key="item.grade" class="hover:bg-white/5 transition-colors">
+                                <td class="py-4 px-4">
+                                    <span :class="`inline-flex items-center justify-center px-2.5 py-1 rounded-md text-xs font-bold text-white ${getGradeBadgeColor(item.grade)}`">{{ item.grade }}</span>
+                                </td>
+                                <td class="py-4 px-4 text-slate-300 text-xs leading-relaxed">{{ item.edu }}</td>
+                                <td class="py-4 px-4 text-slate-300 text-xs leading-relaxed">{{ item.cert }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Criteria Table -->
-    <div
-        class="mt-8 bg-white/5 rounded-2xl border border-white/10 p-6"
-        v-motion
-        :initial="{ opacity: 0, y: 20 }"
-        :enter="{ opacity: 1, y: 0, transition: { delay: 200 } }"
-    >
-        <h2 class="text-lg font-bold text-white mb-4">등급 산정 기준표</h2>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead>
-                    <tr class="border-b border-white/10">
-                        <th class="text-left py-3 px-4 text-slate-300 font-semibold">등급</th>
-                        <th class="text-left py-3 px-4 text-slate-300 font-semibold">학경력자</th>
-                        <th class="text-left py-3 px-4 text-slate-300 font-semibold">자격자</th>
-                    </tr>
-                </thead>
-                <tbody>
-                     <tr v-for="item in criteriaList" :key="item.grade" class="border-b border-white/10 hover:bg-white/5">
-                        <td class="py-3 px-4">
-                            <span :class="`inline-block px-3 py-1 ${item.color} text-white rounded-full text-xs font-bold`">{{ item.grade }}</span>
-                        </td>
-                        <td class="py-3 px-4 text-slate-300 text-xs">{{ item.edu }}</td>
-                        <td class="py-3 px-4 text-slate-300 text-xs">{{ item.cert }}</td>
-                    </tr>
-                </tbody>
-            </table>
+        <!-- Right Column: Result & Info -->
+        <div class="lg:col-span-5 space-y-6 animate-fade-in-up" style="animation-delay: 100ms;">
+            <!-- Result Card -->
+            <div
+                class="relative rounded-3xl p-8 text-center min-h-[360px] flex flex-col items-center justify-center transition-all duration-500 shadow-xl overflow-hidden border border-white/10"
+                :class="calculatedGrade 
+                    ? `bg-gradient-to-br ${getGradeColor(calculatedGrade)}` 
+                    : 'bg-white/5 border-white/10'"
+            >
+                <!-- Background Pattern -->
+
+                <div v-if="calculatedGrade" class="absolute -top-20 -right-20 w-64 h-64 bg-white/20 rounded-full blur-3xl"></div>
+                <div v-if="calculatedGrade" class="absolute -bottom-20 -left-20 w-64 h-64 bg-black/20 rounded-full blur-3xl"></div>
+
+                <template v-if="calculatedGrade">
+                    <div class="relative z-10 animate-fade-in-up">
+                        <div class="mb-4 inline-flex p-4 bg-white/20 backdrop-blur-md rounded-full ring-4 ring-white/10 shadow-inner">
+                            <CheckCircle class="w-10 h-10 text-white" />
+                        </div>
+                        <div class="text-sm font-medium text-white/90 mb-1 tracking-wide uppercase">Calculated Grade</div>
+                        <div class="text-6xl font-black text-white mb-2 drop-shadow-md">{{ calculatedGrade }}</div>
+                        <div class="text-base text-white/80 font-medium mb-8">등급에 해당합니다</div>
+                        
+                        <div class="bg-black/20 backdrop-blur-md rounded-xl p-4 text-left border border-white/10 mb-8 max-w-xs mx-auto">
+                            <div class="flex items-start gap-3">
+                                <Info class="w-5 h-5 text-white/60 shrink-0 mt-0.5" />
+                                <p class="text-xs text-white/70 leading-relaxed">
+                                    이 결과는 입력하신 정보를 바탕으로 산출된 예상 등급입니다. 실제 증빙 서류에 따라 달라질 수 있습니다.
+                                </p>
+                            </div>
+                        </div>
+
+                         <button
+                            @click="handleSave"
+                            :disabled="isSaving"
+                            class="w-full px-6 py-3 bg-white hover:bg-slate-100 text-slate-900 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                        >
+                            <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin text-slate-900" />
+                            <Save v-else class="w-4 h-4 text-slate-900" />
+                            등급 정보 저장하기
+                        </button>
+                    </div>
+                </template>
+
+                 <template v-else>
+                    <div class="text-slate-500 flex flex-col items-center">
+                        <div class="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                            <Award class="w-10 h-10 text-slate-600" />
+                        </div>
+                        <p class="text-lg font-bold text-slate-400">등급을 계산해보세요</p>
+                        <p class="text-sm text-slate-500 mt-2">왼쪽에서 정보를 입력하면<br>결과가 표시됩니다.</p>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Warning Card -->
+            <div class="bg-red-500/10 border border-red-500/20 rounded-3xl p-6 relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 w-24 h-24 bg-red-500/20 rounded-full blur-2xl"></div>
+                <h4 class="text-red-400 font-bold flex items-center gap-2 mb-3 relative z-10">
+                    <Info class="w-5 h-5" />
+                    허위 정보 입력 시 주의사항
+                </h4>
+                <p class="text-sm text-red-200/70 leading-relaxed relative z-10">
+                    입력하신 정보가 허위로 판명될 경우, 프리랜서 이용 약관에 따라 <span class="text-red-300 font-bold underline decoration-red-500/50 decoration-2 underline-offset-2">계정 정지 또는 법적 책임</span>을 물을 수 있습니다. 반드시 사실에 근거한 정보를 입력해 주세요.
+                </p>
+            </div>
         </div>
     </div>
   </div>
