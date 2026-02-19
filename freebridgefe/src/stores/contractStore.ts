@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 
-// Contract Entity (based on entity.md)
 export interface Contract {
     id: number;
     contractId: number;
@@ -18,6 +17,23 @@ export interface Contract {
     contractPdfUrl: string;
     signedPdfUrl?: string;
     signedDate?: Date | string;               // 최종 서명 완료일 (양측 모두 서명 후)
+
+    jobDescription: string;                   // 업무의 내용
+    workLocation: string;                     // 근무장소 (기본: 원격근무)
+    workStartTime: string;                    // 근무 시작시간 (예: "09:00")
+    workEndTime: string;                      // 근무 종료시간 (예: "18:00")
+    breakStartTime: string;                   // 휴게 시작시간
+    breakEndTime: string;                     // 휴게 종료시간
+    workDaysPerWeek: number;                  // 주 근무일수
+    weeklyHoliday: string;                    // 주휴일 (예: "토, 일")
+
+    employerBusinessName: string;             // 사업체명
+    employerAddress: string;                  // 사업주 주소
+    employerCEO: string;                      // 대표자명
+
+    freelancerAddress: string;                // 프리랜서 주소
+    freelancerPhone: string;                  // 프리랜서 연락처
+
     // Signature tracking
     employerSignature?: string;               // 고용주 서명 이미지 (data URL)
     employerSignedDate?: Date | string;       // 고용주 서명일
@@ -84,7 +100,6 @@ export const useContractStore = defineStore('contract', () => {
         e3: { id: 3, name: '이커머스 C', role: 'EMPLOYER' },
     };
 
-    // Contracts (based on entity.md structure)
     const contracts = ref<Contract[]>([
         {
             id: 1,
@@ -101,6 +116,21 @@ export const useContractStore = defineStore('contract', () => {
             contractPdfUrl: '/contracts/1001_contract.pdf',
             signedPdfUrl: '/contracts/1001_signed.pdf',
             signedDate: new Date('2026-01-05'),
+
+            jobDescription: 'SaaS 플랫폼의 관리자 대시보드 UI/UX 개선 및 프론트엔드 개발',
+            workLocation: '원격근무',
+            workStartTime: '09:00',
+            workEndTime: '18:00',
+            breakStartTime: '12:00',
+            breakEndTime: '13:00',
+            workDaysPerWeek: 5,
+            weeklyHoliday: '토, 일',
+            employerBusinessName: '스타트업 A',
+            employerAddress: '서울특별시 강남구 테헤란로 123',
+            employerCEO: '홍길동',
+            freelancerAddress: '서울특별시 서초구 서초대로 456',
+            freelancerPhone: '010-1234-5678',
+
             employerSignature: 'data:image/png;base64,employer_sig_1',
             employerSignedDate: new Date('2026-01-03'),
             freelancerSignature: 'data:image/png;base64,freelancer_sig_1',
@@ -119,9 +149,23 @@ export const useContractStore = defineStore('contract', () => {
             commissionRate: 0.05,
             paymentDay: 25,
             contractPdfUrl: '/contracts/1002_contract.pdf',
+
+            jobDescription: '모바일 앱 결제 시스템 설계 및 프론트엔드 구현',
+            workLocation: '원격근무',
+            workStartTime: '10:00',
+            workEndTime: '19:00',
+            breakStartTime: '12:30',
+            breakEndTime: '13:30',
+            workDaysPerWeek: 5,
+            weeklyHoliday: '토, 일',
+            employerBusinessName: '스타트업 A',
+            employerAddress: '서울특별시 강남구 테헤란로 123',
+            employerCEO: '홍길동',
+            freelancerAddress: '서울특별시 서초구 서초대로 456',
+            freelancerPhone: '010-1234-5678',
+
             employerSignature: 'data:image/png;base64,employer_sig_2',
             employerSignedDate: new Date('2026-02-10'),
-            // 프리랜서 서명 대기 중
         },
     ]);
 
@@ -293,24 +337,54 @@ export const useContractStore = defineStore('contract', () => {
             paidDate: new Date(),
         });
 
-        // Create freelancer settlement (HOLDING status)
-        // Freelancers only pay tax (3.3%), not platform fee
-        const tax = Math.floor(settlement.billingAmount * 0.033); // 3.3%
-        const netAmount = settlement.billingAmount - tax;
+        // Check if freelancer settlement already exists for this employer settlement
+        const existingFreelancerSettlement = freelancerSettlements.value.find(
+            (fs) => fs.employerSettlementId === settlementId
+        );
 
-        const newFreelancerSettlement: FreelancerSettlement = {
-            id: freelancerSettlements.value.length + 1,
-            contractId: settlement.contractId,
-            employerSettlementId: settlementId,
-            totalAmount: settlement.billingAmount,
-            tax,
-            netAmount,
-            status: 'HOLDING',
-            installmentNumber: settlement.installmentNumber,
-            expectedPaidDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days later
-        };
+        if (existingFreelancerSettlement) {
+            // Update existing freelancer settlement to PROCESSING
+            updateFreelancerSettlement(existingFreelancerSettlement.id, {
+                status: 'PROCESSING',
+                expectedPaidDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+            });
+        } else {
+            // Create new freelancer settlement (HOLDING → will become PROCESSING)
+            // Freelancers only pay tax (3.3%), not platform fee
+            const tax = Math.floor(settlement.billingAmount * 0.033); // 3.3%
+            const netAmount = settlement.billingAmount - tax;
 
-        freelancerSettlements.value = [...freelancerSettlements.value, newFreelancerSettlement];
+            const newFreelancerSettlement: FreelancerSettlement = {
+                id: Date.now(), // Use timestamp for unique ID
+                contractId: settlement.contractId,
+                employerSettlementId: settlementId,
+                totalAmount: settlement.billingAmount,
+                tax,
+                netAmount,
+                status: 'PROCESSING',
+                installmentNumber: settlement.installmentNumber,
+                expectedPaidDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days later
+            };
+
+            freelancerSettlements.value = [...freelancerSettlements.value, newFreelancerSettlement];
+        }
+    }
+
+    // Simulate disbursement - freelancer receives payment
+    function disburseFreelancerSettlement(freelancerSettlementId: number) {
+        const fSettlement = freelancerSettlements.value.find((s) => s.id === freelancerSettlementId);
+        if (!fSettlement || fSettlement.status !== 'PROCESSING') return;
+
+        // Update freelancer settlement to PAID
+        updateFreelancerSettlement(freelancerSettlementId, {
+            status: 'PAID',
+            paidDate: new Date(),
+        });
+
+        // Update linked employer settlement to DISBURSED
+        updateEmployerSettlement(fSettlement.employerSettlementId, {
+            status: 'DISBURSED',
+        });
     }
 
     return {
@@ -328,6 +402,7 @@ export const useContractStore = defineStore('contract', () => {
         updateEmployerSettlement,
         updateFreelancerSettlement,
         markEmployerSettlementPaid,
+        disburseFreelancerSettlement,
         // Helper
         getUserName,
     };

@@ -1,0 +1,95 @@
+.a4-paper {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm;
+  margin: 10px auto;
+  background: white;
+  border: 1px solid #ccc;
+  font-family: 'Malgun Gothic', sans-serif;
+  color: #000;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.contract-title {
+  text-align: center;
+  font-size: 24pt;
+  text-decoration: underline;
+  margin-bottom: 30pt;
+}
+
+.contract-intro {
+  margin-bottom: 20pt;
+}
+
+.var-underline {
+  border-bottom: 1px solid #000;
+  padding: 0 10px;
+  display: inline-block;
+  min-width: 80px;
+  text-align: center;
+}
+
+.section {
+  margin-bottom: 12pt;
+  display: flex;
+  align-items: flex-start;
+}
+
+.label {
+  font-weight: bold;
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.sub-content {
+  padding-left: 10px;
+}
+
+.small-text {
+  font-size: 10pt;
+}
+
+.section-text {
+  font-size: 10pt;
+  margin-top: 20pt;
+  line-height: 1.8;
+}
+
+.contract-footer {
+  margin-top: 40pt;
+}
+
+.date-row {
+  text-align: center;
+  font-size: 14pt;
+  margin-bottom: 30pt;
+}
+
+.signature-box {
+  display: flex;
+  justify-content: space-between;
+}
+
+.party {
+  width: 45%;
+  font-size: 11pt;
+  line-height: 2;
+  position: relative;
+}
+
+.sig-img {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 80px;
+  height: auto;
+  opacity: 0.8;
+}
+
+@media print {
+  .a4-paper {
+    border: none;
+    margin: 0;
+  }
+}

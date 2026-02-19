@@ -31,6 +31,8 @@ export interface User {
     // Employer specific
     companyName?: string;
     companySize?: string;
+    companyAddress?: string;
+    representativeName?: string;
     portfolioItems?: PortfolioItem[];
 }
 

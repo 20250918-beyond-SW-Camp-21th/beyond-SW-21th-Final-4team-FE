@@ -28,6 +28,8 @@ const handleLogin = (e: Event) => {
       id: 1,
       name: '스타트업 A',
       companyName: '스타트업 A',
+      companyAddress: '서울특별시 강남구 테헤란로 123',
+      representativeName: '홍길동',
       email: 'employer@test.com',
       password: password.value,
       role: 'EMPLOYER',
