@@ -68,6 +68,20 @@ const applyFilters = () => {
   maxMonthlySalary.value = maxMonthlySalaryInput.value;
   favoriteOnly.value = favoriteOnlyInput.value;
 };
+
+const resetFilters = () => {
+  searchQueryInput.value = '';
+  selectedSkillInput.value = 'ALL';
+  minExperienceInput.value = 0;
+  maxMonthlySalaryInput.value = 10000000;
+  favoriteOnlyInput.value = false;
+
+  searchQuery.value = '';
+  selectedSkill.value = 'ALL';
+  minExperience.value = 0;
+  maxMonthlySalary.value = 10000000;
+  favoriteOnly.value = false;
+};
 </script>
 
 <template>
@@ -146,6 +160,13 @@ const applyFilters = () => {
             class="ml-auto px-4 py-2 rounded-lg bg-emerald-400 text-black font-semibold hover:bg-emerald-300 transition-colors"
           >
             검색
+          </button>
+          <button
+            type="button"
+            @click="resetFilters"
+            class="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white font-semibold hover:bg-white/20 transition-colors"
+          >
+            초기화
           </button>
         </div>
       </div>

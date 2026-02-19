@@ -133,6 +133,13 @@ const selectSortOption = (value: string) => {
 const currentSortLabel = computed(() => {
     return sortOptions.find((o) => o.value === sortOption.value)?.label || '정렬';
 });
+
+const resetFilters = () => {
+    searchQuery.value = '';
+    selectedStatus.value = 'ALL';
+    sortOption.value = 'most_recent';
+    isDropdownOpen.value = false;
+};
 </script>
 
 <template>
@@ -179,6 +186,13 @@ const currentSortLabel = computed(() => {
                         class="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-blue-500/50 focus:outline-none transition-colors"
                     />
                 </div>
+
+                <button
+                    @click="resetFilters"
+                    class="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors min-w-[96px]"
+                >
+                    초기화
+                </button>
 
                 <!-- Sort Dropdown -->
                 <div class="relative">
