@@ -180,6 +180,14 @@ const goToPage = (page: number) => {
         currentPage.value = page;
     }
 };
+
+const resetFilters = () => {
+    searchQuery.value = '';
+    selectedStatus.value = 'ALL';
+    selectedDateRange.value = 'ALL';
+    isDropdownOpen.value = false;
+    currentPage.value = 1;
+};
 </script>
 
 <template>
@@ -327,6 +335,14 @@ const goToPage = (page: number) => {
                         {{ option.label }}
                     </button>
                 </div>
+
+                <button
+                    type="button"
+                    @click="resetFilters"
+                    class="px-3 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 transition-colors"
+                >
+                    초기화
+                </button>
             </div>
 
             <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
