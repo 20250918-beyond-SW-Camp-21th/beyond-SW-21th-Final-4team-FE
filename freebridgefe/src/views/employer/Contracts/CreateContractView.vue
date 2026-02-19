@@ -391,10 +391,10 @@ const navigateToContracts = () => {
                                     v-model="paymentDay"
                                     class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors appearance-none cursor-pointer"
                                 >
-                                    <option value="10" class="bg-gray-900">매월 10일</option>
-                                    <option value="15" class="bg-gray-900">매월 15일</option>
-                                    <option value="25" class="bg-gray-900">매월 25일</option>
-                                    <option value="31" class="bg-gray-900">매월 말일</option>
+                                    <option :value="10" class="bg-gray-900">매월 10일</option>
+                                    <option :value="15" class="bg-gray-900">매월 15일</option>
+                                    <option :value="25" class="bg-gray-900">매월 25일</option>
+                                    <option :value="31" class="bg-gray-900">매월 말일</option>
                                 </select>
                             </div>
                         </div>

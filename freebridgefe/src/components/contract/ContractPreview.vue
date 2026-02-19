@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue';
 import type { Contract } from '@/stores/contractStore';
 
 const props = defineProps<{
@@ -30,15 +31,15 @@ const formatCurrency = (amount: number | undefined) => {
     return amount.toLocaleString();
 };
 
-const startDate = formatDate(props.contract.startDate);
-const endDate = formatDate(props.contract.endDate);
-const currentDate = formatDate(new Date());
-const workStart = formatTime(props.contract.workStartTime);
-const workEnd = formatTime(props.contract.workEndTime);
-const breakStart = formatTime(props.contract.breakStartTime);
-const breakEnd = formatTime(props.contract.breakEndTime);
+const startDate = computed(() => formatDate(props.contract.startDate));
+const endDate = computed(() => formatDate(props.contract.endDate));
+const currentDate = computed(() => formatDate(new Date()));
+const workStart = computed(() => formatTime(props.contract.workStartTime));
+const workEnd = computed(() => formatTime(props.contract.workEndTime));
+const breakStart = computed(() => formatTime(props.contract.breakStartTime));
+const breakEnd = computed(() => formatTime(props.contract.breakEndTime));
 
-const isFlexibleWork = workStart.isFlexible;
+const isFlexibleWork = computed(() => workStart.value.isFlexible);
 </script>
 
 <template>
