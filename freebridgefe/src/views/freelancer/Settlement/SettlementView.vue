@@ -147,6 +147,14 @@ const currentStatusLabel = computed(() => {
     return statusFilters.find((f) => f.value === selectedStatus.value)?.label || '전체';
 });
 
+const resetFilters = () => {
+    searchQuery.value = '';
+    selectedStatus.value = 'ALL';
+    selectedDateRange.value = 'ALL';
+    isDropdownOpen.value = false;
+    currentPage.value = 1;
+};
+
 const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page;
@@ -267,6 +275,14 @@ const handleDownload = (settlement: FreelancerSettlementWithDetails) => {
                             {{ option.label }}
                         </button>
                     </div>
+
+                    <button
+                        type="button"
+                        @click="resetFilters"
+                        class="px-3 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 transition-colors"
+                    >
+                        초기화
+                    </button>
                 </div>
 
                 <!-- Status Filter Dropdown -->

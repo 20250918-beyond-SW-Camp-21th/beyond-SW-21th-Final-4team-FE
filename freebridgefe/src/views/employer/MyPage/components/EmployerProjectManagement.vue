@@ -158,6 +158,11 @@ const openModal = (project: Project) => {
   selectedProject.value = project;
   isModalOpen.value = true;
 };
+
+const resetFilters = () => {
+  searchTerm.value = '';
+  statusFilter.value = 'ALL';
+};
 </script>
 
 <template>
@@ -203,6 +208,13 @@ const openModal = (project: Project) => {
               class="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-blue-500 transition-colors text-xs"
             />
         </div>
+        <button
+          type="button"
+          @click="resetFilters"
+          class="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-xs font-bold hover:bg-white/10 transition-colors"
+        >
+          초기화
+        </button>
     </div>
 
     <!-- Projects Grid -->

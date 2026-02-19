@@ -114,6 +114,10 @@ const handleAiAnalysis = () => {
         showAiAnalysis.value = true;
     }, 1500); // 1.5초 로딩 시뮬레이션
 };
+
+const resetRejectionSearch = () => {
+    searchQuery.value = '';
+};
 </script>
 
 <template>
@@ -328,6 +332,13 @@ const handleAiAnalysis = () => {
                     class="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
                 />
             </div>
+            <button
+                type="button"
+                @click="resetRejectionSearch"
+                class="px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-medium hover:bg-white/10 transition-colors"
+            >
+                초기화
+            </button>
         </div>
 
         <!-- Loading State -->
