@@ -14,10 +14,12 @@ import {
     ChevronLeft,
     ChevronRight,
     AlertCircle,
+    CreditCard,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useContractStore, type EmployerSettlementWithDetails } from '@/stores/contractStore';
 import SettlementDetailModal from './components/SettlementDetailModal.vue';
+import PaymentConfirmationModal from './components/PaymentConfirmationModal.vue';
 import { useNow } from '@vueuse/core';
 
 const now = useNow();
@@ -26,6 +28,7 @@ const authStore = useAuthStore();
 const contractStore = useContractStore();
 
 const selectedSettlement = ref<EmployerSettlementWithDetails | null>(null);
+const paymentSettlement = ref<EmployerSettlementWithDetails | null>(null);
 const selectedStatus = ref<string>('ALL');
 const isDropdownOpen = ref(false);
 const currentPage = ref(1);
@@ -175,6 +178,17 @@ const handleDownload = (settlement: EmployerSettlementWithDetails) => {
     alert(`청구서 다운로드: ${settlement.projectName} - ${settlement.installmentNumber}차`);
 };
 
+const handlePayment = (settlement: EmployerSettlementWithDetails) => {
+    paymentSettlement.value = settlement;
+};
+
+const confirmPayment = () => {
+    if (paymentSettlement.value) {
+        contractStore.markEmployerSettlementPaid(paymentSettlement.value.id);
+        paymentSettlement.value = null;
+    }
+};
+
 const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages.value) {
         currentPage.value = page;
@@ -237,6 +251,16 @@ const goToPage = (page: number) => {
                             <div class="px-4 py-2 rounded-full bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 font-medium">
                                 결제 대기
                             </div>
+                            <button
+                                @click="handlePayment(nextSettlement)"
+                                class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center gap-2"
+                                v-motion
+                                :hover="{ scale: 1.02 }"
+                                :tap="{ scale: 0.98 }"
+                            >
+                                <CreditCard class="w-5 h-5" />
+                                결제하기
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -435,11 +459,27 @@ const goToPage = (page: number) => {
                             </span>
                         </div>
                         <div
-                            v-else
-                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-green-500/20 border border-green-500/30 text-green-400"
+                            v-else-if="settlement.status === 'PAID'"
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-blue-500/20 border border-blue-500/30 text-blue-400"
                         >
                             결제 완료
                         </div>
+                        <div
+                            v-else
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-green-500/20 border border-green-500/30 text-green-400"
+                        >
+                            지급 완료
+                        </div>
+
+                        <!-- Pay Button (only for ISSUED) -->
+                        <button
+                            v-if="settlement.status === 'ISSUED'"
+                            @click="handlePayment(settlement)"
+                            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                        >
+                            <CreditCard class="w-4 h-4" />
+                            결제
+                        </button>
 
                         <button
                             @click="selectedSettlement = settlement"
@@ -506,6 +546,14 @@ const goToPage = (page: number) => {
             :settlement="selectedSettlement"
             @close="selectedSettlement = null"
             @download="handleDownload"
+        />
+
+        <!-- Payment Confirmation Modal -->
+        <PaymentConfirmationModal
+            v-if="paymentSettlement"
+            :settlement="paymentSettlement"
+            @close="paymentSettlement = null"
+            @confirm="confirmPayment"
         />
     </div>
 </template>
