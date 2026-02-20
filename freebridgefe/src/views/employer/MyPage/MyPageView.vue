@@ -253,7 +253,7 @@ const safeWebsiteUrl = computed(() => {
         <div class="p-8 w-[70%] mx-auto">
             <!-- Dynamic Content Rendering -->
             <EmployerProfileManagement v-if="activeTab === 'profile'" @back="activeTab = 'dashboard'" />
-            <FreelancerChecklistPage v-else-if="activeTab === 'checklist'" @back="activeTab = 'dashboard'" />
+            <FreelancerChecklistPage v-else-if="activeTab === 'checklist'" @back="activeTab = 'dashboard'" @navigate="activeTab = $event" />
             <EmployerProjectManagement v-else-if="activeTab === 'projects'" @back="activeTab = 'dashboard'" />
             <EmployerAccountManagement v-else-if="activeTab === 'account'" @back="activeTab = 'dashboard'" />
             
