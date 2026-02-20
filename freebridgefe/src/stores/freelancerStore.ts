@@ -115,7 +115,7 @@ export const useFreelancerStore = defineStore('freelancer', () => {
         proposalId: string,
         status: Proposal['status'],
         rejectionReason?: string
-    ): string | null {
+    ): string | boolean | null {
         const index = proposals.value.findIndex(p => p.id === proposalId);
         if (index === -1) return null;
 
@@ -154,7 +154,7 @@ export const useFreelancerStore = defineStore('freelancer', () => {
             return roomId;
         }
 
-        return null;
+        return true;
     }
 
     return {
