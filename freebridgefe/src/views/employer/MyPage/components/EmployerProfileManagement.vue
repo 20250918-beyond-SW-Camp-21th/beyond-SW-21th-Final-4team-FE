@@ -22,7 +22,6 @@ defineEmits<{
   (e: 'back'): void;
 }>();
 
-const isEditing = ref(false);
 const isLoading = ref(false);
 const isSaving = ref(false);
 
@@ -79,8 +78,7 @@ const handleSave = async () => {
   isSaving.value = true;
   try {
     await updateEmployerProfile(profileData.value);
-    isEditing.value = false;
-    // alert('프로필이 저장되었습니다.'); // Optional: Use toast notification instead if available
+    alert('프로필이 성공적으로 저장되었습니다.');
   } catch (error) {
     console.error('Failed to save profile:', error);
     alert('저장에 실패했습니다.');
@@ -107,22 +105,7 @@ const handleSave = async () => {
           <p class="text-sm text-white/40 mt-1">고용주 정보를 관리하세요</p>
         </div>
       </div>
-      <div v-if="!isEditing">
-        <button
-          @click="isEditing = true"
-          class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors border border-white/10 flex items-center gap-2"
-        >
-          <Edit2 class="w-4 h-4" />
-          수정하기
-        </button>
-      </div>
-      <div v-else class="flex gap-2">
-        <button
-          @click="isEditing = false"
-          class="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg text-sm font-medium transition-colors border border-white/10"
-        >
-          취소
-        </button>
+      <div class="flex gap-2">
         <button
           @click="handleSave"
           :disabled="isSaving"
@@ -150,12 +133,10 @@ const handleSave = async () => {
             고용주명
           </label>
           <input
-            v-if="isEditing"
             type="text"
             v-model="profileData.companyName"
-            class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
+            class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
           />
-          <div v-else class="font-semibold text-lg">{{ profileData.companyName }}</div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -192,17 +173,15 @@ const handleSave = async () => {
               <Users class="w-4 h-4" />
               고용주 규모
             </label>
-            <select
-              v-if="isEditing"
-              v-model="profileData.size"
-              class="w-full bg-slate-800 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors appearance-none"
-            >
-              <option v-for="option in companySizeOptions" :key="option" :value="option">
-                {{ option }}
-              </option>
-            </select>
-            <div v-else class="text-white/80">{{ profileData.size }}</div>
-          </div>
+          <select
+            v-model="profileData.size"
+            class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors appearance-none"
+          >
+            <option v-for="option in companySizeOptions" :key="option" :value="option">
+              {{ option }}
+            </option>
+          </select>
+        </div>
         </div>
 
         <!-- Location -->
@@ -212,12 +191,10 @@ const handleSave = async () => {
             위치
           </label>
           <input
-            v-if="isEditing"
             type="text"
             v-model="profileData.location"
-            class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
+            class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
           />
-          <div v-else class="text-white/80">{{ profileData.location }}</div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -228,20 +205,10 @@ const handleSave = async () => {
               웹사이트
             </label>
             <input
-              v-if="isEditing"
               type="url"
               v-model="profileData.website"
-              class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
+              class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
             />
-            <a
-              v-else
-              :href="profileData.website"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="text-blue-400 hover:underline"
-            >
-              {{ profileData.website }}
-            </a>
           </div>
 
           <!-- Email -->
@@ -251,12 +218,10 @@ const handleSave = async () => {
               이메일
             </label>
             <input
-              v-if="isEditing"
               type="email"
               v-model="profileData.email"
-              class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
+              class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
             />
-            <div v-else class="text-white/80">{{ profileData.email }}</div>
           </div>
         </div>
 
@@ -267,24 +232,20 @@ const handleSave = async () => {
             연락처
           </label>
           <input
-            v-if="isEditing"
             type="tel"
             v-model="profileData.phone"
-            class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
+            class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
           />
-          <div v-else class="text-white/80">{{ profileData.phone }}</div>
         </div>
 
         <!-- Description -->
         <div>
           <label class="text-xs text-white/50 mb-2 block">고용주 소개</label>
           <textarea
-            v-if="isEditing"
             v-model="profileData.description"
             rows="4"
-            class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors resize-none"
+            class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors resize-none"
           ></textarea>
-          <div v-else class="text-white/80 leading-relaxed">{{ profileData.description }}</div>
         </div>
       </div>
     </div>

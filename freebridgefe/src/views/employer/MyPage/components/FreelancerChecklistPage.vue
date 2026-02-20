@@ -25,24 +25,9 @@ defineEmits<{
   (e: 'back'): void;
 }>();
 
-// --- Types ---
-interface Review {
-  id: string;
-  freelancerName: string;
-  freelancerJobTitle: string;
-  projectName: string;
-  date: string;
-  rating: number; // 1-5
-  content: string;
-  tags: string[];
-  checklist: {
-    clarity: boolean;
-    paymentSpeed: boolean;
-    communication: boolean;
-    professionalism: boolean;
-  };
-}
+import { getMockReviews, type Review } from '@/api/MyPage/mock/mockProfiles';
 
+// --- Types ---
 interface AIAnalysisResult {
     summary: string;
     sentimentMultiplier: number; // 0.0 to 1.0 (bad to good)
@@ -52,52 +37,7 @@ interface AIAnalysisResult {
 }
 
 // --- Mock Data ---
-const reviews = ref<Review[]>([
-  {
-    id: '1',
-    freelancerName: '김프론트',
-    freelancerJobTitle: 'React 개발자',
-    projectName: '핀테크 대시보드 리뉴얼',
-    date: '2024-02-10',
-    rating: 5,
-    content: '요구사항이 매우 명확했고, 결제 처리도 빨랐습니다. 최고의 클라이언트입니다.',
-    tags: ['명확한 업무', '빠른 정산'],
-    checklist: { clarity: true, paymentSpeed: true, communication: true, professionalism: true },
-  },
-  {
-    id: '2',
-    freelancerName: '이디자인',
-    freelancerJobTitle: 'UX/UI 디자이너',
-    projectName: '쇼핑몰 앱 디자인',
-    date: '2024-01-28',
-    rating: 2,
-    content: '전반적으로 좋았으나, 중간에 기획이 몇 번 변경되어 일정이 빠듯했습니다. 변경 사항에 대한 공유가 늦어 대응이 힘들었습니다.',
-    tags: ['일정 조정 필요', '소통 지연'],
-    checklist: { clarity: false, paymentSpeed: true, communication: false, professionalism: true },
-  },
-  {
-    id: '3',
-    freelancerName: '박백엔드',
-    freelancerJobTitle: 'Node.js 개발자',
-    projectName: '사내 관리 시스템 구축',
-    date: '2023-12-15',
-    rating: 3,
-    content: '업무 강도가 초기 협의보다 높았습니다. 주말 연락이 잦아 워라밸이 지켜지지 않았습니다.',
-    tags: ['업무 강도 높음', '주말 연락'],
-    checklist: { clarity: true, paymentSpeed: true, communication: false, professionalism: false },
-  },
-    {
-    id: '4',
-    freelancerName: '최모바일',
-    freelancerJobTitle: 'iOS 개발자',
-    projectName: '배달 앱 리팩토링',
-    date: '2023-11-20',
-    rating: 4,
-    content: '기술적인 이해도가 높으셔서 소통이 편했습니다. 다만 일정이 조금 타이트했습니다.',
-    tags: ['기술 이해도 높음', '일정 타이트'],
-    checklist: { clarity: true, paymentSpeed: true, communication: true, professionalism: true },
-  },
-]);
+const reviews = ref<Review[]>(getMockReviews());
 
 // --- Analysis Logic ---
 const isAnalyzing = ref(false);
@@ -156,26 +96,22 @@ const stats = computed(() => {
     const sum = reviews.value.reduce((acc, r) => acc + r.rating, 0);
     const avg = total > 0 ? (sum / total).toFixed(1) : '0.0';
     
-    // Calculate category averages (mock calculation based on checklist for demo)
-    // In real app, these would be separate rating fields
-    const clarityCount = reviews.value.filter(r => r.checklist.clarity).length;
-    const paymentCount = reviews.value.filter(r => r.checklist.paymentSpeed).length;
-    const commCount = reviews.value.filter(r => r.checklist.communication).length;
-    const profCount = reviews.value.filter(r => r.checklist.professionalism).length;
+    // Calculate category averages
+    const atmosphereCount = reviews.value.filter(r => r.checklist.atmosphere).length;
+    const salaryCount = reviews.value.filter(r => r.checklist.salarySatisfaction).length;
+    const scheduleCount = reviews.value.filter(r => r.checklist.scheduleAdherence).length;
 
-    const clarityAvg = total > 0 ? ((clarityCount / total) * 5).toFixed(1) : '0.0';
-    const paymentAvg = total > 0 ? ((paymentCount / total) * 5).toFixed(1) : '0.0';
-    const commAvg = total > 0 ? ((commCount / total) * 5).toFixed(1) : '0.0';
-    const profAvg = total > 0 ? ((profCount / total) * 5).toFixed(1) : '0.0';
+    const atmosphereAvg = total > 0 ? ((atmosphereCount / total) * 5).toFixed(1) : '0.0';
+    const salaryAvg = total > 0 ? ((salaryCount / total) * 5).toFixed(1) : '0.0';
+    const scheduleAvg = total > 0 ? ((scheduleCount / total) * 5).toFixed(1) : '0.0';
 
     return {
         total,
         avg,
         details: [
-            { label: '업무 명확성', score: clarityAvg, icon: FileText, color: 'text-blue-400', bg: 'bg-blue-400' },
-            { label: '대금 지급', score: paymentAvg, icon: Briefcase, color: 'text-green-400', bg: 'bg-green-400' },
-            { label: '커뮤니케이션', score: commAvg, icon: MessageSquare, color: 'text-yellow-400', bg: 'bg-yellow-400' },
-            { label: '전문성', score: profAvg, icon: TrendingUp, color: 'text-purple-400', bg: 'bg-purple-400' },
+            { label: '사내 분위기', score: atmosphereAvg, icon: ThumbsUp, color: 'text-blue-400', bg: 'bg-blue-400' },
+            { label: '급여 만족도', score: salaryAvg, icon: Briefcase, color: 'text-purple-400', bg: 'bg-purple-400' },
+            { label: '일정 준수', score: scheduleAvg, icon: Calendar, color: 'text-green-400', bg: 'bg-green-400' },
         ]
     };
 });
@@ -230,7 +166,7 @@ const stats = computed(() => {
         </div>
 
         <!-- Detailed Ratings -->
-        <div class="md:col-span-3 bg-[#1e293b]/50 border border-white/10 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="md:col-span-3 bg-[#1e293b]/50 border border-white/10 rounded-2xl p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div v-for="stat in stats.details" :key="stat.label" class="flex flex-col justify-between">
                 <div class="flex items-center gap-2 mb-3">
                     <component :is="stat.icon" class="w-4 h-4" :class="stat.color" />
