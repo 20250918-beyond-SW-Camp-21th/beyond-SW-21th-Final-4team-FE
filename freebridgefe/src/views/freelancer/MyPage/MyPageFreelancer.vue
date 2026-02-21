@@ -221,10 +221,6 @@ const downloadPortfolio = () => {
 
             <!-- Profile Summary Card -->
             <div class="relative mt-8">
-                <div class="absolute -top-4 right-8 bg-[#FF6B6B] text-white text-[11px] px-3 py-1.5 rounded-full font-bold shadow-lg z-20 flex items-center justify-center after:content-[''] after:absolute after:bottom-[-6px] after:left-1/2 after:-translate-x-1/2 after:border-t-[6px] after:border-t-[#FF6B6B] after:border-x-[6px] after:border-x-transparent">
-                    최종 업데이트 {{ new Date().toLocaleDateString() }}
-                </div>
-
                 <div class="bg-[#1e293b]/50 rounded-2xl border border-white/10 backdrop-blur-sm shadow-sm overflow-visible relative group">
                     <div class="flex flex-col md:flex-row p-8 pb-6 gap-8 relative">
                         <!-- Left: Avatar & Basic Info -->
