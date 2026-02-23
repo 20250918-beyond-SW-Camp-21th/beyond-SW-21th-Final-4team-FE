@@ -69,11 +69,6 @@ const getStatusLabel = (status: string) => {
         default: return '미정';
     }
 };
-
-const resetFilters = () => {
-    activeTab.value = 'all';
-    searchQuery.value = '';
-};
 </script>
 
 <template>
@@ -104,13 +99,6 @@ const resetFilters = () => {
                         class="bg-[#1e293b] border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 w-64"
                     />
                 </div>
-                <button
-                    type="button"
-                    @click="resetFilters"
-                    class="px-4 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white hover:bg-white/10 transition-colors"
-                >
-                    초기화
-                </button>
 
             </div>
         </div>

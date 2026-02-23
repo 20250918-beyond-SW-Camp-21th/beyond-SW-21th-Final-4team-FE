@@ -61,7 +61,15 @@ const saveProfile = async () => {
     isLoading.value = true;
     try {
         const userId = currentUser.value?.id || 'guest';
-        const updated = await updateFreelancerProfile(userId, formData.value);
+        
+        // structuredClone cannot clone File or Blob objects
+        // Create a plain object without circular/complex references
+        const payload = JSON.parse(JSON.stringify(formData.value));
+        // Manually assign the avatar back since JSON.stringify strips out Blob URLs if they are complex (though usually it's just a string)
+        // Ensure the string is plain
+        payload.avatar = formData.value.avatar ? String(formData.value.avatar) : null;
+        
+        const updated = await updateFreelancerProfile(userId, payload);
         emit('update', updated);
         alert('프로필이 성공적으로 업데이트되었습니다.');
         emit('back'); // Go back to dashboard

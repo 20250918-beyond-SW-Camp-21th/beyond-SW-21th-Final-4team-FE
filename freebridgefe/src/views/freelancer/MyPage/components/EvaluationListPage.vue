@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import { 
-    Star, 
+    Star,
     ArrowLeft, 
     Search,
     MessageSquare,
@@ -114,10 +114,6 @@ const handleAiAnalysis = () => {
         showAiAnalysis.value = true;
     }, 1500); // 1.5초 로딩 시뮬레이션
 };
-
-const resetRejectionSearch = () => {
-    searchQuery.value = '';
-};
 </script>
 
 <template>
@@ -156,7 +152,7 @@ const resetRejectionSearch = () => {
 
     <!-- Content: Evaluation Summary (3-Column Layout) -->
     <div v-if="activeTab === 'evaluation'" class="space-y-8 animate-fade-in-up">
-        
+
         <template v-if="props.profile">
             <!-- Top: AI Insight Action / Banner -->
             <div class="min-h-[180px]">
@@ -182,7 +178,7 @@ const resetRejectionSearch = () => {
             <!-- State 2: Call to Action Button -->
             <div v-else class="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
                 <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                
+
                 <div class="relative z-10">
                     <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
                         <Sparkles class="w-5 h-5 text-indigo-400" />
@@ -193,9 +189,9 @@ const resetRejectionSearch = () => {
                         귀하의 강점과 보완점을 요약해드립니다.
                     </p>
                 </div>
-                
+
                 <div class="relative z-10">
-                    <button 
+                    <button
                         @click="handleAiAnalysis"
                         :disabled="isAiAnalyzing"
                         class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
@@ -211,7 +207,7 @@ const resetRejectionSearch = () => {
 
         <!-- Metric Cards Grid (3 Columns) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+
             <!-- 1. Professionalism Card -->
              <div class="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-blue-500/30 transition-colors duration-300 flex flex-col">
                 <div class="flex justify-between items-start mb-6">
@@ -228,7 +224,7 @@ const resetRejectionSearch = () => {
                          <div class="text-xs text-slate-500">/ 5.0</div>
                     </div>
                 </div>
-                
+
                 <div class="space-y-6 flex-1">
                     <div v-for="(score, key) in props.profile?.expertise" :key="key" class="space-y-2">
                         <div class="flex justify-between items-end mb-1">
@@ -239,7 +235,7 @@ const resetRejectionSearch = () => {
                             <span class="text-white font-bold text-sm">{{ score.toFixed(1) }}</span>
                         </div>
                         <div class="h-1.5 bg-slate-700/30 rounded-full overflow-hidden">
-                            <div class="h-full bg-blue-500 rounded-full" 
+                            <div class="h-full bg-blue-500 rounded-full"
                                     :style="{ width: `${(score / 5) * 100}%` }"></div>
                         </div>
                     </div>
@@ -273,7 +269,7 @@ const resetRejectionSearch = () => {
                             <span class="text-white font-bold text-sm">{{ score.toFixed(1) }}</span>
                         </div>
                         <div class="h-1.5 bg-slate-700/30 rounded-full overflow-hidden">
-                            <div class="h-full bg-purple-500 rounded-full" 
+                            <div class="h-full bg-purple-500 rounded-full"
                                     :style="{ width: `${(score / 5) * 100}%` }"></div>
                         </div>
                     </div>
@@ -283,7 +279,7 @@ const resetRejectionSearch = () => {
              <!-- 3. Total Average Card -->
             <div class="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-yellow-500/30 transition-colors duration-300 flex flex-col justify-center items-center text-center relative overflow-hidden group">
                  <div class="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-colors duration-500"></div>
-                 
+
                  <div class="relative z-10">
                     <div class="mb-4 inline-flex p-4 bg-yellow-500/10 rounded-full">
                         <Star class="w-10 h-10 text-yellow-400 fill-yellow-400" />
@@ -305,7 +301,7 @@ const resetRejectionSearch = () => {
 
         </div>
         </template>
-        
+
         <div v-else class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border border-white/10 border-dashed text-slate-400 animate-fade-in">
              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4 opacity-70"></div>
              <p>평가 데이터를 불러오는 중입니다...</p>
@@ -325,20 +321,13 @@ const resetRejectionSearch = () => {
         <div class="flex flex-col md:flex-row gap-4 mb-6">
             <div class="relative flex-1">
                 <Search class="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                <input 
-                    type="text" 
-                    v-model="searchQuery" 
-                    placeholder="프로젝트명 또는 회사명 검색" 
+                <input
+                    type="text"
+                    v-model="searchQuery"
+                    placeholder="프로젝트명 또는 회사명 검색"
                     class="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
                 />
             </div>
-            <button
-                type="button"
-                @click="resetRejectionSearch"
-                class="px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm font-medium hover:bg-white/10 transition-colors"
-            >
-                초기화
-            </button>
         </div>
 
         <!-- Loading State -->
@@ -385,11 +374,11 @@ const resetRejectionSearch = () => {
                 <div class="bg-black/20 rounded-lg p-4 text-slate-300 text-sm leading-relaxed border border-white/5 mb-4">
                     "{{ feedback.reason }}"
                 </div>
-                
+
                 <div class="flex flex-wrap gap-2">
-                     <span 
-                        v-for="tag in feedback.tags" 
-                        :key="tag" 
+                     <span
+                        v-for="tag in feedback.tags"
+                        :key="tag"
                         class="text-xs px-2.5 py-1 rounded-full bg-red-400/10 text-red-300 border border-red-400/20"
                     >
                         #{{ tag }}
