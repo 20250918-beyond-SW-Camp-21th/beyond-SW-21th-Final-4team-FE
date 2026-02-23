@@ -12,6 +12,7 @@ pipeline {
         // [Manifest Repo] - New Repository (Separate Credential)
         CRED_ID_MANIFEST = 'github-manifest-key' 
         MANIFEST_REPO_URL = 'git@github.com:20250918-beyond-SW-Camp-21th/beyond-SW-21th-Final-4team-Manifest-file.git'
+        MANIFEST_BRANCH = 'main'
         
         // Docker
         IMAGE_NAME = 'o2ppo/freebrfront001'
@@ -97,7 +98,7 @@ pipeline {
                                 git add .
                                 if ! git diff --cached --quiet; then
                                     git commit -m "[Jenkins] Update image to ${env.IMAGE_TAG}"
-                                    git push origin main
+                                    git push origin ${env.MANIFEST_BRANCH}
                                     echo "Manifest Repo Updated!"
                                 else
                                     echo "No changes to push."
@@ -158,6 +159,9 @@ pipeline {
     post {
         always {
             sh 'docker logout || true'
+            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+            sh "docker rmi ${IMAGE_NAME}:latest || true"
+            sh 'docker image prune -f || true'
             cleanWs()
         }
         success {
