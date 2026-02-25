@@ -254,7 +254,7 @@ const safeWebsiteUrl = computed(() => {
             <div v-else-if="activeTab === 'dashboard'" class="space-y-8">
               <!-- CRM Upsell Banner (Option A) -->
               <div 
-                  v-if="employerProfile.plan === 'FREE' && employerProfile.crmAlerts?.isPremiumUpsellEligible && !hideUpsellAlert" 
+                  v-if="normalizedPlanKey === 'FREE' && employerProfile.crmAlerts?.isPremiumUpsellEligible && !hideUpsellAlert" 
                   class="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-2xl p-6 relative overflow-hidden"
                   v-motion :initial="{ opacity: 0, y: -20 }" :enter="{ opacity: 1, y: 0 }"
               >

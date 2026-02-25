@@ -18,6 +18,8 @@ import {
   Download,
   AlertTriangle,
   X,
+  Edit3,
+  TrendingUp,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
@@ -43,6 +45,16 @@ const selectedProjectId = ref<number | null>(null);
 const openProjectDetail = (projectId: number) => {
     selectedProjectId.value = projectId;
     isProjectDetailOpen.value = true;
+};
+
+const toggleRestMode = () => {
+    alert('휴식 모드로 전환되었습니다.');
+    hideBurnoutAlert.value = true;
+};
+
+const viewRecommendedProjects = () => {
+    alert('추천 프로젝트 페이지로 이동합니다.');
+    hideChurnAlert.value = true;
 };
 
 // 초기값은 비어있거나 로딩 상태를 나타내는 값으로 설정
@@ -253,7 +265,7 @@ const hideChurnAlert = ref(false);
                         </div>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
-                        <button class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors">휴식 모드 전환</button>
+                        <button @click="toggleRestMode" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors">휴식 모드 전환</button>
                          <button @click="hideBurnoutAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
                     </div>
                 </div>
@@ -270,7 +282,7 @@ const hideChurnAlert = ref(false);
                         </div>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
-                        <button class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-indigo-900/20">추천 프로젝트 보기</button>
+                        <button @click="viewRecommendedProjects" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-indigo-900/20">추천 프로젝트 보기</button>
                          <button @click="hideChurnAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
                     </div>
                 </div>
