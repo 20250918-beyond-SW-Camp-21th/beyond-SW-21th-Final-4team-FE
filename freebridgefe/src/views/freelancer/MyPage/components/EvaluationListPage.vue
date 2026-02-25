@@ -8,7 +8,10 @@ import {
     MessageSquare,
     Calendar,
     Briefcase,
-    Sparkles
+    Sparkles,
+    TrendingUp,
+    TrendingDown,
+    Activity
 } from 'lucide-vue-next';
 import { getEvaluations, getRejectionFeedbacks, type Evaluation, type RejectionFeedback } from '@/api/MyPage/evaluationApi';
 import { useAuthStore } from '@/stores/authStore';
@@ -156,22 +159,79 @@ const handleAiAnalysis = () => {
         <template v-if="props.profile">
             <!-- Top: AI Insight Action / Banner -->
             <div class="min-h-[180px]">
-            <!-- State 1: AI Insight Result -->
             <div v-if="showAiAnalysis" class="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-white/10 rounded-3xl p-8 relative overflow-hidden animate-fade-in">
-                <div class="flex flex-col gap-4">
-                     <div class="flex items-center gap-2 text-indigo-300">
-                        <Sparkles class="w-5 h-5" />
-                        <span class="text-sm font-bold uppercase tracking-wider">AI Insight</span>
+                <!-- AI Insight Header Layout -->
+                <div class="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between mb-8">
+                    <!-- Left: Title & Description -->
+                    <div class="flex-1 flex flex-col gap-4">
+                         <div class="flex items-center gap-2 text-indigo-300">
+                            <Sparkles class="w-5 h-5" />
+                            <span class="text-sm font-bold uppercase tracking-wider">AI Insight</span>
+                        </div>
+                        <div class="space-y-2">
+                            <h2 class="text-2xl font-bold text-white leading-tight">{{ props.profile.aiSummary?.title || '데이터가 충분하지 않습니다.' }}</h2>
+                            <p class="text-slate-300 leading-relaxed max-w-3xl">
+                                {{ props.profile.aiSummary?.description || '평가 분석을 위해 더 많은 프로젝트를 완료해주세요.' }}
+                            </p>
+                        </div>
                     </div>
-                    <div class="space-y-2">
-                        <h2 class="text-2xl font-bold text-white leading-tight">{{ props.profile.aiSummary?.title || '데이터가 충분하지 않습니다.' }}</h2>
-                        <p class="text-slate-300 leading-relaxed max-w-3xl">
-                            {{ props.profile.aiSummary?.description || '평가 분석을 위해 더 많은 프로젝트를 완료해주세요.' }}
-                        </p>
+
+                    <!-- Right: AI Reputation Index -->
+                    <div v-if="props.profile.aiSummary && 'reputationIndex' in props.profile.aiSummary" class="flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-6 shadow-xl shadow-black/20">
+                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-1">
+                            <div class="w-full h-full bg-[#1e1b4b] rounded-full flex items-center justify-center">
+                                <span class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">{{ props.profile.aiSummary.reputationIndex }}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-indigo-300 text-sm font-bold flex items-center gap-2 mb-1">
+                                <Activity class="w-4 h-4" />
+                                평판 긍정 지수
+                            </span>
+                            <span class="text-slate-400 text-xs">AI 종합 점수</span>
+                        </div>
                     </div>
-                     <div class="pt-2 flex items-center gap-2 text-xs text-slate-500">
-                        <span>Based on {{ evaluations.length }} verified reviews</span>
+                </div>
+
+                <!-- Strengths & Weaknesses Grid -->
+                <div v-if="props.profile.aiSummary && ('strengths' in props.profile.aiSummary || 'weaknesses' in props.profile.aiSummary)" class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/10 pt-8">
+                    <!-- Strengths -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-green-500/20 rounded-md">
+                                <TrendingUp class="w-4 h-4 text-green-400" />
+                            </div>
+                            <span class="font-bold text-white">AI 강점 분석</span>
+                        </div>
+                        <ul class="space-y-2">
+                            <li v-for="(strength, idx) in props.profile.aiSummary.strengths || []" :key="idx" class="flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5 shadow-sm transition-all hover:bg-white/10">
+                                <div class="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 shrink-0"></div>
+                                <span class="text-slate-300 text-sm leading-relaxed">{{ strength }}</span>
+                            </li>
+                            <li v-if="!(props.profile.aiSummary.strengths?.length)" class="text-sm text-slate-500 italic">감지된 강점 데이터가 부족합니다.</li>
+                        </ul>
                     </div>
+
+                    <!-- Weaknesses -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2">
+                            <div class="p-1.5 bg-red-500/20 rounded-md">
+                                <TrendingDown class="w-4 h-4 text-red-400" />
+                            </div>
+                            <span class="font-bold text-white">AI 보완점 분석</span>
+                        </div>
+                        <ul class="space-y-2">
+                            <li v-for="(weakness, idx) in props.profile.aiSummary.weaknesses || []" :key="idx" class="flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5 shadow-sm transition-all hover:bg-white/10">
+                                <div class="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0"></div>
+                                <span class="text-slate-300 text-sm leading-relaxed">{{ weakness }}</span>
+                            </li>
+                            <li v-if="!(props.profile.aiSummary.weaknesses?.length)" class="text-sm text-slate-500 italic">감지된 보완점 데이터가 부족합니다.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-4 flex items-center gap-2 text-xs text-slate-500 opacity-60 w-full justify-end">
+                    <span>Based on {{ evaluations.length }} verified reviews</span>
                 </div>
             </div>
 

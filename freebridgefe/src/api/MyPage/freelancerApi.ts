@@ -42,11 +42,20 @@ export interface FreelancerProfileDashboard {
     aiSummary?: {
         title: string;
         description: string;
+        reputationIndex?: number;
+        strengths?: string[];
+        weaknesses?: string[];
+    };
+    crmAlerts?: {
+        isRateBumpEligible: boolean;
+        isBurnoutWarning: boolean;
+        isChurnWarning: boolean;
     };
     topPercentile?: number;
 }
 
 export const getFreelancerProfile = async (userId: string): Promise<FreelancerProfileDashboard> => {
+    console.log(`Getting profile for ${userId}`);
     return new Promise((resolve) => {
         setTimeout(() => {
             // TODO: replace with real API
@@ -60,6 +69,7 @@ export const updateFreelancerProfile = async (
     userId: string,
     updatedProfile: Partial<FreelancerProfileDashboard>
 ): Promise<FreelancerProfileDashboard> => {
+    console.log(`Updating profile for ${userId}`);
     return new Promise((resolve) => {
         setTimeout(() => {
             // TODO: replace with real API

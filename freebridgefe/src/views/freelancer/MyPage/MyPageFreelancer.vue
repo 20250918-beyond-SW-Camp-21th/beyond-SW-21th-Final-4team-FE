@@ -14,10 +14,12 @@ import {
   CreditCard,
   Plus,
   Users,
-  Check,
-  Edit3,
   Upload,
   Download,
+  AlertTriangle,
+  X,
+  Edit3,
+  TrendingUp,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
@@ -43,6 +45,16 @@ const selectedProjectId = ref<number | null>(null);
 const openProjectDetail = (projectId: number) => {
     selectedProjectId.value = projectId;
     isProjectDetailOpen.value = true;
+};
+
+const toggleRestMode = () => {
+    alert('휴식 모드로 전환되었습니다.');
+    hideBurnoutAlert.value = true;
+};
+
+const viewRecommendedProjects = () => {
+    alert('추천 프로젝트 페이지로 이동합니다.');
+    hideChurnAlert.value = true;
 };
 
 // 초기값은 비어있거나 로딩 상태를 나타내는 값으로 설정
@@ -172,6 +184,9 @@ const downloadPortfolio = () => {
         alert('다운로드할 포트폴리오가 없습니다.');
     }
 };
+const hideRateBumpAlert = ref(false);
+const hideBurnoutAlert = ref(false);
+const hideChurnAlert = ref(false);
 </script>
 
 <template>
@@ -217,6 +232,60 @@ const downloadPortfolio = () => {
                     <Edit3 class="w-4 h-4" />
                     프로필 수정하기
                 </button>
+            </div>
+
+            <!-- CRM Banners -->
+            <div class="space-y-4 mb-8">
+                <!-- 1. Rate Bump Alert -->
+                <div v-if="profile.crmAlerts?.isRateBumpEligible && !hideRateBumpAlert" class="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
+                    <div class="flex items-center gap-4">
+                        <div class="p-2 bg-emerald-500/20 rounded-full shrink-0">
+                            <TrendingUp class="w-6 h-6 text-emerald-400" />
+                        </div>
+                        <div>
+                            <h4 class="text-white font-bold text-sm">단가 인상 최적기입니다!</h4>
+                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 3개 프로젝트에서 훌륭한 고용주 평가를 받으셨습니다. 이번 기회에 희망 단가를 10~15% 상향 조정해 보는 것은 어떨까요?</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <button @click="activeTab = 'edit'" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-emerald-900/20">단가 수정하러 가기</button>
+                        <button @click="hideRateBumpAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
+                    </div>
+                </div>
+
+                <!-- 2. Burnout Alert -->
+                <div v-if="profile.crmAlerts?.isBurnoutWarning && !hideBurnoutAlert" class="bg-gradient-to-r from-orange-900/40 to-red-900/40 border border-orange-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
+                    <div class="flex items-center gap-4">
+                        <div class="p-2 bg-orange-500/20 rounded-full shrink-0">
+                            <AlertTriangle class="w-6 h-6 text-orange-400" />
+                        </div>
+                        <div>
+                            <h4 class="text-white font-bold text-sm">재충전이 필요한 시점입니다.</h4>
+                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 프로젝트 스케줄이 상당히 타이트합니다. 업무 효율 및 컨디션 관리를 위해 잠시 '휴식 상태'로 전환하는 것을 권장합니다.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <button @click="toggleRestMode" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors">휴식 모드 전환</button>
+                         <button @click="hideBurnoutAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
+                    </div>
+                </div>
+
+                 <!-- 3. Churn Alert (Encouragement) -->
+                 <div v-if="profile.crmAlerts?.isChurnWarning && !hideChurnAlert" class="bg-gradient-to-r from-indigo-900/40 to-blue-900/40 border border-indigo-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
+                    <div class="flex items-center gap-4">
+                        <div class="p-2 bg-indigo-500/20 rounded-full shrink-0">
+                            <Briefcase class="w-6 h-6 text-indigo-400" />
+                        </div>
+                        <div>
+                            <h4 class="text-white font-bold text-sm">포기하지 마세요! 딱 맞는 프로젝트가 기다리고 있습니다.</h4>
+                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 지원 결과가 아쉬우셨나요? 프리브릿지 AI가 {{ profile.name }}님의 전문성에 꼭 맞는 추천 프로젝트들을 큐레이션 했습니다.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <button @click="viewRecommendedProjects" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-indigo-900/20">추천 프로젝트 보기</button>
+                         <button @click="hideChurnAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
+                    </div>
+                </div>
             </div>
 
             <!-- Profile Summary Card -->

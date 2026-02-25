@@ -2,6 +2,13 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '@/types';
 
+function maskEmail(email: string): string {
+    if (!email || !email.includes('@')) return '***';
+    const [localPart, domain] = email.split('@');
+    const maskedLocal = localPart.length > 1 ? `${localPart.charAt(0)}***` : '***';
+    return `${maskedLocal}@${domain}`;
+}
+
 export const useAuthStore = defineStore('auth', () => {
     // Initialize from localStorage if available
     const savedUser = localStorage.getItem('user');
@@ -35,6 +42,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function checkEmailDuplicate(email: string): Promise<boolean> {
+        console.log(`Checking duplicate for: ${maskEmail(email)}`);
         // TODO: Replace with actual API call
         // return await api.post('/auth/check-email', { email });
 
@@ -63,6 +71,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function verifyEmail(email: string, code: string): Promise<boolean> {
+        console.log(`Verifying ${maskEmail(email)}`);
         isLoading.value = true;
         try {
             // TODO: Replace with actual API call
@@ -95,6 +104,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function resendVerificationCode(email: string) {
+        console.log(`Resending verification code to ${maskEmail(email)}`);
         isLoading.value = true;
         try {
             // TODO: Replace with actual API call

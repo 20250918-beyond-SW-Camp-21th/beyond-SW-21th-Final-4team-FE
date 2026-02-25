@@ -29,6 +29,9 @@ export interface EmployerProfileData {
         inProgress: number;
         completed: number;
     };
+    crmAlerts?: {
+        isPremiumUpsellEligible: boolean;
+    };
 }
 
 export interface Application {

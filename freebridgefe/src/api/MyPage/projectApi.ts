@@ -117,6 +117,7 @@ const MOCK_PROJECTS: FreelancerProject[] = [
 ];
 
 export const getFreelancerProjects = (userId: string): Promise<FreelancerProject[]> => {
+    console.log(`Getting projects for ${userId}`);
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve(MOCK_PROJECTS);

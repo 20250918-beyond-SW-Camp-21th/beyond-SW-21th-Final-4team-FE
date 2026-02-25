@@ -34,6 +34,19 @@ export interface MockFreelancerProfile {
         fileName: string;
         lastUpdated: string;
     };
+    aiSummary?: {
+        title: string;
+        description: string;
+        reputationIndex?: number;
+        strengths?: string[];
+        weaknesses?: string[];
+    };
+    crmAlerts?: {
+        isRateBumpEligible: boolean;
+        isBurnoutWarning: boolean;
+        isChurnWarning: boolean;
+    };
+    topPercentile?: number;
 }
 
 export interface Checklist {
@@ -79,6 +92,9 @@ export interface MockEmployerProfile {
         screening: number;
         inProgress: number;
         completed: number;
+    };
+    crmAlerts?: {
+        isPremiumUpsellEligible: boolean;
     };
 }
 
@@ -126,7 +142,15 @@ const state: MockProfileState = {
         },
         aiSummary: {
             title: "문제 해결 능력이 뛰어나고 원활한 소통이 강점입니다.",
-            description: "대부분의 고용주가 귀하의 일정 준수와 문제 해결 역량을 높게 평가했습니다. 특히 협업 과정에서의 적극적인 태도가 프로젝트 성공에 기여했다는 피드백이 많습니다."
+            description: "대부분의 고용주가 귀하의 일정 준수와 문제 해결 역량을 높게 평가했습니다. 특히 협업 과정에서의 적극적인 태도가 프로젝트 성공에 기여했다는 피드백이 많습니다.",
+            reputationIndex: 92,
+            strengths: ["빠른 문제 해결 및 디버깅", "프로젝트 마감 기한 엄수", "명확하고 적극적인 의사소통"],
+            weaknesses: ["초기 요구사항 분석 시 추가 시간 소요", "특정 프레임워크(Vue.js) 경험 부족"]
+        },
+        crmAlerts: {
+            isRateBumpEligible: true,
+            isBurnoutWarning: false,
+            isChurnWarning: false
         },
         topPercentile: 10
     },
@@ -139,7 +163,7 @@ const state: MockProfileState = {
         email: 'contact@techstartup.com',
         phone: '02-1234-5678',
         description: '혁신적인 소프트웨어를 만드는 스타트업입니다.',
-        plan: 'PRIME',
+        plan: 'FREE',
         activeProjects: 3,
         totalApplicants: 45,
         contractedFreelancers: 8,
@@ -155,6 +179,9 @@ const state: MockProfileState = {
             screening: 3,
             inProgress: 5,
             completed: 12
+        },
+        crmAlerts: {
+            isPremiumUpsellEligible: true
         }
     }
 };
@@ -239,7 +266,7 @@ const deepMerge = <T extends Record<string, unknown>>(target: T, patch: Partial<
 export const getMockFreelancerProfile = (): MockFreelancerProfile => structuredClone(state.freelancerProfile);
 
 export const updateMockFreelancerProfile = (patch: Partial<MockFreelancerProfile>): MockFreelancerProfile => {
-    state.freelancerProfile = deepMerge(state.freelancerProfile as Record<string, unknown>, patch as Record<string, unknown>) as MockFreelancerProfile;
+    state.freelancerProfile = deepMerge(state.freelancerProfile as unknown as Record<string, unknown>, patch as Record<string, unknown>) as unknown as MockFreelancerProfile;
     return structuredClone(state.freelancerProfile);
 };
 
@@ -267,6 +294,6 @@ export const getMockEmployerProfile = (): MockEmployerProfile => {
 };
 
 export const updateMockEmployerProfile = (patch: Partial<MockEmployerProfile>): MockEmployerProfile => {
-    state.employerProfile = deepMerge(state.employerProfile as Record<string, unknown>, patch as Record<string, unknown>) as MockEmployerProfile;
+    state.employerProfile = deepMerge(state.employerProfile as unknown as Record<string, unknown>, patch as Record<string, unknown>) as unknown as MockEmployerProfile;
     return structuredClone(state.employerProfile);
 };
