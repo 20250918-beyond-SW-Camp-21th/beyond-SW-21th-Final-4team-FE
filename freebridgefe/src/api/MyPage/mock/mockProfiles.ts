@@ -93,6 +93,9 @@ export interface MockEmployerProfile {
         inProgress: number;
         completed: number;
     };
+    crmAlerts?: {
+        isPremiumUpsellEligible: boolean;
+    };
 }
 
 interface MockProfileState {
@@ -160,7 +163,7 @@ const state: MockProfileState = {
         email: 'contact@techstartup.com',
         phone: '02-1234-5678',
         description: '혁신적인 소프트웨어를 만드는 스타트업입니다.',
-        plan: 'PRIME',
+        plan: 'FREE',
         activeProjects: 3,
         totalApplicants: 45,
         contractedFreelancers: 8,
@@ -176,6 +179,9 @@ const state: MockProfileState = {
             screening: 3,
             inProgress: 5,
             completed: 12
+        },
+        crmAlerts: {
+            isPremiumUpsellEligible: true
         }
     }
 };

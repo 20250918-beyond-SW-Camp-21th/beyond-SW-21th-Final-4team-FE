@@ -32,17 +32,17 @@ import { getEmployerProfile, type EmployerProfileData } from '@/api/MyPage/emplo
 import EmployerProfileManagement from './components/EmployerProfileManagement.vue';
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
 import EmployerProjectManagement from './components/EmployerProjectManagement.vue';
-import FreelancerChecklistPage from './components/FreelancerChecklistPage.vue';
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 
 const activeTab = ref('dashboard');
+const hideUpsellAlert = ref(false);
 
 const updateTabFromQuery = () => {
     const tab = route.query.tab as string;
-    const validTabs = ['dashboard', 'profile', 'applicants', 'checklist', 'projects', 'account'];
+    const validTabs = ['dashboard', 'profile', 'applicants', 'projects', 'account'];
     if (tab && validTabs.includes(tab)) {
         activeTab.value = tab;
     }
@@ -164,12 +164,6 @@ watch(activeTab, (newTab) => {
 const menuItems = [
   { id: 'dashboard', label: '프로필 관리', icon: Building2, action: () => (activeTab.value = 'dashboard') },
   {
-    id: 'checklist',
-    label: '리뷰 및 평판 관리',
-    icon: ClipboardList,
-    action: () => (activeTab.value = 'checklist'),
-  },
-  {
     id: 'projects',
     label: '프로젝트 관리',
     icon: Briefcase,
@@ -217,7 +211,7 @@ const safeWebsiteUrl = computed(() => {
             :key="item.id"
             @click="
               () => {
-                if (['dashboard', 'profile', 'applicants', 'checklist', 'projects', 'account'].includes(item.id)) {
+                if (['dashboard', 'profile', 'applicants', 'projects', 'account'].includes(item.id)) {
                   activeTab = item.id;
                 } else {
                   item.action();
@@ -253,12 +247,52 @@ const safeWebsiteUrl = computed(() => {
         <div class="p-8 w-[70%] mx-auto">
             <!-- Dynamic Content Rendering -->
             <EmployerProfileManagement v-if="activeTab === 'profile'" @back="activeTab = 'dashboard'" />
-            <FreelancerChecklistPage v-else-if="activeTab === 'checklist'" @back="activeTab = 'dashboard'" @navigate="activeTab = $event" />
             <EmployerProjectManagement v-else-if="activeTab === 'projects'" @back="activeTab = 'dashboard'" />
             <EmployerAccountManagement v-else-if="activeTab === 'account'" @back="activeTab = 'dashboard'" />
             
             <!-- Dashboard View -->
             <div v-else-if="activeTab === 'dashboard'" class="space-y-8">
+              <!-- CRM Upsell Banner (Option A) -->
+              <div 
+                  v-if="employerProfile.plan === 'FREE' && employerProfile.crmAlerts?.isPremiumUpsellEligible && !hideUpsellAlert" 
+                  class="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-2xl p-6 relative overflow-hidden"
+                  v-motion :initial="{ opacity: 0, y: -20 }" :enter="{ opacity: 1, y: 0 }"
+              >
+                  <div class="absolute top-0 right-0 p-4">
+                      <button @click="hideUpsellAlert = true" class="text-white/50 hover:text-white transition-colors">
+                          <X class="w-5 h-5" />
+                      </button>
+                  </div>
+                  
+                  <!-- Glow effects -->
+                  <div class="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
+                  <div class="absolute -bottom-12 right-12 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl"></div>
+                  
+                  <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                      <div class="flex items-start gap-4">
+                          <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
+                              <TrendingUp class="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                              <div class="flex items-center gap-2 mb-1">
+                                  <h3 class="text-lg font-bold text-white">시니어 프리랜서 매칭율 300% 증가</h3>
+                                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500 text-white uppercase tracking-wider">
+                                      Potential
+                                  </span>
+                              </div>
+                              <p class="text-sm text-indigo-100/80 leading-relaxed">
+                                  최근 진행하신 프로젝트의 열기가 뜨겁습니다!<br class="hidden md:block"/>
+                                  <span class="text-white font-medium">Employer 프라임 요금제</span>로 업그레이드 하시고 전담 매니저의 VVIP 매칭 서비스를 받아보세요.
+                              </p>
+                          </div>
+                      </div>
+                      <button @click="activeTab = 'account'" class="shrink-0 w-full md:w-auto px-6 py-3 bg-white text-indigo-900 hover:bg-indigo-50 font-bold rounded-xl transition-colors shadow-lg shadow-white/10 flex items-center justify-center gap-2">
+                          <Crown class="w-5 h-5" />
+                          요금제 업그레이드
+                      </button>
+                  </div>
+              </div>
+
               <!-- 1. Profile Section (Detailed) -->
               <div 
                 class="bg-[#1e293b]/50 border border-white/10 rounded-2xl p-8 backdrop-blur-sm"
@@ -406,12 +440,6 @@ const safeWebsiteUrl = computed(() => {
                            프리랜서 평점
                        </h3>
                        <div class="flex flex-col sm:flex-row items-end sm:items-center gap-4">
-                           <button 
-                               @click="activeTab = 'checklist'"
-                               class="text-xs text-slate-400 hover:text-white flex items-center gap-1 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 transition-colors"
-                           >
-                               리뷰 및 평판관리 <ArrowRight class="w-3 h-3" />
-                           </button>
                            <div class="flex items-center gap-2 bg-yellow-500/10 px-3 py-1 rounded-lg border border-yellow-500/20">
                                <span class="text-sm text-yellow-500 font-bold whitespace-nowrap">전체 평점</span>
                                <Star class="w-4 h-4 text-yellow-500 fill-yellow-500" />

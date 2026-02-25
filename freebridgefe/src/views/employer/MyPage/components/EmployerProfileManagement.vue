@@ -13,7 +13,7 @@ import {
   Globe,
   Briefcase,
   Edit2,
-  Loader2,
+  Loader2
 } from 'lucide-vue-next';
 
 import { getEmployerProfile, updateEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
