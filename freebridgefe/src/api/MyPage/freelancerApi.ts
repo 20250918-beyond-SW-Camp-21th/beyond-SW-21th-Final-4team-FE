@@ -42,6 +42,19 @@ export interface FreelancerProfileDashboard {
     aiSummary?: {
         title: string;
         description: string;
+        reputationIndex?: number;
+        strengths?: string[];
+        weaknesses?: string[];
+        roadmap?: {
+            nextLevel: string;
+            recommendedSkills: string[];
+            actionPlan: string;
+        };
+    };
+    crmAlerts?: {
+        isRateBumpEligible: boolean;
+        isBurnoutWarning: boolean;
+        isChurnWarning: boolean;
     };
     topPercentile?: number;
 }
