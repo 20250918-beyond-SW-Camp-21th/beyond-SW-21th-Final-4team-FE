@@ -40,11 +40,6 @@ export interface MockFreelancerProfile {
         reputationIndex?: number;
         strengths?: string[];
         weaknesses?: string[];
-        roadmap?: {
-            nextLevel: string;
-            recommendedSkills: string[];
-            actionPlan: string;
-        };
     };
     crmAlerts?: {
         isRateBumpEligible: boolean;
@@ -147,12 +142,7 @@ const state: MockProfileState = {
             description: "대부분의 고용주가 귀하의 일정 준수와 문제 해결 역량을 높게 평가했습니다. 특히 협업 과정에서의 적극적인 태도가 프로젝트 성공에 기여했다는 피드백이 많습니다.",
             reputationIndex: 92,
             strengths: ["빠른 문제 해결 및 디버깅", "프로젝트 마감 기한 엄수", "명확하고 적극적인 의사소통"],
-            weaknesses: ["초기 요구사항 분석 시 추가 시간 소요", "특정 프레임워크(Vue.js) 경험 부족"],
-            roadmap: {
-                nextLevel: "상위 5% 시니어 프론트엔드 개발자",
-                recommendedSkills: ["Next.js App Router", "웹 성능 최적화(Web Vitals) 대상"],
-                actionPlan: "현재 협업 및 문제 해결 역량은 매우 우수합니다. 시장에서 단가가 높은 Next.js 프로젝트 수주를 위해 실무 중심의 SSR(서버 사이드 렌더링) 경험을 포트폴리오에 추가하는 것을 권장합니다."
-            }
+            weaknesses: ["초기 요구사항 분석 시 추가 시간 소요", "특정 프레임워크(Vue.js) 경험 부족"]
         },
         crmAlerts: {
             isRateBumpEligible: true,

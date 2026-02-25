@@ -11,9 +11,7 @@ import {
     Sparkles,
     TrendingUp,
     TrendingDown,
-    Activity,
-    Map,
-    Target
+    Activity
 } from 'lucide-vue-next';
 import { getEvaluations, getRejectionFeedbacks, type Evaluation, type RejectionFeedback } from '@/api/MyPage/evaluationApi';
 import { useAuthStore } from '@/stores/authStore';
@@ -229,51 +227,6 @@ const handleAiAnalysis = () => {
                             </li>
                             <li v-if="!(props.profile.aiSummary.weaknesses?.length)" class="text-sm text-slate-500 italic">감지된 보완점 데이터가 부족합니다.</li>
                         </ul>
-                    </div>
-                </div>
-
-                <!-- Career Roadmap (New) -->
-                <div v-if="props.profile.aiSummary?.roadmap" class="mt-8 pt-8 border-t border-white/10">
-                    <div class="flex items-center gap-2 mb-6">
-                        <div class="p-1.5 bg-yellow-500/20 rounded-md">
-                            <Map class="w-4 h-4 text-yellow-400" />
-                        </div>
-                        <span class="font-bold text-white">AI 커리어/스킬 로드맵</span>
-                    </div>
-
-                    <div class="bg-black/20 rounded-2xl p-6 border border-white/5 space-y-6">
-                        <!-- Next Level Target -->
-                        <div class="flex items-start gap-4">
-                            <div class="w-10 h-10 rounded-full bg-yellow-500/10 flex items-center justify-center shrink-0 border border-yellow-500/20">
-                                <Target class="w-5 h-5 text-yellow-500" />
-                            </div>
-                            <div>
-                                <span class="text-xs font-bold text-yellow-500 uppercase tracking-wider mb-1 block">Next Level Target</span>
-                                <h4 class="text-lg font-bold text-white">{{ props.profile.aiSummary.roadmap.nextLevel }}</h4>
-                            </div>
-                        </div>
-
-                        <!-- Recommended Skills -->
-                        <div>
-                            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-3 block">추천 마스터 스킬</span>
-                            <div class="flex flex-wrap gap-2">
-                                <span 
-                                    v-for="(skill, idx) in props.profile.aiSummary.roadmap.recommendedSkills" 
-                                    :key="idx"
-                                    class="px-3 py-1.5 rounded-lg bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-sm font-medium"
-                                >
-                                    {{ skill }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Action Plan -->
-                        <div class="bg-indigo-900/20 rounded-xl p-4 border border-indigo-500/10">
-                            <span class="text-xs text-indigo-400 font-bold uppercase tracking-wider mb-2 block">Action Plan</span>
-                            <p class="text-sm text-slate-300 leading-relaxed">
-                                {{ props.profile.aiSummary.roadmap.actionPlan }}
-                            </p>
-                        </div>
                     </div>
                 </div>
 

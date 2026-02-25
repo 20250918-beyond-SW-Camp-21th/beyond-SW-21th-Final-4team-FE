@@ -35,6 +35,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function checkEmailDuplicate(email: string): Promise<boolean> {
+        console.log(`Checking duplicate for: ${email}`);
         // TODO: Replace with actual API call
         // return await api.post('/auth/check-email', { email });
 
@@ -63,6 +64,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function verifyEmail(email: string, code: string): Promise<boolean> {
+        console.log(`Verifying ${email}`);
         isLoading.value = true;
         try {
             // TODO: Replace with actual API call
@@ -95,6 +97,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function resendVerificationCode(email: string) {
+        console.log(`Resending verification code to ${email}`);
         isLoading.value = true;
         try {
             // TODO: Replace with actual API call
