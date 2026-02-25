@@ -20,8 +20,8 @@ export const updateAccountInfo = async (data: Partial<AccountInfo>): Promise<boo
     });
 };
 
-export const changePassword = async (data: PasswordChange): Promise<boolean> => {
-    console.log('Change password requested', data);
+export const changePassword = async (_data: PasswordChange): Promise<boolean> => {
+    console.log('Change password requested');
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve(true); // 성공 가정
