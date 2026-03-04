@@ -1,3 +1,5 @@
+import apiClient from '../axios';
+
 export interface AccountInfo {
     id: number;
     email: string;
@@ -12,28 +14,34 @@ export interface PasswordChange {
 }
 
 export const updateAccountInfo = async (data: Partial<AccountInfo>): Promise<boolean> => {
-    console.log('Update account info requested, keys:', Object.keys(data));
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(true); // 성공 가정
-        }, 800);
-    });
+    try {
+        await apiClient.put('/api/account', data);
+        return true;
+    } catch (error) {
+        console.error('Failed to update account info:', error);
+        throw error;
+    }
 };
 
 export const changePassword = async (data: PasswordChange): Promise<boolean> => {
-    console.log('Change password requested');
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(true); // 성공 가정
-        }, 800);
-    });
+    try {
+        await apiClient.put('/api/account/password', {
+            currentPassword: data.current,
+            newPassword: data.new,
+        });
+        return true;
+    } catch (error) {
+        console.error('Failed to change password:', error);
+        throw error;
+    }
 };
 
 export const deleteAccount = async (): Promise<boolean> => {
-    console.log('Delete account requested');
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(true); // 성공 가정
-        }, 1000);
-    });
+    try {
+        await apiClient.delete('/api/account');
+        return true;
+    } catch (error) {
+        console.error('Failed to delete account:', error);
+        throw error;
+    }
 };

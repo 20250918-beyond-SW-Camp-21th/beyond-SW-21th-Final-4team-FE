@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import * as contractApi from '@/api/contractApi';
 
 export interface Contract {
     id: number;
@@ -100,152 +101,11 @@ export const useContractStore = defineStore('contract', () => {
         e3: { id: 3, name: '이커머스 C', role: 'EMPLOYER' },
     };
 
-    const contracts = ref<Contract[]>([
-        {
-            id: 1,
-            contractId: 1001,
-            projectName: 'SaaS 대시보드 리뉴얼',
-            freelancerId: 1,
-            employerId: 1,
-            startDate: new Date('2026-01-05'),
-            endDate: new Date('2026-03-20'),
-            status: 'IN_PROGRESS',
-            budget: 5000000,
-            commissionRate: 0.05,
-            paymentDay: 25,
-            contractPdfUrl: '/contracts/1001_contract.pdf',
-            signedPdfUrl: '/contracts/1001_signed.pdf',
-            signedDate: new Date('2026-01-05'),
-
-            jobDescription: 'SaaS 플랫폼의 관리자 대시보드 UI/UX 개선 및 프론트엔드 개발',
-            workLocation: '원격근무',
-            workStartTime: '09:00',
-            workEndTime: '18:00',
-            breakStartTime: '12:00',
-            breakEndTime: '13:00',
-            workDaysPerWeek: 5,
-            weeklyHoliday: '토, 일',
-            employerBusinessName: '스타트업 A',
-            employerAddress: '서울특별시 강남구 테헤란로 123',
-            employerCEO: '홍길동',
-            freelancerAddress: '서울특별시 서초구 서초대로 456',
-            freelancerPhone: '010-1234-5678',
-
-            employerSignature: 'data:image/png;base64,employer_sig_1',
-            employerSignedDate: new Date('2026-01-03'),
-            freelancerSignature: 'data:image/png;base64,freelancer_sig_1',
-            freelancerSignedDate: new Date('2026-01-05'),
-        },
-        {
-            id: 2,
-            contractId: 1002,
-            projectName: '모바일 결제 시스템 구축',
-            freelancerId: 1,
-            employerId: 1,
-            startDate: new Date('2026-03-01'),
-            endDate: new Date('2026-06-30'),
-            status: 'WAITING_SIGNATURE',
-            budget: 15000000,
-            commissionRate: 0.05,
-            paymentDay: 25,
-            contractPdfUrl: '/contracts/1002_contract.pdf',
-
-            jobDescription: '모바일 앱 결제 시스템 설계 및 프론트엔드 구현',
-            workLocation: '원격근무',
-            workStartTime: '10:00',
-            workEndTime: '19:00',
-            breakStartTime: '12:30',
-            breakEndTime: '13:30',
-            workDaysPerWeek: 5,
-            weeklyHoliday: '토, 일',
-            employerBusinessName: '스타트업 A',
-            employerAddress: '서울특별시 강남구 테헤란로 123',
-            employerCEO: '홍길동',
-            freelancerAddress: '서울특별시 서초구 서초대로 456',
-            freelancerPhone: '010-1234-5678',
-
-            employerSignature: 'data:image/png;base64,employer_sig_2',
-            employerSignedDate: new Date('2026-02-10'),
-        },
-    ]);
-
-    // EmployerSettlements (Invoice - based on entity.md)
-    const employerSettlements = ref<EmployerSettlement[]>([
-        // Contract 1: SaaS 대시보드 리뉴얼 (3 installments)
-        {
-            id: 1,
-            contractId: 1,
-            billingAmount: 1500000,
-            installmentNumber: 1,
-            status: 'DISBURSED',
-            invoicePdfUrl: '/invoices/es1.pdf',
-            dueDate: new Date('2026-02-10'),
-            paidDate: new Date('2026-02-08'),
-        },
-        {
-            id: 2,
-            contractId: 1,
-            billingAmount: 2000000,
-            installmentNumber: 2,
-            status: 'PAID',
-            invoicePdfUrl: '/invoices/es2.pdf',
-            dueDate: new Date('2026-02-15'),
-            paidDate: new Date('2026-02-12'),
-        },
-        {
-            id: 3,
-            contractId: 1,
-            billingAmount: 1500000,
-            installmentNumber: 3,
-            status: 'ISSUED',
-            invoicePdfUrl: '/invoices/es3.pdf',
-            dueDate: new Date('2026-03-25'),
-        },
-    ]);
-
-    // FreelancerSettlements (Disbursement - based on entity.md)
-    // netAmount = totalAmount - tax (3.3%) - freelancers don't pay platform fee
-    const freelancerSettlements = ref<FreelancerSettlement[]>([
-        // === Contract 1: SaaS 대시보드 리뉴얼 (freelancerId: 1) ===
-        // Linked to EmployerSettlement 1 (DISBURSED) - PAID
-        {
-            id: 1,
-            contractId: 1,
-            employerSettlementId: 1,
-            totalAmount: 1500000,
-            tax: 49500, // 3.3%
-            netAmount: 1450500, // totalAmount - tax
-            status: 'PAID',
-            installmentNumber: 1,
-            expectedPaidDate: new Date('2026-01-25'),
-            paidDate: new Date('2026-01-25'),
-            receiptPdfUrl: '/receipts/fs1.pdf',
-        },
-        // Linked to EmployerSettlement 2 (PAID -> processing) - PROCESSING
-        {
-            id: 2,
-            contractId: 1,
-            employerSettlementId: 2,
-            totalAmount: 2000000,
-            tax: 66000, // 3.3%
-            netAmount: 1934000,
-            status: 'PROCESSING',
-            installmentNumber: 2,
-            expectedPaidDate: new Date('2026-02-25'),
-        },
-        // Linked to EmployerSettlement 3 (ISSUED -> waiting) - HOLDING
-        {
-            id: 3,
-            contractId: 1,
-            employerSettlementId: 3,
-            totalAmount: 1500000,
-            tax: 49500,
-            netAmount: 1450500,
-            status: 'HOLDING',
-            installmentNumber: 3,
-            expectedPaidDate: new Date('2026-03-25'),
-        },
-    ]);
+    const contracts = ref<Contract[]>([]);
+    const employerSettlements = ref<EmployerSettlement[]>([]);
+    const freelancerSettlements = ref<FreelancerSettlement[]>([]);
+    const loading = ref(false);
+    const error = ref<string | null>(null);
 
     // Helper function to get username by id and role
     const getUserName = (id: number, role: 'FREELANCER' | 'EMPLOYER'): string => {
@@ -295,12 +155,61 @@ export const useContractStore = defineStore('contract', () => {
     });
 
     // Actions
+    async function createContract(data: contractApi.CreateContractRequest) {
+        loading.value = true;
+        try {
+            const newContract = await contractApi.createContract(data);
+            contracts.value = [newContract, ...contracts.value];
+            return newContract;
+        } catch (err: any) {
+            console.error('Failed to create contract:', err);
+            error.value = err.message || 'Failed to create contract';
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function signContract(contractId: number, signature: string) {
+        loading.value = true;
+        try {
+            const updatedContract = await contractApi.signContract(contractId, { signature });
+            const index = contracts.value.findIndex(c => (c.id === contractId || c.contractId === contractId));
+            if (index !== -1) {
+                contracts.value[index] = updatedContract;
+            } else {
+                contracts.value = [updatedContract, ...contracts.value];
+            }
+            return updatedContract;
+        } catch (err: any) {
+            console.error('Failed to sign contract:', err);
+            error.value = err.message || 'Failed to sign contract';
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    }
+
+    async function verifyPayment(paymentId: string, contractId: number) {
+        loading.value = true;
+        try {
+            await contractApi.verifyPayment({ paymentId, contractId });
+            await fetchContracts();
+        } catch (err: any) {
+            console.error('Failed to verify payment:', err);
+            error.value = err.message || 'Failed to verify payment';
+            throw err;
+        } finally {
+            loading.value = false;
+        }
+    }
+
     function addContract(contract: Contract) {
         contracts.value = [...contracts.value, contract];
     }
 
     function updateContract(contractId: number, updates: Partial<Contract>) {
-        const index = contracts.value.findIndex((c) => c.id === contractId);
+        const index = contracts.value.findIndex((c) => (c.id === contractId || c.contractId === contractId));
         if (index !== -1) {
             contracts.value[index] = { ...contracts.value[index], ...updates };
             contracts.value = [...contracts.value];
@@ -387,23 +296,97 @@ export const useContractStore = defineStore('contract', () => {
         });
     }
 
+    // API Fetch Functions
+    const fetchContracts = async () => {
+        try {
+            console.log('Fetching contracts from API...');
+            const response = await contractApi.getContractList();
+            console.log('Contracts fetched:', response);
+
+            // Map API response to store format
+            contracts.value = response.items.map((item: any) => ({
+                ...item,
+                id: item.id || item.contractId,
+            }));
+        } catch (error) {
+            console.error('Failed to fetch contracts, using mock data:', error);
+            // Keep using mock data on error
+        }
+    };
+
+    const fetchEmployerSettlements = async () => {
+        try {
+            console.log('Fetching employer settlements from API...');
+            const response = await contractApi.getEmployerSettlements();
+            console.log('Employer settlements fetched:', response);
+
+            // Map API response to store format
+            employerSettlements.value = response.items.map((item: any) => ({
+                id: item.settlementId,
+                contractId: item.contractId,
+                billingAmount: item.amount,
+                installmentNumber: 1, // API doesn't return this, default to 1
+                status: item.status,
+                invoicePdfUrl: '', // Will be fetched separately if needed
+                dueDate: item.dueDate,
+                paidDate: item.paidDate,
+            }));
+        } catch (error) {
+            console.error('Failed to fetch employer settlements, using mock data:', error);
+            // Keep using mock data on error
+        }
+    };
+
+    const fetchFreelancerSettlements = async () => {
+        try {
+            console.log('Fetching freelancer settlements from API...');
+            const response = await contractApi.getFreelancerSettlements();
+            console.log('Freelancer settlements fetched:', response);
+
+            // Map API response to store format
+            freelancerSettlements.value = response.items.map((item: any) => ({
+                id: item.settlementId,
+                contractId: item.contractId,
+                employerSettlementId: 0, // Not in API response
+                totalAmount: item.amount,
+                tax: item.commissionAmount || 0,
+                netAmount: item.netAmount || item.amount,
+                status: item.status === 'PAID' ? 'PAID' : (item.status === 'PENDING' ? 'HOLDING' : 'PROCESSING'),
+                installmentNumber: 1,
+                expectedPaidDate: item.scheduledDate,
+                paidDate: item.disbursedDate,
+                receiptPdfUrl: '',
+            }));
+        } catch (error) {
+            console.error('Failed to fetch freelancer settlements, using mock data:', error);
+            // Keep using mock data on error
+        }
+    };
+
     return {
         // Raw data
         contracts,
         employerSettlements,
         freelancerSettlements,
+        loading,
+        error,
         // Computed with details
         contractsWithDetails,
         employerSettlementsWithDetails,
         freelancerSettlementsWithDetails,
         // Actions
+        createContract,
+        signContract,
+        verifyPayment,
         addContract,
         updateContract,
         updateEmployerSettlement,
         updateFreelancerSettlement,
         markEmployerSettlementPaid,
         disburseFreelancerSettlement,
-        // Helper
-        getUserName,
+        // API Fetch
+        fetchContracts,
+        fetchEmployerSettlements,
+        fetchFreelancerSettlements,
     };
 });

@@ -117,17 +117,29 @@ const MOCK_PROJECTS: FreelancerProject[] = [
 ];
 
 export const getFreelancerProjects = (userId: string): Promise<FreelancerProject[]> => {
+    // Fallback to mock data for development
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve(MOCK_PROJECTS);
         }, 500);
     });
+
+    // Uncomment when backend is ready:
+    // import apiClient from '../axios';
+    // const response = await apiClient.get<FreelancerProject[]>(`/api/projects/freelancer/${userId}`);
+    // return response.data;
 };
 
 export const getProjectDetail = (projectId: number): Promise<FreelancerProject | undefined> => {
+    // Fallback to mock data for development
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve(MOCK_PROJECTS.find(p => p.id === projectId));
         }, 500);
     });
+
+    // Uncomment when backend is ready:
+    // import apiClient from '../axios';
+    // const response = await apiClient.get<FreelancerProject>(`/api/projects/${projectId}`);
+    // return response.data;
 };

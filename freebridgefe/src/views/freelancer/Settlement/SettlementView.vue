@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 import {
   DollarSign,
@@ -24,6 +24,11 @@ import SettlementDetailModal from './components/SettlementDetailModal.vue';
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
+
+// Fetch settlements from API on mount
+onMounted(async () => {
+    await contractStore.fetchFreelancerSettlements();
+});
 
 const selectedSettlement = ref<FreelancerSettlementWithDetails | null>(null);
 

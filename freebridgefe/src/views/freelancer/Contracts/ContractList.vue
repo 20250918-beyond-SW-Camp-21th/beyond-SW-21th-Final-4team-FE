@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import {
     FileText,
     Calendar,
@@ -20,6 +20,11 @@ import SignaturePadModal from '@/views/employer/Contracts/components/SignaturePa
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
+
+// Fetch contracts from API on mount
+onMounted(async () => {
+    await contractStore.fetchContracts();
+});
 
 const selectedContract = ref<ContractWithDetails | null>(null);
 const signingContractId = ref<number | null>(null);
@@ -143,16 +148,19 @@ const resetFilters = () => {
     isDropdownOpen.value = false;
 };
 
-const handleFreelancerSign = (signatureDataUrl: string) => {
+const handleFreelancerSign = async (signatureDataUrl: string) => {
     if (!signingContractId.value) return;
-    contractStore.updateContract(signingContractId.value, {
-        freelancerSignature: signatureDataUrl,
-        freelancerSignedDate: new Date(),
-        status: 'IN_PROGRESS', // Mock transition
-        signedDate: new Date(),
-    });
-    signingContractId.value = null;
-    selectedContract.value = null; // Close detail modal if open
+    try {
+        await contractStore.signContract(signingContractId.value, signatureDataUrl);
+        signingContractId.value = null;
+        selectedContract.value = null; // Close detail modal if open
+        
+        // Refresh contracts to show updated status
+        await contractStore.fetchContracts();
+    } catch (err) {
+        console.error('Failed to sign contract:', err);
+        alert('서명 처리 중 오류가 발생했습니다.');
+    }
 };
 
 const openSignModal = (contract: ContractWithDetails) => {

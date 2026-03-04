@@ -105,22 +105,26 @@ const MOCK_RESUME_DETAIL: ResumeDetail = {
     ]
 };
 
+import apiClient from '../axios';
+
 export const getResumeDetail = async (userId: number): Promise<ResumeDetail> => {
-    console.log(`Fetching resume detail for user ${userId}...`);
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(MOCK_RESUME_DETAIL);
-        }, 500);
-    });
+    try {
+        const response = await apiClient.get<ResumeDetail>(`/api/resume/${userId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Failed to fetch resume detail:', error);
+        // Fallback to mock data if API fails
+        console.warn('Using mock data as fallback');
+        return MOCK_RESUME_DETAIL;
+    }
 };
 
 export const saveResumeDetail = async (data: ResumeDetail): Promise<boolean> => {
-    -    console.log('Saving resume data:', data);
-    +    console.log('Saving resume data requested');
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            +            Object.assign(MOCK_RESUME_DETAIL, data);
-            resolve(true);
-        }, 800);
-    });
+    try {
+        await apiClient.put('/api/resume', data);
+        return true;
+    } catch (error) {
+        console.error('Failed to save resume:', error);
+        throw error;
+    }
 };

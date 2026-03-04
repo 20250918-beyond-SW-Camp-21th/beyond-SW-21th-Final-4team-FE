@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
     FileText,
@@ -21,6 +21,11 @@ import ContractDetailModal from './components/ContractDetailModal.vue';
 const router = useRouter();
 const authStore = useAuthStore();
 const contractStore = useContractStore();
+
+// Fetch contracts from API on mount
+onMounted(async () => {
+    await contractStore.fetchContracts();
+});
 
 const selectedContract = ref<ContractWithDetails | null>(null);
 

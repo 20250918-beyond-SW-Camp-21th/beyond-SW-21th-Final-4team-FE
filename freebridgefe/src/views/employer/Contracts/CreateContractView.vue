@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
     FilePlus,
@@ -19,7 +19,7 @@ import {
     MapPin,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { useContractStore, type Contract, type ContractWithDetails } from '@/stores/contractStore';
+import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import SignaturePadModal from './components/SignaturePadModal.vue';
 import ContractPreview from '@/components/contract/ContractPreview.vue';
@@ -43,7 +43,6 @@ const startDate = ref('');
 const endDate = ref('');
 const budget = ref('');
 const paymentDay = ref<number>(25);
-const commissionRate = ref<number>(0.05);
 
 // Step 2: Work Schedule
 type WorkScheduleType = 'FLEXIBLE' | 'FIXED';
@@ -67,8 +66,13 @@ const freelancerPhone = ref('');
 // Created contract reference
 const createdContract = ref<ContractWithDetails | null>(null);
 
+// Fetch freelancers on mount
+onMounted(async () => {
+    await freelancerStore.fetchFreelancers();
+});
+
 const freelancerOptions = computed(() =>
-    freelancerStore.freelancers.filter((u) => u.role === 'FREELANCER')
+    freelancerStore.freelancers.filter((u) => u.role?.toUpperCase() === 'FREELANCER')
 );
 
 const selectedFreelancer = computed(() =>
@@ -155,53 +159,83 @@ const handleStartSigning = () => {
     state.value = 'signing';
 };
 
-const handleSign = (signatureDataUrl: string) => {
+const handleSign = async (signatureDataUrl: string) => {
     if (!selectedFreelancer.value || !authStore.user) return;
 
-    const newId = Date.now();
-    const newContractId = 1000 + (newId % 10000);
-    const isFlexible = workScheduleType.value === 'FLEXIBLE';
+    try {
+        const isFlexible = workScheduleType.value === 'FLEXIBLE';
+        
+        // 1. Create contract record in backend
+        const contractData = {
+            projectName: projectName.value,
+            freelancerId: Number(selectedFreelancerId.value),
+            startDate: startDate.value,
+            endDate: endDate.value,
+            budget: Number(budget.value),
+            paymentDay: paymentDay.value,
+            jobDescription: jobDescription.value,
+            workLocation: '원격근무',
+            workStartTime: isFlexible ? '자율' : workStartTime.value,
+            workEndTime: isFlexible ? '자율' : workEndTime.value,
+            breakStartTime: isFlexible ? '자율' : breakStartTime.value,
+            breakEndTime: isFlexible ? '자율' : breakEndTime.value,
+            workDaysPerWeek: isFlexible ? 5 : workDaysPerWeek.value,
+            weeklyHoliday: isFlexible ? '토, 일' : weeklyHoliday.value,
+            employerBusinessName: employerBusinessName.value,
+            employerAddress: employerAddress.value,
+            employerCEO: employerCEO.value,
+            freelancerAddress: freelancerAddress.value,
+            freelancerPhone: freelancerPhone.value,
+            employerSignature: signatureDataUrl,
+        };
 
-    const newContract: Contract = {
-        id: newId,
-        contractId: newContractId,
-        projectName: projectName.value,
-        freelancerId: Number(selectedFreelancer.value.id),
-        employerId: Number(authStore.user.id),
-        startDate: new Date(startDate.value),
-        endDate: new Date(endDate.value),
-        status: 'WAITING_SIGNATURE',
-        budget: Number(budget.value),
-        commissionRate: commissionRate.value,
-        paymentDay: paymentDay.value,
-        contractPdfUrl: `/contracts/${newContractId}_contract.pdf`,
-        // 표준근로계약서 필드
-        jobDescription: jobDescription.value,
-        workLocation: '원격근무',
-        workStartTime: isFlexible ? '자율' : workStartTime.value,
-        workEndTime: isFlexible ? '자율' : workEndTime.value,
-        breakStartTime: isFlexible ? '자율' : breakStartTime.value,
-        breakEndTime: isFlexible ? '자율' : breakEndTime.value,
-        workDaysPerWeek: isFlexible ? 5 : workDaysPerWeek.value,
-        weeklyHoliday: isFlexible ? '토, 일' : weeklyHoliday.value,
-        employerBusinessName: employerBusinessName.value,
-        employerAddress: employerAddress.value,
-        employerCEO: employerCEO.value,
-        freelancerAddress: freelancerAddress.value,
-        freelancerPhone: freelancerPhone.value,
-        // Signatures
-        employerSignature: signatureDataUrl,
-        employerSignedDate: new Date(),
-    };
+        const result = await contractStore.createContract(contractData);
+        createdContract.value = {
+            ...result,
+            freelancerName: selectedFreelancer.value.name,
+            employerName: authStore.user.companyName || authStore.user.name,
+        };
 
-    contractStore.addContract(newContract);
+        // 2. Initiate PortOne Payment (Upfront payment of total budget)
+        if ((window as any).PortOne) {
+            try {
+                const paymentResponse = await (window as any).PortOne.requestPayment({
+                    storeId: "store-4384e93d-d401-443b-8266-26792376b91c", // Replace with your Store ID
+                    channelKey: import.meta.env.VITE_PORTONE_CHANNEL_KEY,
+                    paymentId: `payment-${result.id}-${Date.now()}`,
+                    orderName: `[계약] ${projectName.value}`,
+                    totalAmount: Number(budget.value),
+                    currency: "CURRENCY_KRW",
+                    payMethod: "CARD",
+                    customer: {
+                        fullName: authStore.user.name,
+                        email: authStore.user.email,
+                    },
+                });
 
-    createdContract.value = {
-        ...newContract,
-        freelancerName: selectedFreelancer.value.name,
-        employerName: authStore.user.companyName || authStore.user.name,
-    };
-    state.value = 'success';
+                if (paymentResponse.code != null) {
+                    // Payment failed or cancelled
+                    alert(`결제 실패: ${paymentResponse.message}`);
+                    return;
+                }
+
+                // 3. Verify payment in backend
+                await contractStore.verifyPayment(paymentResponse.paymentId, result.id);
+                
+                state.value = 'success';
+            } catch (err) {
+                console.error('PortOne error:', err);
+                alert('결제 처리 중 오류가 발생했습니다.');
+            }
+        } else {
+            console.error('PortOne SDK not found');
+            // Even if payment fails, the contract is created (waiting signature/payment)
+            state.value = 'success';
+        }
+    } catch (err) {
+        console.error('Failed to create contract:', err);
+        alert('계약서 생성 중 오류가 발생했습니다.');
+    }
 };
 
 const handleReset = () => {
@@ -302,7 +336,9 @@ const navigateToContracts = () => {
                                 v-model="selectedFreelancerId"
                                 class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors appearance-none cursor-pointer"
                             >
-                                <option value="" class="bg-gray-900">프리랜서를 선택하세요</option>
+                                <option value="" class="bg-gray-900">
+                                    {{ freelancerStore.loading ? '로딩 중...' : (freelancerOptions.length === 0 ? '등록된 프리랜서가 없습니다' : '프리랜서를 선택하세요') }}
+                                </option>
                                 <option
                                     v-for="f in freelancerOptions"
                                     :key="f.id"

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import {
     Receipt,
     Calendar,
@@ -26,6 +26,11 @@ const now = useNow();
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
+
+// Fetch settlements from API on mount
+onMounted(async () => {
+    await contractStore.fetchEmployerSettlements();
+});
 
 const selectedSettlement = ref<EmployerSettlementWithDetails | null>(null);
 const paymentSettlement = ref<EmployerSettlementWithDetails | null>(null);
