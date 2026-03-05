@@ -13,11 +13,11 @@ pipeline {
         CRED_ID_MANIFEST = 'github-manifest-key' 
         MANIFEST_REPO_URL = 'git@github.com:20250918-beyond-SW-Camp-21th/beyond-SW-21th-Final-4team-Manifest-file.git'
         MANIFEST_BRANCH = 'main'
-        
+
         // Docker
         IMAGE_NAME = 'o2ppo/freebrfront001'
         DOCKER_CRED_ID = 'dockerhub-credentials'
-        
+
         // Git Config
         GIT_EMAIL = 'lmjayoul@gmail.com'
     }
@@ -36,10 +36,10 @@ pipeline {
                 script {
                     env.GIT_COMMIT_HASH = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     env.IMAGE_TAG = "${currentBuild.number}-${env.GIT_COMMIT_HASH}"
-                    
+
                     def rawBranch = env.BRANCH_NAME ?: (env.GIT_BRANCH ?: 'main')
                     env.TARGET_BRANCH = rawBranch.replace('origin/', '')
-                    
+
                     echo " Build Tag: ${env.IMAGE_TAG}"
                     echo " Target Branch: ${env.TARGET_BRANCH}"
                 }
@@ -50,8 +50,6 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${env.DOCKER_CRED_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh 'docker version'
-
                         sh "docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} ."
                         sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                         sh "docker push ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
@@ -157,12 +155,12 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             sh 'docker logout || true'
-            sh "docker rmi ${env.IMAGE_NAME}:${env.IMAGE_TAG} || true"
-            sh "docker rmi ${env.IMAGE_NAME}:latest || true"
+            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+            sh "docker rmi ${IMAGE_NAME}:latest || true"
             sh 'docker image prune -f || true'
             cleanWs()
         }
