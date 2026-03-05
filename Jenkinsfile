@@ -50,11 +50,24 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${env.DOCKER_CRED_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh "docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} ."
-                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                        sh "docker push ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
-                        sh "docker tag ${env.IMAGE_NAME}:${env.IMAGE_TAG} ${env.IMAGE_NAME}:latest"
-                        sh "docker push ${env.IMAGE_NAME}:latest"
+                        sh '''
+                            set -e
+
+                            # (선택) 원인 확인용 로그
+                            which docker || true
+                            docker version
+                            docker buildx version || true
+
+                            # 핵심: BuildKit 끄기 (legacy builder로 빌드)
+                            export DOCKER_BUILDKIT=0
+                            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+
+                            docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                            docker push ${IMAGE_NAME}:latest
+                        '''
                     }
                 }
             }
@@ -94,15 +107,15 @@ pipeline {
                             # Verify change
                             cat kube-folder/frontend-deployment.yml | grep "image:"
                                 
-                                # 5. Commit & Push
-                                git add .
-                                if ! git diff --cached --quiet; then
-                                    git commit -m "[Jenkins] Update image to ${env.IMAGE_TAG}"
-                                    git push origin ${env.MANIFEST_BRANCH}
-                                    echo "Manifest Repo Updated!"
-                                else
-                                    echo "No changes to push."
-                                fi
+                            # 5. Commit & Push
+                            git add .
+                            if ! git diff --cached --quiet; then
+                                git commit -m "[Jenkins] Update image to ${env.IMAGE_TAG}"
+                                git push origin ${env.MANIFEST_BRANCH}
+                                echo "Manifest Repo Updated!"
+                            else
+                                echo "No changes to push."
+                            fi
                         """
                     }
                 }
