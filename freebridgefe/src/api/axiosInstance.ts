@@ -53,12 +53,19 @@ apiClient.interceptors.response.use(
     async (error: AxiosError) => {
         const config = error.config;
 
-        // Define auth endpoints that shouldn't trigger automatic logout on 401
-        const authEndpoints = ['/api/users/login', '/api/users/signup'];
-        const isAuthEndpoint = authEndpoints.some(endpoint => config?.url?.includes(endpoint));
+        // Define unauthenticated endpoints that shouldn't trigger automatic logout on 401
+        const unauthenticatedEndpoints = [
+            '/api/users/login',
+            '/api/users/signup',
+            '/api/users/check-email',
+            '/api/auth/' // This safely covers send, verify, and resend verification
+        ];
+        const isUnauthenticatedEndpoint = unauthenticatedEndpoints.some(
+            (endpoint) => config?.url?.includes(endpoint)
+        );
 
-        // If error is 401 and NOT an auth endpoint, clear tokens and redirect to login
-        if (error.response?.status === 401 && !isAuthEndpoint) {
+        // If error is 401 and NOT an unauthenticated endpoint, clear tokens and redirect to login
+        if (error.response?.status === 401 && !isUnauthenticatedEndpoint) {
             clearTokens();
             window.location.href = '/login';
         }
