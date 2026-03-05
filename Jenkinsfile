@@ -50,6 +50,8 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${env.DOCKER_CRED_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh 'docker version'
+
                         sh "docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} ."
                         sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                         sh "docker push ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
