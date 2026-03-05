@@ -337,13 +337,15 @@ const isEmployer = computed(() => authStore.user?.role === 'EMPLOYER');
 const isCreateModalOpen = ref(false);
 const isSignatureModalOpen = ref(false);
 const createError = ref('');
+const isSigningForCreation = ref(false);
 const createForm = ref({
     projectName: '',
     projectId: '',
     startDate: '',
     endDate: '',
     budget: 0,
-    paymentDay: 25
+    paymentDay: 25,
+    jobDescription: ''
 });
 
 const hasSigned = computed(() => {
@@ -380,8 +382,9 @@ function initiateContract() {
         projectId: jobId || '',
         startDate: '',
         endDate: '',
-        budget: 0,
-        paymentDay: 25
+        budget: job?.budget || 0,
+        paymentDay: 25,
+        jobDescription: job?.description || ''
     };
     createError.value = '';
     isCreateModalOpen.value = true;
@@ -433,61 +436,77 @@ function createContract() {
         return;
     }
 
-    const nextId = Math.max(0, ...contractStore.contracts.map((c) => c.id)) + 1;
-    const contract = {
-        id: nextId,
-        contractId: 1000 + nextId,
-        projectName: createForm.value.projectName.trim(),
-        projectId: createForm.value.projectId || undefined,
-        freelancerId: authStore.user.role === 'EMPLOYER' ? other.id : Number(authStore.user.id),
-        employerId: authStore.user.role === 'EMPLOYER' ? Number(authStore.user.id) : other.id,
-        startDate: new Date(createForm.value.startDate),
-        endDate: new Date(createForm.value.endDate),
-        status: 'WAITING_SIGNATURE' as const,
-        budget: createForm.value.budget,
-        commissionRate: 0.05,
-        paymentDay: createForm.value.paymentDay || 25,
-        contractPdfUrl: `/contracts/${1000 + nextId}_contract.pdf`,
-        employerSignature: authStore.user.role === 'EMPLOYER' ? 'signed-by-employer' : undefined,
-        employerSignedDate: authStore.user.role === 'EMPLOYER' ? new Date() : undefined
-    };
-
-    contractStore.addContract(contract);
-    chatStore.updateRoomContract(props.roomId, contract.id);
-    chatStore.sendMessage(
-        '프로젝트 계약 요청',
-        'CONTRACT_ALERT',
-        { contractId: contract.id, status: 'WAITING_SIGNATURE' },
-        props.roomId
-    );
-    chatStore.sendSystemMessage(props.roomId, '계약서가 작성되어 전송되었습니다.');
-
+    // Now open signature modal instead of direct creation
     isCreateModalOpen.value = false;
+    isSigningForCreation.value = true;
+    isSignatureModalOpen.value = true;
 }
 
-function handleSignature(signatureDataUrl: string) {
+async function handleSignature(signatureDataUrl: string) {
+    if (isSigningForCreation.value) {
+        if (!authStore.user || !otherParticipantId.value) return;
+        const other = parseParticipantId(otherParticipantId.value);
+        if (!other?.id) return;
+
+        try {
+            const contractData = {
+                projectId: Number(String(createForm.value.projectId).replace('job-', '')),
+                projectName: createForm.value.projectName,
+                freelancerId: other.id,
+                startDate: createForm.value.startDate,
+                endDate: createForm.value.endDate,
+                budget: createForm.value.budget,
+                paymentDay: createForm.value.paymentDay,
+                jobDescription: createForm.value.jobDescription || '상세 업무 내용 없음',
+                workLocation: '원격근무',
+                workStartTime: '자율',
+                workEndTime: '자율',
+                breakStartTime: '자율',
+                breakEndTime: '자율',
+                workDaysPerWeek: 5,
+                weeklyHoliday: '토, 일',
+                employerBusinessName: authStore.user.companyName || authStore.user.name || '',
+                employerAddress: authStore.user.companyAddress || '',
+                employerCEO: authStore.user.representativeName || '',
+                freelancerAddress: '', // Optional/Placeholder
+                freelancerPhone: '', // Optional/Placeholder
+                employerSignature: signatureDataUrl,
+            };
+
+            const result = await contractStore.createContract(contractData);
+            
+            // Link contract to room
+            chatStore.updateRoomContract(props.roomId, result.id);
+            chatStore.sendMessage(
+                '프로젝트 계약 요청',
+                'CONTRACT_ALERT',
+                { contractId: result.id, status: 'WAITING_SIGNATURE' },
+                props.roomId
+            );
+            chatStore.sendSystemMessage(props.roomId, '계약서가 작성되어 전송되었습니다.');
+            
+            alert('계약서가 성공적으로 생성되었습니다.');
+        } catch (err) {
+            console.error('Failed to create contract:', err);
+            alert('계약서 생성 중 오류가 발생했습니다.');
+        } finally {
+            isSigningForCreation.value = false;
+            isSignatureModalOpen.value = false;
+        }
+        return;
+    }
+
     if (!currentContract.value || !authStore.user) return;
 
-    const updates: Record<string, any> = {};
-    if (isEmployer.value) {
-        updates.employerSignature = signatureDataUrl;
-        updates.employerSignedDate = new Date();
-    } else {
-        updates.freelancerSignature = signatureDataUrl;
-        updates.freelancerSignedDate = new Date();
-    }
-
-    const nextEmployerSigned = updates.employerSignedDate || currentContract.value.employerSignedDate;
-    const nextFreelancerSigned = updates.freelancerSignedDate || currentContract.value.freelancerSignedDate;
-
-    if (nextEmployerSigned && nextFreelancerSigned) {
-        updates.status = 'IN_PROGRESS';
-        updates.signedDate = new Date();
+    try {
+        await contractStore.signContract(currentContract.value.id, signatureDataUrl);
         chatStore.sendSystemMessage(props.roomId, '계약서 서명이 완료되었습니다.');
+    } catch (err) {
+        console.error('Failed to sign contract:', err);
+        alert('서명 처리 중 오류가 발생했습니다.');
+    } finally {
+        isSignatureModalOpen.value = false;
     }
-
-    contractStore.updateContract(currentContract.value.id, updates);
-    isSignatureModalOpen.value = false;
 }
 
 function rejectContract() {

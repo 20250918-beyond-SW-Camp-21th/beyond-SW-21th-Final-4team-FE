@@ -107,14 +107,12 @@ export const getCurrentUser = async () => {
 
 /**
  * Get users with optional role filtering
- * Robustly tries both /api/users and /api/v1/users and different role casings
+ * Robustly tries different endpoints and different role casings
  */
 export const getUsers = async (params?: { role?: string }): Promise<any[]> => {
     const endpoints = [
-        '/api/v1/employer/freelancers',
-        '/api/v1/freelancers',
+        '/api/employer/freelancers',
         '/api/freelancers',
-        '/api/v1/users',
         '/api/users'
     ];
     const roles = params?.role ? [params.role.toUpperCase(), params.role.toLowerCase(), params.role] : [undefined];

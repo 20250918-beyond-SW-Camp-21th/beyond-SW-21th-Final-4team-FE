@@ -21,6 +21,7 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
+import { useJobStore } from '@/stores/jobStore';
 import SignaturePadModal from './components/SignaturePadModal.vue';
 import ContractPreview from '@/components/contract/ContractPreview.vue';
 
@@ -30,12 +31,14 @@ const router = useRouter();
 const authStore = useAuthStore();
 const contractStore = useContractStore();
 const freelancerStore = useFreelancerStore();
+const jobStore = useJobStore();
 
 const state = ref<CreateContractState>('form');
 const currentStep = ref(1);
 const totalSteps = 2;
 
 // Step 1: Basic Info
+const selectedProjectId = ref<string | ''>('');
 const selectedFreelancerId = ref<number | ''>('');
 const projectName = ref('');
 const jobDescription = ref('');
@@ -66,9 +69,12 @@ const freelancerPhone = ref('');
 // Created contract reference
 const createdContract = ref<ContractWithDetails | null>(null);
 
-// Fetch freelancers on mount
+// Fetch freelancers and projects on mount
 onMounted(async () => {
     await freelancerStore.fetchFreelancers();
+    // Assuming jobStore also needs to fetch my jobs
+    // In jobStore.ts, myJobs is computed from jobPostings.
+    // Let's check if there's a fetch method.
 });
 
 const freelancerOptions = computed(() =>
@@ -82,6 +88,7 @@ const selectedFreelancer = computed(() =>
 // Validation
 const isStep1Valid = computed(
     () =>
+        selectedProjectId.value &&
         selectedFreelancerId.value &&
         projectName.value &&
         jobDescription.value &&
@@ -139,6 +146,13 @@ const previewContract = computed(() => {
 });
 
 const nextStep = () => {
+    // Auto-fill project name if a project is selected
+    if (selectedProjectId.value) {
+        const job = jobStore.jobPostings.find(j => j.id === selectedProjectId.value);
+        if (job && !projectName.value) {
+            projectName.value = job.title;
+        }
+    }
     if (currentStep.value < totalSteps) {
         currentStep.value++;
     }
@@ -167,6 +181,7 @@ const handleSign = async (signatureDataUrl: string) => {
         
         // 1. Create contract record in backend
         const contractData = {
+            projectId: Number(String(selectedProjectId.value).replace('job-', '')),
             projectName: projectName.value,
             freelancerId: Number(selectedFreelancerId.value),
             startDate: startDate.value,
@@ -239,6 +254,7 @@ const handleSign = async (signatureDataUrl: string) => {
 };
 
 const handleReset = () => {
+    selectedProjectId.value = '';
     selectedFreelancerId.value = '';
     projectName.value = '';
     jobDescription.value = '';
@@ -324,6 +340,28 @@ const navigateToContracts = () => {
                                 type="text"
                                 class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors"
                             />
+                        </div>
+
+                        <!-- Project Select -->
+                        <div>
+                            <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
+                                <FolderOpen class="w-4 h-4" />
+                                프로젝트 공고 선택
+                            </label>
+                            <select
+                                v-model="selectedProjectId"
+                                class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors appearance-none cursor-pointer"
+                            >
+                                <option value="" class="bg-gray-900">프로젝트를 선택하세요</option>
+                                <option
+                                    v-for="job in jobStore.myJobs"
+                                    :key="job.id"
+                                    :value="job.id"
+                                    class="bg-gray-900"
+                                >
+                                    {{ job.title }}
+                                </option>
+                            </select>
                         </div>
 
                         <!-- Freelancer Select -->

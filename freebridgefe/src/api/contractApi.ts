@@ -83,6 +83,7 @@ export interface FreelancerSettlement {
 }
 
 export interface CreateContractRequest {
+    projectId: number;
     projectName: string;
     freelancerId: number;
     startDate: string;
@@ -116,7 +117,7 @@ export interface SignContractRequest {
  */
 export const createContract = async (data: CreateContractRequest): Promise<Contract> => {
     try {
-        const response = await apiClient.post<ApiResponse<Contract>>('/api/v1/contracts', data);
+        const response = await apiClient.post<ApiResponse<Contract>>('/api/contracts', data);
         return response.data.data;
     } catch (error) {
         console.error('Failed to create contract:', error);
@@ -135,7 +136,7 @@ export const getContractList = async (params?: {
 }): Promise<PaginatedResponse<Contract>> => {
     try {
         const response = await apiClient.get<ApiResponse<PaginatedResponse<Contract>>>(
-            '/api/v1/contracts',
+            '/api/contracts',
             { params }
         );
         return response.data.data;
@@ -150,7 +151,7 @@ export const getContractList = async (params?: {
  */
 export const getContractById = async (contractId: number): Promise<Contract> => {
     try {
-        const response = await apiClient.get<ApiResponse<Contract>>(`/api/v1/contracts/${contractId}`);
+        const response = await apiClient.get<ApiResponse<Contract>>(`/api/contracts/${contractId}`);
         return response.data.data;
     } catch (error) {
         console.error('Failed to fetch contract:', error);
@@ -167,7 +168,7 @@ export const signContract = async (
 ): Promise<Contract> => {
     try {
         const response = await apiClient.patch<ApiResponse<Contract>>(
-            `/api/v1/contracts/${contractId}/sign`,
+            `/api/contracts/${contractId}/sign`,
             data
         );
         return response.data.data;
@@ -183,7 +184,7 @@ export const signContract = async (
 export const completeContract = async (contractId: number): Promise<{ contractId: number; status: string }> => {
     try {
         const response = await apiClient.patch<ApiResponse<{ contractId: number; status: string }>>(
-            `/api/v1/contracts/${contractId}/complete`
+            `/api/contracts/${contractId}/complete`
         );
         return response.data.data;
     } catch (error) {
@@ -198,7 +199,7 @@ export const completeContract = async (contractId: number): Promise<{ contractId
 export const rejectContract = async (contractId: number): Promise<{ contractId: number; status: string }> => {
     try {
         const response = await apiClient.patch<ApiResponse<{ contractId: number; status: string }>>(
-            `/api/v1/contracts/${contractId}/reject`
+            `/api/contracts/${contractId}/reject`
         );
         return response.data.data;
     } catch (error) {
@@ -213,7 +214,7 @@ export const rejectContract = async (contractId: number): Promise<{ contractId: 
 export const getContractPdfUrl = async (contractId: number): Promise<string> => {
     try {
         const response = await apiClient.get<ApiResponse<string>>(
-            `/api/v1/contracts/${contractId}/pdf`
+            `/api/contracts/${contractId}/pdf`
         );
         return response.data.data;
     } catch (error) {
@@ -237,7 +238,7 @@ export const getEmployerSettlements = async (params?: {
 }): Promise<PaginatedResponse<EmployerSettlement>> => {
     try {
         const response = await apiClient.get<ApiResponse<PaginatedResponse<EmployerSettlement>>>(
-            '/api/v1/settlements/employer',
+            '/api/settlements/employer',
             { params }
         );
         return response.data.data;
@@ -257,7 +258,7 @@ export const getEmployerSettlementSummary = async (): Promise<{
 }> => {
     try {
         const response = await apiClient.get<ApiResponse<any>>(
-            '/api/v1/settlements/employer/summary'
+            '/api/settlements/employer/summary'
         );
         return response.data.data;
     } catch (error) {
@@ -272,7 +273,7 @@ export const getEmployerSettlementSummary = async (): Promise<{
 export const getNextSettlementDue = async (): Promise<EmployerSettlement | null> => {
     try {
         const response = await apiClient.get<ApiResponse<EmployerSettlement>>(
-            '/api/v1/settlements/employer/next'
+            '/api/settlements/employer/next'
         );
         return response.data.data;
     } catch (error) {
@@ -287,7 +288,7 @@ export const getNextSettlementDue = async (): Promise<EmployerSettlement | null>
 export const getEmployerSettlementDetail = async (settlementId: number): Promise<EmployerSettlement> => {
     try {
         const response = await apiClient.get<ApiResponse<EmployerSettlement>>(
-            `/api/v1/settlements/employer/${settlementId}`
+            `/api/settlements/employer/${settlementId}`
         );
         return response.data.data;
     } catch (error) {
@@ -302,7 +303,7 @@ export const getEmployerSettlementDetail = async (settlementId: number): Promise
 export const getInvoicePdfUrl = async (settlementId: number): Promise<string> => {
     try {
         const response = await apiClient.get<ApiResponse<string>>(
-            `/api/v1/settlements/employer/${settlementId}/invoice`
+            `/api/settlements/employer/${settlementId}/invoice`
         );
         return response.data.data;
     } catch (error) {
@@ -320,7 +321,7 @@ export const verifyPayment = async (data: {
 }): Promise<any> => {
     try {
         const response = await apiClient.post<ApiResponse<any>>(
-            '/api/v1/settlements/employer/verify-payment',
+            '/api/settlements/employer/verify-payment',
             data
         );
         return response.data.data;
@@ -336,7 +337,7 @@ export const verifyPayment = async (data: {
 export const cancelAndRefund = async (contractId: number, reason?: string): Promise<void> => {
     try {
         await apiClient.post<ApiResponse<null>>(
-            '/api/v1/settlements/employer/cancel-refund',
+            '/api/settlements/employer/cancel-refund',
             null,
             {
                 params: {
@@ -366,7 +367,7 @@ export const getFreelancerSettlements = async (params?: {
 }): Promise<PaginatedResponse<FreelancerSettlement>> => {
     try {
         const response = await apiClient.get<ApiResponse<PaginatedResponse<FreelancerSettlement>>>(
-            '/api/v1/settlements/freelancer',
+            '/api/settlements/freelancer',
             { params }
         );
         return response.data.data;
@@ -386,7 +387,7 @@ export const getFreelancerSettlementSummary = async (): Promise<{
 }> => {
     try {
         const response = await apiClient.get<ApiResponse<any>>(
-            '/api/v1/settlements/freelancer/summary'
+            '/api/settlements/freelancer/summary'
         );
         return response.data.data;
     } catch (error) {
@@ -401,7 +402,7 @@ export const getFreelancerSettlementSummary = async (): Promise<{
 export const getFreelancerSettlementDetail = async (settlementId: number): Promise<FreelancerSettlement> => {
     try {
         const response = await apiClient.get<ApiResponse<FreelancerSettlement>>(
-            `/api/v1/settlements/freelancer/${settlementId}`
+            `/api/settlements/freelancer/${settlementId}`
         );
         return response.data.data;
     } catch (error) {
@@ -416,7 +417,7 @@ export const getFreelancerSettlementDetail = async (settlementId: number): Promi
 export const getReceiptPdfUrl = async (settlementId: number): Promise<string> => {
     try {
         const response = await apiClient.get<ApiResponse<string>>(
-            `/api/v1/settlements/freelancer/${settlementId}/receipt`
+            `/api/settlements/freelancer/${settlementId}/receipt`
         );
         return response.data.data;
     } catch (error) {
@@ -440,7 +441,7 @@ export const requestTaxInvoice = async (
 ): Promise<any> => {
     try {
         const response = await apiClient.post<ApiResponse<any>>(
-            `/api/v1/settlements/freelancer/${settlementId}/tax-invoice`,
+            `/api/settlements/freelancer/${settlementId}/tax-invoice`,
             data
         );
         return response.data.data;
