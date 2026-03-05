@@ -7,7 +7,7 @@ export const authApi = {
         return response.data.data; // Expected { accessToken: "...", user: User, grade: "..." }
     },
     signup: async (userData: User) => {
-        const response = await axiosInstance.post('/auth/signup', userData);
+        const response = await axiosInstance.post('/api/users/signup', userData);
         return response.data;
     },
     verifyEmail: async (email: string, code: string) => {
@@ -19,7 +19,9 @@ export const authApi = {
         return response.data;
     },
     checkEmail: async (email: string) => {
-        const response = await axiosInstance.post('/auth/check-email', { email });
-        return response.data;
+        const response = await axiosInstance.get('/api/users/check-email', {
+            params: { email }
+        });
+        return response.data.available; // Based on spec response { exists, available }
     }
 };

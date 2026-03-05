@@ -13,7 +13,7 @@ function maskEmail(email: string): string {
 export const useAuthStore = defineStore('auth', () => {
     // Initialize from localStorage if available
     const savedUser = localStorage.getItem('user');
-    const savedToken = localStorage.getItem('token');
+    const savedToken = localStorage.getItem('access_token');
     let initialUser: User | null = null;
     if (savedUser) {
         try {
@@ -38,7 +38,7 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = userData;
         token.value = accessToken;
         localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', accessToken);
+        localStorage.setItem('access_token', accessToken);
     }
 
     async function login(credentials: any) {
@@ -59,7 +59,7 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = null;
         token.value = null;
         localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        localStorage.removeItem('access_token');
     }
 
     async function checkEmailDuplicate(email: string): Promise<boolean> {
