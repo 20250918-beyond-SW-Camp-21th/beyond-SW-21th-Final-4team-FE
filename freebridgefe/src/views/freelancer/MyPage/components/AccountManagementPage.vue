@@ -18,7 +18,13 @@ import {
     AlertCircle
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { getAccountInfo, updateAccountInfo, changeFreelancerPassword } from '@/api/MyPage/accountApi';
+import {
+    getAccountInfo,
+    updateAccountInfo,
+    changeFreelancerPassword,
+    getFreelancerNotificationSettings,
+    updateFreelancerNotificationSettings
+} from '@/api/MyPage/accountApi';
 
 const emit = defineEmits<{
   (e: 'back'): void;
@@ -52,9 +58,8 @@ const showPasswords = ref({
 });
 
 const notifications = ref({
-    email: true,
-    push: true,
-    marketing: false,
+    requestNotificationEnabled: false,
+    contractNotificationEnabled: false,
 });
 
 const isSavingInfo = ref(false);
@@ -64,10 +69,28 @@ onMounted(async () => {
     try {
         const info = await getAccountInfo();
         accountInfo.value = { ...accountInfo.value, ...info };
+        const notificationSettings = await getFreelancerNotificationSettings();
+        notifications.value.requestNotificationEnabled = !!notificationSettings.requestNotificationEnabled;
+        notifications.value.contractNotificationEnabled = !!notificationSettings.contractNotificationEnabled;
     } catch (error) {
         console.error('Failed to fetch account info:', error);
     }
 });
+
+const toggleNotification = async (key: keyof typeof notifications.value) => {
+    const nextValue = !notifications.value[key];
+    notifications.value[key] = nextValue;
+    try {
+        await updateFreelancerNotificationSettings(
+            notifications.value.requestNotificationEnabled,
+            notifications.value.contractNotificationEnabled
+        );
+    } catch (error) {
+        console.error('Failed to update notification settings:', error);
+        notifications.value[key] = !nextValue;
+        alert('?? ?? ??? ??????.');
+    }
+};
 
 const handleVerifyIdentity = async () => {
     verificationError.value = '';
@@ -304,9 +327,8 @@ const resetProfileVerification = () => {
                 <div class="space-y-4">
                      <div
                         v-for="(item, key) in {
-                            email: { label: '이메일 알림', desc: '프로젝트 제안 및 중요 공지를 이메일로 받습니다' },
-                            push: { label: '푸시 알림', desc: '브라우저 푸시 알림을 받습니다' },
-                            marketing: { label: '마케팅 정보 수신', desc: '프로모션 및 이벤트 정보를 받습니다' }
+                            requestNotificationEnabled: { label: '???? ?? ??', desc: '???? ??? ???? ??? ????' },
+                            contractNotificationEnabled: { label: '?? ?? ??', desc: '?? ?? ?? ? ??? ????' }
                         }"
                         :key="key"
                         class="flex items-center justify-between p-4 bg-[#1e293b]/30 rounded-2xl border border-white/5 hover:bg-[#1e293b]/50 transition-colors"
@@ -316,7 +338,7 @@ const resetProfileVerification = () => {
                             <p class="text-xs text-slate-400">{{ item.desc }}</p>
                         </div>
                         <button
-                            @click="notifications[key as keyof typeof notifications] = !notifications[key as keyof typeof notifications]"
+                            @click="toggleNotification(key as keyof typeof notifications)"
                             class="relative w-12 h-7 rounded-full transition-colors duration-300 focus:outline-none"
                             :class="notifications[key as keyof typeof notifications] ? 'bg-blue-500' : 'bg-slate-700'"
                         >
