@@ -1,123 +1,261 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
-import type { JobPosting, Application } from '@/types';
 import { useChatStore } from '@/stores/chatStore';
+import type { Application, JobPosting, JobStatus } from '@/types';
+import {
+    addFavoriteJobPosting,
+    createEmployerJobPosting,
+    deleteEmployerJobPosting,
+    getEmployerJobPostings,
+    removeFavoriteJobPosting,
+    searchFreelancerJobPostings,
+    updateEmployerJobPosting,
+    type EmployerJobPostingResponse,
+    type FreelancerJobPostingResponse,
+    type RecruitmentJobStatus
+} from '@/api/jobApi';
+
+type JobPostingInput = Omit<JobPosting, 'id' | 'createdAt' | 'updatedAt'>;
+type UIJobPosting = JobPosting;
+
+type FetchJobPostingsOptions = {
+    keyword?: string;
+    favoriteOnly?: boolean;
+};
+
+const mapRecruitmentStatusToJobStatus = (status: RecruitmentJobStatus): JobStatus => {
+    if (status === 'COMPLETED') {
+        return 'CONTRACTED';
+    }
+
+    return status;
+};
+
+const mapJobStatusToRecruitmentStatus = (status: JobStatus): RecruitmentJobStatus => {
+    if (status === 'CONTRACTED') {
+        return 'COMPLETED';
+    }
+
+    return status;
+};
+
+const toNumericJobPostingId = (jobId: string): number => {
+    if (!/^\d+$/.test(jobId)) {
+        throw new Error('유효하지 않은 공고 ID입니다.');
+    }
+    return Number(jobId);
+};
+
+const mapEmployerJobPosting = (
+    posting: EmployerJobPostingResponse,
+    employerId: string
+): UIJobPosting => {
+    const now = new Date();
+
+    return {
+        id: String(posting.jobPostingId),
+        employerId,
+        employerName: posting.employerName,
+        title: posting.title,
+        description: posting.description,
+        techStack: posting.techStack,
+        budget: posting.budget,
+        duration: posting.duration,
+        status: mapRecruitmentStatusToJobStatus(posting.status),
+        createdAt: now,
+        updatedAt: now,
+        headcount: posting.headcount,
+        matchedHeadcount: posting.matchedHeadcount,
+        favorite: false
+    };
+};
+
+const mapFreelancerApiToUiJobPosting = (posting: FreelancerJobPostingResponse): UIJobPosting => {
+    const now = new Date();
+    const employerId =
+        posting.employerId === null || posting.employerId === undefined
+            ? `employer-${posting.jobPostingId}`
+            : String(posting.employerId);
+
+    const jobStatus: JobStatus = posting.status
+        ? mapRecruitmentStatusToJobStatus(posting.status)
+        : 'OPEN';
+
+    return {
+        id: String(posting.jobPostingId),
+        employerId,
+        employerName: posting.employerName,
+        title: posting.title,
+        description: posting.description,
+        techStack: posting.techStack,
+        budget: posting.budget,
+        duration: posting.duration,
+        status: jobStatus,
+        createdAt: now,
+        updatedAt: now,
+        headcount: posting.headcount,
+        matchedHeadcount: posting.matchedHeadcount,
+        favorite: posting.favorite
+    };
+};
+
+const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+    return '요청 처리 중 오류가 발생했습니다.';
+};
 
 export const useJobStore = defineStore('job', () => {
     const authStore = useAuthStore();
 
-    // Mock Data
-    const jobPostings = ref<JobPosting[]>([
-        {
-            id: 'job1',
-            employerId: 'e1',
-            employerName: '스타트업 A',
-            title: 'React 프론트엔드 개발자 구인',
-            description: '핀테크 스타트업에서 React 프론트엔드 개발자를 모십니다. MSA 경험 우대합니다.',
-            techStack: ['React', 'TypeScript', 'Redux', 'TailwindCSS'],
-            budget: 5000000,
-            duration: 3,
-            status: 'OPEN',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        },
-        {
-            id: 'job2',
-            employerId: 'e1',
-            employerName: '스타트업 A',
-            title: 'Node.js 백엔드 개발자 구인',
-            description: '핀테크 스타트업에서 Node.js 백엔드 개발자를 모십니다.',
-            techStack: ['Node.js', 'Express', 'MySQL'],
-            budget: 6000000,
-            duration: 3,
-            status: 'CLOSED',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        },
-        {
-            id: 'job3',
-            employerId: 'e2',
-            employerName: '테크기업 B',
-            title: 'Flutter 모바일 앱 개발',
-            description: '크로스플랫폼 모바일 앱 개발 프로젝트입니다.',
-            techStack: ['Flutter', 'Dart', 'Firebase'],
-            budget: 8000000,
-            duration: 4,
-            status: 'OPEN',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        }
-    ]);
+    const jobPostings = ref<JobPosting[]>([]);
+    const isLoading = ref(false);
+    const errorMessage = ref<string | null>(null);
 
-    const applications = ref<Application[]>([
-        {
-            id: 'app1',
-            jobId: 'job1',
-            freelancerId: 'f1',
-            freelancerName: '김프론트',
-            message: '지원합니다.',
-            status: 'PENDING',
-            createdAt: new Date()
-        },
-        {
-            id: 'app2',
-            jobId: 'job1',
-            freelancerId: 'f2',
-            freelancerName: '이풀스택',
-            message: '열심히 하겠습니다.',
-            status: 'PENDING',
-            createdAt: new Date()
-        }
-    ]);
+    // Applications are still local until backend endpoints are available.
+    const applications = ref<Application[]>([]);
 
-    // Getters
     const myJobs = computed(() => {
-        if (!authStore.user) return [];
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
+            return [];
+        }
+
         const currentEmployerId = String(authStore.user.id);
-        return jobPostings.value.filter(
-            (job) => String(job.employerId) === currentEmployerId);
+        return jobPostings.value.filter((job) => String(job.employerId) === currentEmployerId);
     });
 
-    const getJobById = (id: string) => jobPostings.value.find(j => j.id === id);
+    const getJobById = (id: string) => jobPostings.value.find((job) => job.id === id);
 
-    // Actions
-    function addJobPosting(job: Omit<JobPosting, 'id' | 'createdAt' | 'updatedAt'>) {
-        const newJob: JobPosting = {
-            ...job,
-            id: `job-${Date.now()}`,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
-        jobPostings.value.unshift(newJob);
-    }
+    const isFavorite = (id: string): boolean => {
+        const target = getJobById(id);
+        return Boolean(target?.favorite);
+    };
 
-    function updateJobPosting(id: string, updates: Partial<JobPosting>) {
-        const index = jobPostings.value.findIndex(job => job.id === id);
-        if (index !== -1) {
-            jobPostings.value[index] = { ...jobPostings.value[index], ...updates, updatedAt: new Date() };
+    async function fetchJobPostings(options: FetchJobPostingsOptions = {}): Promise<void> {
+        if (!authStore.user) {
+            jobPostings.value = [];
+            return;
+        }
+
+        isLoading.value = true;
+        errorMessage.value = null;
+
+        try {
+            if (authStore.user.role === 'EMPLOYER') {
+                const postings = await getEmployerJobPostings({ page: 0, size: 100 });
+                jobPostings.value = postings.map((posting) =>
+                    mapEmployerJobPosting(posting, String(authStore.user?.id ?? ''))
+                );
+                return;
+            }
+
+            const postings = await searchFreelancerJobPostings({
+                page: 0,
+                size: 100,
+                keyword: options.keyword?.trim() || undefined,
+                ...(options.favoriteOnly ? { liked: true } : {})
+            });
+            jobPostings.value = postings.map(mapFreelancerApiToUiJobPosting);
+        } catch (error) {
+            errorMessage.value = getErrorMessage(error);
+            throw error;
+        } finally {
+            isLoading.value = false;
         }
     }
 
-    function deleteJobPosting(id: string) {
-        jobPostings.value = jobPostings.value.filter(job => job.id !== id);
+    async function addJobPosting(job: JobPostingInput): Promise<void> {
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
+            throw new Error('고용주만 공고를 등록할 수 있습니다.');
+        }
+
+        await createEmployerJobPosting({
+            title: job.title,
+            description: job.description,
+            techStack: job.techStack,
+            budget: job.budget,
+            duration: job.duration,
+            headcount: job.headcount && job.headcount > 0 ? job.headcount : 1
+        });
+
+        await fetchJobPostings();
+    }
+
+    async function updateJobPosting(id: string, updates: Partial<JobPosting>): Promise<void> {
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
+            throw new Error('고용주만 공고를 수정할 수 있습니다.');
+        }
+
+        const current = getJobById(id);
+
+        await updateEmployerJobPosting(toNumericJobPostingId(id), {
+            title: updates.title,
+            description: updates.description,
+            techStack: updates.techStack,
+            budget: updates.budget,
+            duration: updates.duration,
+            headcount: updates.headcount ?? current?.headcount,
+            status: updates.status ? mapJobStatusToRecruitmentStatus(updates.status) : undefined
+        });
+
+        await fetchJobPostings();
+    }
+
+    async function deleteJobPosting(id: string): Promise<void> {
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
+            throw new Error('고용주만 공고를 삭제할 수 있습니다.');
+        }
+
+        await deleteEmployerJobPosting(toNumericJobPostingId(id));
+        jobPostings.value = jobPostings.value.filter((job) => job.id !== id);
+    }
+
+    async function toggleFavorite(id: string): Promise<void> {
+        if (!authStore.user || authStore.user.role !== 'FREELANCER') {
+            return;
+        }
+
+        const index = jobPostings.value.findIndex((job) => job.id === id);
+        if (index === -1) {
+            return;
+        }
+
+        const numericJobId = toNumericJobPostingId(id);
+        const currentlyFavorite = Boolean(jobPostings.value[index].favorite);
+
+        if (currentlyFavorite) {
+            await removeFavoriteJobPosting(numericJobId);
+        } else {
+            await addFavoriteJobPosting(numericJobId);
+        }
+
+        jobPostings.value[index] = {
+            ...jobPostings.value[index],
+            favorite: !currentlyFavorite
+        };
     }
 
     function getApplicationsByJob(jobId: string) {
-        return applications.value.filter(app => app.jobId === jobId);
+        return applications.value.filter((app) => app.jobId === jobId);
     }
 
     function addApplication(app: Omit<Application, 'id' | 'createdAt'>) {
         const newApp: Application = {
             ...app,
             id: `app-${Date.now()}`,
-            createdAt: new Date(),
+            createdAt: new Date()
         };
         applications.value.push(newApp);
     }
 
-    function updateApplicationStatus(id: string, status: Application['status'], rejectionReason?: string): string | null {
-        const index = applications.value.findIndex(app => app.id === id);
+    function updateApplicationStatus(
+        id: string,
+        status: Application['status'],
+        rejectionReason?: string
+    ): string | null {
+        const index = applications.value.findIndex((app) => app.id === id);
         if (index === -1) return null;
 
         applications.value[index] = {
@@ -159,10 +297,15 @@ export const useJobStore = defineStore('job', () => {
         jobPostings,
         myJobs,
         applications,
+        isLoading,
+        errorMessage,
         getJobById,
+        fetchJobPostings,
         addJobPosting,
         updateJobPosting,
         deleteJobPosting,
+        isFavorite,
+        toggleFavorite,
         getApplicationsByJob,
         addApplication,
         updateApplicationStatus
