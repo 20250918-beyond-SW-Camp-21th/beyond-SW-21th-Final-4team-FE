@@ -28,6 +28,8 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
+import { PLAN_LABELS } from '@/constants/planLabels';
+import { getEmployerReviewSummary } from '@/api/MyPage/evaluationApi';
 
 import EmployerProfileManagement from './components/EmployerProfileManagement.vue';
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
@@ -52,12 +54,14 @@ watch(() => route.query.tab, () => {
     updateTabFromQuery();
 });
 
-const PLAN_LABELS: Record<string, string> = {
-  FREE: '무료 플랜',
-  PRO: '프로 플랜',
-  PRIME: '프라임 플랜',
-  PARTNER: '프로 플랜',
-  ENTERPRISE: '프라임 플랜',
+const SCALE_LABELS: Record<string, string> = {
+  S1_4: '1-4명',
+  S5_9: '5-9명',
+  S10_29: '10-29명',
+  S30_99: '30-99명',
+  S100_299: '100-299명',
+  S300_999: '300-999명',
+  S1000_PLUS: '1000명 이상',
 };
 
 const employerProfile = ref<EmployerProfileData>({
@@ -87,6 +91,7 @@ const employerProfile = ref<EmployerProfileData>({
   }
 });
 
+
 const handleLogoUpdate = (event: Event) => {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
@@ -103,8 +108,19 @@ const handleLogoUpdate = (event: Event) => {
 
 const fetchProfile = async () => {
   try {
-    const data = await getEmployerProfile();
-    employerProfile.value = data;
+    const [profile, reviewSummary] = await Promise.all([
+      getEmployerProfile(),
+      getEmployerReviewSummary().catch(() => null)
+    ]);
+    employerProfile.value = {
+      ...profile,
+      avgRating: reviewSummary?.averageRate ?? profile.avgRating,
+      ratingDetails: {
+        atmosphere: reviewSummary?.atmosphereRate ?? profile.ratingDetails?.atmosphere ?? 0,
+        requirementsDetail: reviewSummary?.requirementsDetailRate ?? profile.ratingDetails?.requirementsDetail ?? 0,
+        scheduleAdherence: reviewSummary?.scheduleAdherenceRate ?? profile.ratingDetails?.scheduleAdherence ?? 0
+      }
+    };
   } catch (error) {
     console.error('Failed to fetch employer profile:', error);
   }
@@ -113,6 +129,30 @@ const fetchProfile = async () => {
 const subscriptionPlanText = computed(() => {
   const normalizedPlan = (employerProfile.value.plan ?? 'FREE').toUpperCase();
   return PLAN_LABELS[normalizedPlan] ?? normalizedPlan;
+});
+
+const companySizeLabel = computed(() => {
+  const size = employerProfile.value.size ?? '';
+  return SCALE_LABELS[size] ?? size;
+});
+
+const topCrmBanner = computed(() => {
+  const alerts = employerProfile.value.crmAlerts;
+  if (alerts?.upsellTarget === 'PRO' || alerts?.isPremiumUpsellEligible) {
+    return {
+      label: 'PRO 업그레이드',
+      title: '추천 기능과 더 넓은 조회 범위를 경험하세요',
+      description: 'PRO 플랜으로 업그레이드하고 더 빠른 매칭과 수수료 할인 혜택을 받아보세요.'
+    };
+  }
+  if (alerts?.upsellTarget === 'PRIME' || alerts?.isPrimeUpsellEligible) {
+    return {
+      label: 'PRIME 업그레이드',
+      title: '전담 AI 컨설팅과 추가 혜택을 받아보세요',
+      description: 'PRIME 플랜으로 업그레이드하고 전담 AI 컨설팅과 대폭 수수료 할인을 누리세요.'
+    };
+  }
+  return null;
 });
 
 const normalizedPlanKey = computed<'FREE' | 'PRO' | 'PRIME'>(() => {
@@ -254,7 +294,7 @@ const safeWebsiteUrl = computed(() => {
             <div v-else-if="activeTab === 'dashboard'" class="space-y-8">
               <!-- CRM Upsell Banner (Option A) -->
               <div 
-                  v-if="normalizedPlanKey === 'FREE' && employerProfile.crmAlerts?.isPremiumUpsellEligible && !hideUpsellAlert" 
+                  v-if="topCrmBanner && !hideUpsellAlert" 
                   class="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-2xl p-6 relative overflow-hidden"
                   v-motion :initial="{ opacity: 0, y: -20 }" :enter="{ opacity: 1, y: 0 }"
               >
@@ -275,14 +315,13 @@ const safeWebsiteUrl = computed(() => {
                           </div>
                           <div>
                               <div class="flex items-center gap-2 mb-1">
-                                  <h3 class="text-lg font-bold text-white">시니어 프리랜서 매칭율 300% 증가</h3>
+                                  <h3 class="text-lg font-bold text-white">{{ topCrmBanner.title }}</h3>
                                   <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500 text-white uppercase tracking-wider">
-                                      Potential
+                                      {{ topCrmBanner.label }}
                                   </span>
                               </div>
                               <p class="text-sm text-indigo-100/80 leading-relaxed">
-                                  최근 진행하신 프로젝트의 열기가 뜨겁습니다!<br class="hidden md:block"/>
-                                  <span class="text-white font-medium">Employer 프라임 요금제</span>로 업그레이드 하시고 전담 매니저의 VVIP 매칭 서비스를 받아보세요.
+                                  {{ topCrmBanner.description }}
                               </p>
                           </div>
                       </div>
@@ -379,7 +418,7 @@ const safeWebsiteUrl = computed(() => {
                                       <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">규모</label>
                                       <div class="flex items-center gap-2 text-sm">
                                           <Users class="w-4 h-4 text-slate-400" />
-                                          {{ employerProfile.size }}
+                                          {{ companySizeLabel }}
                                       </div>
                                   </div>
                                   <div class="group">
