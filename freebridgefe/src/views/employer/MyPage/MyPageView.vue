@@ -29,7 +29,7 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { getEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
 import { PLAN_LABELS } from '@/constants/planLabels';
-import { getEmployerReviewSummary, getEmployerReputationAi, type EmployerReputationAi } from '@/api/MyPage/evaluationApi';
+import { getEmployerReviewSummary } from '@/api/MyPage/evaluationApi';
 
 import EmployerProfileManagement from './components/EmployerProfileManagement.vue';
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
@@ -91,7 +91,6 @@ const employerProfile = ref<EmployerProfileData>({
   }
 });
 
-const employerReputationAi = ref<EmployerReputationAi | null>(null);
 
 const handleLogoUpdate = (event: Event) => {
     const input = event.target as HTMLInputElement;
@@ -109,10 +108,9 @@ const handleLogoUpdate = (event: Event) => {
 
 const fetchProfile = async () => {
   try {
-    const [profile, reviewSummary, aiReputation] = await Promise.all([
+    const [profile, reviewSummary] = await Promise.all([
       getEmployerProfile(),
-      getEmployerReviewSummary().catch(() => null),
-      getEmployerReputationAi().catch(() => null)
+      getEmployerReviewSummary().catch(() => null)
     ]);
     employerProfile.value = {
       ...profile,
@@ -123,7 +121,6 @@ const fetchProfile = async () => {
         scheduleAdherence: reviewSummary?.scheduleAdherenceRate ?? profile.ratingDetails?.scheduleAdherence ?? 0
       }
     };
-    employerReputationAi.value = aiReputation ?? null;
   } catch (error) {
     console.error('Failed to fetch employer profile:', error);
   }

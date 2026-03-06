@@ -171,7 +171,11 @@ const handleSaveAccountInfo = async () => {
     alert('계정 정보가 수정되었습니다.');
   } catch (error) {
     console.error('Failed to update account info:', error);
-    alert('수정에 실패했습니다.');
+    if (error instanceof Error && error.message.includes('updateAccountInfo not implemented')) {
+      alert('현재 계정 정보 수정 기능은 준비 중입니다.');
+    } else {
+      alert('수정에 실패했습니다.');
+    }
   } finally {
     isSaving.value = false;
   }
