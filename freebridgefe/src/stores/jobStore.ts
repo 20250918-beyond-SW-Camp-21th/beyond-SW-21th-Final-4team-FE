@@ -155,7 +155,7 @@ export const useJobStore = defineStore('job', () => {
                 page: 0,
                 size: 100,
                 keyword: options.keyword?.trim() || undefined,
-                liked: options.favoriteOnly ?? false
+                ...(options.favoriteOnly ? { liked: true } : {})
             });
             jobPostings.value = postings.map(mapFreelancerApiToUiJobPosting);
         } catch (error) {
