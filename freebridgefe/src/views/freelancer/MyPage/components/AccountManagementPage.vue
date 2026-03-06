@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
     ArrowLeft,
@@ -18,7 +18,7 @@ import {
     AlertCircle
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { updateAccountInfo, changePassword } from '@/api/MyPage/accountApi';
+import { getAccountInfo, updateAccountInfo, changeFreelancerPassword } from '@/api/MyPage/accountApi';
 
 const emit = defineEmits<{
   (e: 'back'): void;
@@ -59,6 +59,15 @@ const notifications = ref({
 
 const isSavingInfo = ref(false);
 const isChangingPassword = ref(false);
+
+onMounted(async () => {
+    try {
+        const info = await getAccountInfo();
+        accountInfo.value = { ...accountInfo.value, ...info };
+    } catch (error) {
+        console.error('Failed to fetch account info:', error);
+    }
+});
 
 const handleVerifyIdentity = async () => {
     verificationError.value = '';
@@ -133,7 +142,7 @@ const handleChangePassword = async () => {
     isChangingPassword.value = true;
     try {
         await new Promise((resolve) => setTimeout(resolve, 800)); // Simulate delay
-        const success = await changePassword({
+        const success = await changeFreelancerPassword({
             current: passwordData.value.currentPassword,
             new: passwordData.value.newPassword,
             confirm: passwordData.value.confirmPassword

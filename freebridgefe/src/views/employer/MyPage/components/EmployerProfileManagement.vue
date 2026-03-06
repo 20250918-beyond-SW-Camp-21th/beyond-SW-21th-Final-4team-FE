@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
@@ -12,7 +12,6 @@ import {
   Save,
   Globe,
   Briefcase,
-  Edit2,
   Loader2
 } from 'lucide-vue-next';
 
@@ -24,13 +23,14 @@ defineEmits<{
 
 const isLoading = ref(false);
 const isSaving = ref(false);
+const isEditing = ref(true);
 
 const PLAN_LABELS: Record<string, string> = {
   FREE: '무료 플랜',
   PRO: '프로 플랜',
   PRIME: '프라임 플랜',
-  PARTNER: '프로 플랜',
-  ENTERPRISE: '프라임 플랜',
+  PARTNER: '파트너 플랜',
+  ENTERPRISE: '엔터프라이즈 플랜',
 };
 
 const profileData = ref<EmployerProfileData>({
@@ -87,7 +87,6 @@ const handleSave = async () => {
   }
 };
 </script>
-
 
 <template>
   <div class="max-w-4xl mx-auto px-4 md:px-8 py-8 text-white">
@@ -173,15 +172,15 @@ const handleSave = async () => {
               <Users class="w-4 h-4" />
               고용주 규모
             </label>
-          <select
-            v-model="profileData.size"
-            class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors appearance-none"
-          >
-            <option v-for="option in companySizeOptions" :key="option" :value="option">
-              {{ option }}
-            </option>
-          </select>
-        </div>
+            <select
+              v-model="profileData.size"
+              class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors appearance-none"
+            >
+              <option v-for="option in companySizeOptions" :key="option" :value="option">
+                {{ option }}
+              </option>
+            </select>
+          </div>
         </div>
 
         <!-- Location -->
