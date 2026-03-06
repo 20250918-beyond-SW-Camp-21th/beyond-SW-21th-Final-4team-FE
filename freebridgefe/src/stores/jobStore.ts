@@ -41,11 +41,10 @@ const mapJobStatusToRecruitmentStatus = (status: JobStatus): RecruitmentJobStatu
 };
 
 const toNumericJobPostingId = (jobId: string): number => {
-    const parsed = Number.parseInt(jobId, 10);
-    if (Number.isNaN(parsed)) {
+    if (!/^\d+$/.test(jobId)) {
         throw new Error('유효하지 않은 공고 ID입니다.');
     }
-    return parsed;
+    return Number(jobId);
 };
 
 const mapEmployerJobPosting = (
