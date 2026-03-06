@@ -1,6 +1,6 @@
-<script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useMotion } from '@vueuse/motion';
+﻿<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { useMotion } from "@vueuse/motion";
 import {
     ArrowLeft,
     Save,
@@ -17,10 +17,16 @@ import {
     Check,
     X,
     Loader2
-} from 'lucide-vue-next';
+} from "lucide-vue-next";
 import {
     getResumeDetail,
-    saveResumeDetail,
+    updateResumeBasicInfo,
+    addEducation,
+    deleteEducation,
+    addCareer,
+    deleteCareer,
+    addCertification,
+    deleteCertification,
     type ResumeDetail,
     type Education,
     type Career,
@@ -49,6 +55,9 @@ const resumeData = ref<ResumeDetail>({
 
 const isLoading = ref(true);
 const isSaving = ref(false);
+const deletedEducationIndexes = ref<number[]>([]);
+const deletedCareerIndexes = ref<number[]>([]);
+const deletedCertificationIndexes = ref<number[]>([]);
 
 // --- Temporary State for Adding Items ---
 const isAddingEducation = ref(false);
@@ -88,10 +97,17 @@ const newCertification = ref<Certification>({
 onMounted(async () => {
     try {
         isLoading.value = true;
-        resumeData.value = await getResumeDetail(Number(authStore.user?.id) || 1);
+        const loaded = await getResumeDetail();
+        resumeData.value = loaded;
+        if (authStore.user?.name && !resumeData.value.name) {
+            resumeData.value.name = authStore.user.name;
+        }
+        if (authStore.user?.email && !resumeData.value.email) {
+            resumeData.value.email = authStore.user.email;
+        }
     } catch (e) {
         console.error(e);
-        alert('이력서 데이터를 불러오는데 실패했습니다.');
+        alert('이력서 데이터를 불러오는 데 실패했습니다.');
     } finally {
         isLoading.value = false;
     }
@@ -100,10 +116,47 @@ onMounted(async () => {
 const handleSave = async () => {
     try {
         isSaving.value = true;
-        const success = await saveResumeDetail(resumeData.value);
-        if (success) {
-            alert('이력서 정보가 성공적으로 저장되었습니다.');
+        await updateResumeBasicInfo(resumeData.value);
+
+        const sortedEducationDeletes = [...new Set(deletedEducationIndexes.value)].sort((a, b) => b - a);
+        for (const index of sortedEducationDeletes) {
+            await deleteEducation(index);
         }
+        const sortedCareerDeletes = [...new Set(deletedCareerIndexes.value)].sort((a, b) => b - a);
+        for (const index of sortedCareerDeletes) {
+            await deleteCareer(index);
+        }
+        const sortedCertificationDeletes = [...new Set(deletedCertificationIndexes.value)].sort((a, b) => b - a);
+        for (const index of sortedCertificationDeletes) {
+            await deleteCertification(index);
+        }
+
+        const newEducations = resumeData.value.educations.filter((edu) => edu.isNew);
+        for (const edu of newEducations) {
+            await addEducation(edu);
+        }
+        const newCareers = resumeData.value.careers.filter((career) => career.isNew);
+        for (const career of newCareers) {
+            await addCareer(career);
+        }
+        const newCertifications = resumeData.value.certifications.filter((cert) => cert.isNew);
+        for (const cert of newCertifications) {
+            await addCertification(cert);
+        }
+
+        deletedEducationIndexes.value = [];
+        deletedCareerIndexes.value = [];
+        deletedCertificationIndexes.value = [];
+        const refreshed = await getResumeDetail();
+        resumeData.value = refreshed;
+        if (authStore.user?.name && !resumeData.value.name) {
+            resumeData.value.name = authStore.user.name;
+        }
+        if (authStore.user?.email && !resumeData.value.email) {
+            resumeData.value.email = authStore.user.email;
+        }
+
+        alert('이력서 정보가 성공적으로 저장되었습니다.');
     } catch (e) {
         alert('저장 중 오류가 발생했습니다.');
     } finally {
@@ -112,8 +165,8 @@ const handleSave = async () => {
 };
 
 // --- Education Actions ---
-const addEducation = () => {
-    if (!newEducation.value.schoolName) return alert('학교명을 입력해주세요.');
+const addEducationItem = () => {
+    if (!newEducation.value.schoolName) return alert('학교명을 입력해 주세요.');
     resumeData.value.educations.push({ ...newEducation.value, id: Date.now() });
     
     // Reset
@@ -136,8 +189,8 @@ const removeEducation = (index: number) => {
 };
 
 // --- Career Actions ---
-const addCareer = () => {
-    if (!newCareer.value.companyName) return alert('회사명을 입력해주세요.');
+const addCareerItem = () => {
+    if (!newCareer.value.companyName) return alert('회사명을 입력해 주세요.');
     resumeData.value.careers.push({ ...newCareer.value, id: Date.now() });
 
     // Reset
@@ -162,8 +215,8 @@ const removeCareer = (index: number) => {
 };
 
 // --- Certification Actions ---
-const addCertification = () => {
-    if (!newCertification.value.name) return alert('자격증명을 입력해주세요.');
+const addCertificationItem = () => {
+    if (!newCertification.value.name) return alert('자격증명을 입력해 주세요.');
     resumeData.value.certifications.push({ ...newCertification.value, id: Date.now() });
 
     // Reset
@@ -196,7 +249,7 @@ const removeCertification = (index: number) => {
                 </button>
                 <div>
                     <h1 class="text-3xl font-bold text-white tracking-tight">이력서 상세 관리</h1>
-                    <p class="text-base text-slate-400 mt-1">기본 정보와 상세 경력을 관리하여 매력을 어필하세요.</p>
+                    <p class="text-base text-slate-400 mt-1">기본 정보와 학력/경력/자격증을 관리하세요.</p>
                 </div>
             </div>
             <button
@@ -331,7 +384,7 @@ const removeCertification = (index: number) => {
                     <!-- Add Form -->
                     <div v-if="isAddingEducation" class="bg-[#1e293b]/50 border border-green-500/30 rounded-2xl p-6 animate-fade-in-down">
                         <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-bold text-green-400">새 학력 추가</h3>
+                            <h3 class="text-sm font-bold text-green-400">신규 학력 추가</h3>
                             <button @click="isAddingEducation = false" class="text-slate-500 hover:text-white"><X class="w-4 h-4" /></button>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -356,24 +409,24 @@ const removeCertification = (index: number) => {
                                 <select v-model="newEducation.status" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none">
                                     <option value="졸업">졸업</option>
                                     <option value="재학">재학</option>
-                                    <option value="수료">수료</option>
                                     <option value="휴학">휴학</option>
+                                    <option value="기타">기타</option>
                                 </select>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div class="space-y-1">
-                                    <label class="text-xs text-slate-500 ml-1">입학년월</label>
+                                    <label class="text-xs text-slate-500 ml-1">입학일</label>
                                     <input type="text" v-model="newEducation.entranceDate" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" placeholder="YYYY.MM" />
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="text-xs text-slate-500 ml-1">졸업년월</label>
+                                    <label class="text-xs text-slate-500 ml-1">졸업일</label>
                                     <input type="text" v-model="newEducation.graduationDate" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" placeholder="YYYY.MM" />
                                 </div>
                             </div>
                         </div>
                         <div class="flex justify-end gap-2">
                             <button @click="isAddingEducation = false" class="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">취소</button>
-                            <button @click="addEducation" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg font-bold transition-colors">추가 완료</button>
+                            <button @click="addEducationItem" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white text-sm rounded-lg font-bold transition-colors">추가 완료</button>
                         </div>
                     </div>
                 </div>
@@ -444,7 +497,7 @@ const removeCertification = (index: number) => {
                     <!-- Add Form -->
                     <div v-if="isAddingCareer" class="bg-[#1e293b]/50 border border-orange-500/30 rounded-2xl p-6 animate-fade-in-down ml-8">
                          <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-bold text-orange-400">새 경력 추가</h3>
+                            <h3 class="text-sm font-bold text-orange-400">신규 경력 추가</h3>
                             <button @click="isAddingCareer = false" class="text-slate-500 hover:text-white"><X class="w-4 h-4" /></button>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -457,7 +510,7 @@ const removeCertification = (index: number) => {
                                 <input type="text" v-model="newCareer.department" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" />
                             </div>
                              <div class="space-y-1">
-                                <label class="text-xs text-slate-500 ml-1">직위/직책</label>
+                                <label class="text-xs text-slate-500 ml-1">직위/직무</label>
                                 <input type="text" v-model="newCareer.position" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" />
                             </div>
                             <div class="space-y-1">
@@ -470,33 +523,33 @@ const removeCertification = (index: number) => {
                                 </select>
                             </div>
                              <div class="space-y-1">
-                                <label class="text-xs text-slate-500 ml-1">담당 업무 키워드</label>
+                                <label class="text-xs text-slate-500 ml-1">담당 업무/직무</label>
                                 <input type="text" v-model="newCareer.jobType" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" placeholder="예: 백엔드 개발" />
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div class="space-y-1">
-                                    <label class="text-xs text-slate-500 ml-1">입사년월</label>
+                                    <label class="text-xs text-slate-500 ml-1">입사일</label>
                                     <input type="text" v-model="newCareer.startDate" placeholder="YYYY.MM" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" />
                                 </div>
                                 <div class="space-y-1">
-                                    <label class="text-xs text-slate-500 ml-1">퇴사년월</label>
-                                    <input type="text" v-model="newCareer.endDate" placeholder="YYYY.MM or 재직중" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" />
+                                    <label class="text-xs text-slate-500 ml-1">퇴사일</label>
+                                    <input type="text" v-model="newCareer.endDate" placeholder="YYYY.MM 또는 재직중" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" />
                                 </div>
                             </div>
                             <div class="col-span-1 md:col-span-2 space-y-1">
                                  <label class="text-xs text-slate-500 ml-1">상세 설명</label>
-                                 <textarea v-model="newCareer.description" rows="3" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none resize-none" placeholder="주요 성과 및 업무 내용을 기술해주세요."></textarea>
+                                 <textarea v-model="newCareer.description" rows="3" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none resize-none" placeholder="주요 성과와 업무 내용을 적어주세요."></textarea>
                             </div>
                         </div>
                         <div class="flex justify-end gap-2">
                             <button @click="isAddingCareer = false" class="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">취소</button>
-                            <button @click="addCareer" class="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm rounded-lg font-bold transition-colors">추가 완료</button>
+                            <button @click="addCareerItem" class="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm rounded-lg font-bold transition-colors">추가 완료</button>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- 4. 자격증 (Certifications) -->
+            <!-- 4. 자격증(Certifications) -->
             <section class="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
                <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
@@ -531,14 +584,14 @@ const removeCertification = (index: number) => {
                             <p class="text-sm text-slate-400 mt-1">{{ cert.issuer }}</p>
                         </div>
                         <div class="mt-4 pt-4 border-t border-white/5 text-xs text-slate-500 font-mono">
-                            취득일: {{ cert.acquisitionDate }}
+                            취득일 {{ cert.acquisitionDate }}
                         </div>
                     </div>
 
                     <!-- Add Form Card -->
                     <div v-if="isAddingCertification" class="col-span-1 md:col-span-2 lg:col-span-3 bg-[#1e293b]/50 border border-yellow-500/30 rounded-2xl p-6 animate-fade-in">
                          <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-sm font-bold text-yellow-400">새 자격증 추가</h3>
+                            <h3 class="text-sm font-bold text-yellow-400">신규 자격증 추가</h3>
                             <button @click="isAddingCertification = false" class="text-slate-500 hover:text-white"><X class="w-4 h-4" /></button>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -551,13 +604,13 @@ const removeCertification = (index: number) => {
                                 <input type="text" v-model="newCertification.issuer" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" />
                             </div>
                             <div class="space-y-1">
-                                <label class="text-xs text-slate-500 ml-1">취득년월</label>
+                                <label class="text-xs text-slate-500 ml-1">취득일</label>
                                 <input type="text" v-model="newCertification.acquisitionDate" placeholder="YYYY.MM" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none" />
                             </div>
                         </div>
                         <div class="flex justify-end gap-2">
                              <button @click="isAddingCertification = false" class="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">취소</button>
-                            <button @click="addCertification" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded-lg font-bold transition-colors">추가 완료</button>
+                            <button @click="addCertificationItem" class="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded-lg font-bold transition-colors">추가 완료</button>
                         </div>
                     </div>
                 </div>
@@ -565,3 +618,17 @@ const removeCertification = (index: number) => {
         </div>
     </div>
 </template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

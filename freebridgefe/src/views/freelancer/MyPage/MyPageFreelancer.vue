@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
@@ -23,6 +23,7 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
+import { getFreelancerProjectStats } from '@/api/MyPage/projectApi';
 import ResumeManagementPage from './components/ResumeManagementPage.vue';
 import EvaluationListPage from './components/EvaluationListPage.vue';
 import AccountManagementPage from './components/AccountManagementPage.vue';
@@ -48,7 +49,7 @@ const openProjectDetail = (projectId: number) => {
 };
 
 const toggleRestMode = () => {
-    alert('휴식 모드로 전환되었습니다.');
+    alert('휴식 모드로 전환했습니다.');
     hideBurnoutAlert.value = true;
 };
 
@@ -57,7 +58,7 @@ const viewRecommendedProjects = () => {
     hideChurnAlert.value = true;
 };
 
-// 초기값은 비어있거나 로딩 상태를 나타내는 값으로 설정
+// 초기값 로딩 상태를 고려한 기본값 설정
 const profile = ref<FreelancerProfileDashboard>({
     name: '',
     grade: '',
@@ -107,15 +108,24 @@ onMounted(async () => {
             const data = await getFreelancerProfile(currentUser.value.id);
             profile.value = data;
 
-            // 만약 authStore의 이름/스킬을 우선하고 싶다면 여기서 덮어씌우기:
+            // authStore 이름/스킬 우선 반영
             if (currentUser.value.name) profile.value.name = currentUser.value.name;
-            if (currentUser.value.skills && currentUser.value.skills.length > 0) profile.value.skills = currentUser.value.skills;
+            if (currentUser.value.skills && currentUser.value.skills.length > 0) {
+                profile.value.skills = currentUser.value.skills;
+            }
 
+            try {
+                const stats = await getFreelancerProjectStats();
+                profile.value.statInteresting = stats.inProgressProjects ?? 0;
+                profile.value.statCompleted = stats.completedProjects ?? 0;
+            } catch (statsError) {
+                console.error('Failed to load project stats:', statsError);
+            }
         } catch (error) {
             console.error('Failed to load profile:', error);
         }
     } else {
-        // 로그인 정보가 없을 때의 디폴트 처리 (또는 로그인 페이지 리다이렉트)
+        // 로그인 정보가 없을 때의 폴백 처리
         const data = await getFreelancerProfile('guest');
         profile.value = data;
     }
@@ -222,7 +232,7 @@ const hideChurnAlert = ref(false);
                 <div>
                     <p class="text-sm text-slate-400 mb-1">안녕하세요</p>
                     <h2 class="text-2xl font-bold text-white">
-                        {{ profile.name }}님. 오늘도 프리브릿지가 응원합니다!
+                        {{ profile.name }}님, 오늘도 프리브릿지가 응원합니다.
                     </h2>
                 </div>
                 <button 
@@ -244,7 +254,7 @@ const hideChurnAlert = ref(false);
                         </div>
                         <div>
                             <h4 class="text-white font-bold text-sm">단가 인상 최적기입니다!</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 3개 프로젝트에서 훌륭한 고용주 평가를 받으셨습니다. 이번 기회에 희망 단가를 10~15% 상향 조정해 보는 것은 어떨까요?</p>
+                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 3개 프로젝트에서 좋은 고용주 평가를 받으셨습니다. 이번 기회에 희망 단가를 10~15% 상향 조정해보세요.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
@@ -260,8 +270,8 @@ const hideChurnAlert = ref(false);
                             <AlertTriangle class="w-6 h-6 text-orange-400" />
                         </div>
                         <div>
-                            <h4 class="text-white font-bold text-sm">재충전이 필요한 시점입니다.</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 프로젝트 스케줄이 상당히 타이트합니다. 업무 효율 및 컨디션 관리를 위해 잠시 '휴식 상태'로 전환하는 것을 권장합니다.</p>
+                            <h4 class="text-white font-bold text-sm">휴식이 필요한 시점입니다.</h4>
+                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 프로젝트 일정이 매우 타이트합니다. 컨디션 관리를 위해 잠시 '휴식 상태'로 전환하는 것을 권장합니다.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
@@ -278,7 +288,7 @@ const hideChurnAlert = ref(false);
                         </div>
                         <div>
                             <h4 class="text-white font-bold text-sm">포기하지 마세요! 딱 맞는 프로젝트가 기다리고 있습니다.</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 지원 결과가 아쉬우셨나요? 프리브릿지 AI가 {{ profile.name }}님의 전문성에 꼭 맞는 추천 프로젝트들을 큐레이션 했습니다.</p>
+                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 지원 결과가 아쉬우셨나요? 프리브릿지 AI가 {{ profile.name }}님의 전문성에 꼭 맞는 추천 프로젝트를 준비했습니다.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
@@ -348,19 +358,19 @@ const hideChurnAlert = ref(false);
                                 </div>
                             </div>
                              <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-500 font-medium w-24">희망 근무형태</span>
+                                <span class="text-slate-500 font-medium w-24">근무 형태</span>
                                 <div class="flex-1 flex justify-end">
                                     <span class="text-white font-bold">{{ profile.workConditions.workStyle }}</span>
                                 </div>
                             </div>
                              <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-500 font-medium w-24">희망 근무지</span>
+                                <span class="text-slate-500 font-medium w-24">근무 지역</span>
                                 <div class="flex-1 flex justify-end">
                                     <span class="text-white font-bold">{{ profile.workConditions.location }}</span>
                                 </div>
                             </div>
                              <div class="flex justify-between items-center text-sm">
-                                <span class="text-slate-500 font-medium w-24">희망 몸값</span>
+                                <span class="text-slate-500 font-medium w-24">희망 단가</span>
                                 <div class="flex-1 flex justify-end">
                                     <span class="text-white font-bold">{{ profile.salary.toLocaleString() }}원/시간</span>
                                 </div>
@@ -397,12 +407,12 @@ const hideChurnAlert = ref(false);
                         <div class="flex items-center justify-between">
                             <div class="flex-1 text-center">
                                 <div class="text-3xl font-bold text-white mb-1">{{ profile.statContact }}</div>
-                                <div class="text-xs text-slate-500">접촉 수</div>
+                                <div class="text-xs text-slate-500">연락</div>
                             </div>
                             <div class="w-px h-12 bg-white/10"></div>
                             <div class="flex-1 text-center">
                                 <div class="text-3xl font-bold text-blue-400 mb-1">{{ profile.statChat }}</div>
-                                <div class="text-xs text-slate-500">채팅 수</div>
+                                <div class="text-xs text-slate-500">채팅</div>
                             </div>
                             <div class="w-px h-12 bg-white/10"></div>
                             <div class="flex-1 text-center">
@@ -424,7 +434,7 @@ const hideChurnAlert = ref(false);
                                 <ChevronRight class="text-white/60 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </div>
                             <div class="text-5xl font-bold text-white">{{ profile.statInteresting }}</div>
-                            <div class="text-xs text-blue-100/80 mt-1">개</div>
+                            <div class="text-xs text-blue-100/80 mt-1">건</div>
                         </div>
                     </div>
 
@@ -444,7 +454,7 @@ const hideChurnAlert = ref(false);
                             </div>
                             <div class="flex items-baseline gap-2">
                                 <div class="text-5xl font-bold text-white">{{ profile.statCompleted }}</div>
-                                <div class="text-xs text-slate-500">개</div>
+                                <div class="text-xs text-slate-500">건</div>
                             </div>
                         </div>
                     </div>
@@ -503,7 +513,7 @@ const hideChurnAlert = ref(false);
 
                             <!-- Collaboration -->
                             <div class="space-y-1.5">
-                                <div class="text-[10px] text-slate-500 font-bold mt-1">협업 능력</div>
+                                <div class="text-[10px] text-slate-500 font-bold mt-1">협업 역량</div>
                                 <div class="flex items-center gap-2">
                                     <span class="text-slate-400 w-20">의사소통</span>
                                     <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden border border-slate-700">
@@ -533,7 +543,7 @@ const hideChurnAlert = ref(false);
                 <!-- Resume/Portfolio -->
                 <div class="bg-[#1e293b]/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm h-full flex flex-col">
                     <div class="flex justify-between items-center mb-6">
-                        <h4 class="font-bold text-base text-white">포트폴리오</h4>
+                        <h4 class="font-bold text-base text-white">고용주 평가</h4>
                         <input 
                             type="file" 
                             ref="fileInput" 
@@ -560,7 +570,7 @@ const hideChurnAlert = ref(false);
                         </div>
                         
                         <p class="text-xs text-slate-500">
-                            최근 업데이트된 포트폴리오를 다운로드하여 확인하세요.
+                            최신 업데이트된 포트폴리오를 다운로드해 확인하세요.
                         </p>
                     </div>
                 </div>
@@ -611,3 +621,11 @@ const hideChurnAlert = ref(false);
 
   </div>
 </template>
+
+
+
+
+
+
+
+
