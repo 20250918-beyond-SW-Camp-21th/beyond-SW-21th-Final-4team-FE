@@ -32,6 +32,7 @@ export interface EmployerJobPostingResponse {
 
 export interface FreelancerJobPostingResponse {
     jobPostingId: number;
+    employerId?: number | string | null;
     employerName: string;
     title: string;
     description: string;
@@ -40,6 +41,7 @@ export interface FreelancerJobPostingResponse {
     duration: number;
     headcount: number;
     matchedHeadcount: number;
+    status?: RecruitmentJobStatus | null;
     favorite: boolean;
 }
 

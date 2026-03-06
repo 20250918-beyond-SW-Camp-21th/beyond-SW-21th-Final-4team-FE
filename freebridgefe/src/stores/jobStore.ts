@@ -17,6 +17,7 @@ import {
 } from '@/api/jobApi';
 
 type JobPostingInput = Omit<JobPosting, 'id' | 'createdAt' | 'updatedAt'>;
+type UIJobPosting = JobPosting;
 
 type FetchJobPostingsOptions = {
     keyword?: string;
@@ -50,7 +51,7 @@ const toNumericJobPostingId = (jobId: string): number => {
 const mapEmployerJobPosting = (
     posting: EmployerJobPostingResponse,
     employerId: string
-): JobPosting => {
+): UIJobPosting => {
     const now = new Date();
 
     return {
@@ -71,19 +72,27 @@ const mapEmployerJobPosting = (
     };
 };
 
-const mapFreelancerJobPosting = (posting: FreelancerJobPostingResponse): JobPosting => {
+const mapFreelancerApiToUiJobPosting = (posting: FreelancerJobPostingResponse): UIJobPosting => {
     const now = new Date();
+    const employerId =
+        posting.employerId === null || posting.employerId === undefined
+            ? `employer-${posting.jobPostingId}`
+            : String(posting.employerId);
+
+    const jobStatus: JobStatus = posting.status
+        ? mapRecruitmentStatusToJobStatus(posting.status)
+        : 'OPEN';
 
     return {
         id: String(posting.jobPostingId),
-        employerId: `employer-${posting.jobPostingId}`,
+        employerId,
         employerName: posting.employerName,
         title: posting.title,
         description: posting.description,
         techStack: posting.techStack,
         budget: posting.budget,
         duration: posting.duration,
-        status: 'OPEN',
+        status: jobStatus,
         createdAt: now,
         updatedAt: now,
         headcount: posting.headcount,
@@ -149,7 +158,7 @@ export const useJobStore = defineStore('job', () => {
                 keyword: options.keyword?.trim() || undefined,
                 liked: options.favoriteOnly ?? false
             });
-            jobPostings.value = postings.map(mapFreelancerJobPosting);
+            jobPostings.value = postings.map(mapFreelancerApiToUiJobPosting);
         } catch (error) {
             errorMessage.value = getErrorMessage(error);
             throw error;
