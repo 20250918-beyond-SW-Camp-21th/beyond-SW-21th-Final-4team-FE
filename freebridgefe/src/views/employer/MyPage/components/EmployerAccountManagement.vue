@@ -16,7 +16,8 @@ import {
   getAccountInfo,
   updateAccountInfo,
   getEmployerSubscription,
-  updateEmployerSubscription
+  updateEmployerSubscription,
+  changeEmployerPassword
 } from '@/api/MyPage/accountApi';
 
 defineEmits<{
@@ -63,6 +64,7 @@ const verificationPassword = ref('');
 const verificationError = ref('');
 const isVerifying = ref(false);
 const isProfileVerified = ref(false);
+const isPasswordSaving = ref(false);
 
 const fetchAccountInfo = async () => {
   isLoading.value = true;
@@ -172,6 +174,56 @@ const handleSaveAccountInfo = async () => {
     alert('수정에 실패했습니다.');
   } finally {
     isSaving.value = false;
+  }
+};
+
+const passwordForm = ref({
+  current: '',
+  new: '',
+  confirm: ''
+});
+
+const passwordError = ref('');
+
+const validatePasswordForm = () => {
+  passwordError.value = '';
+  if (!passwordForm.value.current.trim()) {
+    passwordError.value = '현재 비밀번호를 입력해 주세요.';
+    return false;
+  }
+  if (!passwordForm.value.new.trim()) {
+    passwordError.value = '새 비밀번호를 입력해 주세요.';
+    return false;
+  }
+  if (passwordForm.value.new.length < 8) {
+    passwordError.value = '새 비밀번호는 8자 이상이어야 합니다.';
+    return false;
+  }
+  if (passwordForm.value.new !== passwordForm.value.confirm) {
+    passwordError.value = '새 비밀번호와 확인 비밀번호가 일치하지 않습니다.';
+    return false;
+  }
+  return true;
+};
+
+const handleChangePassword = async () => {
+  if (!isProfileVerified.value) {
+    alert('비밀번호 확인 후에만 변경할 수 있습니다.');
+    return;
+  }
+  if (!validatePasswordForm()) return;
+
+  try {
+    isPasswordSaving.value = true;
+    await changeEmployerPassword(passwordForm.value);
+    alert('비밀번호가 변경되었습니다.');
+    passwordForm.value = { current: '', new: '', confirm: '' };
+    passwordError.value = '';
+  } catch (error) {
+    console.error('Failed to change password:', error);
+    passwordError.value = '비밀번호 변경에 실패했습니다.';
+  } finally {
+    isPasswordSaving.value = false;
   }
 };
 
@@ -370,6 +422,58 @@ onMounted(() => {
           <Save class="w-4 h-4" />
           {{ isSaving ? '저장 중...' : '정보 저장' }}
         </button>
+
+        <div class="mt-10 pt-8 border-t border-white/10">
+          <h3 class="text-base font-bold mb-4">비밀번호 변경</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-white/50 mb-2 block">현재 비밀번호</label>
+              <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+                <Lock class="w-4 h-4 text-slate-400" />
+                <input
+                  type="password"
+                  v-model="passwordForm.current"
+                  class="bg-transparent border-none outline-none w-full text-white text-sm"
+                  placeholder="현재 비밀번호"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="text-xs text-white/50 mb-2 block">새 비밀번호</label>
+              <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+                <Lock class="w-4 h-4 text-slate-400" />
+                <input
+                  type="password"
+                  v-model="passwordForm.new"
+                  class="bg-transparent border-none outline-none w-full text-white text-sm"
+                  placeholder="8자 이상"
+                />
+              </div>
+            </div>
+            <div class="md:col-span-2">
+              <label class="text-xs text-white/50 mb-2 block">새 비밀번호 확인</label>
+              <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+                <Lock class="w-4 h-4 text-slate-400" />
+                <input
+                  type="password"
+                  v-model="passwordForm.confirm"
+                  class="bg-transparent border-none outline-none w-full text-white text-sm"
+                  placeholder="새 비밀번호 확인"
+                />
+              </div>
+            </div>
+          </div>
+
+          <p v-if="passwordError" class="text-sm text-red-400 mt-3">{{ passwordError }}</p>
+
+          <button
+            @click="handleChangePassword"
+            :disabled="isPasswordSaving"
+            class="mt-4 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {{ isPasswordSaving ? '변경 중...' : '비밀번호 변경' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>

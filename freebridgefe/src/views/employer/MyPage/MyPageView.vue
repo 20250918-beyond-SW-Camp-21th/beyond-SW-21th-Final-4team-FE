@@ -60,6 +60,16 @@ const PLAN_LABELS: Record<string, string> = {
   ENTERPRISE: '프라임 플랜',
 };
 
+const SCALE_LABELS: Record<string, string> = {
+  S1_4: '1-4명',
+  S5_9: '5-9명',
+  S10_29: '10-29명',
+  S30_99: '30-99명',
+  S100_299: '100-299명',
+  S300_999: '300-999명',
+  S1000_PLUS: '1000명 이상',
+};
+
 const employerProfile = ref<EmployerProfileData>({
   companyName: '',
   industry: '',
@@ -113,6 +123,11 @@ const fetchProfile = async () => {
 const subscriptionPlanText = computed(() => {
   const normalizedPlan = (employerProfile.value.plan ?? 'FREE').toUpperCase();
   return PLAN_LABELS[normalizedPlan] ?? normalizedPlan;
+});
+
+const companySizeLabel = computed(() => {
+  const size = employerProfile.value.size ?? '';
+  return SCALE_LABELS[size] ?? size;
 });
 
 const normalizedPlanKey = computed<'FREE' | 'PRO' | 'PRIME'>(() => {
@@ -379,7 +394,7 @@ const safeWebsiteUrl = computed(() => {
                                       <label class="text-xs text-slate-500 mb-1 block group-hover:text-blue-400 transition-colors">규모</label>
                                       <div class="flex items-center gap-2 text-sm">
                                           <Users class="w-4 h-4 text-slate-400" />
-                                          {{ employerProfile.size }}
+                                          {{ companySizeLabel }}
                                       </div>
                                   </div>
                                   <div class="group">

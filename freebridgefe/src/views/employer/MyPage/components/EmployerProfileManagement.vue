@@ -46,11 +46,14 @@ const profileData = ref<EmployerProfileData>({
 });
 
 const companySizeOptions = [
-  '1-10명',
-  '10-50명',
-  '50-100명',
-  '100-500명',
-  '500명 이상',
+  { value: '', label: '선택' },
+  { value: 'S1_4', label: '1-4명' },
+  { value: 'S5_9', label: '5-9명' },
+  { value: 'S10_29', label: '10-29명' },
+  { value: 'S30_99', label: '30-99명' },
+  { value: 'S100_299', label: '100-299명' },
+  { value: 'S300_999', label: '300-999명' },
+  { value: 'S1000_PLUS', label: '1000명 이상' },
 ];
 
 const fetchProfile = async () => {
@@ -176,11 +179,11 @@ const handleSave = async () => {
               v-model="profileData.size"
               class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors appearance-none"
             >
-              <option v-for="option in companySizeOptions" :key="option" :value="option">
-                {{ option }}
-              </option>
-            </select>
-          </div>
+            <option v-for="option in companySizeOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+        </div>
         </div>
 
         <!-- Location -->
