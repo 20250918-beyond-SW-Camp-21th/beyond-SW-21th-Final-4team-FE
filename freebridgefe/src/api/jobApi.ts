@@ -64,13 +64,32 @@ export interface JobPostingUpdateRequest {
     status?: RecruitmentJobStatus;
 }
 
+const stringifyForError = (value: unknown): string => {
+    try {
+        return JSON.stringify(value);
+    } catch {
+        return String(value);
+    }
+};
+
 const extractContent = <T>(payload: unknown): T[] => {
     if (Array.isArray(payload)) {
         return payload as T[];
     }
 
+    let apiSuccess: boolean | undefined;
+    let apiMessage: string | undefined;
+
     if (payload && typeof payload === 'object') {
-        const wrapped = payload as ApiResponse<unknown>;
+        const wrapped = payload as Partial<ApiResponse<unknown>>;
+
+        if (typeof wrapped.success === 'boolean') {
+            apiSuccess = wrapped.success;
+        }
+        if (typeof wrapped.message === 'string') {
+            apiMessage = wrapped.message;
+        }
+
         const data = wrapped.data;
 
         if (Array.isArray(data)) {
@@ -85,7 +104,15 @@ const extractContent = <T>(payload: unknown): T[] => {
         }
     }
 
-    return [];
+    const payloadJson = stringifyForError(payload);
+    const apiMeta =
+        apiSuccess !== undefined || apiMessage !== undefined
+            ? ` apiSuccess=${String(apiSuccess)} apiMessage=${apiMessage ?? ''}`
+            : '';
+
+    throw new Error(
+        `Invalid response shape in extractContent.${apiMeta} payload=${payloadJson}`
+    );
 };
 
 export const getEmployerJobPostings = async (params?: { page?: number; size?: number }): Promise<EmployerJobPostingResponse[]> => {
