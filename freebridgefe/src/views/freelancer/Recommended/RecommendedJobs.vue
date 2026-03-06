@@ -18,12 +18,15 @@ const authStore = useAuthStore();
 const selectedJob = ref<JobPosting | null>(null);
 const favoriteIds = ref<string[]>([]);
 const recommendedJobs = ref<(JobPosting & { matchScore?: number })[]>([]);
+const isLoading = ref(true);
+const fetchError = ref<string | null>(null);
 
 onMounted(async () => {
+  isLoading.value = true;
+  fetchError.value = null;
   try {
     const recommendations = await getJobRecommendationsForFreelancer();
     // Here we map the minimal API recommendation back to a recognizable JobPosting structure for the UI
-    // Assuming details are either fetched or minimal fields are sufficient for the card
     recommendedJobs.value = recommendations.map((rec) => ({
       id: rec.id.toString(),
       employerId: "hidden",
@@ -31,15 +34,18 @@ onMounted(async () => {
       title: rec.nameOrTitle,
       description: `이 공고는 회원님의 프로필 정보와 ${Math.round(rec.matchScore * 100)}% 일치합니다.`,
       techStack: rec.skills || [],
-      budget: 0, // Placeholder until detailed fetch or if BE includes it later
-      duration: 0, // Placeholder
+      budget: 0, // Not provided by AI recommendation, avoid displaying 0
+      duration: 0, // Not provided by AI recommendation, avoid displaying 0
       status: "OPEN",
       createdAt: new Date(),
       updatedAt: new Date(),
       matchScore: rec.matchScore,
     })) as (JobPosting & { matchScore?: number })[];
-  } catch (error) {
+  } catch (error: any) {
     console.error("Failed to load job recommendations:", error);
+    fetchError.value = error.message || "추천 정보를 불러오는데 실패했습니다.";
+  } finally {
+    isLoading.value = false;
   }
 });
 
@@ -81,8 +87,39 @@ const toggleFavorite = (id: string) => {
       </p>
     </div>
 
+    <!-- Loading State -->
     <div
-      v-if="recommendedJobs.length === 0"
+      v-if="isLoading"
+      class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 flex flex-col items-center justify-center text-center"
+    >
+      <div
+        class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-4 opacity-70"
+      ></div>
+      <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
+      <p class="text-white/50">
+        회원님에게 가장 적합한 프로젝트를 찾고 있습니다
+      </p>
+    </div>
+
+    <!-- Error State -->
+    <div
+      v-else-if="fetchError"
+      class="bg-red-500/5 backdrop-blur-xl rounded-3xl border border-red-500/10 p-16 text-center"
+    >
+      <div
+        class="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6"
+      >
+        <Sparkles class="w-10 h-10 text-red-400" />
+      </div>
+      <h3 class="text-2xl font-semibold mb-3 text-red-200">
+        추천을 불러오지 못했습니다
+      </h3>
+      <p class="text-red-300/60">{{ fetchError }}</p>
+    </div>
+
+    <!-- Empty State -->
+    <div
+      v-else-if="recommendedJobs.length === 0"
       class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 text-center"
       v-motion
       :initial="{ opacity: 0, scale: 0.95 }"
@@ -155,7 +192,7 @@ const toggleFavorite = (id: string) => {
 
             <!-- Stats -->
             <div class="flex flex-wrap gap-6 text-white/60">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2" v-if="job.budget > 0">
                 <div
                   class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center"
                 >
@@ -165,7 +202,7 @@ const toggleFavorite = (id: string) => {
                   >월급 {{ job.budget.toLocaleString() }}원</span
                 >
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2" v-if="job.duration > 0">
                 <div
                   class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center"
                 >

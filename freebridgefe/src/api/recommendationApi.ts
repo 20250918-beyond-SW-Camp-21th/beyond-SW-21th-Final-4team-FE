@@ -23,6 +23,12 @@ export const getFreelancerRecommendations = async (
   const response = await apiClient.get<
     ApiResponse<AiRecommendationResponseDTO[]>
   >(`/api/v1/employer/jobs/${jobPostingId}/recommendations`);
+
+  if (!response.data.success) {
+    throw new Error(
+      response.data.message || "추천 프리랜서 조회에 실패했습니다.",
+    );
+  }
   return response.data.data;
 };
 
@@ -35,5 +41,11 @@ export const getJobRecommendationsForFreelancer = async (): Promise<
   const response = await apiClient.get<
     ApiResponse<AiRecommendationResponseDTO[]>
   >("/api/v1/freelancer/jobs/recommendations");
+
+  if (!response.data.success) {
+    throw new Error(
+      response.data.message || "추천 프로젝트 조회에 실패했습니다.",
+    );
+  }
   return response.data.data;
 };

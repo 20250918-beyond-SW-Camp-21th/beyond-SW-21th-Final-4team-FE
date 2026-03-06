@@ -49,10 +49,13 @@ onMounted(async () => {
       getEvaluations(userId),
       getRejectionFeedbacks(userId),
     ]);
-    evaluations.value = evalData;
-    rejectionFeedbacks.value = rejectionData;
+    evaluations.value = evalData || [];
+    rejectionFeedbacks.value = rejectionData || [];
   } catch (e) {
     console.error("Failed to fetch data", e);
+    // Explicitly set to empty array on error to break out of loading loops securely
+    evaluations.value = [];
+    rejectionFeedbacks.value = [];
   } finally {
     isLoading.value = false;
   }
@@ -184,7 +187,14 @@ const handleAiAnalysis = () => {
 
     <!-- Content: Evaluation Summary (3-Column Layout) -->
     <div v-if="activeTab === 'evaluation'" class="space-y-8 animate-fade-in-up">
-      <template v-if="props.profile">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="flex justify-center py-20">
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"
+        ></div>
+      </div>
+
+      <div v-else-if="props.profile">
         <!-- Top: AI Insight Action / Banner -->
         <div class="min-h-[180px]">
           <div
@@ -511,16 +521,14 @@ const handleAiAnalysis = () => {
             </div>
           </div>
         </div>
-      </template>
+      </div>
 
       <div
         v-else
         class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border border-white/10 border-dashed text-slate-400 animate-fade-in"
       >
-        <div
-          class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4 opacity-70"
-        ></div>
-        <p>평가 데이터를 불러오는 중입니다...</p>
+        <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
+        <p>프로필 정보 또는 평가 데이터가 없습니다.</p>
       </div>
     </div>
 

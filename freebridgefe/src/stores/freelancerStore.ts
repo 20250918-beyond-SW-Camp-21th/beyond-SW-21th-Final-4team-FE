@@ -5,9 +5,14 @@ import type { User, Proposal } from "@/types";
 import { useChatStore } from "@/stores/chatStore";
 
 export const useFreelancerStore = defineStore("freelancer", () => {
-  const freelancers = ref<User[]>([]);
+  const freelancers = ref<(User & { matchScore?: number })[]>([]);
+  const recommendedFetchError = ref<string | null>(null);
+  const isFetchingRecommended = ref(false);
 
   async function fetchRecommendedFreelancers(jobId: number) {
+    isFetchingRecommended.value = true;
+    recommendedFetchError.value = null;
+
     try {
       const recommendations = await getFreelancerRecommendations(jobId);
       freelancers.value = recommendations.map((rec) => ({
@@ -19,11 +24,14 @@ export const useFreelancerStore = defineStore("freelancer", () => {
         experience: rec.experience,
         bio: `AI 추천 점수: ${(rec.matchScore * 100).toFixed(0)}% 일치하는 프리랜서입니다.`,
         matchScore: rec.matchScore,
-        monthlySalary: 0, // Fetch detailed profile separately, placeholder
-      })) as User[];
-    } catch (error) {
+      })) as (User & { matchScore?: number })[];
+    } catch (error: any) {
       console.error("Failed to fetch recommended freelancers:", error);
-      // Fallback or error handling
+      freelancers.value = [];
+      recommendedFetchError.value =
+        error.message || "프리랜서 추천 목록을 불러오는데 실패했습니다.";
+    } finally {
+      isFetchingRecommended.value = false;
     }
   }
 
@@ -119,6 +127,8 @@ export const useFreelancerStore = defineStore("freelancer", () => {
 
   return {
     freelancers,
+    recommendedFetchError,
+    isFetchingRecommended,
     fetchRecommendedFreelancers,
     proposals,
     addProposal,

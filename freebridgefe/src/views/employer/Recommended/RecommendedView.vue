@@ -72,9 +72,17 @@ onMounted(async () => {
   if (hasAccess.value) {
     const jobs = jobStore.myJobs;
     if (jobs && jobs.length > 0) {
-      const jobIdStr = String(jobs[0].id).replace(/\D/g, "");
-      const jobId = parseInt(jobIdStr) || 1;
-      await freelancerStore.fetchRecommendedFreelancers(jobId);
+      const firstJobId = jobs[0].id;
+      // 엄격한 숫자 검증 (문자가 섞여있으면 중단)
+      if (typeof firstJobId === "number" || /^\d+$/.test(String(firstJobId))) {
+        await freelancerStore.fetchRecommendedFreelancers(Number(firstJobId));
+      } else {
+        freelancerStore.recommendedFetchError =
+          "유효하지 않은 프로젝트 공고 ID입니다.";
+      }
+    } else {
+      freelancerStore.recommendedFetchError =
+        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
     }
   }
 });
@@ -128,6 +136,36 @@ const goToUpgrade = () => {
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Error State -->
+    <div
+      v-else-if="freelancerStore.recommendedFetchError"
+      class="bg-red-500/5 backdrop-blur-sm rounded-xl border border-red-500/10 p-12 text-center"
+    >
+      <div
+        class="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4"
+      >
+        <TrendingUp class="w-8 h-8 text-red-400" />
+      </div>
+      <h3 class="text-xl font-semibold mb-2 text-red-200">
+        추천을 불러오지 못했습니다
+      </h3>
+      <p class="text-red-300/60">{{ freelancerStore.recommendedFetchError }}</p>
+    </div>
+
+    <!-- Fetching State -->
+    <div
+      v-else-if="freelancerStore.isFetchingRecommended"
+      class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-12 flex flex-col items-center justify-center text-center"
+    >
+      <div
+        class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-4 opacity-70"
+      ></div>
+      <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
+      <p class="text-white/50">
+        등록하신 프로젝트에 딱 맞는 프리랜서를 찾고 있습니다
+      </p>
     </div>
 
     <div v-else-if="hasAccess" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -188,10 +226,14 @@ const goToUpgrade = () => {
           class="flex items-center justify-between pt-4 border-t border-white/10"
         >
           <div class="text-sm">
-            <span class="text-white/60">월급 </span>
-            <span class="font-medium text-white">
+            <span class="text-white/60">희망 급여 </span>
+            <span
+              class="font-medium text-white"
+              v-if="freelancer.monthlySalary"
+            >
               {{ freelancer.monthlySalary?.toLocaleString() }}원
             </span>
+            <span class="font-medium text-white/50" v-else> 협의 필요 </span>
           </div>
           <div class="flex items-center gap-2">
             <button
