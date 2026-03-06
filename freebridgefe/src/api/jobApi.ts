@@ -72,6 +72,28 @@ const stringifyForError = (value: unknown): string => {
     }
 };
 
+const assertSuccessfulApiResponse = (payload: unknown, context: string): void => {
+    const payloadJson = stringifyForError(payload);
+
+    if (!payload || typeof payload !== 'object') {
+        throw new Error(`Invalid response shape in ${context}. payload=${payloadJson}`);
+    }
+
+    const wrapped = payload as Partial<ApiResponse<unknown>>;
+    const apiSuccess = typeof wrapped.success === 'boolean' ? wrapped.success : undefined;
+    const apiMessage = typeof wrapped.message === 'string' ? wrapped.message : '';
+
+    if (apiSuccess === false) {
+        throw new Error(`API request failed in ${context}. apiMessage=${apiMessage} payload=${payloadJson}`);
+    }
+
+    if (apiSuccess !== true) {
+        throw new Error(
+            `Invalid response shape in ${context}. apiSuccess=${String(apiSuccess)} apiMessage=${apiMessage} payload=${payloadJson}`
+        );
+    }
+};
+
 const extractContent = <T>(payload: unknown): T[] => {
     if (Array.isArray(payload)) {
         return payload as T[];
@@ -88,6 +110,13 @@ const extractContent = <T>(payload: unknown): T[] => {
         }
         if (typeof wrapped.message === 'string') {
             apiMessage = wrapped.message;
+        }
+
+        if (apiSuccess === false) {
+            const payloadJson = stringifyForError(payload);
+            throw new Error(
+                `API request failed in extractContent. apiMessage=${apiMessage ?? ''} payload=${payloadJson}`
+            );
         }
 
         const data = wrapped.data;
@@ -137,25 +166,30 @@ export const searchFreelancerJobPostings = async (params?: {
 };
 
 export const createEmployerJobPosting = async (payload: JobPostingCreateRequest): Promise<void> => {
-    await apiClient.post<ApiResponse<void>>('/api/employer/jobs/post', payload);
+    const response = await apiClient.post<ApiResponse<void>>('/api/employer/jobs/post', payload);
+    assertSuccessfulApiResponse(response.data, 'createEmployerJobPosting');
 };
 
 export const updateEmployerJobPosting = async (jobPostingId: number, payload: JobPostingUpdateRequest): Promise<void> => {
-    await apiClient.put<ApiResponse<void>>('/api/employer/jobs/put', payload, {
+    const response = await apiClient.put<ApiResponse<void>>('/api/employer/jobs/put', payload, {
         params: { jobsNumber: jobPostingId }
     });
+    assertSuccessfulApiResponse(response.data, 'updateEmployerJobPosting');
 };
 
 export const deleteEmployerJobPosting = async (jobPostingId: number): Promise<void> => {
-    await apiClient.delete<ApiResponse<void>>('/api/employer/jobs/del', {
+    const response = await apiClient.delete<ApiResponse<void>>('/api/employer/jobs/del', {
         params: { jobsNumber: jobPostingId }
     });
+    assertSuccessfulApiResponse(response.data, 'deleteEmployerJobPosting');
 };
 
 export const addFavoriteJobPosting = async (jobPostingId: number): Promise<void> => {
-    await apiClient.post<ApiResponse<void>>(`/api/freelancer/jobs/${jobPostingId}/like`);
+    const response = await apiClient.post<ApiResponse<void>>(`/api/freelancer/jobs/${jobPostingId}/like`);
+    assertSuccessfulApiResponse(response.data, 'addFavoriteJobPosting');
 };
 
 export const removeFavoriteJobPosting = async (jobPostingId: number): Promise<void> => {
-    await apiClient.delete<ApiResponse<void>>(`/api/freelancer/jobs/${jobPostingId}/like`);
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/freelancer/jobs/${jobPostingId}/like`);
+    assertSuccessfulApiResponse(response.data, 'removeFavoriteJobPosting');
 };
