@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import type { FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi.ts';
-import { updateFreelancerProfile } from '@/api/MyPage/freelancerApi.ts';
+import { updateFreelancerProfile, uploadFreelancerAvatar } from '@/api/MyPage/freelancerApi.ts';
 import { ArrowLeft, Save, Upload, Plus, X } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -41,8 +41,8 @@ const removeSkill = (skillToRemove: string) => {
     formData.value.skills = formData.value.skills?.filter(skill => skill !== skillToRemove);
 };
 
-// Handle Avatar Upload (Mock)
-const handleAvatarUpload = (event: Event) => {
+// Handle Avatar Upload
+const handleAvatarUpload = async (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
         if (formData.value.avatar?.startsWith('blob:')) {
@@ -54,6 +54,13 @@ const handleAvatarUpload = (event: Event) => {
         }
         const objectUrl = URL.createObjectURL(file);
         formData.value.avatar = objectUrl;
+        try {
+          const uploadedUrl = await uploadFreelancerAvatar(file);
+          formData.value.avatar = uploadedUrl;
+        } catch (error) {
+          console.error('Failed to upload avatar:', error);
+          alert('프로필 이미지 업로드에 실패했습니다.');
+        }
     }
 };
 

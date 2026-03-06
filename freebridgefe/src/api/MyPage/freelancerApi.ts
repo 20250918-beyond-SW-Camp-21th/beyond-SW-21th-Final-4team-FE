@@ -1,7 +1,29 @@
-import {
-  getMockFreelancerProfile,
-  updateMockFreelancerProfile,
-} from "@/api/MyPage/mock/mockProfiles";
+import apiClient from "@/api/axiosInstance";
+
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
+}
+
+interface FreelancerProfileResponseDto {
+  basicProfile: {
+    avatarUrl: string | null;
+    name: string | null;
+    job: string | null;
+    introduction: string | null;
+    grade: string | null;
+    careerYears: number | null;
+    wage: number | null;
+    skills: string[] | null;
+    status: string | null;
+  };
+  stats: {
+    statContact: number | null;
+    statChat: number | null;
+    statContract: number | null;
+  };
+}
 
 export interface FreelancerProfileDashboard {
   name: string;
@@ -54,29 +76,81 @@ export interface FreelancerProfileDashboard {
 }
 
 export const getFreelancerProfile = async (
-  userId: string,
+  _userId: string,
 ): Promise<FreelancerProfileDashboard> => {
-  console.log(`Getting profile for ${userId}`);
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // TODO: replace with real API
-      // return axios.get(`/api/freelancers/${userId}/profile`).then(res => res.data);
-      resolve(getMockFreelancerProfile() as FreelancerProfileDashboard);
-    }, 500);
-  });
+  const response = await apiClient.get<ApiResponse<FreelancerProfileResponseDto>>(
+    "/api/freelancer/mypage/profile",
+  );
+  const dto = response.data.data;
+  const basic = dto?.basicProfile ?? {};
+  const stats = dto?.stats ?? {};
+
+  return {
+    name: basic.name ?? "",
+    grade: basic.grade ?? "",
+    avatar: basic.avatarUrl ?? null,
+    job: basic.job ?? "",
+    introduction: basic.introduction ?? "",
+    careerYears: basic.careerYears ?? 0,
+    salary: basic.wage ?? 0,
+    workConditions: {
+      type: "",
+      startDate: "",
+      workStyle: "",
+      location: "",
+    },
+    skills: basic.skills ?? [],
+    expertise: {
+      programming: 0,
+      framework: 0,
+      problemSolving: 0,
+    },
+    collaboration: {
+      communication: 0,
+      scheduleAdherence: 0,
+      dispute: 0,
+    },
+    averageRating: 0,
+    statContact: stats.statContact ?? 0,
+    statChat: stats.statChat ?? 0,
+    statContract: stats.statContract ?? 0,
+    statInteresting: 0,
+    statCompleted: 0,
+    portfolio: {
+      fileUrl: null,
+      fileName: "",
+      lastUpdated: "",
+    },
+  };
 };
 
 export const updateFreelancerProfile = async (
-  userId: string,
+  _userId: string,
   updatedProfile: Partial<FreelancerProfileDashboard>,
 ): Promise<FreelancerProfileDashboard> => {
-  console.log(`Updating profile for ${userId}`);
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // TODO: replace with real API
-      // return axios.patch(`/api/freelancers/${userId}/profile`, updatedProfile).then(res => res.data);
-      const updated = updateMockFreelancerProfile(updatedProfile);
-      resolve(updated as FreelancerProfileDashboard);
-    }, 800);
+  await apiClient.put<ApiResponse<null>>("/api/freelancer/mypage/profile", {
+    job: updatedProfile.job ?? "",
+    introduction: updatedProfile.introduction ?? "",
+    careerYears: updatedProfile.careerYears ?? 0,
+    wage: updatedProfile.salary ?? 0,
+    skills: updatedProfile.skills ?? [],
   });
+
+  const refreshed = await getFreelancerProfile("me");
+  return {
+    ...refreshed,
+    avatar: updatedProfile.avatar ?? refreshed.avatar,
+    workConditions: updatedProfile.workConditions ?? refreshed.workConditions,
+    portfolio: updatedProfile.portfolio ?? refreshed.portfolio,
+  };
+};
+
+export const uploadFreelancerAvatar = async (file: File): Promise<string> => {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await apiClient.post<ApiResponse<string>>(
+    "/api/freelancer/mypage/profile/avatar",
+    form,
+  );
+  return response.data.data;
 };
