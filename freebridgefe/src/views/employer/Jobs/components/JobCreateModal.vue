@@ -16,8 +16,8 @@ const formData = reactive({
   title: '',
   description: '',
   techStack: [] as string[],
-  budget: '',
-  duration: '',
+  budget: null as number | null,
+  duration: null as number | null,
 });
 
 const techInput = ref('');
@@ -38,6 +38,17 @@ const handleSubmit = async (e: Event) => {
 
   if (!authStore.user) return;
 
+  const budget = Number(formData.budget);
+  const duration = Number(formData.duration);
+
+  const isValidBudget = Number.isFinite(budget) && budget > 0;
+  const isValidDuration = Number.isFinite(duration) && duration > 0;
+
+  if (!isValidBudget || !isValidDuration) {
+    window.alert('월급과 기간은 0보다 큰 숫자로 입력해주세요.');
+    return;
+  }
+
   const confirmed = window.confirm('정말로 등록하시겠습니까?');
   if (!confirmed) return;
 
@@ -48,8 +59,8 @@ const handleSubmit = async (e: Event) => {
       title: formData.title,
       description: formData.description,
       techStack: formData.techStack,
-      budget: parseInt(formData.budget, 10),
-      duration: parseInt(formData.duration, 10),
+      budget,
+      duration,
       status: 'OPEN',
     });
 
@@ -63,7 +74,17 @@ const handleSubmit = async (e: Event) => {
 
 
 const isValid = computed(() => {
-    return formData.title && formData.description && formData.techStack.length > 0 && formData.budget && formData.duration;
+    const budget = Number(formData.budget);
+    const duration = Number(formData.duration);
+    return (
+      formData.title &&
+      formData.description &&
+      formData.techStack.length > 0 &&
+      Number.isFinite(budget) &&
+      budget > 0 &&
+      Number.isFinite(duration) &&
+      duration > 0
+    );
 });
 
 const onTechInputKeydown = (e: KeyboardEvent) => {
@@ -167,7 +188,7 @@ const onTechInputKeydown = (e: KeyboardEvent) => {
           </label>
           <input
             type="number"
-            v-model="formData.budget"
+            v-model.number="formData.budget"
             placeholder="4500000"
             min="0"
             step="100000"
@@ -183,7 +204,7 @@ const onTechInputKeydown = (e: KeyboardEvent) => {
           </label>
           <input
             type="number"
-            v-model="formData.duration"
+            v-model.number="formData.duration"
             placeholder="3"
             min="1"
             class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-blue-500 text-white placeholder:text-white/30"
