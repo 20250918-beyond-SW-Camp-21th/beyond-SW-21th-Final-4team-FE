@@ -2,11 +2,13 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import { Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const chatStore = useChatStore();
 
 const email = ref('');
 const password = ref('');
@@ -26,6 +28,10 @@ const handleLogin = async (e: Event) => {
       email: email.value,
       password: password.value
     });
+
+    // 채팅 WebSocket 연결 및 채팅방 목록 로드
+    chatStore.connectWebSocket();
+    chatStore.fetchRooms();
     
     // Success - redirect based on role
     if (data.user.role === 'EMPLOYER') {
