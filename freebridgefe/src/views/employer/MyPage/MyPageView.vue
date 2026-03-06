@@ -146,6 +146,25 @@ const companySizeLabel = computed(() => {
   return SCALE_LABELS[size] ?? size;
 });
 
+const topCrmBanner = computed(() => {
+  const alerts = employerProfile.value.crmAlerts;
+  if (alerts?.upsellTarget === 'PRO' || alerts?.isPremiumUpsellEligible) {
+    return {
+      label: 'PRO 업그레이드',
+      title: '추천 기능과 더 넓은 조회 범위를 경험하세요',
+      description: 'PRO 플랜으로 업그레이드하고 더 빠른 매칭과 수수료 할인 혜택을 받아보세요.'
+    };
+  }
+  if (alerts?.upsellTarget === 'PRIME' || alerts?.isPrimeUpsellEligible) {
+    return {
+      label: 'PRIME 업그레이드',
+      title: '전담 AI 컨설팅과 추가 혜택을 받아보세요',
+      description: 'PRIME 플랜으로 업그레이드하고 전담 AI 컨설팅과 대폭 수수료 할인을 누리세요.'
+    };
+  }
+  return null;
+});
+
 const normalizedPlanKey = computed<'FREE' | 'PRO' | 'PRIME'>(() => {
   const normalizedPlan = (employerProfile.value.plan ?? 'FREE').toUpperCase();
   if (normalizedPlan === 'PARTNER') return 'PRO';
@@ -285,7 +304,7 @@ const safeWebsiteUrl = computed(() => {
             <div v-else-if="activeTab === 'dashboard'" class="space-y-8">
               <!-- CRM Upsell Banner (Option A) -->
               <div 
-                  v-if="normalizedPlanKey === 'FREE' && employerProfile.crmAlerts?.isPremiumUpsellEligible && !hideUpsellAlert" 
+                  v-if="topCrmBanner && !hideUpsellAlert" 
                   class="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-2xl p-6 relative overflow-hidden"
                   v-motion :initial="{ opacity: 0, y: -20 }" :enter="{ opacity: 1, y: 0 }"
               >
@@ -306,14 +325,13 @@ const safeWebsiteUrl = computed(() => {
                           </div>
                           <div>
                               <div class="flex items-center gap-2 mb-1">
-                                  <h3 class="text-lg font-bold text-white">시니어 프리랜서 매칭율 300% 증가</h3>
+                                  <h3 class="text-lg font-bold text-white">{{ topCrmBanner.title }}</h3>
                                   <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500 text-white uppercase tracking-wider">
-                                      Potential
+                                      {{ topCrmBanner.label }}
                                   </span>
                               </div>
                               <p class="text-sm text-indigo-100/80 leading-relaxed">
-                                  최근 진행하신 프로젝트의 열기가 뜨겁습니다!<br class="hidden md:block"/>
-                                  <span class="text-white font-medium">Employer 프라임 요금제</span>로 업그레이드 하시고 전담 매니저의 VVIP 매칭 서비스를 받아보세요.
+                                  {{ topCrmBanner.description }}
                               </p>
                           </div>
                       </div>

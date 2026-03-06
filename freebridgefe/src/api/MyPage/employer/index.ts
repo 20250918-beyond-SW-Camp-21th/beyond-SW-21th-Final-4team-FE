@@ -29,6 +29,8 @@ export interface EmployerProfileData {
     };
     crmAlerts?: {
         isPremiumUpsellEligible: boolean;
+        isPrimeUpsellEligible?: boolean;
+        upsellTarget?: 'PRO' | 'PRIME';
     };
 }
 
