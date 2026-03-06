@@ -1,19 +1,26 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { Plus, Edit, Trash2, Users, DollarSign, Clock, AlertCircle, Sparkles } from 'lucide-vue-next';
-import { useAuthStore } from '@/stores/authStore';
 import { useJobStore } from '@/stores/jobStore';
 import type { JobPosting, JobStatus } from '@/types';
 import JobCreateModal from './components/JobCreateModal.vue';
 import JobEditModal from './components/JobEditModal.vue';
 
-const authStore = useAuthStore();
 const jobStore = useJobStore();
 
 const showCreateModal = ref(false);
 const editingJob = ref<JobPosting | null>(null);
 
 const myJobs = computed(() => jobStore.myJobs);
+
+onMounted(async () => {
+  try {
+    await jobStore.fetchJobPostings();
+  } catch (error) {
+    console.error('Failed to load employer job postings:', error);
+    window.alert('내 공고 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+});
 
 const statusConfig: Record<JobStatus, { label: string; gradient: string }> = {
   OPEN: { label: '모집중', gradient: 'from-green-500 to-emerald-500' },
@@ -22,7 +29,7 @@ const statusConfig: Record<JobStatus, { label: string; gradient: string }> = {
   CLOSED: { label: '마감', gradient: 'from-gray-500 to-gray-600' },
 };
 
-const handleDelete = (job: JobPosting) => {
+const handleDelete = async (job: JobPosting) => {
     if (job.status === 'CONTRACTED') {
       if (!confirm('계약 완료된 공고는 삭제 시 문제가 발생할 수 있습니다. 정말 삭제하시겠습니까?')) {
         return;
@@ -32,7 +39,14 @@ const handleDelete = (job: JobPosting) => {
         return;
       }
     }
-    jobStore.deleteJobPosting(job.id);
+
+    try {
+      await jobStore.deleteJobPosting(job.id);
+      window.alert('삭제되었습니다.');
+    } catch (error) {
+      console.error('Failed to delete job posting:', error);
+      window.alert('공고 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    }
 };
 
 const getApplications = (jobId: string) => {

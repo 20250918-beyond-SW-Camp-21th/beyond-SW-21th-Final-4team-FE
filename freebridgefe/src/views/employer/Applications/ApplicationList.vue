@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import {
   Check,
   X,
@@ -26,6 +26,15 @@ const router = useRouter();
 const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
 const rejectingApp = ref<Application | null>(null);
+
+onMounted(async () => {
+  try {
+    await jobStore.fetchJobPostings();
+  } catch (error) {
+    console.error('Failed to load employer jobs for applications view:', error);
+    window.alert('공고 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+});
 
 const currentUser = computed(() => authStore.user);
 

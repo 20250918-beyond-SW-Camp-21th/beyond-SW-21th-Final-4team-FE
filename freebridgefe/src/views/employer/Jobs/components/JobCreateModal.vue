@@ -33,7 +33,7 @@ const handleAddTech = () => {
 const handleRemoveTech = (tech: string) => {
   formData.techStack = formData.techStack.filter((t) => t !== tech);
 };
-const handleSubmit = (e: Event) => {
+const handleSubmit = async (e: Event) => {
   e.preventDefault();
 
   if (!authStore.user) return;
@@ -41,19 +41,24 @@ const handleSubmit = (e: Event) => {
   const confirmed = window.confirm('정말로 등록하시겠습니까?');
   if (!confirmed) return;
 
-  jobStore.addJobPosting({
-    employerId: authStore.user.id,
-    employerName: authStore.user.companyName || authStore.user.name,
-    title: formData.title,
-    description: formData.description,
-    techStack: formData.techStack,
-    budget: parseInt(formData.budget),
-    duration: parseInt(formData.duration),
-    status: 'OPEN',
-  });
+  try {
+    await jobStore.addJobPosting({
+      employerId: String(authStore.user.id),
+      employerName: authStore.user.companyName || authStore.user.name,
+      title: formData.title,
+      description: formData.description,
+      techStack: formData.techStack,
+      budget: parseInt(formData.budget, 10),
+      duration: parseInt(formData.duration, 10),
+      status: 'OPEN',
+    });
 
-  window.alert('등록되었습니다!');
-  props.onSuccess();
+    window.alert('등록되었습니다!');
+    props.onSuccess();
+  } catch (error) {
+    console.error('Failed to create job posting:', error);
+    window.alert('공고 등록에 실패했습니다. 잠시 후 다시 시도해주세요.');
+  }
 };
 
 

@@ -58,6 +58,9 @@ export interface JobPosting {
     status: JobStatus;
     createdAt: Date;
     updatedAt: Date;
+    headcount?: number;
+    matchedHeadcount?: number;
+    favorite?: boolean;
 }
 
 export interface Application {

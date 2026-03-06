@@ -46,22 +46,27 @@ const setStatus = (status: JobStatus) => {
     formData.status = status;
 }
 
-const handleSubmit = (e: Event) => {
+const handleSubmit = async (e: Event) => {
   e.preventDefault();
 
   const confirmed = window.confirm('정말로 수정하시겠습니까?'); if (!confirmed) return;
 
-  jobStore.updateJobPosting(props.job.id, {
-    title: formData.title,
-    description: formData.description,
-    techStack: formData.techStack,
-    budget: parseInt(formData.budget),
-    duration: parseInt(formData.duration),
-    status: formData.status,
-  });
+  try {
+    await jobStore.updateJobPosting(props.job.id, {
+      title: formData.title,
+      description: formData.description,
+      techStack: formData.techStack,
+      budget: parseInt(formData.budget, 10),
+      duration: parseInt(formData.duration, 10),
+      status: formData.status,
+    });
 
-  window.alert('등록되었습니다!');
-  props.onSuccess();
+    window.alert('수정되었습니다!');
+    props.onSuccess();
+  } catch (error) {
+    console.error('Failed to update job posting:', error);
+    window.alert('공고 수정에 실패했습니다. 잠시 후 다시 시도해주세요.');
+  }
 };
 
 const isValid = computed(() => {
