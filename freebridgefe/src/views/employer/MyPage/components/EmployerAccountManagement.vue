@@ -216,6 +216,7 @@ const handleChangePassword = async () => {
   try {
     isPasswordSaving.value = true;
     await changeEmployerPassword(passwordForm.value);
+    resetProfileVerification();
     alert('비밀번호가 변경되었습니다.');
     passwordForm.value = { current: '', new: '', confirm: '' };
     passwordError.value = '';

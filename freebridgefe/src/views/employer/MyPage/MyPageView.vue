@@ -28,6 +28,7 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
+import { PLAN_LABELS } from '@/constants/planLabels';
 import { getEmployerReviewSummary, getEmployerReputationAi, type EmployerReputationAi } from '@/api/MyPage/evaluationApi';
 
 import EmployerProfileManagement from './components/EmployerProfileManagement.vue';
@@ -52,14 +53,6 @@ const updateTabFromQuery = () => {
 watch(() => route.query.tab, () => {
     updateTabFromQuery();
 });
-
-const PLAN_LABELS: Record<string, string> = {
-  FREE: '무료 플랜',
-  PRO: '프로 플랜',
-  PRIME: '프라임 플랜',
-  PARTNER: '프로 플랜',
-  ENTERPRISE: '프라임 플랜',
-};
 
 const SCALE_LABELS: Record<string, string> = {
   S1_4: '1-4명',

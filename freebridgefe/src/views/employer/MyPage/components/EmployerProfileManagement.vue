@@ -16,6 +16,7 @@ import {
 } from 'lucide-vue-next';
 
 import { getEmployerProfile, updateEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
+import { PLAN_LABELS } from '@/constants/planLabels';
 
 defineEmits<{
   (e: 'back'): void;
@@ -24,14 +25,6 @@ defineEmits<{
 const isLoading = ref(false);
 const isSaving = ref(false);
 const isEditing = ref(true);
-
-const PLAN_LABELS: Record<string, string> = {
-  FREE: '무료 플랜',
-  PRO: '프로 플랜',
-  PRIME: '프라임 플랜',
-  PARTNER: '파트너 플랜',
-  ENTERPRISE: '엔터프라이즈 플랜',
-};
 
 const profileData = ref<EmployerProfileData>({
   companyName: '',

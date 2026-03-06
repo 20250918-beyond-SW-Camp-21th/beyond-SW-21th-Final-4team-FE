@@ -53,6 +53,8 @@ interface EmployerProfileDto {
 
 interface CrmAlertsResponseDto {
     isPremiumUpsellEligible: boolean;
+    isPrimeUpsellEligible?: boolean;
+    upsellTarget?: 'PRO' | 'PRIME';
 }
 
 const mapProfileDto = (dto: EmployerProfileDto): EmployerProfileData => ({
@@ -158,7 +160,7 @@ export const rejectApplication = async (applicationId: string, reason: string): 
 export const getEmployerProfile = async (_employerId?: string | number): Promise<EmployerProfileData> => {
     const [profileRes, crmRes, accountInfo] = await Promise.all([
         apiClient.get<ApiResponse<EmployerProfileDto>>('/api/employer/mypage/profile'),
-        apiClient.get<ApiResponse<CrmAlertsResponseDto>>('/api/employer/mypage/profile/crm-alerts'),
+        apiClient.get<ApiResponse<CrmAlertsResponseDto>>('/api/employer/mypage/profile/crm-alerts').catch(() => null),
         getAccountInfo().catch(() => null)
     ]);
     const mapped = mapProfileDto(profileRes.data.data);
@@ -166,7 +168,7 @@ export const getEmployerProfile = async (_employerId?: string | number): Promise
         ...mapped,
         email: accountInfo?.email ?? mapped.email,
         phone: accountInfo?.phone ?? mapped.phone,
-        crmAlerts: crmRes.data?.data ?? undefined
+        crmAlerts: crmRes?.data?.data ?? undefined
     };
 };
 
@@ -187,8 +189,7 @@ export const uploadEmployerLogo = async (file: File): Promise<string> => {
     form.append('file', file);
     const response = await apiClient.post<ApiResponse<string>>(
         '/api/employer/mypage/profile/logo',
-        form,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        form
     );
     return response.data.data;
 };

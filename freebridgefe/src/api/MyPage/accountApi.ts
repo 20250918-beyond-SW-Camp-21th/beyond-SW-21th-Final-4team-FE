@@ -51,6 +51,9 @@ export const updateAccountInfo = async (_data: Partial<AccountInfo>): Promise<bo
 };
 
 export const changeEmployerPassword = async (data: PasswordChange): Promise<boolean> => {
+    if (data.new !== data.confirm) {
+        throw new Error('Password confirmation does not match');
+    }
     await apiClient.put<ApiResponse<null>>('/api/employer/mypage/account/password', {
         currentPassword: data.current,
         newPassword: data.new
@@ -59,6 +62,9 @@ export const changeEmployerPassword = async (data: PasswordChange): Promise<bool
 };
 
 export const changeFreelancerPassword = async (data: PasswordChange): Promise<boolean> => {
+    if (data.new !== data.confirm) {
+        throw new Error('Password confirmation does not match');
+    }
     await apiClient.put<ApiResponse<null>>('/api/freelancer/mypage/account/password', {
         currentPassword: data.current,
         newPassword: data.new
@@ -110,9 +116,4 @@ export const updateFreelancerNotificationSettings = async (
         contractNotificationEnabled
     });
     return true;
-};
-
-export const deleteAccount = async (): Promise<boolean> => {
-    // TODO: User API에 계정 삭제 엔드포인트 추가 필요
-    throw new Error('deleteAccount not implemented: backend endpoint missing');
 };
