@@ -46,8 +46,8 @@ export const getAccountInfo = async (): Promise<AccountInfo> => {
 };
 
 export const updateAccountInfo = async (_data: Partial<AccountInfo>): Promise<boolean> => {
-    // User API에 계정 수정 엔드포인트가 없어 임시로 true 반환
-    return true;
+    // TODO: User API에 계정 수정 엔드포인트 추가 필요
+    throw new Error('updateAccountInfo not implemented: backend endpoint missing');
 };
 
 export const changeEmployerPassword = async (data: PasswordChange): Promise<boolean> => {
@@ -113,6 +113,6 @@ export const updateFreelancerNotificationSettings = async (
 };
 
 export const deleteAccount = async (): Promise<boolean> => {
-    // User API에 계정 삭제 엔드포인트가 없어 임시로 true 반환
-    return true;
+    // TODO: User API에 계정 삭제 엔드포인트 추가 필요
+    throw new Error('deleteAccount not implemented: backend endpoint missing');
 };
