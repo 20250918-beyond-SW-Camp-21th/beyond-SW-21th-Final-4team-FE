@@ -28,6 +28,7 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
+import { getEmployerReviewSummary, getEmployerReputationAi, type EmployerReputationAi } from '@/api/MyPage/evaluationApi';
 
 import EmployerProfileManagement from './components/EmployerProfileManagement.vue';
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
@@ -97,6 +98,8 @@ const employerProfile = ref<EmployerProfileData>({
   }
 });
 
+const employerReputationAi = ref<EmployerReputationAi | null>(null);
+
 const handleLogoUpdate = (event: Event) => {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
@@ -113,8 +116,21 @@ const handleLogoUpdate = (event: Event) => {
 
 const fetchProfile = async () => {
   try {
-    const data = await getEmployerProfile();
-    employerProfile.value = data;
+    const [profile, reviewSummary, aiReputation] = await Promise.all([
+      getEmployerProfile(),
+      getEmployerReviewSummary().catch(() => null),
+      getEmployerReputationAi().catch(() => null)
+    ]);
+    employerProfile.value = {
+      ...profile,
+      avgRating: reviewSummary?.averageRate ?? profile.avgRating,
+      ratingDetails: {
+        atmosphere: reviewSummary?.atmosphereRate ?? profile.ratingDetails?.atmosphere ?? 0,
+        requirementsDetail: reviewSummary?.requirementsDetailRate ?? profile.ratingDetails?.requirementsDetail ?? 0,
+        scheduleAdherence: reviewSummary?.scheduleAdherenceRate ?? profile.ratingDetails?.scheduleAdherence ?? 0
+      }
+    };
+    employerReputationAi.value = aiReputation ?? null;
   } catch (error) {
     console.error('Failed to fetch employer profile:', error);
   }
