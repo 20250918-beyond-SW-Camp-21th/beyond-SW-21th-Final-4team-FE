@@ -12,11 +12,12 @@ pipeline {
         // [Manifest Repo] - New Repository (Separate Credential)
         CRED_ID_MANIFEST = 'github-manifest-key' 
         MANIFEST_REPO_URL = 'git@github.com:20250918-beyond-SW-Camp-21th/beyond-SW-21th-Final-4team-Manifest-file.git'
-        
+        MANIFEST_BRANCH = 'main'
+
         // Docker
         IMAGE_NAME = 'o2ppo/freebrfront001'
         DOCKER_CRED_ID = 'dockerhub-credentials'
-        
+
         // Git Config
         GIT_EMAIL = 'lmjayoul@gmail.com'
     }
@@ -35,10 +36,10 @@ pipeline {
                 script {
                     env.GIT_COMMIT_HASH = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
                     env.IMAGE_TAG = "${currentBuild.number}-${env.GIT_COMMIT_HASH}"
-                    
+
                     def rawBranch = env.BRANCH_NAME ?: (env.GIT_BRANCH ?: 'main')
                     env.TARGET_BRANCH = rawBranch.replace('origin/', '')
-                    
+
                     echo " Build Tag: ${env.IMAGE_TAG}"
                     echo " Target Branch: ${env.TARGET_BRANCH}"
                 }
@@ -49,11 +50,24 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${env.DOCKER_CRED_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh "docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} ."
-                        sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
-                        sh "docker push ${env.IMAGE_NAME}:${env.IMAGE_TAG}"
-                        sh "docker tag ${env.IMAGE_NAME}:${env.IMAGE_TAG} ${env.IMAGE_NAME}:latest"
-                        sh "docker push ${env.IMAGE_NAME}:latest"
+                        sh '''
+                            set -e
+
+                            # (선택) 원인 확인용 로그
+                            which docker || true
+                            docker version
+                            docker buildx version || true
+
+                            # 핵심: BuildKit 끄기 (legacy builder로 빌드)
+                            export DOCKER_BUILDKIT=0
+                            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+
+                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                            docker push ${IMAGE_NAME}:${IMAGE_TAG}
+
+                            docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+                            docker push ${IMAGE_NAME}:latest
+                        '''
                     }
                 }
             }
@@ -93,15 +107,15 @@ pipeline {
                             # Verify change
                             cat kube-folder/frontend-deployment.yml | grep "image:"
                                 
-                                # 5. Commit & Push
-                                git add .
-                                if ! git diff --cached --quiet; then
-                                    git commit -m "[Jenkins] Update image to ${env.IMAGE_TAG}"
-                                    git push origin main
-                                    echo "Manifest Repo Updated!"
-                                else
-                                    echo "No changes to push."
-                                fi
+                            # 5. Commit & Push
+                            git add .
+                            if ! git diff --cached --quiet; then
+                                git commit -m "[Jenkins] Update image to ${env.IMAGE_TAG}"
+                                git push origin ${env.MANIFEST_BRANCH}
+                                echo "Manifest Repo Updated!"
+                            else
+                                echo "No changes to push."
+                            fi
                         """
                     }
                 }
@@ -154,10 +168,13 @@ pipeline {
             }
         }
     }
-    
+
     post {
         always {
             sh 'docker logout || true'
+            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG} || true"
+            sh "docker rmi ${IMAGE_NAME}:latest || true"
+            sh 'docker image prune -f || true'
             cleanWs()
         }
         success {

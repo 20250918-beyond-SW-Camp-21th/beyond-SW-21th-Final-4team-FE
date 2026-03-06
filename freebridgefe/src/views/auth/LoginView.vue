@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { Mail, Lock, ArrowLeft, Eye, EyeOff } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
-import type { User } from '@/types';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -18,36 +17,25 @@ const togglePassword = () => {
   showPassword.value = !showPassword.value;
 };
 
-const handleLogin = (e: Event) => {
+const handleLogin = async (e: Event) => {
   e.preventDefault();
   error.value = '';
 
-  // Mock Login Logic
-  if (email.value === 'employer@test.com' && password.value === 'test1234') {
-    const user: User = {
-      id: 1,
-      name: '스타트업 A',
-      companyName: '스타트업 A',
-      companyAddress: '서울특별시 강남구 테헤란로 123',
-      representativeName: '홍길동',
-      email: 'employer@test.com',
-      password: password.value,
-      role: 'EMPLOYER',
-    };
-    authStore.login(user);
-    router.push('/employer/dashboard'); // TODO: Create this route later
-  } else if (email.value === 'freelancer@test.com' && password.value === 'test1234') {
-    const user: User = {
-      id: 1,
-      name: '김프론트',
-      email: 'freelancer@test.com',
-      password: password.value,
-      role: 'FREELANCER',
-    };
-    authStore.login(user);
-    router.push('/freelancer/jobs'); // TODO: Create this route later
-  } else {
-    error.value = '이메일 또는 비밀번호가 올바르지 않습니다.';
+  try {
+    const data = await authStore.login({
+      email: email.value,
+      password: password.value
+    });
+    
+    // Success - redirect based on role
+    if (data.user.role === 'EMPLOYER') {
+      router.push('/employer/dashboard');
+    } else {
+      router.push('/freelancer/jobs');
+    }
+  } catch (err: any) {
+    console.error('Login error:', err);
+    error.value = err.response?.data?.message || '이메일 또는 비밀번호가 올바르지 않습니다.';
   }
 };
 
@@ -189,10 +177,6 @@ const handlePasswordChange = async () => {
   // </div>
 
 // Animation variants for v-motion
-const fadeInUp = {
-  initial: { opacity: 0, y: 20 },
-  enter: { opacity: 1, y: 0, transition: { duration: 600 } }
-};
 </script>
 
 <template>

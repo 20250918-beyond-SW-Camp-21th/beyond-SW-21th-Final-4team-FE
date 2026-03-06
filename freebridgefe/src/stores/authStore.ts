@@ -1,10 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '@/types';
+import { authApi } from '@/api/authApi';
+
+function maskEmail(email: string): string {
+    if (!email || !email.includes('@')) return '***';
+    const [localPart, domain] = email.split('@');
+    const maskedLocal = localPart.length > 1 ? `${localPart.charAt(0)}***` : '***';
+    return `${maskedLocal}@${domain}`;
+}
 
 export const useAuthStore = defineStore('auth', () => {
     // Initialize from localStorage if available
     const savedUser = localStorage.getItem('user');
+    const savedToken = localStorage.getItem('access_token');
     let initialUser: User | null = null;
     if (savedUser) {
         try {
@@ -20,39 +29,56 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
     const user = ref<User | null>(initialUser);
+    const token = ref<string | null>(savedToken);
     const isLoading = ref(false);
 
-    const isAuthenticated = computed(() => !!user.value);
+    const isAuthenticated = computed(() => !!user.value && !!token.value);
 
-    function login(userData: User) {
+    function setAuth(userData: User, accessToken: string) {
         user.value = userData;
+        token.value = accessToken;
         localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('access_token', accessToken);
+    }
+
+    async function login(credentials: any) {
+        isLoading.value = true;
+        try {
+            const data = await authApi.login(credentials);
+            setAuth(data.user, data.accessToken);
+            return data;
+        } catch (error) {
+            console.error('Login failed:', error);
+            throw error;
+        } finally {
+            isLoading.value = false;
+        }
     }
 
     function logout() {
         user.value = null;
+        token.value = null;
         localStorage.removeItem('user');
+        localStorage.removeItem('access_token');
     }
 
     async function checkEmailDuplicate(email: string): Promise<boolean> {
-        // TODO: Replace with actual API call
-        // return await api.post('/auth/check-email', { email });
-
-        // Mock: Always available
-        return new Promise(resolve => setTimeout(() => resolve(true), 500));
+        console.log(`Checking duplicate for: ${maskEmail(email)}`);
+        try {
+            const isAvailable = await authApi.checkEmail(email);
+            return isAvailable;
+        } catch (error) {
+            console.error('Failed to check email duplicate:', error);
+            // Fallback or handle accordingly
+            return false;
+        }
     }
 
     async function startSignup(userData: User) {
         isLoading.value = true;
         try {
-            // TODO: Replace with actual API call to send verification email
-            // await api.post('/auth/signup-request', userData);
-
-            // Mock: Simulate network delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
+            await authApi.signup(userData);
             // Store temp user data for verification step
-            // In a real app, this might be handled by the backend session or a temporary token
             sessionStorage.setItem('temp_signup_user', JSON.stringify(userData));
         } catch (error) {
             console.error('Failed to start signup:', error);
@@ -63,29 +89,21 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function verifyEmail(email: string, code: string): Promise<boolean> {
+        console.log(`Verifying ${maskEmail(email)}`);
         isLoading.value = true;
         try {
-            // TODO: Replace with actual API call
-            // const response = await api.post('/auth/verify-email', { email, code });
+            const response = await authApi.verifyEmail(email, code);
 
-            // Mock: Simulate network delay & check code
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            if (code !== '123456') { // Mock verification code
-                throw new Error('Invalid verification code');
-            }
-
-            // Retrieve temp user data
-            const storedData = sessionStorage.getItem('temp_signup_user');
-            if (storedData) {
-                const userData = JSON.parse(storedData);
-                // Complete signup
-                user.value = userData;
-                localStorage.setItem('user', JSON.stringify(userData));
+            // Assuming response contains the user and token upon successful verification
+            // Adjust based on actual backend contract
+            if (response.user && response.token) {
+                setAuth(response.user, response.token);
                 sessionStorage.removeItem('temp_signup_user');
                 return true;
             }
-            return false;
+
+            // If it just returns success but not the full session
+            return true;
         } catch (error) {
             console.error('Verification failed:', error);
             throw error;
@@ -95,13 +113,10 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     async function resendVerificationCode(email: string) {
+        console.log(`Resending verification code to ${maskEmail(email)}`);
         isLoading.value = true;
         try {
-            // TODO: Replace with actual API call
-            // await api.post('/auth/resend-verification', { email });
-
-            // Mock: Simulate delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await authApi.resendVerification(email);
         } catch (error) {
             console.error('Failed to resend code:', error);
             throw error;
@@ -112,6 +127,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     return {
         user,
+        token,
         isAuthenticated,
         isLoading,
         login,
