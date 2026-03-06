@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import {
   FileText,
   AlertCircle,
@@ -22,6 +22,15 @@ const authStore = useAuthStore();
 const router = useRouter();
 const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
+
+onMounted(async () => {
+  try {
+    await jobStore.fetchJobPostings();
+  } catch (error) {
+    console.error('Failed to load freelancer jobs for application history:', error);
+    window.alert('공고 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+});
 
 const currentUser = computed(() => authStore.user);
 

@@ -52,17 +52,20 @@ export interface PortfolioItem {
 }
 
 export interface JobPosting {
-  id: string;
-  employerId: string;
-  employerName: string;
-  title: string;
-  description: string;
-  techStack: string[];
-  budget: number;
-  duration: number; // months
-  status: JobStatus;
-  createdAt: Date;
-  updatedAt: Date;
+    id: string;
+    employerId: string;
+    employerName: string;
+    title: string;
+    description: string;
+    techStack: string[];
+    budget: number;
+    duration: number; // months
+    status: JobStatus;
+    createdAt: Date;
+    updatedAt: Date;
+    headcount?: number;
+    matchedHeadcount?: number;
+    favorite?: boolean;
 }
 
 export interface Application {
