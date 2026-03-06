@@ -1,28 +1,33 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { useMotion } from '@vueuse/motion';
-import { 
-    Star,
-    ArrowLeft, 
-    Search,
-    MessageSquare,
-    Calendar,
-    Briefcase,
-    Sparkles,
-    TrendingUp,
-    TrendingDown,
-    Activity
-} from 'lucide-vue-next';
-import { getEvaluations, getRejectionFeedbacks, type Evaluation, type RejectionFeedback } from '@/api/MyPage/evaluationApi';
-import { useAuthStore } from '@/stores/authStore';
-import type { FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
+import { ref, onMounted, computed } from "vue";
+import { useMotion } from "@vueuse/motion";
+import {
+  Star,
+  ArrowLeft,
+  Search,
+  MessageSquare,
+  Calendar,
+  Briefcase,
+  Sparkles,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+} from "lucide-vue-next";
+import {
+  getEvaluations,
+  getRejectionFeedbacks,
+  type Evaluation,
+  type RejectionFeedback,
+} from "@/api/MyPage/evaluationApi";
+import { useAuthStore } from "@/stores/authStore";
+import type { FreelancerProfileDashboard } from "@/api/MyPage/freelancerApi";
 
 const props = defineProps<{
-    profile?: FreelancerProfileDashboard; // Optional to allow independent use if needed, but primarily passed from parent
+  profile?: FreelancerProfileDashboard; // Optional to allow independent use if needed, but primarily passed from parent
 }>();
 
 const emit = defineEmits<{
-    (e: 'back'): void;
+  (e: "back"): void;
 }>();
 
 const authStore = useAuthStore();
@@ -30,24 +35,27 @@ const evaluations = ref<Evaluation[]>([]);
 const rejectionFeedbacks = ref<RejectionFeedback[]>([]);
 const isLoading = ref(true);
 
-const activeTab = ref<'evaluation' | 'rejection'>('evaluation');
+const activeTab = ref<"evaluation" | "rejection">("evaluation");
 
 // 필터 상태 (Sort removed)
-const searchQuery = ref('');
+const searchQuery = ref("");
 
 onMounted(async () => {
   try {
     isLoading.value = true;
-    const userId = authStore.user?.id || 'guest';
+    const userId = authStore.user?.id || "guest";
     // Mock API Calls
     const [evalData, rejectionData] = await Promise.all([
       getEvaluations(userId),
-      getRejectionFeedbacks(userId)
+      getRejectionFeedbacks(userId),
     ]);
-    evaluations.value = evalData;
-    rejectionFeedbacks.value = rejectionData;
+    evaluations.value = evalData || [];
+    rejectionFeedbacks.value = rejectionData || [];
   } catch (e) {
     console.error("Failed to fetch data", e);
+    // Explicitly set to empty array on error to break out of loading loops securely
+    evaluations.value = [];
+    rejectionFeedbacks.value = [];
   } finally {
     isLoading.value = false;
   }
@@ -55,55 +63,65 @@ onMounted(async () => {
 
 // Computed: 검색 로직 (거절 사유용 - 정렬은 최신순 고정)
 const filteredRejections = computed(() => {
-    let result = [...rejectionFeedbacks.value];
+  let result = [...rejectionFeedbacks.value];
 
-    if (searchQuery.value) {
-        const query = searchQuery.value.toLowerCase();
-        result = result.filter(e => 
-            e.companyName.toLowerCase().includes(query) || 
-            e.projectName.toLowerCase().includes(query)
-        );
-    }
-    
-    // 항상 최신순
-    result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  if (searchQuery.value) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(
+      (e) =>
+        e.companyName.toLowerCase().includes(query) ||
+        e.projectName.toLowerCase().includes(query),
+    );
+  }
 
-    return result;
+  // 항상 최신순
+  result.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+
+  return result;
 });
 
 // Computed: 평균 평점 (from props if available, else from list)
 const averageScore = computed(() => {
-    if (props.profile?.averageRating !== undefined) {
-        return Number(props.profile.averageRating).toFixed(1);
-    }
-    if (evaluations.value.length === 0) return '0.0';
-    const total = evaluations.value.reduce((sum, e) => sum + e.score, 0);
-    return (total / evaluations.value.length).toFixed(1);
+  if (props.profile?.averageRating !== undefined) {
+    return Number(props.profile.averageRating).toFixed(1);
+  }
+  if (evaluations.value.length === 0) return "0.0";
+  const total = evaluations.value.reduce(
+    (sum: number, e: Evaluation) => sum + e.score,
+    0,
+  );
+  return (total / evaluations.value.length).toFixed(1);
 });
 
 // Computed: 전문성 평균 점수
 const professionalismScore = computed(() => {
-    if (!props.profile?.expertise) return "0.0";
-    const { programming, framework, problemSolving } = props.profile.expertise;
-    return ((programming + framework + problemSolving) / 3).toFixed(1);
+  if (!props.profile?.expertise) return "0.0";
+  const { programming, framework, problemSolving } = props.profile.expertise;
+  return ((programming + framework + problemSolving) / 3).toFixed(1);
 });
 
 // Computed: 협업 능력 평균 점수
 const collaborationScore = computed(() => {
-    if (!props.profile?.collaboration) return "0.0";
-    const { communication, scheduleAdherence, dispute } = props.profile.collaboration;
-    return ((communication + scheduleAdherence + dispute) / 3).toFixed(1);
+  if (!props.profile?.collaboration) return "0.0";
+  const { communication, scheduleAdherence, dispute } =
+    props.profile.collaboration;
+  return ((communication + scheduleAdherence + dispute) / 3).toFixed(1);
 });
 // 평가 항목 한글 매핑 및 설명
 const metricDefinitions: Record<string, { label: string; desc: string }> = {
-    // 전문성
-    programming: { label: '프로그래밍 구현', desc: '코드 품질 및 구조 설계 역량' },
-    framework: { label: '프레임워크 활용', desc: '최신 기술 도구 활용 능력' },
-    problemSolving: { label: '문제 해결 능력', desc: '이슈 원인 분석 및 해결' },
-    // 협업
-    communication: { label: '의사소통', desc: '명확하고 원활한 의견 교환' },
-    scheduleAdherence: { label: '일정 준수', desc: '마감 기한 및 마일스톤 엄수' },
-    dispute: { label: '유연성/대처', desc: '갈등 관리 및 상황 대처 능력' }
+  // 전문성
+  programming: {
+    label: "프로그래밍 구현",
+    desc: "코드 품질 및 구조 설계 역량",
+  },
+  framework: { label: "프레임워크 활용", desc: "최신 기술 도구 활용 능력" },
+  problemSolving: { label: "문제 해결 능력", desc: "이슈 원인 분석 및 해결" },
+  // 협업
+  communication: { label: "의사소통", desc: "명확하고 원활한 의견 교환" },
+  scheduleAdherence: { label: "일정 준수", desc: "마감 기한 및 마일스톤 엄수" },
+  dispute: { label: "유연성/대처", desc: "갈등 관리 및 상황 대처 능력" },
 };
 
 // AI 분석 상태
@@ -111,11 +129,11 @@ const showAiAnalysis = ref(false);
 const isAiAnalyzing = ref(false);
 
 const handleAiAnalysis = () => {
-    isAiAnalyzing.value = true;
-    setTimeout(() => {
-        isAiAnalyzing.value = false;
-        showAiAnalysis.value = true;
-    }, 1500); // 1.5초 로딩 시뮬레이션
+  isAiAnalyzing.value = true;
+  setTimeout(() => {
+    isAiAnalyzing.value = false;
+    showAiAnalysis.value = true;
+  }, 1500); // 1.5초 로딩 시뮬레이션
 };
 </script>
 
@@ -123,331 +141,496 @@ const handleAiAnalysis = () => {
   <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 font-sans text-white">
     <!-- Header -->
     <div class="flex items-center gap-4 mb-10">
-        <button
-            @click="$emit('back')"
-            class="p-2 hover:bg-white/5 rounded-full transition-colors"
-        >
-            <ArrowLeft class="w-6 h-6 text-white/80" />
-        </button>
-        <div>
-            <h1 class="text-3xl font-bold text-white tracking-tight">받은 평가 관리</h1>
-            <p class="text-base text-slate-400 mt-1">프로젝트 완료 후 받은 고용주의 평가를 확인하세요.</p>
-        </div>
+      <button
+        @click="$emit('back')"
+        class="p-2 hover:bg-white/5 rounded-full transition-colors"
+      >
+        <ArrowLeft class="w-6 h-6 text-white/80" />
+      </button>
+      <div>
+        <h1 class="text-3xl font-bold text-white tracking-tight">
+          받은 평가 관리
+        </h1>
+        <p class="text-base text-slate-400 mt-1">
+          프로젝트 완료 후 받은 고용주의 평가를 확인하세요.
+        </p>
+      </div>
     </div>
 
     <!-- Tabs -->
-    <div class="flex p-1 bg-white/5 rounded-xl mb-8 w-fit border border-white/10">
-        <button
-            @click="activeTab = 'evaluation'"
-            class="px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-300"
-            :class="activeTab === 'evaluation' ? 'bg-white text-black shadow-lg shadow-white/10' : 'text-slate-400 hover:text-white'"
-        >
-            내 평가 분석
-        </button>
-        <button
-            @click="activeTab = 'rejection'"
-            class="px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-300"
-            :class="activeTab === 'rejection' ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'text-slate-400 hover:text-white'"
-        >
-            거절 사유
-        </button>
+    <div
+      class="flex p-1 bg-white/5 rounded-xl mb-8 w-fit border border-white/10"
+    >
+      <button
+        @click="activeTab = 'evaluation'"
+        class="px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-300"
+        :class="
+          activeTab === 'evaluation'
+            ? 'bg-white text-black shadow-lg shadow-white/10'
+            : 'text-slate-400 hover:text-white'
+        "
+      >
+        내 평가 분석
+      </button>
+      <button
+        @click="activeTab = 'rejection'"
+        class="px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-300"
+        :class="
+          activeTab === 'rejection'
+            ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
+            : 'text-slate-400 hover:text-white'
+        "
+      >
+        거절 사유
+      </button>
     </div>
 
     <!-- Content: Evaluation Summary (3-Column Layout) -->
     <div v-if="activeTab === 'evaluation'" class="space-y-8 animate-fade-in-up">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="flex justify-center py-20">
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"
+        ></div>
+      </div>
 
-        <template v-if="props.profile">
-            <!-- Top: AI Insight Action / Banner -->
-            <div class="min-h-[180px]">
-            <div v-if="showAiAnalysis" class="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-white/10 rounded-3xl p-8 relative overflow-hidden animate-fade-in">
-                <!-- AI Insight Header Layout -->
-                <div class="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between mb-8">
-                    <!-- Left: Title & Description -->
-                    <div class="flex-1 flex flex-col gap-4">
-                         <div class="flex items-center gap-2 text-indigo-300">
-                            <Sparkles class="w-5 h-5" />
-                            <span class="text-sm font-bold uppercase tracking-wider">AI Insight</span>
-                        </div>
-                        <div class="space-y-2">
-                            <h2 class="text-2xl font-bold text-white leading-tight">{{ props.profile.aiSummary?.title || '데이터가 충분하지 않습니다.' }}</h2>
-                            <p class="text-slate-300 leading-relaxed max-w-3xl">
-                                {{ props.profile.aiSummary?.description || '평가 분석을 위해 더 많은 프로젝트를 완료해주세요.' }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Right: AI Reputation Index -->
-                    <div v-if="props.profile.aiSummary && 'reputationIndex' in props.profile.aiSummary" class="flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-6 shadow-xl shadow-black/20">
-                        <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-1">
-                            <div class="w-full h-full bg-[#1e1b4b] rounded-full flex items-center justify-center">
-                                <span class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">{{ props.profile.aiSummary.reputationIndex }}</span>
-                            </div>
-                        </div>
-                        <div>
-                            <span class="text-indigo-300 text-sm font-bold flex items-center gap-2 mb-1">
-                                <Activity class="w-4 h-4" />
-                                평판 긍정 지수
-                            </span>
-                            <span class="text-slate-400 text-xs">AI 종합 점수</span>
-                        </div>
-                    </div>
+      <div v-else-if="props.profile">
+        <!-- Top: AI Insight Action / Banner -->
+        <div class="min-h-[180px]">
+          <div
+            v-if="showAiAnalysis"
+            class="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-white/10 rounded-3xl p-8 relative overflow-hidden animate-fade-in"
+          >
+            <!-- AI Insight Header Layout -->
+            <div
+              class="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between mb-8"
+            >
+              <!-- Left: Title & Description -->
+              <div class="flex-1 flex flex-col gap-4">
+                <div class="flex items-center gap-2 text-indigo-300">
+                  <Sparkles class="w-5 h-5" />
+                  <span class="text-sm font-bold uppercase tracking-wider"
+                    >AI Insight</span
+                  >
                 </div>
-
-                <!-- Strengths & Weaknesses Grid -->
-                <div v-if="props.profile.aiSummary && ('strengths' in props.profile.aiSummary || 'weaknesses' in props.profile.aiSummary)" class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/10 pt-8">
-                    <!-- Strengths -->
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-2">
-                            <div class="p-1.5 bg-green-500/20 rounded-md">
-                                <TrendingUp class="w-4 h-4 text-green-400" />
-                            </div>
-                            <span class="font-bold text-white">AI 강점 분석</span>
-                        </div>
-                        <ul class="space-y-2">
-                            <li v-for="(strength, idx) in props.profile.aiSummary.strengths || []" :key="idx" class="flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5 shadow-sm transition-all hover:bg-white/10">
-                                <div class="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 shrink-0"></div>
-                                <span class="text-slate-300 text-sm leading-relaxed">{{ strength }}</span>
-                            </li>
-                            <li v-if="!(props.profile.aiSummary.strengths?.length)" class="text-sm text-slate-500 italic">감지된 강점 데이터가 부족합니다.</li>
-                        </ul>
-                    </div>
-
-                    <!-- Weaknesses -->
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-2">
-                            <div class="p-1.5 bg-red-500/20 rounded-md">
-                                <TrendingDown class="w-4 h-4 text-red-400" />
-                            </div>
-                            <span class="font-bold text-white">AI 보완점 분석</span>
-                        </div>
-                        <ul class="space-y-2">
-                            <li v-for="(weakness, idx) in props.profile.aiSummary.weaknesses || []" :key="idx" class="flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5 shadow-sm transition-all hover:bg-white/10">
-                                <div class="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0"></div>
-                                <span class="text-slate-300 text-sm leading-relaxed">{{ weakness }}</span>
-                            </li>
-                            <li v-if="!(props.profile.aiSummary.weaknesses?.length)" class="text-sm text-slate-500 italic">감지된 보완점 데이터가 부족합니다.</li>
-                        </ul>
-                    </div>
+                <div class="space-y-2">
+                  <h2 class="text-2xl font-bold text-white leading-tight">
+                    AI 긍정 지수 분석 결과
+                  </h2>
+                  <p class="text-slate-300 leading-relaxed max-w-3xl">
+                    AI가 고용주들의 평가 데이터를 바탕으로 현재 귀하의 평판
+                    등급과 강점/보완점을 도출했습니다. 현재 등급은
+                    <strong class="text-indigo-300">{{
+                      props.profile.aiSummary?.grade || "미정"
+                    }}</strong
+                    >입니다.
+                  </p>
                 </div>
+              </div>
 
-                <div class="mt-8 pt-4 flex items-center gap-2 text-xs text-slate-500 opacity-60 w-full justify-end">
-                    <span>Based on {{ evaluations.length }} verified reviews</span>
-                </div>
-            </div>
-
-            <!-- State 2: Call to Action Button -->
-            <div v-else class="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group">
-                <div class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-                <div class="relative z-10">
-                    <h2 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                        <Sparkles class="w-5 h-5 text-indigo-400" />
-                        AI 평가 상세 분석
-                    </h2>
-                    <p class="text-slate-400 text-sm max-w-md">
-                        프리브릿지 AI가 고용주들의 평가 데이터를 분석하여<br/>
-                        귀하의 강점과 보완점을 요약해드립니다.
-                    </p>
-                </div>
-
-                <div class="relative z-10">
-                    <button
-                        @click="handleAiAnalysis"
-                        :disabled="isAiAnalyzing"
-                        class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              <!-- Right: AI Reputation Index -->
+              <div
+                v-if="
+                  props.profile.aiSummary &&
+                  'positivityScore' in props.profile.aiSummary
+                "
+                class="flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-6 shadow-xl shadow-black/20"
+              >
+                <div
+                  class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-1"
+                >
+                  <div
+                    class="w-full h-full bg-[#1e1b4b] rounded-full flex items-center justify-center"
+                  >
+                    <span
+                      class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300"
+                      >{{ props.profile.aiSummary.positivityScore }}</span
                     >
-                         <div v-if="isAiAnalyzing" class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                         <Sparkles v-else class="w-5 h-5 fill-white/20" />
-                         <span v-if="isAiAnalyzing">분석중...</span>
-                         <span v-else>AI 분석 받아보기</span>
-                    </button>
+                  </div>
                 </div>
+                <div>
+                  <span
+                    class="text-indigo-300 text-sm font-bold flex items-center gap-2 mb-1"
+                  >
+                    <Activity class="w-4 h-4" />
+                    평판 긍정 지수
+                  </span>
+                  <span class="text-slate-400 text-xs">AI 종합 점수</span>
+                </div>
+              </div>
             </div>
+
+            <!-- Strengths & Weaknesses Grid -->
+            <div
+              v-if="
+                props.profile.aiSummary &&
+                ('strengths' in props.profile.aiSummary ||
+                  'weaknesses' in props.profile.aiSummary)
+              "
+              class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/10 pt-8"
+            >
+              <!-- Strengths -->
+              <div class="space-y-4">
+                <div class="flex items-center gap-2">
+                  <div class="p-1.5 bg-green-500/20 rounded-md">
+                    <TrendingUp class="w-4 h-4 text-green-400" />
+                  </div>
+                  <span class="font-bold text-white">AI 강점 분석</span>
+                </div>
+                <ul class="space-y-2">
+                  <li
+                    v-for="(strength, idx) in props.profile.aiSummary
+                      .strengths || []"
+                    :key="idx"
+                    class="flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5 shadow-sm transition-all hover:bg-white/10"
+                  >
+                    <div
+                      class="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 shrink-0"
+                    ></div>
+                    <span class="text-slate-300 text-sm leading-relaxed">{{
+                      strength
+                    }}</span>
+                  </li>
+                  <li
+                    v-if="!props.profile.aiSummary.strengths?.length"
+                    class="text-sm text-slate-500 italic"
+                  >
+                    감지된 강점 데이터가 부족합니다.
+                  </li>
+                </ul>
+              </div>
+
+              <!-- Weaknesses -->
+              <div class="space-y-4">
+                <div class="flex items-center gap-2">
+                  <div class="p-1.5 bg-red-500/20 rounded-md">
+                    <TrendingDown class="w-4 h-4 text-red-400" />
+                  </div>
+                  <span class="font-bold text-white">AI 보완점 분석</span>
+                </div>
+                <ul class="space-y-2">
+                  <li
+                    v-for="(weakness, idx) in props.profile.aiSummary
+                      .weaknesses || []"
+                    :key="idx"
+                    class="flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5 shadow-sm transition-all hover:bg-white/10"
+                  >
+                    <div
+                      class="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0"
+                    ></div>
+                    <span class="text-slate-300 text-sm leading-relaxed">{{
+                      weakness
+                    }}</span>
+                  </li>
+                  <li
+                    v-if="!props.profile.aiSummary.weaknesses?.length"
+                    class="text-sm text-slate-500 italic"
+                  >
+                    감지된 보완점 데이터가 부족합니다.
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div
+              class="mt-8 pt-4 flex items-center gap-2 text-xs text-slate-500 opacity-60 w-full justify-end"
+            >
+              <span>Based on {{ evaluations.length }} verified reviews</span>
+            </div>
+          </div>
+
+          <!-- State 2: Call to Action Button -->
+          <div
+            v-else
+            class="bg-white/5 border border-white/10 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden group"
+          >
+            <div
+              class="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            ></div>
+
+            <div class="relative z-10">
+              <h2
+                class="text-xl font-bold text-white mb-2 flex items-center gap-2"
+              >
+                <Sparkles class="w-5 h-5 text-indigo-400" />
+                AI 평가 상세 분석
+              </h2>
+              <p class="text-slate-400 text-sm max-w-md">
+                프리브릿지 AI가 고용주들의 평가 데이터를 분석하여<br />
+                귀하의 강점과 보완점을 요약해드립니다.
+              </p>
+            </div>
+
+            <div class="relative z-10">
+              <button
+                @click="handleAiAnalysis"
+                :disabled="isAiAnalyzing"
+                class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                <div
+                  v-if="isAiAnalyzing"
+                  class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"
+                ></div>
+                <Sparkles v-else class="w-5 h-5 fill-white/20" />
+                <span v-if="isAiAnalyzing">분석중...</span>
+                <span v-else>AI 분석 받아보기</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Metric Cards Grid (3 Columns) -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-            <!-- 1. Professionalism Card -->
-             <div class="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-blue-500/30 transition-colors duration-300 flex flex-col">
-                <div class="flex justify-between items-start mb-6">
-                    <div>
-                        <div class="flex items-center gap-2 mb-2">
-                            <div class="p-2 bg-blue-500/10 rounded-lg">
-                                <Briefcase class="w-5 h-5 text-blue-400" />
-                            </div>
-                            <span class="text-sm font-bold text-blue-400">전문성</span>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                         <div class="text-3xl font-bold text-white tracking-tight">{{ professionalismScore }}</div>
-                         <div class="text-xs text-slate-500">/ 5.0</div>
-                    </div>
+          <!-- 1. Professionalism Card -->
+          <div
+            class="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-blue-500/30 transition-colors duration-300 flex flex-col"
+          >
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="p-2 bg-blue-500/10 rounded-lg">
+                    <Briefcase class="w-5 h-5 text-blue-400" />
+                  </div>
+                  <span class="text-sm font-bold text-blue-400">전문성</span>
                 </div>
-
-                <div class="space-y-6 flex-1">
-                    <div v-for="(score, key) in props.profile?.expertise" :key="key" class="space-y-2">
-                        <div class="flex justify-between items-end mb-1">
-                            <div>
-                                <span class="text-slate-200 text-sm font-bold block">{{ metricDefinitions[key]?.label || key }}</span>
-                                <span class="text-slate-500 text-xs">{{ metricDefinitions[key]?.desc || '' }}</span>
-                            </div>
-                            <span class="text-white font-bold text-sm">{{ score.toFixed(1) }}</span>
-                        </div>
-                        <div class="h-1.5 bg-slate-700/30 rounded-full overflow-hidden">
-                            <div class="h-full bg-blue-500 rounded-full"
-                                    :style="{ width: `${(score / 5) * 100}%` }"></div>
-                        </div>
-                    </div>
+              </div>
+              <div class="text-right">
+                <div class="text-3xl font-bold text-white tracking-tight">
+                  {{ professionalismScore }}
                 </div>
+                <div class="text-xs text-slate-500">/ 5.0</div>
+              </div>
             </div>
 
-            <!-- 2. Collaboration Card -->
-            <div class="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-purple-500/30 transition-colors duration-300 flex flex-col">
-                <div class="flex justify-between items-start mb-6">
-                    <div>
-                        <div class="flex items-center gap-2 mb-2">
-                            <div class="p-2 bg-purple-500/10 rounded-lg">
-                                <MessageSquare class="w-5 h-5 text-purple-400" />
-                            </div>
-                            <span class="text-sm font-bold text-purple-400">협업 능력</span>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                         <div class="text-3xl font-bold text-white tracking-tight">{{ collaborationScore }}</div>
-                         <div class="text-xs text-slate-500">/ 5.0</div>
-                    </div>
+            <div class="space-y-6 flex-1">
+              <div
+                v-for="(score, key) in props.profile?.expertise"
+                :key="key"
+                class="space-y-2"
+              >
+                <div class="flex justify-between items-end mb-1">
+                  <div>
+                    <span class="text-slate-200 text-sm font-bold block">{{
+                      metricDefinitions[key]?.label || key
+                    }}</span>
+                    <span class="text-slate-500 text-xs">{{
+                      metricDefinitions[key]?.desc || ""
+                    }}</span>
+                  </div>
+                  <span class="text-white font-bold text-sm">{{
+                    score.toFixed(1)
+                  }}</span>
                 </div>
+                <div class="h-1.5 bg-slate-700/30 rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-blue-500 rounded-full"
+                    :style="{ width: `${(score / 5) * 100}%` }"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-                <div class="space-y-6 flex-1">
-                     <div v-for="(score, key) in props.profile?.collaboration" :key="key" class="space-y-2">
-                        <div class="flex justify-between items-end mb-1">
-                             <div>
-                                <span class="text-slate-200 text-sm font-bold block">{{ metricDefinitions[key]?.label || key }}</span>
-                                <span class="text-slate-500 text-xs">{{ metricDefinitions[key]?.desc || '' }}</span>
-                            </div>
-                            <span class="text-white font-bold text-sm">{{ score.toFixed(1) }}</span>
-                        </div>
-                        <div class="h-1.5 bg-slate-700/30 rounded-full overflow-hidden">
-                            <div class="h-full bg-purple-500 rounded-full"
-                                    :style="{ width: `${(score / 5) * 100}%` }"></div>
-                        </div>
-                    </div>
+          <!-- 2. Collaboration Card -->
+          <div
+            class="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-purple-500/30 transition-colors duration-300 flex flex-col"
+          >
+            <div class="flex justify-between items-start mb-6">
+              <div>
+                <div class="flex items-center gap-2 mb-2">
+                  <div class="p-2 bg-purple-500/10 rounded-lg">
+                    <MessageSquare class="w-5 h-5 text-purple-400" />
+                  </div>
+                  <span class="text-sm font-bold text-purple-400"
+                    >협업 능력</span
+                  >
                 </div>
+              </div>
+              <div class="text-right">
+                <div class="text-3xl font-bold text-white tracking-tight">
+                  {{ collaborationScore }}
+                </div>
+                <div class="text-xs text-slate-500">/ 5.0</div>
+              </div>
             </div>
 
-             <!-- 3. Total Average Card -->
-            <div class="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-yellow-500/30 transition-colors duration-300 flex flex-col justify-center items-center text-center relative overflow-hidden group">
-                 <div class="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-colors duration-500"></div>
-
-                 <div class="relative z-10">
-                    <div class="mb-4 inline-flex p-4 bg-yellow-500/10 rounded-full">
-                        <Star class="w-10 h-10 text-yellow-400 fill-yellow-400" />
-                    </div>
-                    <div class="space-y-2">
-                        <span class="block text-sm font-bold text-yellow-500 uppercase tracking-wider">Total Score</span>
-                        <div class="flex items-center justify-center gap-3">
-                            <span class="text-6xl font-bold text-white tracking-tight">{{ averageScore }}</span>
-                        </div>
-                         <span class="block text-sm text-slate-400 font-medium">/ 5.0 만점</span>
-                    </div>
-                    <div class="mt-8 pt-6 border-t border-white/10 w-full">
-                        <div class="text-sm text-slate-300">
-                            상위 <span class="font-bold text-yellow-400">{{ props.profile?.topPercentile || 0 }}%</span> 이내의<br/>우수한 평가를 받고 있습니다.
-                        </div>
-                    </div>
-                 </div>
+            <div class="space-y-6 flex-1">
+              <div
+                v-for="(score, key) in props.profile?.collaboration"
+                :key="key"
+                class="space-y-2"
+              >
+                <div class="flex justify-between items-end mb-1">
+                  <div>
+                    <span class="text-slate-200 text-sm font-bold block">{{
+                      metricDefinitions[key]?.label || key
+                    }}</span>
+                    <span class="text-slate-500 text-xs">{{
+                      metricDefinitions[key]?.desc || ""
+                    }}</span>
+                  </div>
+                  <span class="text-white font-bold text-sm">{{
+                    score.toFixed(1)
+                  }}</span>
+                </div>
+                <div class="h-1.5 bg-slate-700/30 rounded-full overflow-hidden">
+                  <div
+                    class="h-full bg-purple-500 rounded-full"
+                    :style="{ width: `${(score / 5) * 100}%` }"
+                  ></div>
+                </div>
+              </div>
             </div>
+          </div>
 
+          <!-- 3. Total Average Card -->
+          <div
+            class="bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-yellow-500/30 transition-colors duration-300 flex flex-col justify-center items-center text-center relative overflow-hidden group"
+          >
+            <div
+              class="absolute inset-0 bg-yellow-500/5 group-hover:bg-yellow-500/10 transition-colors duration-500"
+            ></div>
+
+            <div class="relative z-10">
+              <div class="mb-4 inline-flex p-4 bg-yellow-500/10 rounded-full">
+                <Star class="w-10 h-10 text-yellow-400 fill-yellow-400" />
+              </div>
+              <div class="space-y-2">
+                <span
+                  class="block text-sm font-bold text-yellow-500 uppercase tracking-wider"
+                  >Total Score</span
+                >
+                <div class="flex items-center justify-center gap-3">
+                  <span class="text-6xl font-bold text-white tracking-tight">{{
+                    averageScore
+                  }}</span>
+                </div>
+                <span class="block text-sm text-slate-400 font-medium"
+                  >/ 5.0 만점</span
+                >
+              </div>
+              <div class="mt-8 pt-6 border-t border-white/10 w-full">
+                <div class="text-sm text-slate-300">
+                  상위
+                  <span class="font-bold text-yellow-400"
+                    >{{ props.profile?.topPercentile || 0 }}%</span
+                  >
+                  이내의<br />우수한 평가를 받고 있습니다.
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        </template>
+      </div>
 
-        <div v-else class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border border-white/10 border-dashed text-slate-400 animate-fade-in">
-             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4 opacity-70"></div>
-             <p>평가 데이터를 불러오는 중입니다...</p>
-        </div>
+      <div
+        v-else
+        class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border border-white/10 border-dashed text-slate-400 animate-fade-in"
+      >
+        <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
+        <p>프로필 정보 또는 평가 데이터가 없습니다.</p>
+      </div>
     </div>
 
     <template v-else-if="activeTab === 'rejection'">
-        <!-- Section Title -->
-        <div class="mb-6 border-b border-white/10 pb-4">
-            <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                거절 사유 후기
-                <span class="text-xs font-normal text-slate-400 px-2 py-0.5 bg-white/5 rounded-full">{{ filteredRejections.length }}</span>
-            </h3>
+      <!-- Section Title -->
+      <div class="mb-6 border-b border-white/10 pb-4">
+        <h3 class="text-lg font-bold text-white flex items-center gap-2">
+          거절 사유 후기
+          <span
+            class="text-xs font-normal text-slate-400 px-2 py-0.5 bg-white/5 rounded-full"
+            >{{ filteredRejections.length }}</span
+          >
+        </h3>
+      </div>
+
+      <!-- Search & Filter Controls -->
+      <div class="flex flex-col md:flex-row gap-4 mb-6">
+        <div class="relative flex-1">
+          <Search class="w-4 h-4 text-slate-500 absolute left-3 top-3" />
+          <input
+            type="text"
+            v-model="searchQuery"
+            placeholder="프로젝트명 또는 회사명 검색"
+            class="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
+          />
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="isLoading" class="flex justify-center py-20">
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"
+        ></div>
+      </div>
+
+      <!-- Rejection List -->
+      <template v-else>
+        <!-- Empty State -->
+        <div
+          v-if="filteredRejections.length === 0"
+          class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-2xl border border-white/10 border-dashed text-slate-500"
+        >
+          <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
+          <p>거절 사유 후기가 없습니다.</p>
         </div>
 
-        <!-- Search & Filter Controls -->
-        <div class="flex flex-col md:flex-row gap-4 mb-6">
-            <div class="relative flex-1">
-                <Search class="w-4 h-4 text-slate-500 absolute left-3 top-3" />
-                <input
-                    type="text"
-                    v-model="searchQuery"
-                    placeholder="프로젝트명 또는 회사명 검색"
-                    class="w-full bg-white/5 border border-white/10 rounded-lg pl-10 pr-4 py-2.5 text-white text-sm outline-none focus:border-blue-500/50 transition-colors"
-                />
-            </div>
-        </div>
-
-        <!-- Loading State -->
-        <div v-if="isLoading" class="flex justify-center py-20">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-        </div>
-
-        <!-- Rejection List -->
-        <template v-else>
-            <!-- Empty State -->
-            <div v-if="filteredRejections.length === 0" class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-2xl border border-white/10 border-dashed text-slate-500">
-                <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
-                <p>거절 사유 후기가 없습니다.</p>
-            </div>
-
-            <!-- List -->
-            <div v-else class="grid grid-cols-1 gap-4">
-            <div 
-                v-for="feedback in filteredRejections" 
-                :key="feedback.id"
-                class="bg-white/5 rounded-xl border border-white/10 p-6 hover:border-red-500/30 transition-all group"
-                v-motion
-                :initial="{ opacity: 0, y: 20 }"
-                :enter="{ opacity: 1, y: 0 }"
+        <!-- List -->
+        <div v-else class="grid grid-cols-1 gap-4">
+          <div
+            v-for="feedback in filteredRejections"
+            :key="feedback.id"
+            class="bg-white/5 rounded-xl border border-white/10 p-6 hover:border-red-500/30 transition-all group"
+            v-motion
+            :initial="{ opacity: 0, y: 20 }"
+            :enter="{ opacity: 1, y: 0 }"
+          >
+            <div
+              class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4"
             >
-                <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
-                    <div class="flex items-start gap-4">
-                         <div class="w-10 h-10 rounded-lg bg-red-400/10 flex items-center justify-center border border-red-400/20 shrink-0">
-                             <Briefcase class="w-5 h-5 text-red-400" />
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-white text-lg leading-tight group-hover:text-red-400 transition-colors">{{ feedback.projectName }}</h3>
-                            <p class="text-sm text-slate-400 mt-1 flex items-center gap-2">
-                                {{ feedback.companyName }}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="text-xs text-slate-500 flex items-center gap-1">
-                        <Calendar class="w-3 h-3" />
-                         {{ feedback.createdAt }}
-                    </div>
+              <div class="flex items-start gap-4">
+                <div
+                  class="w-10 h-10 rounded-lg bg-red-400/10 flex items-center justify-center border border-red-400/20 shrink-0"
+                >
+                  <Briefcase class="w-5 h-5 text-red-400" />
                 </div>
-
-                <div class="bg-black/20 rounded-lg p-4 text-slate-300 text-sm leading-relaxed border border-white/5 mb-4">
-                    "{{ feedback.reason }}"
+                <div>
+                  <h3
+                    class="font-bold text-white text-lg leading-tight group-hover:text-red-400 transition-colors"
+                  >
+                    {{ feedback.projectName }}
+                  </h3>
+                  <p
+                    class="text-sm text-slate-400 mt-1 flex items-center gap-2"
+                  >
+                    {{ feedback.companyName }}
+                  </p>
                 </div>
-
-                <div class="flex flex-wrap gap-2">
-                     <span
-                        v-for="tag in feedback.tags"
-                        :key="tag"
-                        class="text-xs px-2.5 py-1 rounded-full bg-red-400/10 text-red-300 border border-red-400/20"
-                    >
-                        #{{ tag }}
-                    </span>
-                </div>
+              </div>
+              <div class="text-xs text-slate-500 flex items-center gap-1">
+                <Calendar class="w-3 h-3" />
+                {{ feedback.createdAt }}
+              </div>
             </div>
-        </div>
 
-    </template>
+            <div
+              class="bg-black/20 rounded-lg p-4 text-slate-300 text-sm leading-relaxed border border-white/5 mb-4"
+            >
+              "{{ feedback.reason }}"
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <span
+                v-for="tag in feedback.tags"
+                :key="tag"
+                class="text-xs px-2.5 py-1 rounded-full bg-red-400/10 text-red-300 border border-red-400/20"
+              >
+                #{{ tag }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </template>
     </template>
   </div>
 </template>
