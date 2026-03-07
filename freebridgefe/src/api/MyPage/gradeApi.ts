@@ -1,5 +1,12 @@
+﻿import apiClient from '@/api/axiosInstance';
 
-export type GradeLevel = '초급' | '중급' | '고급' | '특급' | '';
+interface ApiResponse<T> {
+    success: boolean;
+    message?: string;
+    data: T;
+}
+
+export type GradeLevel = '특급' | '고급' | '중급' | '초급' | '';
 export type EducationType = '전문학사' | '학사' | '석사' | '박사';
 export type CertificationType = '산업기사' | '기사';
 
@@ -58,53 +65,6 @@ const MOCK_CRITERIA_ITEMS: GradeCriteriaItem[] = [
     { grade: '초급', color: 'bg-slate-500', edu: '석사 / 학사 / 전문학사+3년', cert: '기사 / 산업기사' },
 ];
 
-// Backend logic simulation
-const calculateInternal = (req: GradeCalculationRequest): GradeLevel => {
-    const { type, education, certification, yearsOfExperience: years } = req;
-
-    if (type === 'education' && education) {
-        if (education === '박사') {
-            if (years >= 4) return '특급';
-            if (years >= 1) return '고급';
-            return '중급';
-        }
-        if (education === '석사') {
-            if (years >= 9) return '특급';
-            if (years >= 6) return '고급';
-            if (years >= 3) return '중급';
-            return '초급';
-        }
-        if (education === '학사') {
-            if (years >= 12) return '특급';
-            if (years >= 9) return '고급';
-            if (years >= 6) return '중급';
-            return '초급';
-        }
-        if (education === '전문학사') {
-            if (years >= 15) return '특급';
-            if (years >= 12) return '고급';
-            if (years >= 9) return '중급';
-            if (years >= 3) return '초급';
-            return '';
-        }
-    } else if (type === 'certification' && certification) {
-        if (certification === '기사') {
-            if (years >= 10) return '특급';
-            if (years >= 7) return '고급';
-            if (years >= 4) return '중급';
-            return '초급';
-        }
-        if (certification === '산업기사') {
-            if (years >= 13) return '특급';
-            if (years >= 10) return '고급';
-            if (years >= 7) return '중급';
-            return '초급';
-        }
-    }
-    return '';
-};
-
-
 export const getEducationOptions = async (): Promise<EducationOption[]> => {
     return new Promise(resolve => setTimeout(() => resolve(MOCK_EDUCATION_OPTIONS), 300));
 };
@@ -118,19 +78,18 @@ export const getGradeCriteria = async (): Promise<GradeCriteriaItem[]> => {
 };
 
 export const calculateGrade = async (req: GradeCalculationRequest): Promise<GradeLevel> => {
-    console.log('Calculating grade for:', req);
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve(calculateInternal(req));
-        }, 800);
-    });
+    const response = await apiClient.post<ApiResponse<GradeCalculationResponse>>(
+        '/api/freelancer/mypage/grade-calculator/calculate',
+        req
+    );
+    return response.data.data.grade;
 };
 
-export const saveGrade = async (req: GradeSaveRequest): Promise<boolean> => {
-    console.log('Saving grade:', req);
+export const saveGrade = async (_req: GradeSaveRequest): Promise<boolean> => {
+    // TODO: 등급 저장 API가 준비되면 연동
     return new Promise(resolve => {
         setTimeout(() => {
-            resolve(true); // Success
+            resolve(true);
         }, 1000);
     });
 };

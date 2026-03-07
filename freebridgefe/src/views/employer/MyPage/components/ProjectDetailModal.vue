@@ -1,4 +1,5 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
 import {
   X,
   Users,
@@ -6,14 +7,14 @@ import {
   DollarSign,
   FileText,
   Briefcase,
-  Layers,
   Clock,
   CheckCircle,
   Zap,
+  Tag,
 } from 'lucide-vue-next';
+import { getEmployerApplicantStatus, type EmployerApplicantStatus } from '@/api/MyPage/projectApi';
 
 // --- Types ---
-// (Reusing or defining types needed for the modal)
 type ProjectStatus = 'BEFORE_START' | 'IN_PROGRESS' | 'COMPLETED';
 
 interface FreelancerProfile {
@@ -22,7 +23,7 @@ interface FreelancerProfile {
   role: string;
   status: 'ACTIVE' | 'COMPLETED' | 'TERMINATED';
   contractPeriod: string;
-  paymentAmount: string; // e.g. "₩3,000,000"
+  paymentAmount: string;
 }
 
 interface ProjectDetail {
@@ -35,7 +36,7 @@ interface ProjectDetail {
   description: string;
   budget: string;
   freelancers: FreelancerProfile[];
-  contractType: string; // e.g. "Standard Freelance Contract"
+  contractType: string;
   contractDate: string;
 }
 
@@ -48,12 +49,60 @@ const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
+const applicantStatuses = ref<EmployerApplicantStatus[]>([]);
+const isApplicantLoading = ref(false);
+
+const statusLabel = (status?: string) => {
+  const key = (status ?? '').toUpperCase();
+  if (!key) return '미확인';
+  if (key.includes('RECEIVED') || key.includes('APPLIED')) return '접수중';
+  if (key.includes('REVIEW') || key.includes('SCREEN')) return '심사중';
+  if (key.includes('PROGRESS') || key.includes('IN_PROGRESS')) return '진행중';
+  if (key.includes('COMPLETE') || key.includes('COMPLETED') || key.includes('DONE')) return '완료/종결';
+  return status ?? '기타';
+};
+
+const applicantSummary = computed(() => {
+  const counts: Record<string, number> = {};
+  applicantStatuses.value.forEach((item) => {
+    const label = statusLabel(item.applyStatus);
+    counts[label] = (counts[label] ?? 0) + 1;
+  });
+  return counts;
+});
+
+const totalApplicants = computed(() => applicantStatuses.value.length);
+
+const loadApplicantStatus = async () => {
+  if (!props.project?.id) return;
+  const projectId = Number(props.project.id);
+  if (!projectId) return;
+  try {
+    isApplicantLoading.value = true;
+    applicantStatuses.value = await getEmployerApplicantStatus(projectId);
+  } catch (error) {
+    console.error('Failed to fetch applicant status:', error);
+    applicantStatuses.value = [];
+  } finally {
+    isApplicantLoading.value = false;
+  }
+};
+
+watch(
+  () => [props.isOpen, props.project?.id],
+  ([isOpen]) => {
+    if (isOpen) {
+      loadApplicantStatus();
+    }
+  }
+);
+
 // --- Helpers for Status Colors ---
 const getStatusBadge = (status: ProjectStatus) => {
     switch (status) {
         case 'BEFORE_START': return { label: '착수 예정', class: 'bg-blue-500/10 text-blue-400 border-blue-500/20' };
         case 'IN_PROGRESS': return { label: '진행 중', class: 'bg-green-500/10 text-green-400 border-green-500/20' };
-        case 'COMPLETED': return { label: '완료됨', class: 'bg-slate-500/10 text-slate-400 border-slate-500/20' };
+        case 'COMPLETED': return { label: '종료', class: 'bg-slate-500/10 text-slate-400 border-slate-500/20' };
         default: return { label: status, class: 'bg-slate-500/10 text-slate-400' };
     }
 };
@@ -67,8 +116,8 @@ const getFreelancerStatusColor = (status: string) => {
 
 <template>
   <div v-if="isOpen && project" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="$emit('close')">
-    
-    <div 
+
+    <div
         class="w-full max-w-4xl bg-[#1e293b] border border-white/10 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar"
     >
       <!-- Header -->
@@ -88,7 +137,7 @@ const getFreelancerStatusColor = (status: string) => {
       </div>
 
       <div class="p-8 space-y-8">
-          
+
         <!-- 1. Project Overview Grid -->
         <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
             <!-- Period -->
@@ -133,9 +182,34 @@ const getFreelancerStatusColor = (status: string) => {
             </div>
         </div>
 
+        <!-- 3. Applicant Status Summary -->
+        <div>
+            <h3 class="flex items-center gap-2 mb-4 text-lg font-bold text-white">
+                <Users class="w-5 h-5 text-purple-400" />
+                지원자 상태 요약
+            </h3>
+            <div class="bg-white/5 border border-white/10 rounded-xl p-5">
+                <div v-if="isApplicantLoading" class="text-sm text-slate-400">불러오는 중...</div>
+                <div v-else-if="totalApplicants === 0" class="text-sm text-slate-400">지원자 상태 데이터가 없습니다.</div>
+                <div v-else class="flex flex-wrap gap-3">
+                    <div
+                      v-for="(count, label) in applicantSummary"
+                      :key="label"
+                      class="px-3 py-2 rounded-lg text-xs font-bold text-white bg-purple-500/20 border border-purple-500/30 flex items-center gap-2"
+                    >
+                      <Tag class="w-3.5 h-3.5 text-purple-300" />
+                      {{ label }}: {{ count }}명
+                    </div>
+                    <div class="px-3 py-2 rounded-lg text-xs font-bold text-slate-200 bg-white/10 border border-white/10">
+                      총 {{ totalApplicants }}명
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="w-full h-px bg-white/10"></div>
 
-        <!-- 3. Freelancers & Contract Info -->
+        <!-- 4. Freelancers & Contract Info -->
         <div>
             <div class="flex items-center justify-between mb-6">
                 <h3 class="flex items-center gap-2 text-lg font-bold text-white">
@@ -148,8 +222,8 @@ const getFreelancerStatusColor = (status: string) => {
             </div>
 
             <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <div 
-                    v-for="freelancer in project.freelancers" 
+                <div
+                    v-for="freelancer in project.freelancers"
                     :key="freelancer.id"
                     class="flex items-center justify-between p-4 transition-all border group bg-white/5 hover:bg-white/10 rounded-xl border-white/5 hover:border-blue-500/30"
                 >
@@ -172,13 +246,12 @@ const getFreelancerStatusColor = (status: string) => {
         </div>
 
       </div>
-      
+
       <!-- Footer Actions -->
       <div class="sticky bottom-0 z-10 p-6 border-t bg-[#1e293b] border-white/10 flex justify-end gap-3">
           <button @click="$emit('close')" class="px-6 py-2.5 text-sm font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors">
               닫기
           </button>
-<!--          TODO-->
           <button class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-colors shadow-lg shadow-blue-500/20">
               프로젝트 수정
           </button>
