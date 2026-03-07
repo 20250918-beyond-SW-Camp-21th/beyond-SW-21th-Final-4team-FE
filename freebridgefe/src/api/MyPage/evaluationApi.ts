@@ -19,6 +19,32 @@ export interface EmployerReputationAi {
     negativeKeywords: string[];
 }
 
+export interface FreelancerReviewSummary {
+    averageRate: number;
+    topPercentile: number;
+    expertiseRate: number;
+    communicationRate: number;
+    scheduleRate: number;
+}
+
+export interface FreelancerAiReputationReport {
+    summary: string;
+    strengths: string[];
+    weaknesses: string[];
+    technicalScores: { name: string; score: number }[];
+    softSkills: { name: string; score: number }[];
+}
+
+export interface FreelancerAiPositivityIndex {
+    positivityScore: number;
+    grade: string;
+}
+
+export interface FreelancerStrengthWeakness {
+    strengths: string[];
+    weaknesses: string[];
+}
+
 export interface DetailedScore {
     professionalism: {
         programming: number;
@@ -165,6 +191,34 @@ export const getEmployerReviewSummary = async (): Promise<EmployerReviewSummary>
 export const getEmployerReputationAi = async (): Promise<EmployerReputationAi> => {
     const response = await apiClient.get<ApiResponse<EmployerReputationAi>>(
         '/api/employer/mypage/reputation/ai'
+    );
+    return response.data.data;
+};
+
+export const getFreelancerReviewSummary = async (): Promise<FreelancerReviewSummary> => {
+    const response = await apiClient.get<ApiResponse<FreelancerReviewSummary>>(
+        '/api/freelancer/mypage/reviews/summary'
+    );
+    return response.data.data;
+};
+
+export const getFreelancerAiReputationReport = async (): Promise<FreelancerAiReputationReport> => {
+    const response = await apiClient.get<ApiResponse<FreelancerAiReputationReport>>(
+        '/api/freelancer/mypage/reviews/ai/report'
+    );
+    return response.data.data;
+};
+
+export const getFreelancerAiPositivityIndex = async (): Promise<FreelancerAiPositivityIndex> => {
+    const response = await apiClient.get<ApiResponse<FreelancerAiPositivityIndex>>(
+        '/api/freelancer/mypage/reviews/ai/positivity'
+    );
+    return response.data.data;
+};
+
+export const getFreelancerStrengthWeakness = async (): Promise<FreelancerStrengthWeakness> => {
+    const response = await apiClient.get<ApiResponse<FreelancerStrengthWeakness>>(
+        '/api/freelancer/mypage/reviews/ai/strength-weakness'
     );
     return response.data.data;
 };

@@ -23,6 +23,11 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
+import {
+    getFreelancerReviewSummary,
+    getFreelancerAiPositivityIndex,
+    getFreelancerStrengthWeakness,
+} from '@/api/MyPage/evaluationApi';
 import { getFreelancerProjectStats } from '@/api/MyPage/projectApi';
 import ResumeManagementPage from './components/ResumeManagementPage.vue';
 import EvaluationListPage from './components/EvaluationListPage.vue';
@@ -120,6 +125,56 @@ onMounted(async () => {
                 profile.value.statCompleted = stats.completedProjects ?? 0;
             } catch (statsError) {
                 console.error('Failed to load project stats:', statsError);
+            }
+
+            try {
+                const [summaryResult, positivityResult, strengthWeaknessResult] = await Promise.allSettled([
+                    getFreelancerReviewSummary(),
+                    getFreelancerAiPositivityIndex(),
+                    getFreelancerStrengthWeakness(),
+                ]);
+
+                if (summaryResult.status === 'fulfilled') {
+                    const summary = summaryResult.value;
+                    profile.value.averageRating = summary.averageRate ?? 0;
+                    profile.value.topPercentile = summary.topPercentile ?? 0;
+                    profile.value.expertise = {
+                        programming: summary.expertiseRate ?? 0,
+                        framework: summary.expertiseRate ?? 0,
+                        problemSolving: summary.expertiseRate ?? 0,
+                    };
+                    profile.value.collaboration = {
+                        communication: summary.communicationRate ?? 0,
+                        scheduleAdherence: summary.scheduleRate ?? 0,
+                        dispute: summary.communicationRate ?? 0,
+                    };
+                }
+
+                if (
+                    positivityResult.status === 'fulfilled' ||
+                    strengthWeaknessResult.status === 'fulfilled'
+                ) {
+                    profile.value.aiSummary = {
+                        positivityScore:
+                            positivityResult.status === 'fulfilled'
+                                ? positivityResult.value.positivityScore ?? 0
+                                : 0,
+                        grade:
+                            positivityResult.status === 'fulfilled'
+                                ? positivityResult.value.grade ?? ''
+                                : '',
+                        strengths:
+                            strengthWeaknessResult.status === 'fulfilled'
+                                ? strengthWeaknessResult.value.strengths ?? []
+                                : [],
+                        weaknesses:
+                            strengthWeaknessResult.status === 'fulfilled'
+                                ? strengthWeaknessResult.value.weaknesses ?? []
+                                : [],
+                    };
+                }
+            } catch (reviewError) {
+                console.error('Failed to load review summary/ai data:', reviewError);
             }
         } catch (error) {
             console.error('Failed to load profile:', error);
