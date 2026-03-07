@@ -167,7 +167,7 @@ const handleSave = async () => {
 // --- Education Actions ---
 const addEducationItem = () => {
     if (!newEducation.value.schoolName) return alert('학교명을 입력해 주세요.');
-    resumeData.value.educations.push({ ...newEducation.value, id: Date.now() });
+    resumeData.value.educations.push({ ...newEducation.value, id: Date.now(), isNew: true });
     
     // Reset
     newEducation.value = {
@@ -184,6 +184,12 @@ const addEducationItem = () => {
 
 const removeEducation = (index: number) => {
     if (confirm('해당 학력 정보를 삭제하시겠습니까?')) {
+        const target = resumeData.value.educations[index];
+        if (target && !target.isNew && typeof target.serverIndex === 'number') {
+            if (!deletedEducationIndexes.value.includes(target.serverIndex)) {
+                deletedEducationIndexes.value.push(target.serverIndex);
+            }
+        }
         resumeData.value.educations.splice(index, 1);
     }
 };
@@ -191,7 +197,7 @@ const removeEducation = (index: number) => {
 // --- Career Actions ---
 const addCareerItem = () => {
     if (!newCareer.value.companyName) return alert('회사명을 입력해 주세요.');
-    resumeData.value.careers.push({ ...newCareer.value, id: Date.now() });
+    resumeData.value.careers.push({ ...newCareer.value, id: Date.now(), isNew: true });
 
     // Reset
     newCareer.value = {
@@ -210,6 +216,12 @@ const addCareerItem = () => {
 
 const removeCareer = (index: number) => {
     if (confirm('해당 경력 정보를 삭제하시겠습니까?')) {
+        const target = resumeData.value.careers[index];
+        if (target && !target.isNew && typeof target.serverIndex === 'number') {
+            if (!deletedCareerIndexes.value.includes(target.serverIndex)) {
+                deletedCareerIndexes.value.push(target.serverIndex);
+            }
+        }
         resumeData.value.careers.splice(index, 1);
     }
 };
@@ -217,7 +229,7 @@ const removeCareer = (index: number) => {
 // --- Certification Actions ---
 const addCertificationItem = () => {
     if (!newCertification.value.name) return alert('자격증명을 입력해 주세요.');
-    resumeData.value.certifications.push({ ...newCertification.value, id: Date.now() });
+    resumeData.value.certifications.push({ ...newCertification.value, id: Date.now(), isNew: true });
 
     // Reset
     newCertification.value = {
@@ -231,6 +243,12 @@ const addCertificationItem = () => {
 
 const removeCertification = (index: number) => {
     if (confirm('해당 자격증 정보를 삭제하시겠습니까?')) {
+        const target = resumeData.value.certifications[index];
+        if (target && !target.isNew && typeof target.serverIndex === 'number') {
+            if (!deletedCertificationIndexes.value.includes(target.serverIndex)) {
+                deletedCertificationIndexes.value.push(target.serverIndex);
+            }
+        }
         resumeData.value.certifications.splice(index, 1);
     }
 };
