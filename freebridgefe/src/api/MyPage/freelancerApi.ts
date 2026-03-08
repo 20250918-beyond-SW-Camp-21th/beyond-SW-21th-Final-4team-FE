@@ -75,9 +75,57 @@ export interface FreelancerProfileDashboard {
   topPercentile?: number;
 }
 
+const GUEST_FREELANCER_PROFILE: FreelancerProfileDashboard = {
+  name: "Guest",
+  grade: "basic",
+  avatar: null,
+  job: "Frontend Developer",
+  introduction: "Guest profile for preview.",
+  careerYears: 0,
+  salary: 0,
+  workConditions: {
+    type: "Guest",
+    startDate: "",
+    workStyle: "",
+    location: "",
+  },
+  skills: ["React", "Vue"],
+  expertise: {
+    programming: 0,
+    framework: 0,
+    problemSolving: 0,
+  },
+  collaboration: {
+    communication: 0,
+    scheduleAdherence: 0,
+    dispute: 0,
+  },
+  averageRating: 0,
+  statContact: 0,
+  statChat: 0,
+  statContract: 0,
+  statInteresting: 0,
+  statCompleted: 0,
+  portfolio: {
+    fileUrl: null,
+    fileName: "",
+    lastUpdated: "",
+  },
+};
+
 export const getFreelancerProfile = async (
   _userId: string,
 ): Promise<FreelancerProfileDashboard> => {
+  if (_userId === "guest") {
+    return {
+      ...GUEST_FREELANCER_PROFILE,
+      workConditions: { ...GUEST_FREELANCER_PROFILE.workConditions },
+      skills: [...GUEST_FREELANCER_PROFILE.skills],
+      expertise: { ...GUEST_FREELANCER_PROFILE.expertise },
+      collaboration: { ...GUEST_FREELANCER_PROFILE.collaboration },
+      portfolio: { ...GUEST_FREELANCER_PROFILE.portfolio },
+    };
+  }
   const response = await apiClient.get<ApiResponse<FreelancerProfileResponseDto>>(
     "/api/freelancer/mypage/profile",
   );
