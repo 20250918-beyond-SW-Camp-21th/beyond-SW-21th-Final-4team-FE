@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { X, FileText, Calendar, DollarSign, CheckCircle, User, PenTool, Clock, MapPin, Briefcase, Shield, ScrollText } from 'lucide-vue-next';
+import { ref, computed, onMounted } from 'vue';
+import { X, FileText, Calendar, DollarSign, CheckCircle, User, PenTool, Clock, MapPin, Briefcase, Shield, ScrollText, Loader2 } from 'lucide-vue-next';
 import type { ContractWithDetails } from '@/stores/contractStore';
 import ContractPreview from '@/components/contract/ContractPreview.vue';
+import { getContract } from '@/api/contractApi';
 
 type ViewTab = 'details' | 'contract';
 
@@ -23,10 +24,27 @@ const statusLabels: Record<string, string> = {
     REJECTED: '거절됨',
 };
 
+// Full contract detail (fetched on open; falls back to prop if fetch fails)
+const fullContract = ref<ContractWithDetails>(props.contract);
+const isLoadingDetail = ref(false);
+
+onMounted(async () => {
+    isLoadingDetail.value = true;
+    try {
+        const detail = await getContract(props.contract.contractId);
+        fullContract.value = { ...props.contract, ...detail };
+    } catch {
+        // keep prop data as fallback
+    } finally {
+        isLoadingDetail.value = false;
+    }
+});
+
+// Use employerSigned / freelancerSigned from API response (available in both list & detail)
 const canSign = computed(() => {
-    if (props.contract.status !== 'WAITING_SIGNATURE') return false;
+    if (fullContract.value.status !== 'WAITING_SIGNATURE') return false;
     if (props.isFreelancer) {
-        return props.contract.employerSignature && !props.contract.freelancerSignature;
+        return fullContract.value.employerSigned && !fullContract.value.freelancerSigned;
     }
     return false;
 });
@@ -40,7 +58,7 @@ const formatCurrency = (amount: number) => {
     return amount.toLocaleString() + '원';
 };
 
-const isFlexibleWork = computed(() => props.contract.workStartTime === '자율');
+const isFlexibleWork = computed(() => fullContract.value.workStartTime === '자율');
 
 const activeTab = ref<ViewTab>('details');
 </script>
@@ -107,8 +125,13 @@ const activeTab = ref<ViewTab>('details');
                 </div>
             </div>
 
+            <!-- Loading state -->
+            <div v-if="isLoadingDetail" class="p-16 flex items-center justify-center">
+                <Loader2 class="w-8 h-8 animate-spin text-white/40" />
+            </div>
+
             <!-- Details Tab Content -->
-            <div v-if="activeTab === 'details'" class="p-6 space-y-6 text-white">
+            <div v-else-if="activeTab === 'details'" class="p-6 space-y-6 text-white">
                 <!-- Project Info -->
                 <div
                     class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-lg"
@@ -117,30 +140,28 @@ const activeTab = ref<ViewTab>('details');
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
                             <div class="text-sm text-white/60 mb-1">프로젝트명</div>
-                            <div class="text-lg font-medium">
-                                {{ contract.projectName }}
-                            </div>
+                            <div class="text-lg font-medium">{{ fullContract.projectName }}</div>
                         </div>
-                        <div v-if="contract.projectId">
-                            <div class="text-sm text-white/60 mb-1">프로젝트 ID</div>
-                            <div class="text-lg font-medium">{{ contract.projectId }}</div>
+                        <div>
+                            <div class="text-sm text-white/60 mb-1">계약번호</div>
+                            <div class="text-lg font-medium">#{{ fullContract.contractId }}</div>
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">계약 상태</div>
-                            <div class="text-lg font-medium">{{ statusLabels[contract.status] || contract.status }}</div>
+                            <div class="text-lg font-medium">{{ statusLabels[fullContract.status] || fullContract.status }}</div>
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">프리랜서</div>
                             <div class="text-lg font-medium flex items-center gap-2">
                                 <User class="w-4 h-4" />
-                                {{ contract.freelancerName }}
+                                {{ fullContract.freelancerName }}
                             </div>
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">고용주</div>
                             <div class="text-lg font-medium flex items-center gap-2">
                                 <User class="w-4 h-4" />
-                                {{ contract.employerName }}
+                                {{ fullContract.employerName }}
                             </div>
                         </div>
                     </div>
@@ -156,13 +177,9 @@ const activeTab = ref<ViewTab>('details');
                             <h3 class="text-lg font-bold">계약 기간</h3>
                         </div>
                         <div class="text-sm text-white/60 mb-1">시작일</div>
-                        <div class="text-lg font-medium mb-3">
-                            {{ formatDate(contract.startDate) }}
-                        </div>
+                        <div class="text-lg font-medium mb-3">{{ formatDate(fullContract.startDate) }}</div>
                         <div class="text-sm text-white/60 mb-1">종료일</div>
-                        <div class="text-lg font-medium">
-                            {{ formatDate(contract.endDate) }}
-                        </div>
+                        <div class="text-lg font-medium">{{ formatDate(fullContract.endDate) }}</div>
                     </div>
 
                     <div
@@ -172,9 +189,12 @@ const activeTab = ref<ViewTab>('details');
                             <DollarSign class="w-6 h-6 text-green-400" />
                             <h3 class="text-lg font-bold">계약 금액</h3>
                         </div>
-                        <div class="text-sm text-white/60 mb-1">총 계약금</div>
+                        <div class="text-sm text-white/60 mb-1">월 급여</div>
                         <div class="text-3xl font-bold text-green-400">
-                            {{ formatCurrency(contract.budget) }}
+                            {{ formatCurrency(fullContract.budget) }}
+                        </div>
+                        <div v-if="fullContract.paymentDay" class="text-sm text-white/50 mt-2">
+                            매월 {{ fullContract.paymentDay }}일 지급
                         </div>
                     </div>
                 </div>
@@ -190,13 +210,13 @@ const activeTab = ref<ViewTab>('details');
                     <div class="grid md:grid-cols-2 gap-4">
                         <div>
                             <div class="text-sm text-white/60 mb-1">업무 내용</div>
-                            <div class="font-medium">{{ contract.jobDescription || '-' }}</div>
+                            <div class="font-medium">{{ fullContract.jobDescription || '-' }}</div>
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">근무 장소</div>
                             <div class="font-medium flex items-center gap-2">
                                 <MapPin class="w-4 h-4" />
-                                {{ contract.workLocation || '원격근무' }}
+                                {{ fullContract.workLocation || '원격근무' }}
                             </div>
                         </div>
                     </div>
@@ -218,22 +238,22 @@ const activeTab = ref<ViewTab>('details');
                         <div>
                             <div class="text-sm text-white/60 mb-1">근무 시간</div>
                             <div class="font-medium">
-                                {{ contract.workStartTime || '--:--' }} ~ {{ contract.workEndTime || '--:--' }}
+                                {{ fullContract.workStartTime || '--:--' }} ~ {{ fullContract.workEndTime || '--:--' }}
                             </div>
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">휴게 시간</div>
                             <div class="font-medium">
-                                {{ contract.breakStartTime || '--:--' }} ~ {{ contract.breakEndTime || '--:--' }}
+                                {{ fullContract.breakStartTime || '--:--' }} ~ {{ fullContract.breakEndTime || '--:--' }}
                             </div>
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">주 근무일수</div>
-                            <div class="font-medium">{{ contract.workDaysPerWeek || '-' }}일</div>
+                            <div class="font-medium">{{ fullContract.workDaysPerWeek || '-' }}일</div>
                         </div>
                         <div>
                             <div class="text-sm text-white/60 mb-1">주휴일</div>
-                            <div class="font-medium">{{ contract.weeklyHoliday || '-' }}</div>
+                            <div class="font-medium">{{ fullContract.weeklyHoliday || '-' }}</div>
                         </div>
                     </div>
                 </div>
@@ -247,18 +267,10 @@ const activeTab = ref<ViewTab>('details');
                         <h3 class="text-lg font-bold">사회보험</h3>
                     </div>
                     <div class="flex flex-wrap gap-3">
-                        <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium">
-                            ✓ 고용보험
-                        </span>
-                        <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium">
-                            ✓ 산재보험
-                        </span>
-                        <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium">
-                            ✓ 국민연금
-                        </span>
-                        <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium">
-                            ✓ 건강보험
-                        </span>
+                        <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium">✓ 고용보험</span>
+                        <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium">✓ 산재보험</span>
+                        <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium">✓ 국민연금</span>
+                        <span class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-medium">✓ 건강보험</span>
                     </div>
                 </div>
 
@@ -269,56 +281,41 @@ const activeTab = ref<ViewTab>('details');
                     <h3 class="text-lg font-bold mb-4">서명 정보</h3>
                     <div class="grid md:grid-cols-2 gap-6">
                         <!-- Employer Signature -->
-                        <div class="p-4 rounded-xl" :class="contract.employerSignature ? 'bg-green-500/10 border border-green-500/30' : 'bg-white/5 border border-white/10'">
+                        <div class="p-4 rounded-xl" :class="fullContract.employerSigned ? 'bg-green-500/10 border border-green-500/30' : 'bg-white/5 border border-white/10'">
                             <div class="flex items-center gap-3 mb-3">
-                                <CheckCircle
-                                    v-if="contract.employerSignature"
-                                    class="w-6 h-6 text-green-400"
-                                />
-                                <Clock
-                                    v-else
-                                    class="w-6 h-6 text-white/40"
-                                />
+                                <CheckCircle v-if="fullContract.employerSigned" class="w-6 h-6 text-green-400" />
+                                <Clock v-else class="w-6 h-6 text-white/40" />
                                 <div>
                                     <div class="text-sm text-white/60">고용주</div>
-                                    <div class="font-medium" :class="contract.employerSignature ? 'text-green-400' : 'text-white/60'">
-                                        {{ contract.employerSignature ? '서명 완료' : '서명 대기' }}
+                                    <div class="font-medium" :class="fullContract.employerSigned ? 'text-green-400' : 'text-white/60'">
+                                        {{ fullContract.employerSigned ? '서명 완료' : '서명 대기' }}
                                     </div>
                                 </div>
                             </div>
-                            <div v-if="contract.employerSignedDate" class="text-xs text-white/50">
-                                서명일: {{ formatDate(contract.employerSignedDate) }}
+                            <div v-if="fullContract.employerSignedDate" class="text-xs text-white/50">
+                                서명일: {{ formatDate(fullContract.employerSignedDate) }}
                             </div>
                         </div>
                         <!-- Freelancer Signature -->
-                        <div class="p-4 rounded-xl" :class="contract.freelancerSignature ? 'bg-green-500/10 border border-green-500/30' : 'bg-orange-500/10 border border-orange-500/30'">
+                        <div class="p-4 rounded-xl" :class="fullContract.freelancerSigned ? 'bg-green-500/10 border border-green-500/30' : 'bg-orange-500/10 border border-orange-500/30'">
                             <div class="flex items-center gap-3 mb-3">
-                                <CheckCircle
-                                    v-if="contract.freelancerSignature"
-                                    class="w-6 h-6 text-green-400"
-                                />
-                                <Clock
-                                    v-else
-                                    class="w-6 h-6 text-orange-400"
-                                />
+                                <CheckCircle v-if="fullContract.freelancerSigned" class="w-6 h-6 text-green-400" />
+                                <Clock v-else class="w-6 h-6 text-orange-400" />
                                 <div>
                                     <div class="text-sm text-white/60">프리랜서</div>
-                                    <div class="font-medium" :class="contract.freelancerSignature ? 'text-green-400' : 'text-orange-400'">
-                                        {{ contract.freelancerSignature ? '서명 완료' : '서명 대기' }}
+                                    <div class="font-medium" :class="fullContract.freelancerSigned ? 'text-green-400' : 'text-orange-400'">
+                                        {{ fullContract.freelancerSigned ? '서명 완료' : '서명 대기' }}
                                     </div>
                                 </div>
                             </div>
-                            <div v-if="contract.freelancerSignedDate" class="text-xs text-white/50">
-                                서명일: {{ formatDate(contract.freelancerSignedDate) }}
+                            <div v-if="fullContract.freelancerSignedDate" class="text-xs text-white/50">
+                                서명일: {{ formatDate(fullContract.freelancerSignedDate) }}
                             </div>
                         </div>
                     </div>
-                    <div
-                        v-if="contract.signedDate"
-                        class="mt-4 pt-4 border-t border-white/10"
-                    >
+                    <div v-if="fullContract.signedDate" class="mt-4 pt-4 border-t border-white/10">
                         <div class="text-sm text-white/60">
-                            계약 체결일: {{ formatDate(contract.signedDate) }}
+                            계약 체결일: {{ formatDate(fullContract.signedDate) }}
                         </div>
                     </div>
                 </div>
@@ -350,7 +347,7 @@ const activeTab = ref<ViewTab>('details');
 
             <!-- Contract Tab Content -->
             <div v-else class="p-6">
-                <ContractPreview :contract="contract" />
+                <ContractPreview :contract="fullContract" />
 
                 <!-- Action Buttons -->
                 <div class="flex gap-3 mt-6 max-w-4xl mx-auto">

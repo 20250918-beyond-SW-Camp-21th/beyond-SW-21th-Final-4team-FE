@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import {
     FileText,
     Calendar,
@@ -17,12 +17,13 @@ import { useAuthStore } from '@/stores/authStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import ContractDetailModal from '@/views/employer/Contracts/components/ContractDetailModal.vue';
 import SignaturePadModal from '@/views/employer/Contracts/components/SignaturePadModal.vue';
+import { signContract } from '@/api/contractApi';
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
 
 const selectedContract = ref<ContractWithDetails | null>(null);
-const signingContractId = ref<number | null>(null);
+const signingContract = ref<ContractWithDetails | null>(null);
 
 // Search and filter state
 const searchQuery = ref('');
@@ -143,21 +144,21 @@ const resetFilters = () => {
     isDropdownOpen.value = false;
 };
 
-const handleFreelancerSign = (signatureDataUrl: string) => {
-    if (!signingContractId.value) return;
-    contractStore.updateContract(signingContractId.value, {
-        freelancerSignature: signatureDataUrl,
-        freelancerSignedDate: new Date(),
-        status: 'IN_PROGRESS', // Mock transition
-        signedDate: new Date(),
-    });
-    signingContractId.value = null;
-    selectedContract.value = null; // Close detail modal if open
+const handleFreelancerSign = async (signatureDataUrl: string) => {
+    if (!signingContract.value) return;
+    const response = await signContract(signingContract.value.contractId, signatureDataUrl);
+    contractStore.updateContract(signingContract.value.id, response);
+    signingContract.value = null;
+    selectedContract.value = null;
 };
 
 const openSignModal = (contract: ContractWithDetails) => {
-    signingContractId.value = contract.id;
+    signingContract.value = contract;
 };
+
+onMounted(() => {
+    contractStore.fetchContracts();
+});
 </script>
 
 <template>
@@ -338,7 +339,7 @@ const openSignModal = (contract: ContractWithDetails) => {
 
                     <div class="flex items-center gap-3">
                          <button
-                            v-if="contract.status === 'WAITING_SIGNATURE' && !contract.freelancerSignature"
+                            v-if="contract.status === 'WAITING_SIGNATURE' && !contract.freelancerSigned"
                             @click="openSignModal(contract)"
                             class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
                         >
@@ -368,10 +369,10 @@ const openSignModal = (contract: ContractWithDetails) => {
 
         <!-- Freelancer Signature Modal -->
         <SignaturePadModal
-            v-if="signingContractId && authStore.user"
+            v-if="signingContract && authStore.user"
             :signerName="authStore.user.name"
             @sign="handleFreelancerSign"
-            @close="signingContractId = null"
+            @close="signingContract = null"
         />
     </div>
 </template>
