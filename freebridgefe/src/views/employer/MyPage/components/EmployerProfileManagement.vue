@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
@@ -12,11 +12,11 @@ import {
   Save,
   Globe,
   Briefcase,
-  Edit2,
   Loader2
 } from 'lucide-vue-next';
 
 import { getEmployerProfile, updateEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
+import { PLAN_LABELS } from '@/constants/planLabels';
 
 defineEmits<{
   (e: 'back'): void;
@@ -24,14 +24,7 @@ defineEmits<{
 
 const isLoading = ref(false);
 const isSaving = ref(false);
-
-const PLAN_LABELS: Record<string, string> = {
-  FREE: '무료 플랜',
-  PRO: '프로 플랜',
-  PRIME: '프라임 플랜',
-  PARTNER: '프로 플랜',
-  ENTERPRISE: '프라임 플랜',
-};
+const isEditing = ref(true);
 
 const profileData = ref<EmployerProfileData>({
   companyName: '',
@@ -46,11 +39,14 @@ const profileData = ref<EmployerProfileData>({
 });
 
 const companySizeOptions = [
-  '1-10명',
-  '10-50명',
-  '50-100명',
-  '100-500명',
-  '500명 이상',
+  { value: '', label: '선택' },
+  { value: 'S1_4', label: '1-4명' },
+  { value: 'S5_9', label: '5-9명' },
+  { value: 'S10_29', label: '10-29명' },
+  { value: 'S30_99', label: '30-99명' },
+  { value: 'S100_299', label: '100-299명' },
+  { value: 'S300_999', label: '300-999명' },
+  { value: 'S1000_PLUS', label: '1000명 이상' },
 ];
 
 const fetchProfile = async () => {
@@ -87,7 +83,6 @@ const handleSave = async () => {
   }
 };
 </script>
-
 
 <template>
   <div class="max-w-4xl mx-auto px-4 md:px-8 py-8 text-white">
@@ -173,12 +168,12 @@ const handleSave = async () => {
               <Users class="w-4 h-4" />
               고용주 규모
             </label>
-          <select
-            v-model="profileData.size"
-            class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors appearance-none"
-          >
-            <option v-for="option in companySizeOptions" :key="option" :value="option">
-              {{ option }}
+            <select
+              v-model="profileData.size"
+              class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors appearance-none"
+            >
+            <option v-for="option in companySizeOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
             </option>
           </select>
         </div>

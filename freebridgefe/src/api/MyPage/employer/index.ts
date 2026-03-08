@@ -1,7 +1,5 @@
-import {
-    getMockEmployerProfile,
-    updateMockEmployerProfile
-} from '@/api/MyPage/mock/mockProfiles';
+import apiClient from '@/api/axiosInstance';
+import { getAccountInfo } from '@/api/MyPage/accountApi';
 
 export interface EmployerProfileData {
     companyName: string;
@@ -31,8 +29,53 @@ export interface EmployerProfileData {
     };
     crmAlerts?: {
         isPremiumUpsellEligible: boolean;
+        isPrimeUpsellEligible?: boolean;
+        upsellTarget?: 'PRO' | 'PRIME';
     };
 }
+
+interface ApiResponse<T> {
+    success: boolean;
+    message?: string;
+    data: T;
+}
+
+interface EmployerProfileDto {
+    companyName: string | null;
+    industry: string | null;
+    scale: string | null;
+    location: string | null;
+    websiteUrl: string | null;
+    description: string | null;
+    logoUrl: string | null;
+    status: string | null;
+}
+
+interface CrmAlertsResponseDto {
+    isPremiumUpsellEligible: boolean;
+    isPrimeUpsellEligible?: boolean;
+    upsellTarget?: 'PRO' | 'PRIME';
+}
+
+const mapProfileDto = (dto: EmployerProfileDto): EmployerProfileData => ({
+    companyName: dto.companyName ?? '',
+    industry: dto.industry ?? '',
+    size: dto.scale ?? '',
+    location: dto.location ?? '',
+    website: dto.websiteUrl ?? '',
+    email: '',
+    phone: '',
+    description: dto.description ?? '',
+    plan: undefined,
+    logoUrl: dto.logoUrl ?? undefined,
+    activeProjects: undefined,
+    totalApplicants: undefined,
+    contractedFreelancers: undefined,
+    avgRating: undefined,
+    ratingDetails: undefined,
+    projectStatusCounts: undefined,
+    crmAlerts: undefined
+});
 
 export interface Application {
     id: string;
@@ -115,11 +158,38 @@ export const rejectApplication = async (applicationId: string, reason: string): 
 };
 
 export const getEmployerProfile = async (_employerId?: string | number): Promise<EmployerProfileData> => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    return getMockEmployerProfile() as EmployerProfileData;
+    const [profileRes, crmRes, accountInfo] = await Promise.all([
+        apiClient.get<ApiResponse<EmployerProfileDto>>('/api/employer/mypage/profile'),
+        apiClient.get<ApiResponse<CrmAlertsResponseDto>>('/api/employer/mypage/profile/crm-alerts').catch(() => null),
+        getAccountInfo().catch(() => null)
+    ]);
+    const mapped = mapProfileDto(profileRes.data.data);
+    return {
+        ...mapped,
+        email: accountInfo?.email ?? mapped.email,
+        phone: accountInfo?.phone ?? mapped.phone,
+        crmAlerts: crmRes?.data?.data ?? undefined
+    };
 };
 
 export const updateEmployerProfile = async (data: EmployerProfileData): Promise<void> => {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    updateMockEmployerProfile(data);
+    const payload = {
+        companyName: data.companyName,
+        industry: data.industry,
+        scale: data.size,
+        location: data.location,
+        websiteUrl: data.website,
+        description: data.description
+    };
+    await apiClient.put<ApiResponse<null>>('/api/employer/mypage/profile', payload);
+};
+
+export const uploadEmployerLogo = async (file: File): Promise<string> => {
+    const form = new FormData();
+    form.append('file', file);
+    const response = await apiClient.post<ApiResponse<string>>(
+        '/api/employer/mypage/profile/logo',
+        form
+    );
+    return response.data.data;
 };

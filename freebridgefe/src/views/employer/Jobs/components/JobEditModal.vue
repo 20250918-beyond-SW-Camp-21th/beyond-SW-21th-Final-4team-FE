@@ -23,8 +23,8 @@ const formData = reactive({
   title: props.job.title,
   description: props.job.description,
   techStack: [...props.job.techStack],
-  budget: props.job.budget.toString(),
-  duration: props.job.duration.toString(),
+  budget: props.job.budget,
+  duration: props.job.duration,
   status: props.job.status,
 });
 
@@ -46,26 +46,53 @@ const setStatus = (status: JobStatus) => {
     formData.status = status;
 }
 
-const handleSubmit = (e: Event) => {
+const handleSubmit = async (e: Event) => {
   e.preventDefault();
 
-  const confirmed = window.confirm('정말로 수정하시겠습니까?'); if (!confirmed) return;
+  const budget = Number(formData.budget);
+  const duration = Number(formData.duration);
 
-  jobStore.updateJobPosting(props.job.id, {
-    title: formData.title,
-    description: formData.description,
-    techStack: formData.techStack,
-    budget: parseInt(formData.budget),
-    duration: parseInt(formData.duration),
-    status: formData.status,
-  });
+  const isValidBudget = Number.isFinite(budget) && budget > 0;
+  const isValidDuration = Number.isFinite(duration) && duration > 0;
 
-  window.alert('등록되었습니다!');
-  props.onSuccess();
+  if (!isValidBudget || !isValidDuration) {
+    window.alert('월급과 기간은 0보다 큰 숫자로 입력해주세요.');
+    return;
+  }
+
+  const confirmed = window.confirm('정말로 수정하시겠습니까?');
+  if (!confirmed) return;
+
+  try {
+    await jobStore.updateJobPosting(props.job.id, {
+      title: formData.title,
+      description: formData.description,
+      techStack: formData.techStack,
+      budget,
+      duration,
+      status: formData.status,
+    });
+
+    window.alert('수정되었습니다!');
+    props.onSuccess();
+  } catch (error) {
+    console.error('Failed to update job posting:', error);
+    window.alert('공고 수정에 실패했습니다. 잠시 후 다시 시도해주세요.');
+  }
 };
 
 const isValid = computed(() => {
-    return formData.title && formData.description && formData.techStack.length > 0 && formData.budget && formData.duration;
+    const budget = Number(formData.budget);
+    const duration = Number(formData.duration);
+    return (
+      formData.title &&
+      formData.description &&
+      formData.techStack.length > 0 &&
+      Number.isFinite(budget) &&
+      budget > 0 &&
+      Number.isFinite(duration) &&
+      duration > 0
+    );
 });
 
 const onTechInputKeydown = (e: KeyboardEvent) => {
@@ -190,7 +217,7 @@ const onTechInputKeydown = (e: KeyboardEvent) => {
           </label>
           <input
             type="number"
-            v-model="formData.budget"
+            v-model.number="formData.budget"
             min="0"
             step="100000"
             class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-blue-500 text-white"
@@ -205,7 +232,7 @@ const onTechInputKeydown = (e: KeyboardEvent) => {
           </label>
           <input
             type="number"
-            v-model="formData.duration"
+            v-model.number="formData.duration"
             min="1"
             class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-blue-500 text-white"
             required

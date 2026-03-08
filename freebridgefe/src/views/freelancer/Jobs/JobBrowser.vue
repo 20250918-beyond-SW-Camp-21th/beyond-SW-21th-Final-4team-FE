@@ -1,21 +1,28 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import { Search, DollarSign, Clock, Briefcase, Sparkles, TrendingUp, Star, Filter } from 'lucide-vue-next';
 import { useJobStore } from '@/stores/jobStore';
 import { useAuthStore } from '@/stores/authStore';
-import { useFavoritesStore } from '@/stores/favoritesStore';
 import type { JobPosting } from '@/types';
 import JobDetailModal from './components/JobDetailModal.vue';
 
 const jobStore = useJobStore();
 const authStore = useAuthStore();
-const favoritesStore = useFavoritesStore();
 const selectedJob = ref<JobPosting | null>(null);
 const searchTermInput = ref('');
 const favoriteOnlyInput = ref(false);
 const searchTerm = ref('');
 const favoriteOnly = ref(false);
+
+onMounted(async () => {
+  try {
+    await jobStore.fetchJobPostings();
+  } catch (error) {
+    console.error('Failed to load freelancer job postings:', error);
+    window.alert('공고 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+});
 
 // OPEN 상태인 공고만 표시
 const openJobs = computed(() => jobStore.jobPostings.filter((job) => job.status === 'OPEN'));
@@ -59,10 +66,15 @@ const formatDate = (date: Date | string) => {
   return new Date(date).toLocaleDateString('ko-KR');
 };
 
-const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
+const isFavorite = (id: string) => jobStore.isFavorite(id);
 
-const toggleFavorite = (id: string) => {
-  favoritesStore.toggleFavorite(id);
+const toggleFavorite = async (id: string) => {
+  try {
+    await jobStore.toggleFavorite(id);
+  } catch (error) {
+    console.error('Failed to toggle favorite job posting:', error);
+    window.alert('즐겨찾기 변경에 실패했습니다. 잠시 후 다시 시도해주세요.');
+  }
 };
 
 const applyFilters = () => {

@@ -1,4 +1,30 @@
+import apiClient from '@/api/axiosInstance';
 
+interface ApiResponse<T> {
+    success: boolean;
+    message?: string;
+    data: T;
+}
+
+export interface EmployerProjectStats {
+    totalProjects: number;
+    activeApplicants: number;
+    contractedFreelancers: number;
+}
+
+export interface EmployerProjectListItem {
+    projectId: number;
+    title: string;
+    status: string;
+    applicantCount: number;
+    createdAt: string | null;
+    deadline: string | null;
+}
+
+export interface EmployerApplicantStatus {
+    freelancerId: number;
+    applyStatus: string;
+}
 export interface FreelancerProject {
     id: number;
     title: string;
@@ -131,4 +157,24 @@ export const getProjectDetail = (projectId: number): Promise<FreelancerProject |
             resolve(MOCK_PROJECTS.find(p => p.id === projectId));
         }, 500);
     });
+};
+
+export const getEmployerProjectStats = async (): Promise<EmployerProjectStats> => {
+    const response = await apiClient.get<ApiResponse<EmployerProjectStats>>('/api/employer/mypage/projects/stats');
+    return response.data.data;
+};
+
+export const getEmployerProjects = async (status?: string): Promise<EmployerProjectListItem[]> => {
+    const response = await apiClient.get<ApiResponse<EmployerProjectListItem[]>>(
+        '/api/employer/mypage/projects',
+        { params: status ? { status } : undefined }
+    );
+    return response.data.data ?? [];
+};
+
+export const getEmployerApplicantStatus = async (projectId: number): Promise<EmployerApplicantStatus[]> => {
+    const response = await apiClient.get<ApiResponse<EmployerApplicantStatus[]>>(
+        `/api/employer/mypage/projects/${projectId}/applicants/status`
+    );
+    return response.data.data ?? [];
 };

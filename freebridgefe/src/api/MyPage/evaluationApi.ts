@@ -1,3 +1,24 @@
+import apiClient from '@/api/axiosInstance';
+
+interface ApiResponse<T> {
+    success: boolean;
+    message?: string;
+    data: T;
+}
+
+export interface EmployerReviewSummary {
+    averageRate: number;
+    atmosphereRate: number;
+    requirementsDetailRate: number;
+    scheduleAdherenceRate: number;
+}
+
+export interface EmployerReputationAi {
+    aiSummary: string;
+    positiveKeywords: string[];
+    negativeKeywords: string[];
+}
+
 export interface DetailedScore {
     professionalism: {
         programming: number;
@@ -132,4 +153,18 @@ export const getEvaluations = async (userId: number): Promise<Evaluation[]> => {
             resolve(MOCK_EVALUATIONS);
         }, 500);
     });
+};
+
+export const getEmployerReviewSummary = async (): Promise<EmployerReviewSummary> => {
+    const response = await apiClient.get<ApiResponse<EmployerReviewSummary>>(
+        '/api/employer/mypage/reviews/summary'
+    );
+    return response.data.data;
+};
+
+export const getEmployerReputationAi = async (): Promise<EmployerReputationAi> => {
+    const response = await apiClient.get<ApiResponse<EmployerReputationAi>>(
+        '/api/employer/mypage/reputation/ai'
+    );
+    return response.data.data;
 };

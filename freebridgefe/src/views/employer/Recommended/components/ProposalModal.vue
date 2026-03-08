@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import { X, Send } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,6 +21,15 @@ const jobStore = useJobStore();
 
 const message = ref('');
 const selectedJobId = ref('');
+
+onMounted(async () => {
+  try {
+    await jobStore.fetchJobPostings();
+  } catch (error) {
+    console.error('Failed to load employer jobs for proposal modal:', error);
+    window.alert('공고 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+});
 
 const employerJobs = computed(() => jobStore.myJobs.filter((job) => job.status === 'OPEN'));
 

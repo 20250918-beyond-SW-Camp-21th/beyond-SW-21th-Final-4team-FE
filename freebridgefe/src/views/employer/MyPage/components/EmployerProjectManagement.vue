@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
@@ -13,6 +13,7 @@ import {
 } from 'lucide-vue-next';
 
 import ProjectDetailModal from './ProjectDetailModal.vue';
+import { getEmployerProjects, type EmployerProjectListItem } from '@/api/MyPage/projectApi';
 
 defineEmits<{
   (e: 'back'): void;
@@ -104,10 +105,11 @@ const mockProjects: Project[] = [
   },
 ];
 
-const projects = ref<Project[]>(mockProjects);
+const projects = ref<Project[]>([]);
 const searchTerm = ref('');
 const statusFilter = ref<ProjectStatus | 'ALL'>('ALL');
 const router = useRouter();
+const isLoading = ref(false);
 
 // --- Helpers ---
 const getStatusConfig = (status: ProjectStatus) => {
@@ -163,6 +165,59 @@ const resetFilters = () => {
   searchTerm.value = '';
   statusFilter.value = 'ALL';
 };
+
+const normalizeStatus = (status?: string): ProjectStatus => {
+  const raw = (status ?? '').toUpperCase();
+  if (!raw) return 'BEFORE_START';
+  if (raw.includes('IN_PROGRESS') || raw.includes('PROGRESS') || raw.includes('ONGOING') || raw.includes('진행')) {
+    return 'IN_PROGRESS';
+  }
+  if (raw.includes('COMPLETED') || raw.includes('COMPLETE') || raw.includes('DONE') || raw.includes('종료') || raw.includes('완료')) {
+    return 'COMPLETED';
+  }
+  if (raw.includes('BEFORE') || raw.includes('READY') || raw.includes('WAIT') || raw.includes('RECRUIT') || raw.includes('모집') || raw.includes('대기')) {
+    return 'BEFORE_START';
+  }
+  return 'BEFORE_START';
+};
+
+const formatDate = (value?: string | null) => {
+  if (!value) return '-';
+  if (value.length >= 10) return value.slice(0, 10);
+  return value;
+};
+
+const mapProject = (item: EmployerProjectListItem): Project => ({
+  id: String(item.projectId ?? ''),
+  title: item.title ?? '',
+  status: normalizeStatus(item.status),
+  startDate: formatDate(item.createdAt),
+  endDate: formatDate(item.deadline),
+  progress: 0,
+  description: '',
+  budget: '-',
+  freelancers: []
+});
+
+const fetchProjects = async () => {
+  isLoading.value = true;
+  try {
+    const list = await getEmployerProjects();
+    projects.value = list.map(mapProject);
+    if (projects.value.length === 0) {
+      projects.value = mockProjects;
+    }
+  } catch (error) {
+    console.error('Failed to fetch employer projects:', error);
+    projects.value = mockProjects;
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchProjects();
+});
 </script>
 
 <template>
