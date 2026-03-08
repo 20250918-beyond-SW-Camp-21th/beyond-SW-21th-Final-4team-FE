@@ -98,7 +98,11 @@ const handleSave = async () => {
         alert('등급 정보가 성공적으로 저장되었습니다.');
     } catch (error) {
         console.error('Save failed', error);
-        alert('저장에 실패했습니다.');
+        if (error instanceof Error && error.message.includes('saveGrade API not available')) {
+            alert('등급 저장 기능은 준비 중입니다.');
+        } else {
+            alert('저장에 실패했습니다.');
+        }
     } finally {
         isSaving.value = false;
     }

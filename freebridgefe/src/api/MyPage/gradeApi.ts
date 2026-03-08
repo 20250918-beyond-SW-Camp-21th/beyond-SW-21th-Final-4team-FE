@@ -87,9 +87,5 @@ export const calculateGrade = async (req: GradeCalculationRequest): Promise<Grad
 
 export const saveGrade = async (_req: GradeSaveRequest): Promise<boolean> => {
     // TODO: 등급 저장 API가 준비되면 연동
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve(true);
-        }, 1000);
-    });
+    throw new Error('saveGrade API not available');
 };
