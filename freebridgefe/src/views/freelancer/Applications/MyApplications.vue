@@ -95,9 +95,9 @@ const formatDate = (date: Date | string) => {
 
 const actionFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null);
 
-const handleAcceptProposal = (proposalId: string) => {
+const handleAcceptProposal = async (proposalId: string) => {
   if (!window.confirm('이 제안을 수락하시겠습니까?')) return;
-  const roomId = freelancerStore.updateProposalStatus(proposalId, 'ACCEPTED');
+  const roomId = await freelancerStore.updateProposalStatus(proposalId, 'ACCEPTED');
   if (!roomId) {
     actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
     alert('제안 상태 변경에 실패했습니다.');
@@ -111,10 +111,10 @@ const handleAcceptProposal = (proposalId: string) => {
   alert('제안을 수락했습니다.');
 };
 
-const handleRejectProposal = (proposalId: string) => {
+const handleRejectProposal = async (proposalId: string) => {
   const reason = window.prompt('거절 사유를 입력해 주세요. (선택)');
   if (reason === null) return;
-  const updated = freelancerStore.updateProposalStatus(proposalId, 'REJECTED', reason.trim() || undefined);
+  const updated = await freelancerStore.updateProposalStatus(proposalId, 'REJECTED', reason.trim() || undefined);
   if (!updated) {
     actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
     alert('제안 상태 변경에 실패했습니다.');

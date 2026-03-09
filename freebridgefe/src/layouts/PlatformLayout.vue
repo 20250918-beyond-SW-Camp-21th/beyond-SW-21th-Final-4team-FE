@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
@@ -74,8 +74,19 @@ const navigate = (item: any) => {
 
 const isActive = (path: string) => route.path.startsWith(path);
 
-onMounted(() => {
-  // Tour auto-start logic removed
+onMounted(async () => {
+  if (authStore.isAuthenticated) {
+    try {
+      await chatStore.connectWebSocket();
+      await chatStore.fetchRooms();
+    } catch (e) {
+      console.error('Failed to initialize chat:', e);
+    }
+  }
+});
+
+onUnmounted(() => {
+  chatStore.disconnectWebSocket();
 });
 
 watch(
