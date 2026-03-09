@@ -16,6 +16,9 @@ export interface User {
   createdAt?: string | Date;
   agreedToTermsAt?: string | Date;
   isEmailVerified?: boolean;
+  phone?: string;
+  termsAgreed?: boolean;
+  privacyAgreed?: boolean;
 
   // Profiles (Additive for Onboarding)
   employerProfile?: EmployerProfile;
@@ -52,20 +55,20 @@ export interface PortfolioItem {
 }
 
 export interface JobPosting {
-    id: string;
-    employerId: string;
-    employerName: string;
-    title: string;
-    description: string;
-    techStack: string[];
-    budget: number;
-    duration: number; // months
-    status: JobStatus;
-    createdAt: Date;
-    updatedAt: Date;
-    headcount?: number;
-    matchedHeadcount?: number;
-    favorite?: boolean;
+  id: string;
+  employerId: string;
+  employerName: string;
+  title: string;
+  description: string;
+  techStack: string[];
+  budget: number;
+  duration: number; // months
+  status: JobStatus;
+  createdAt: Date;
+  updatedAt: Date;
+  headcount?: number;
+  matchedHeadcount?: number;
+  favorite?: boolean;
 }
 
 export interface Application {

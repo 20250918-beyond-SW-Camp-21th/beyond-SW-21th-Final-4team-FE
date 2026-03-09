@@ -10,6 +10,18 @@ import { getAccessToken } from '@/api/axiosInstance';
 export const useChatStore = defineStore('chat', () => {
     const authStore = useAuthStore();
 
+    type OutboundChatMessagePayload = {
+        roomId: string;
+        content: string;
+        type: ChatMessage['type'];
+        metadata?: any;
+    };
+
+    type PendingChatMessage = {
+        payload: OutboundChatMessagePayload;
+        senderId: string;
+    };
+
     // ── 참가자 ID 유틸 ─────────────────────────────────────────────────────
     function getCurrentChatParticipantId(): string | null {
         if (!authStore.user) return null;
@@ -43,7 +55,7 @@ export const useChatStore = defineStore('chat', () => {
     const currentRoomId = ref<string | null>(null);
     const isLoadingRooms = ref(false);
     const isLoadingMessages = ref<{ [roomId: string]: boolean }>({});
-    const pendingMessages = ref<any[]>([]);
+    const pendingMessages = ref<PendingChatMessage[]>([]);
     const messageBuffer = ref<{ [roomId: string]: ChatMessage[] }>({});
     const hasLoadedHistory = ref<{ [roomId: string]: boolean }>({});
 
@@ -79,10 +91,11 @@ export const useChatStore = defineStore('chat', () => {
 
                     // Flush pending messages on reconnect
                     while (pendingMessages.value.length > 0) {
-                        const payload = pendingMessages.value.shift();
+                        const pendingMessage = pendingMessages.value.shift();
+                        if (!pendingMessage) continue;
                         stompClient?.publish({
                             destination: '/app/chat/message',
-                            body: JSON.stringify(payload)
+                            body: JSON.stringify(pendingMessage.payload)
                         });
                     }
                     resolve();
@@ -121,7 +134,12 @@ export const useChatStore = defineStore('chat', () => {
 
                 // Remove from pending queue if present
                 pendingMessages.value = pendingMessages.value.filter(
-                    (p) => !(p.content === msg.content && p.senderId === msg.senderId)
+                    (p) => !(
+                        p.payload.roomId === msg.roomId &&
+                        p.payload.content === msg.content &&
+                        p.payload.type === msg.type &&
+                        p.senderId === msg.senderId
+                    )
                 );
 
                 // 로딩 중이라면 버퍼에만 저장하고 반환
@@ -137,7 +155,12 @@ export const useChatStore = defineStore('chat', () => {
 
                 // 낙관적 메시지를 실제 서버 메시지로 교체 (content 동일 + optimistic ID인 경우)
                 const optimisticIdx = messages.value[roomId].findIndex(
-                    (m) => m.id.startsWith('m-local-') && m.content === msg.content && m.senderId === msg.senderId
+                    (m) =>
+                        m.id.startsWith('m-local-') &&
+                        m.roomId === msg.roomId &&
+                        m.content === msg.content &&
+                        m.type === msg.type &&
+                        m.senderId === msg.senderId
                 );
                 if (optimisticIdx !== -1) {
                     messages.value[roomId][optimisticIdx] = msg;
@@ -340,18 +363,22 @@ export const useChatStore = defineStore('chat', () => {
         content: string,
         type: ChatMessage['type'] = 'TEXT',
         metadata?: any,
-        roomId?: string,
-        senderIdOverride?: string
+        roomId?: string
     ) {
         const targetRoomId = roomId ?? currentRoomId.value;
         if (!targetRoomId) return;
 
         if (type !== 'SYSTEM' && isRoomReadOnly(targetRoomId)) return;
-        if (!authStore.user && !senderIdOverride) return;
+        if (!authStore.user) return;
 
-        const senderId = senderIdOverride || getCurrentChatParticipantId() || String(authStore.user?.id);
+        const senderId = getCurrentChatParticipantId() || String(authStore.user.id);
         const tempId = `m-local-${Date.now()}`;
-        const payload = { roomId: targetRoomId, content, type, metadata, tempId, senderId };
+        const payload: OutboundChatMessagePayload = {
+            roomId: targetRoomId,
+            content,
+            type,
+            metadata
+        };
 
         if (stompClient && stompClient.connected) {
             stompClient.publish({
@@ -359,7 +386,7 @@ export const useChatStore = defineStore('chat', () => {
                 body: JSON.stringify(payload)
             });
         } else {
-            pendingMessages.value.push(payload);
+            pendingMessages.value.push({ payload, senderId });
         }
 
         // 낙관적 UI / 로컬 추가
@@ -384,7 +411,7 @@ export const useChatStore = defineStore('chat', () => {
     }
 
     function sendSystemMessage(roomId: string, content: string, type: ChatMessage['type'] = 'SYSTEM') {
-        sendMessage(content, type, undefined, roomId, 'SYSTEM');
+        sendMessage(content, type, undefined, roomId);
     }
 
     // ── 채팅방 생성 (REST API) ──────────────────────────────────────────────
@@ -567,3 +594,5 @@ export const useChatStore = defineStore('chat', () => {
         updateRoomContract
     };
 });
+
+
