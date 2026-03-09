@@ -89,20 +89,9 @@ const paymentSummary = computed(() => {
     };
 });
 
-const monthsDiff = (startDate: Date | string, endDate: Date | string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 1;
-
-    const monthGap = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-    return Math.max(1, monthGap + 1);
-};
-
 const calculateTotalAmount = (contract: ContractWithDetails) => {
     const commissionRate = contract.commissionRate ?? 0.05;
-    const months = monthsDiff(contract.startDate, contract.endDate);
-    return Math.round(contract.budget * (1 + commissionRate) * months);
+    return Math.round(contract.budget * (1 + commissionRate));
 };
 
 const formatDate = (date: Date | string) => new Date(date).toLocaleDateString('ko-KR');
@@ -125,10 +114,12 @@ const handlePayContract = async (contract: ContractWithDetails) => {
     }
 
     payingContractId.value = contract.id;
+    let paymentId: string | null = null;
+    let totalAmount = 0;
 
     try {
-        const totalAmount = calculateTotalAmount(contract);
-        const paymentId = createPaymentId();
+        totalAmount = calculateTotalAmount(contract);
+        paymentId = createPaymentId();
 
         const response = await requestPayment({
             storeId,
@@ -162,7 +153,22 @@ const handlePayContract = async (contract: ContractWithDetails) => {
         const verifyResult = await contractStore.verifyEmployerSettlementPayment(response.paymentId, contract.id);
         paymentSuccess.value = `${contract.projectName} 결제가 완료되었습니다. (${verifyResult.installmentsCreated}건 정산 생성)`;
     } catch (error: any) {
-        paymentError.value = error?.response?.data?.message || error?.message || '결제 처리 중 오류가 발생했습니다.';
+        const apiErrorCode = error?.response?.data?.errorCode
+            || error?.response?.data?.code
+            || error?.response?.data?.error?.code;
+        const apiErrorMessage = error?.response?.data?.message
+            || error?.response?.data?.error?.message;
+        paymentError.value = apiErrorCode
+            ? `${apiErrorCode}: ${apiErrorMessage || '결제 검증에 실패했습니다.'}`
+            : apiErrorMessage || error?.message || '결제 처리 중 오류가 발생했습니다.';
+        console.error('Payment verify failed:', {
+            status: error?.response?.status,
+            data: error?.response?.data,
+            contractId: contract.id,
+            paymentId,
+            requestedAmount: totalAmount,
+            budget: contract.budget,
+        });
     } finally {
         payingContractId.value = null;
     }

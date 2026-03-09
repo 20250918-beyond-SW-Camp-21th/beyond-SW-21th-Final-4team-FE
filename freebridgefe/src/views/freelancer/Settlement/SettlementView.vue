@@ -46,12 +46,17 @@ const statusFilters = [
     { value: 'ALL', label: '전체' },
     { value: 'PENDING', label: '지급 예정' },
     { value: 'PAID', label: '지급 완료' },
+    { value: 'CANCELLED', label: '취소됨' },
 ];
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; badgeBg: string; icon: any }> = {
     PENDING: { label: '지급 예정', color: 'text-blue-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-blue-500/20 border border-blue-500/30 text-blue-400', icon: Calendar },
     PAID: { label: '지급 완료', color: 'text-green-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-green-500/20 border border-green-500/30 text-green-400', icon: CheckCircle },
     CANCELLED: { label: '취소됨', color: 'text-rose-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-rose-500/20 border border-rose-500/30 text-rose-400', icon: AlertCircle },
+};
+
+const getStatusMeta = (status: string) => {
+    return statusConfig[status] || statusConfig.PENDING;
 };
 
 // Base Data
@@ -122,12 +127,22 @@ const paginatedSettlements = computed(() => {
 // 지급 예정 금액 (PENDING)
 const pendingAmount = computed(() => mySettlements.value
     .filter((s) => s.status === 'PENDING')
-    .reduce((sum, s) => sum + s.netAmount, 0));
+    .reduce((sum, s) => sum + s.netAmount, 0)
+);
 
 // 지급 완료 금액 (PAID)
 const paidAmount = computed(() => mySettlements.value
     .filter((s) => s.status === 'PAID')
-    .reduce((sum, s) => sum + s.netAmount, 0));
+    .reduce((sum, s) => sum + s.netAmount, 0)
+);
+
+const pendingAmountDisplay = computed(() =>
+    contractStore.freelancerSettlementSummary?.pendingAmount ?? pendingAmount.value
+);
+
+const paidAmountDisplay = computed(() =>
+    contractStore.freelancerSettlementSummary?.paidAmount ?? paidAmount.value
+);
 
 
 
@@ -215,7 +230,7 @@ onMounted(async () => {
                     <TrendingUp class="w-5 h-5" />
                 </div>
             </div>
-            <div class="text-4xl font-bold text-white mb-1">{{ pendingAmount.toLocaleString() }}<span class="text-xl text-white/40 ml-1">원</span></div>
+            <div class="text-4xl font-bold text-white mb-1">{{ pendingAmountDisplay.toLocaleString() }}<span class="text-xl text-white/40 ml-1">원</span></div>
         </div>
 
         <div
@@ -233,7 +248,7 @@ onMounted(async () => {
                     <Award class="w-5 h-5" />
                 </div>
             </div>
-                <div class="text-4xl font-bold text-white mb-1">{{ paidAmount.toLocaleString() }}<span class="text-xl text-white/40 ml-1">원</span></div>
+                <div class="text-4xl font-bold text-white mb-1">{{ paidAmountDisplay.toLocaleString() }}<span class="text-xl text-white/40 ml-1">원</span></div>
         </div>
     </div>
     
@@ -343,9 +358,9 @@ onMounted(async () => {
                     <div class="flex items-center gap-4">
                         <div
                             class="w-12 h-12 rounded-xl flex items-center justify-center border"
-                            :class="statusConfig[settlement.status].bg"
+                            :class="getStatusMeta(settlement.status).bg"
                         >
-                             <component :is="statusConfig[settlement.status].icon" class="w-5 h-5" :class="statusConfig[settlement.status].color" />
+                             <component :is="getStatusMeta(settlement.status).icon" class="w-5 h-5" :class="getStatusMeta(settlement.status).color" />
                         </div>
                         <div>
                             <div class="font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">
@@ -365,9 +380,9 @@ onMounted(async () => {
                         <!-- Status Badge -->
                         <div
                             class="px-3 py-1.5 rounded-full text-sm font-medium"
-                            :class="statusConfig[settlement.status].badgeBg"
+                            :class="getStatusMeta(settlement.status).badgeBg"
                         >
-                            {{ statusConfig[settlement.status].label }}
+                            {{ getStatusMeta(settlement.status).label }}
                         </div>
                         <button
                             @click="selectedSettlement = settlement"
