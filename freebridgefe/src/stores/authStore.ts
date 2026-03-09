@@ -74,11 +74,11 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    async function startSignup(userData: User) {
+    async function startSignup(userData: any) {
         isLoading.value = true;
         try {
-            await authApi.signup(userData);
-            // Store temp user data for verification step
+            await authApi.sendVerification(userData.email);
+            // Store temp user data for final signup step after verification
             sessionStorage.setItem('temp_signup_user', JSON.stringify(userData));
         } catch (error) {
             console.error('Failed to start signup:', error);
@@ -94,16 +94,21 @@ export const useAuthStore = defineStore('auth', () => {
         try {
             const response = await authApi.verifyEmail(email, code);
 
-            // Assuming response contains the user and token upon successful verification
-            // Adjust based on actual backend contract
-            if (response.user && response.token) {
-                setAuth(response.user, response.token);
-                sessionStorage.removeItem('temp_signup_user');
-                return true;
-            }
+            if (response.success) {
+                // Now that email is verified, call the actual signup endpoint
+                const tempUserStr = sessionStorage.getItem('temp_signup_user');
+                if (tempUserStr) {
+                    const userData = JSON.parse(tempUserStr);
+                    await authApi.signup(userData);
 
-            // If it just returns success but not the full session
-            return true;
+                    // AUTO-LOGIN to ensure the user is authenticated for onboarding
+                    await login({ email: userData.email, password: userData.password });
+
+                    sessionStorage.removeItem('temp_signup_user');
+                    return true;
+                }
+            }
+            return false;
         } catch (error) {
             console.error('Verification failed:', error);
             throw error;

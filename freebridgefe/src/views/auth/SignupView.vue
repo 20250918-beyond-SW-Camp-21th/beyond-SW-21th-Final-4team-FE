@@ -14,14 +14,13 @@ import {
   THIRD_PARTY_TERMS, 
   MARKETING_TERMS 
 } from '@/constants/terms';
-import type { User, UserRole } from '@/types';
+import type { UserRole } from '@/types';
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 
 // Input Refs for Navigation
-const nameInput = ref<HTMLInputElement | null>(null);
 const emailInput = ref<HTMLInputElement | null>(null);
 const passwordInput = ref<HTMLInputElement | null>(null);
 const confirmPasswordInput = ref<HTMLInputElement | null>(null);
@@ -157,21 +156,18 @@ const handleSubmit = async () => {
   if (!validateForm(true)) return;
 
   try {
-    const newUser: User = {
-      id: isEmployer.value ? 'e-new' : 'f-new',
+    const signupPayload: any = {
       name: formData.value.name,
       email: formData.value.email,
       password: formData.value.password,
       role: role.value,
       termsAgreed: formData.value.agreeService,
       privacyAgreed: formData.value.agreePrivacy,
-      createdAt: new Date(),
-      agreedToTermsAt: new Date(),
-      isEmailVerified: false,
+      phone: '' // Added as empty string for now
     };
 
     // Start 2FA Signup Process
-    await authStore.startSignup(newUser);
+    await authStore.startSignup(signupPayload);
     showVerificationModal.value = true;
     
   } catch (error) {

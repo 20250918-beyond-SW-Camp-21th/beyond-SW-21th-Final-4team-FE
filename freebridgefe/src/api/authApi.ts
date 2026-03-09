@@ -34,6 +34,7 @@ export interface RegisterRequest {
     role: 'FREELANCER' | 'EMPLOYER';
     termsAgreed: boolean;
     privacyAgreed: boolean;
+    phone?: string;
 }
 
 export interface RegisterData {
@@ -64,6 +65,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginData> => {
  * Register a new user
  */
 export const register = async (userData: RegisterRequest): Promise<RegisterData> => {
+    console.log('Sending signup request with payload:', JSON.stringify(userData, null, 2));
     const response = await apiClient.post<ApiResponse<RegisterData>>('/api/users/signup', userData);
     return response.data.data;
 };
@@ -80,11 +82,19 @@ export const checkEmailAvailability = async (email: string): Promise<{ exists: b
 };
 
 /**
+ * Send verification code to email
+ */
+export const sendVerification = async (email: string) => {
+    const response = await apiClient.post<ApiResponse<any>>('/api/auth/send-verification', { email });
+    return response.data.data || {};
+};
+
+/**
  * Verify email with code
  */
 export const verifyEmail = async (email: string, code: string) => {
     const response = await apiClient.post<ApiResponse<any>>('/api/auth/verify-email', { email, code });
-    return response.data.data || {};
+    return response.data; // Return full response to check success
 };
 
 /**
@@ -190,6 +200,7 @@ export const authApi = {
         return result.available;
     },
     verifyEmail,
+    sendVerification,
     resendVerification,
     getUsers,
     getUserById,
