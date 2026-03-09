@@ -28,11 +28,19 @@ const freelancerStore = useFreelancerStore();
 const rejectingApp = ref<Application | null>(null);
 
 onMounted(async () => {
-  try {
-    await jobStore.fetchJobPostings();
-  } catch (error) {
-    console.error('Failed to load employer jobs for applications view:', error);
+  const [jobsResult, proposalsResult] = await Promise.allSettled([
+    jobStore.fetchJobPostings(),
+    freelancerStore.fetchEmployerProposals(),
+  ]);
+
+  if (jobsResult.status === 'rejected') {
+    console.error('Failed to load employer jobs for applications view:', jobsResult.reason);
     window.alert('공고 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+
+  if (proposalsResult.status === 'rejected') {
+    console.error('Failed to load employer proposals:', proposalsResult.reason);
+    window.alert('보낸 제안 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
   }
 });
 
@@ -213,8 +221,19 @@ const formatDate = (date: Date | string) => {
           <h2 class="text-2xl font-bold">내가 보낸 제안</h2>
         </div>
 
+        <div v-if="freelancerStore.isFetchingProposals" class="text-center py-10 text-white/40">
+          제안 목록을 불러오는 중입니다.
+        </div>
+
+        <div
+          v-else-if="freelancerStore.proposalFetchError"
+          class="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200"
+        >
+          {{ freelancerStore.proposalFetchError }}
+        </div>
+
         <div class="space-y-4">
-          <div v-if="mySentProposals.length === 0" class="text-center py-10 text-white/40">
+          <div v-if="!freelancerStore.isFetchingProposals && mySentProposals.length === 0" class="text-center py-10 text-white/40">
             아직 보낸 제안이 없습니다.
           </div>
 

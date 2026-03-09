@@ -24,11 +24,19 @@ const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
 
 onMounted(async () => {
-  try {
-    await jobStore.fetchJobPostings();
-  } catch (error) {
-    console.error('Failed to load freelancer jobs for application history:', error);
+  const [jobsResult, proposalsResult] = await Promise.allSettled([
+    jobStore.fetchJobPostings(),
+    freelancerStore.fetchFreelancerProposals(),
+  ]);
+
+  if (jobsResult.status === 'rejected') {
+    console.error('Failed to load freelancer jobs for application history:', jobsResult.reason);
     window.alert('공고 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+
+  if (proposalsResult.status === 'rejected') {
+    console.error('Failed to load freelancer proposals:', proposalsResult.reason);
+    window.alert('받은 제안 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
   }
 });
 
@@ -95,33 +103,48 @@ const formatDate = (date: Date | string) => {
 
 const actionFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null);
 
-const handleAcceptProposal = (proposalId: string) => {
+const handleAcceptProposal = async (proposalId: string) => {
   if (!window.confirm('이 제안을 수락하시겠습니까?')) return;
-  const roomId = freelancerStore.updateProposalStatus(proposalId, 'ACCEPTED');
-  if (!roomId) {
+
+  try {
+    const roomId = await freelancerStore.updateProposalStatus(proposalId, 'ACCEPTED');
+    if (!roomId) {
+      actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
+      alert('제안 상태 변경에 실패했습니다.');
+      return;
+    }
+
+    const shouldMove = confirm('채팅방이 생성되었습니다. 이동하겠습니까?');
+    if (shouldMove) {
+      router.push('/chat');
+    }
+    actionFeedback.value = { type: 'success', message: '제안을 수락했습니다. 상태가 수락됨으로 변경되었습니다.' };
+    alert('제안을 수락했습니다.');
+  } catch (error) {
+    console.error('Failed to accept proposal:', error);
     actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
     alert('제안 상태 변경에 실패했습니다.');
-    return;
   }
-  const shouldMove = confirm('채팅방이 생성되었습니다. 이동하겠습니까?');
-  if (shouldMove) {
-    router.push('/chat');
-  }
-  actionFeedback.value = { type: 'success', message: '제안을 수락했습니다. 상태가 수락됨으로 변경되었습니다.' };
-  alert('제안을 수락했습니다.');
 };
 
-const handleRejectProposal = (proposalId: string) => {
-  const reason = window.prompt('거절 사유를 입력해 주세요. (선택)');
-  if (reason === null) return;
-  const updated = freelancerStore.updateProposalStatus(proposalId, 'REJECTED', reason.trim() || undefined);
-  if (!updated) {
+const handleRejectProposal = async (proposalId: string) => {
+  if (!window.confirm('이 제안을 거절하시겠습니까?')) return;
+
+  try {
+    const updated = await freelancerStore.updateProposalStatus(proposalId, 'REJECTED');
+    if (!updated) {
+      actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
+      alert('제안 상태 변경에 실패했습니다.');
+      return;
+    }
+
+    actionFeedback.value = { type: 'success', message: '제안을 거절했습니다. 상태가 거절됨으로 변경되었습니다.' };
+    alert('제안을 거절했습니다.');
+  } catch (error) {
+    console.error('Failed to reject proposal:', error);
     actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
     alert('제안 상태 변경에 실패했습니다.');
-    return;
   }
-  actionFeedback.value = { type: 'success', message: '제안을 거절했습니다. 상태가 거절됨으로 변경되었습니다.' };
-  alert('제안을 거절했습니다.');
 };
 </script>
 
@@ -269,8 +292,19 @@ const handleRejectProposal = (proposalId: string) => {
           <h2 class="text-2xl font-bold">기업이 보낸 제안</h2>
         </div>
 
+        <div v-if="freelancerStore.isFetchingProposals" class="text-center py-10 text-white/40">
+          제안 목록을 불러오는 중입니다.
+        </div>
+
+        <div
+          v-else-if="freelancerStore.proposalFetchError"
+          class="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200"
+        >
+          {{ freelancerStore.proposalFetchError }}
+        </div>
+
         <div class="space-y-4">
-          <div v-if="receivedProposals.length === 0" class="text-center py-10 text-white/40">
+          <div v-if="!freelancerStore.isFetchingProposals && receivedProposals.length === 0" class="text-center py-10 text-white/40">
             아직 받은 제안이 없습니다.
           </div>
 
