@@ -42,7 +42,9 @@ export const useChatStore = defineStore('chat', () => {
     const messages = ref<{ [roomId: string]: ChatMessage[] }>({});
     const currentRoomId = ref<string | null>(null);
     const isLoadingRooms = ref(false);
-    const isLoadingMessages = ref(false);
+    const isLoadingMessages = ref<{ [roomId: string]: boolean }>({});
+    const pendingMessages = ref<any[]>([]);
+    const messageBuffer = ref<{ [roomId: string]: ChatMessage[] }>({});
 
     // ── STOMP WebSocket ────────────────────────────────────────────────────
     let stompClient: Client | null = null;
@@ -69,6 +71,15 @@ export const useChatStore = defineStore('chat', () => {
                     console.log('[STOMP] Connected');
                     if (currentRoomId.value) {
                         subscribeToRoom(currentRoomId.value);
+                    }
+
+                    // Flush pending messages on reconnect
+                    while (pendingMessages.value.length > 0) {
+                        const payload = pendingMessages.value.shift();
+                        stompClient?.publish({
+                            destination: '/app/chat/message',
+                            body: JSON.stringify(payload)
+                        });
                     }
                     resolve();
                 },
@@ -104,9 +115,25 @@ export const useChatStore = defineStore('chat', () => {
                     messages.value[roomId] = [];
                 }
 
+                // Remove from pending queue if present
+                pendingMessages.value = pendingMessages.value.filter(
+                    (p) => !(p.content === msg.content && p.senderId === msg.senderId)
+                );
+
+                // 로딩 중이라면 버퍼에만 저장하고 반환
+                if (isLoadingMessages.value[roomId]) {
+                    if (!messageBuffer.value[roomId]) messageBuffer.value[roomId] = [];
+                    // 버퍼 중복 방지 (id 기반)
+                    const existsInBuffer = messageBuffer.value[roomId].some((m) => m.id === msg.id);
+                    if (!existsInBuffer) {
+                        messageBuffer.value[roomId].push(msg);
+                    }
+                    return;
+                }
+
                 // 낙관적 메시지를 실제 서버 메시지로 교체 (content 동일 + optimistic ID인 경우)
                 const optimisticIdx = messages.value[roomId].findIndex(
-                    (m) => m.id.startsWith('m-optimistic-') && m.content === msg.content && m.senderId === msg.senderId
+                    (m) => m.id.startsWith('m-local-') && m.content === msg.content && m.senderId === msg.senderId
                 );
                 if (optimisticIdx !== -1) {
                     messages.value[roomId][optimisticIdx] = msg;
@@ -173,7 +200,7 @@ export const useChatStore = defineStore('chat', () => {
 
     // ── REST: 이전 메시지 조회 ──────────────────────────────────────────────
     async function fetchMessages(roomId: string, cursorDateStr?: string) {
-        isLoadingMessages.value = true;
+        isLoadingMessages.value[roomId] = true;
         try {
             const result = await getChatMessages(roomId, cursorDateStr, 30);
             if (!messages.value[roomId]) {
@@ -184,12 +211,54 @@ export const useChatStore = defineStore('chat', () => {
             } else {
                 messages.value[roomId] = result.content;
             }
+
+            // 로딩 중 쌓인 버퍼 머지 및 중복 제거
+            const buffer = messageBuffer.value[roomId];
+            if (buffer && buffer.length > 0) {
+                buffer.forEach((bufferedMsg) => {
+                    // content+senderId로 낙관적 UI인지 확인
+                    const optimisticIdx = messages.value[roomId].findIndex(
+                        (m) =>
+                            m.id.startsWith('m-local-') &&
+                            m.content === bufferedMsg.content &&
+                            m.senderId === bufferedMsg.senderId
+                    );
+                    if (optimisticIdx !== -1) {
+                        messages.value[roomId][optimisticIdx] = bufferedMsg;
+                    } else {
+                        // 중복 확인 후 추가
+                        const exists = messages.value[roomId].some((m) => m.id === bufferedMsg.id);
+                        if (!exists) {
+                            messages.value[roomId].push(bufferedMsg);
+                        }
+                    }
+                });
+
+                // 최신 메시지 방 목록 업데이트
+                const lastBufferedMsg = buffer[buffer.length - 1];
+                const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
+                if (roomIndex !== -1 && lastBufferedMsg) {
+                    rooms.value[roomIndex].lastMessage = lastBufferedMsg;
+                    const newTime = new Date(lastBufferedMsg.createdAt).getTime();
+                    if (newTime > new Date(rooms.value[roomIndex].updatedAt).getTime()) {
+                        rooms.value[roomIndex].updatedAt = lastBufferedMsg.createdAt;
+                    }
+                }
+
+                messageBuffer.value[roomId] = []; // flush
+            }
+
+            // 시간순 정렬 (혹시 모를 꼬임 방지)
+            messages.value[roomId].sort(
+                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+
             return result;
         } catch (e) {
             console.error('[Chat] Failed to fetch messages:', e);
             return null;
         } finally {
-            isLoadingMessages.value = false;
+            isLoadingMessages.value[roomId] = false;
         }
     }
 
@@ -248,6 +317,8 @@ export const useChatStore = defineStore('chat', () => {
         }
 
         if (!messages.value[roomId] || messages.value[roomId].length === 0) {
+            // Await fetchMessages completes before fully proceeding, but subscribe To room immediately.
+            // Loading buffer will handle the realtime messages.
             fetchMessages(roomId);
         }
 
@@ -269,61 +340,37 @@ export const useChatStore = defineStore('chat', () => {
         if (!authStore.user && !senderIdOverride) return;
 
         const senderId = senderIdOverride || getCurrentChatParticipantId() || String(authStore.user?.id);
+        const tempId = `m-local-${Date.now()}`;
+        const payload = { roomId: targetRoomId, content, type, metadata, tempId, senderId };
 
-        // SYSTEM 메시지(퇴장 알림 등)는 STOMP 브로드캐스트 대신 로컬 상태에 즉시 추가
-        // → leaveRoom이 unsubscribeFromRoom을 바로 호출하기 때문에 서버 브로드캐스트를 수신하지 못함
-        const isSystemType = type === 'SYSTEM' || type === 'CONTRACT_ALERT';
-
-        if (stompClient && stompClient.connected && !isSystemType) {
-            // 일반 텍스트 메시지: STOMP로 전송 (서버가 브로드캐스트해서 subscribeToRoom 콜백으로 수신)
+        if (stompClient && stompClient.connected) {
             stompClient.publish({
                 destination: '/app/chat/message',
-                body: JSON.stringify({ roomId: targetRoomId, content, type, metadata })
+                body: JSON.stringify(payload)
             });
-            // 낙관적 UI: 보낸 사람 화면에 즉시 표시 (중복 방지는 subscribeToRoom에서 id 체크)
-            const optimisticMsg: ChatMessage = {
-                id: `m-optimistic-${Date.now()}`,
-                roomId: targetRoomId,
-                senderId,
-                content,
-                type,
-                metadata,
-                createdAt: new Date(),
-                readBy: [senderId]
-            };
-            if (!messages.value[targetRoomId]) messages.value[targetRoomId] = [];
-            messages.value[targetRoomId].push(optimisticMsg);
         } else {
-            // SYSTEM 메시지이거나 WebSocket 미연결 시: 로컬 상태에 직접 추가
-            const newMessage: ChatMessage = {
-                id: `m-local-${Date.now()}`,
-                roomId: targetRoomId,
-                senderId,
-                content,
-                type,
-                metadata,
-                createdAt: new Date(),
-                readBy: authStore.user ? [senderId] : []
-            };
-
-            if (!messages.value[targetRoomId]) {
-                messages.value[targetRoomId] = [];
-            }
-            messages.value[targetRoomId].push(newMessage);
-
-            const roomIndex = rooms.value.findIndex((r) => r.id === targetRoomId);
-            if (roomIndex !== -1) {
-                rooms.value[roomIndex].lastMessage = newMessage;
-                rooms.value[roomIndex].updatedAt = new Date();
-
-                rooms.value[roomIndex].participants.forEach((p) => {
-                    if (p !== senderId) {
-                        rooms.value[roomIndex].unreadCount[p] =
-                            (rooms.value[roomIndex].unreadCount[p] || 0) + 1;
-                    }
-                });
-            }
+            pendingMessages.value.push(payload);
         }
+
+        // 낙관적 UI / 로컬 추가
+        const newMessage: ChatMessage = {
+            id: tempId,
+            roomId: targetRoomId,
+            senderId,
+            content,
+            type,
+            metadata,
+            createdAt: new Date(),
+            readBy: authStore.user ? [senderId] : []
+        };
+
+        if (!messages.value[targetRoomId]) {
+            messages.value[targetRoomId] = [];
+        }
+        messages.value[targetRoomId].push(newMessage);
+
+        // 주의: rooms.value lastMessage 및 unreadCount는 STOMP 응답(ack) 수신 시에만 갱신하여 
+        // 영구적인 상태 불일치를 방지합니다.
     }
 
     function sendSystemMessage(roomId: string, content: string, type: ChatMessage['type'] = 'SYSTEM') {
