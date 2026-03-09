@@ -144,12 +144,23 @@ const resetFilters = () => {
     isDropdownOpen.value = false;
 };
 
-const handleFreelancerSign = async (signatureDataUrl: string) => {
+const signError = ref('');
+
+const handleFreelancerSign = async (data: { signature: string; freelancerAddress?: string; freelancerPhone?: string }) => {
     if (!signingContract.value) return;
-    const response = await signContract(signingContract.value.contractId, signatureDataUrl);
-    contractStore.updateContract(signingContract.value.id, response);
-    signingContract.value = null;
-    selectedContract.value = null;
+    signError.value = '';
+    try {
+        const response = await signContract(signingContract.value.contractId, {
+            signature: data.signature,
+            freelancerAddress: data.freelancerAddress,
+            freelancerPhone: data.freelancerPhone,
+        });
+        contractStore.updateContract(signingContract.value.id, response);
+        signingContract.value = null;
+        selectedContract.value = null;
+    } catch (err: any) {
+        signError.value = err?.response?.data?.message || err?.message || '서명에 실패했습니다.';
+    }
 };
 
 const openSignModal = (contract: ContractWithDetails) => {
@@ -339,7 +350,7 @@ onMounted(() => {
 
                     <div class="flex items-center gap-3">
                          <button
-                            v-if="contract.status === 'WAITING_SIGNATURE' && !contract.freelancerSigned"
+                            v-if="contract.status === 'WAITING_SIGNATURE' && contract.employerSigned && !contract.freelancerSigned"
                             @click="openSignModal(contract)"
                             class="px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
                         >
@@ -371,8 +382,10 @@ onMounted(() => {
         <SignaturePadModal
             v-if="signingContract && authStore.user"
             :signerName="authStore.user.name"
+            :error="signError"
+            :isFreelancer="true"
             @sign="handleFreelancerSign"
-            @close="signingContract = null"
+            @close="signingContract = null; signError = ''"
         />
     </div>
 </template>

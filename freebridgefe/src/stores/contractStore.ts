@@ -51,9 +51,11 @@ export interface EmployerSettlement {
     id: number;
     contractId: number;
     billingAmount: number;
+    platformFee: number;
+    totalPayment: number;
     installmentNumber: number;
-    status: 'ISSUED' | 'PAID' | 'DISBURSED';
-    invoicePdfUrl: string;
+    status: 'PAID' | 'DISBURSED' | 'CANCELLED';
+    invoicePdfUrl: string | null;
     dueDate: Date | string;
     paidDate?: Date | string;
 }
@@ -63,13 +65,14 @@ export interface FreelancerSettlement {
     contractId: number;
     employerSettlementId: number;
     totalAmount: number;
+    platformFee: number;
     tax: number;
     netAmount: number;
-    status: 'HOLDING' | 'PROCESSING' | 'PAID';
+    status: 'PENDING' | 'PAID' | 'CANCELLED';
     installmentNumber: number;
-    expectedPaidDate: Date | string;
+    scheduledDate: Date | string;
     paidDate?: Date | string;
-    receiptPdfUrl?: string;
+    receiptPdfUrl?: string | null;
 }
 
 // Helper interface for UI display (joined data)
@@ -83,8 +86,7 @@ export interface EmployerSettlementWithDetails extends EmployerSettlement {
     freelancerName: string;
     freelancerId: number;
     employerId: number;
-    platformFee: number;
-    totalAmount: number;
+    totalAmount: number; // alias for totalPayment for UI compatibility
 }
 
 export interface FreelancerSettlementWithDetails extends FreelancerSettlement {
@@ -100,22 +102,18 @@ export const useContractStore = defineStore('contract', () => {
     // Computed: contracts already include names from API response
     const contractsWithDetails = computed<ContractWithDetails[]>(() => contracts.value);
 
-    // Computed: EmployerSettlements with contract details and calculated fields
+    // Computed: EmployerSettlements with contract details
     const employerSettlementsWithDetails = computed<EmployerSettlementWithDetails[]>(() => {
         return employerSettlements.value.map((settlement) => {
             const contract = contracts.value.find((c) => c.id === settlement.contractId);
-            const commissionRate = contract?.commissionRate || 0.05;
-            const platformFee = Math.floor(settlement.billingAmount * commissionRate);
-            const totalAmount = settlement.billingAmount + platformFee;
-
             return {
                 ...settlement,
                 projectName: contract?.projectName || 'Unknown Project',
                 freelancerName: contract?.freelancerName || 'Unknown',
                 freelancerId: contract?.freelancerId || 0,
                 employerId: contract?.employerId || 0,
-                platformFee,
-                totalAmount,
+                platformFee: settlement.platformFee,
+                totalAmount: settlement.totalPayment,
             };
         });
     });

@@ -17,14 +17,13 @@ import {
     Clock,
     Briefcase,
     MapPin,
-    Phone,
     AlertCircle,
     Loader2,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
-import { createContract } from '@/api/contractApi';
-import { authApi } from '@/api/authApi';
+import { createContract, getEmployerRecruitmentProjects, getMatchedFreelancers, type EmployerProject, type MatchedFreelancer } from '@/api/contractApi';
+import { getEmployerProfile } from '@/api/MyPage/employer';
 import SignaturePadModal from './components/SignaturePadModal.vue';
 import ContractPreview from '@/components/contract/ContractPreview.vue';
 
@@ -40,26 +39,82 @@ const totalSteps = 2;
 const isSubmitting = ref(false);
 const submitError = ref('');
 
-// Freelancer list from API
-interface FreelancerOption {
-    id: number;
-    name: string;
-}
-const freelancerOptions = ref<FreelancerOption[]>([]);
+// Projects & matched freelancers
+const projectOptions = ref<EmployerProject[]>([]);
+const isLoadingProjects = ref(false);
+const projectLoadError = ref('');
+const selectedProjectId = ref<number | ''>('');
+const freelancerOptions = ref<MatchedFreelancer[]>([]);
 const isLoadingFreelancers = ref(false);
+const freelancerLoadError = ref('');
 
-onMounted(async () => {
+function extractArray<T>(data: any): T[] {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.content)) return data.content;
+    return [];
+}
+
+async function loadMatchedFreelancers(id: number) {
     isLoadingFreelancers.value = true;
+    freelancerLoadError.value = '';
+    freelancerOptions.value = [];
+    selectedFreelancerId.value = '';
     try {
-        const users = await authApi.getUsers({ role: 'FREELANCER' });
-        freelancerOptions.value = users
-            .filter((u: any) => u.role === 'FREELANCER' || u.role === 'freelancer')
-            .map((u: any) => ({ id: Number(u.id), name: u.name }));
-    } catch (e) {
-        console.error('Failed to load freelancers:', e);
+        const data = await getMatchedFreelancers(id);
+        freelancerOptions.value = data.content;
+        if (data.content.length === 0) {
+            freelancerLoadError.value = '이 프로젝트에 매칭된 프리랜서가 없습니다.';
+        }
+    } catch (e: any) {
+        const msg = e?.response?.data?.message || e?.message || '';
+        freelancerLoadError.value = `프리랜서 목록을 불러오지 못했습니다. ${msg}`;
+        console.error('Failed to load matched freelancers:', e);
     } finally {
         isLoadingFreelancers.value = false;
     }
+}
+
+async function onProjectSelect(id: number | '') {
+    selectedProjectId.value = id;
+    freelancerLoadError.value = '';
+    if (id !== '') {
+        await loadMatchedFreelancers(Number(id));
+    } else {
+        freelancerOptions.value = [];
+        selectedFreelancerId.value = '';
+    }
+}
+
+onMounted(async () => {
+    isLoadingProjects.value = true;
+    projectLoadError.value = '';
+
+    const [projectsResult, profileResult] = await Promise.allSettled([
+        getEmployerRecruitmentProjects(),
+        getEmployerProfile(),
+    ]);
+
+    if (projectsResult.status === 'fulfilled') {
+        projectOptions.value = extractArray<EmployerProject>(projectsResult.value);
+        if (projectOptions.value.length === 0) {
+            projectLoadError.value = '등록된 프로젝트가 없습니다.';
+        }
+    } else {
+        const e = projectsResult.reason;
+        const msg = e?.response?.data?.message || e?.message || '';
+        projectLoadError.value = `프로젝트 목록을 불러오지 못했습니다. ${msg}`;
+        console.error('Failed to load projects:', e);
+    }
+
+    if (profileResult.status === 'fulfilled') {
+        const profile = profileResult.value;
+        if (profile.companyName) employerBusinessName.value = profile.companyName;
+        if (profile.location) employerAddress.value = profile.location;
+        // CEO name: fallback to auth user name
+        if (!employerCEO.value) employerCEO.value = authStore.user?.name || '';
+    }
+
+    isLoadingProjects.value = false;
 });
 
 // Step 1: Basic Info
@@ -70,10 +125,6 @@ const startDate = ref('');
 const endDate = ref('');
 const budget = ref('');
 const paymentDay = ref<number>(25);
-
-// Freelancer contact info (required by API)
-const freelancerAddress = ref('');
-const freelancerPhone = ref('');
 
 // Step 2: Work Schedule
 type WorkScheduleType = 'FLEXIBLE' | 'FIXED';
@@ -94,21 +145,20 @@ const employerCEO = ref(authStore.user?.representativeName || '');
 const createdContract = ref<ContractWithDetails | null>(null);
 
 const selectedFreelancer = computed(() =>
-    freelancerOptions.value.find((f) => f.id === Number(selectedFreelancerId.value))
+    freelancerOptions.value.find((f) => f.freelancerId === Number(selectedFreelancerId.value))
 );
 
 // Validation
 const isStep1Valid = computed(
     () =>
+        selectedProjectId.value !== '' &&
         selectedFreelancerId.value !== '' &&
         projectName.value.trim() &&
         jobDescription.value.trim() &&
         startDate.value &&
         endDate.value &&
         budget.value &&
-        paymentDay.value &&
-        freelancerAddress.value.trim() &&
-        freelancerPhone.value.trim()
+        paymentDay.value
 );
 
 const isStep2Valid = computed(() => {
@@ -135,7 +185,7 @@ const previewContract = computed(() => {
     const isFlexible = workScheduleType.value === 'FLEXIBLE';
     return {
         projectName: projectName.value,
-        freelancerId: Number(selectedFreelancerId.value),
+        freelancerId: selectedFreelancer.value?.freelancerId ?? Number(selectedFreelancerId.value),
         employerId: Number(authStore.user?.id),
         startDate: startDate.value ? new Date(startDate.value) : undefined,
         endDate: endDate.value ? new Date(endDate.value) : undefined,
@@ -152,9 +202,7 @@ const previewContract = computed(() => {
         employerBusinessName: employerBusinessName.value,
         employerAddress: employerAddress.value,
         employerCEO: employerCEO.value,
-        freelancerAddress: freelancerAddress.value,
-        freelancerPhone: freelancerPhone.value,
-        freelancerName: selectedFreelancer.value?.name || '',
+        freelancerName: selectedFreelancer.value?.freelancerName || '',
         employerName: employerBusinessName.value,
     };
 });
@@ -180,8 +228,9 @@ const handleStartSigning = () => {
     state.value = 'signing';
 };
 
-const handleSign = async (signatureDataUrl: string) => {
-    if (!selectedFreelancer.value || !authStore.user) return;
+const handleSign = async (data: { signature: string }) => {
+    const signatureDataUrl = data.signature;
+    if (!selectedFreelancer.value || !authStore.user || selectedProjectId.value === '') return;
 
     isSubmitting.value = true;
     submitError.value = '';
@@ -191,7 +240,8 @@ const handleSign = async (signatureDataUrl: string) => {
     try {
         const response = await createContract({
             projectName: projectName.value,
-            freelancerId: selectedFreelancer.value.id,
+            freelancerId: selectedFreelancer.value.freelancerId,
+            freelancerName: selectedFreelancer.value.freelancerName,
             startDate: startDate.value,
             endDate: endDate.value,
             budget: Number(budget.value),
@@ -207,8 +257,6 @@ const handleSign = async (signatureDataUrl: string) => {
             employerBusinessName: employerBusinessName.value,
             employerAddress: employerAddress.value,
             employerCEO: employerCEO.value,
-            freelancerAddress: freelancerAddress.value,
-            freelancerPhone: freelancerPhone.value,
             employerSignature: signatureDataUrl,
         });
 
@@ -225,7 +273,9 @@ const handleSign = async (signatureDataUrl: string) => {
 };
 
 const handleReset = () => {
+    selectedProjectId.value = '';
     selectedFreelancerId.value = '';
+    freelancerOptions.value = [];
     projectName.value = '';
     jobDescription.value = '';
     startDate.value = '';
@@ -239,8 +289,6 @@ const handleReset = () => {
     breakEndTime.value = '13:00';
     workDaysPerWeek.value = 5;
     weeklyHoliday.value = '토, 일';
-    freelancerAddress.value = '';
-    freelancerPhone.value = '';
     submitError.value = '';
     createdContract.value = null;
     currentStep.value = 1;
@@ -314,59 +362,70 @@ const navigateToContracts = () => {
                             />
                         </div>
 
+                        <!-- Project Select -->
+                        <div>
+                            <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
+                                <FolderOpen class="w-4 h-4" />
+                                채용 프로젝트
+                            </label>
+                            <div class="relative">
+                                <select
+                                    :value="selectedProjectId"
+                                    @change="onProjectSelect(($event.target as HTMLSelectElement).value === '' ? '' : Number(($event.target as HTMLSelectElement).value))"
+                                    :disabled="isLoadingProjects"
+                                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-50"
+                                >
+                                    <option value="" class="bg-gray-900">
+                                        {{ isLoadingProjects ? '불러오는 중...' : '프로젝트를 선택하세요' }}
+                                    </option>
+                                    <option
+                                        v-for="p in projectOptions"
+                                        :key="p.projectId"
+                                        :value="p.projectId"
+                                        class="bg-gray-900"
+                                    >
+                                        {{ p.projectName || `프로젝트 #${p.projectId} (${p.status})` }}
+                                    </option>
+                                </select>
+                                <Loader2 v-if="isLoadingProjects" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-white/40" />
+                            </div>
+                            <p v-if="projectLoadError" class="mt-1 text-xs text-red-400">{{ projectLoadError }}</p>
+                        </div>
+
                         <!-- Freelancer Select -->
                         <div>
                             <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
                                 <User class="w-4 h-4" />
-                                프리랜서
+                                매칭된 프리랜서
                             </label>
                             <div class="relative">
                                 <select
                                     v-model="selectedFreelancerId"
-                                    :disabled="isLoadingFreelancers"
+                                    :disabled="selectedProjectId === '' || isLoadingFreelancers"
                                     class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-50"
                                 >
                                     <option value="" class="bg-gray-900">
-                                        {{ isLoadingFreelancers ? '불러오는 중...' : '프리랜서를 선택하세요' }}
+                                        {{ isLoadingFreelancers ? '불러오는 중...' : selectedProjectId === '' ? '프로젝트를 먼저 선택하세요' : '프리랜서를 선택하세요' }}
                                     </option>
                                     <option
                                         v-for="f in freelancerOptions"
-                                        :key="f.id"
-                                        :value="f.id"
+                                        :key="f.freelancerId"
+                                        :value="f.freelancerId"
                                         class="bg-gray-900"
                                     >
-                                        {{ f.name }}
+                                        {{ f.freelancerName }}
                                     </option>
                                 </select>
                                 <Loader2 v-if="isLoadingFreelancers" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-white/40" />
                             </div>
-                        </div>
-
-                        <!-- Freelancer Contact Info -->
-                        <div class="grid md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
-                                    <MapPin class="w-4 h-4" />
-                                    프리랜서 주소
-                                </label>
-                                <input
-                                    v-model="freelancerAddress"
-                                    type="text"
-                                    placeholder="예: 경기도 성남시 분당구"
-                                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-blue-500/50 focus:outline-none transition-colors"
-                                />
-                            </div>
-                            <div>
-                                <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
-                                    <Phone class="w-4 h-4" />
-                                    프리랜서 연락처
-                                </label>
-                                <input
-                                    v-model="freelancerPhone"
-                                    type="tel"
-                                    placeholder="예: 010-1234-5678"
-                                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-blue-500/50 focus:outline-none transition-colors"
-                                />
+                            <p v-if="freelancerLoadError" class="mt-1 text-xs text-red-400">{{ freelancerLoadError }}</p>
+                            <!-- Freelancer profile preview -->
+                            <div
+                                v-if="selectedFreelancer"
+                                class="mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm space-y-1"
+                            >
+                                <div class="text-white/60">직무: <span class="text-white">{{ selectedFreelancer.job }}</span></div>
+                                <div class="text-white/60">등급: <span class="text-white">{{ selectedFreelancer.grade }}</span></div>
                             </div>
                         </div>
 
