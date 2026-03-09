@@ -83,16 +83,16 @@ export const checkEmailAvailability = async (email: string): Promise<{ exists: b
  * Verify email with code
  */
 export const verifyEmail = async (email: string, code: string) => {
-    const response = await apiClient.post<ApiResponse<any>>('/api/users/verify-email', { email, code });
-    return response.data.data;
+    const response = await apiClient.post<ApiResponse<any>>('/api/auth/verify-email', { email, code });
+    return response.data.data || {};
 };
 
 /**
  * Resend verification code
  */
 export const resendVerification = async (email: string) => {
-    const response = await apiClient.post<ApiResponse<any>>('/api/users/resend-verification', { email });
-    return response.data.data;
+    const response = await apiClient.post<ApiResponse<any>>('/api/auth/resend-verification', { email });
+    return response.data.data || {};
 };
 
 /**
