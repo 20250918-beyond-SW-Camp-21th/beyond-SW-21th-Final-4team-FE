@@ -48,31 +48,38 @@ export const useChatStore = defineStore('chat', () => {
     let stompClient: Client | null = null;
     const subscriptions: Record<string, { unsubscribe: () => void }> = {};
 
-    function connectWebSocket() {
-        const token = getAccessToken(); // axiosInstance의 토큰 키 사용
-        if (!token) return;
-
-        stompClient = new Client({
-            webSocketFactory: () =>
-                new SockJS(
-                    `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/ws/chat`
-                ),
-            connectHeaders: {
-                Authorization: `Bearer ${token}`
-            },
-            reconnectDelay: 5000,
-            onConnect: () => {
-                console.log('[STOMP] Connected');
-                if (currentRoomId.value) {
-                    subscribeToRoom(currentRoomId.value);
-                }
-            },
-            onStompError: (frame) => {
-                console.error('[STOMP] Error:', frame.headers['message']);
+    function connectWebSocket(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const token = getAccessToken(); // axiosInstance의 토큰 키 사용
+            if (!token) {
+                resolve();
+                return;
             }
-        });
 
-        stompClient.activate();
+            stompClient = new Client({
+                webSocketFactory: () =>
+                    new SockJS(
+                        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/ws/chat`
+                    ),
+                connectHeaders: {
+                    Authorization: `Bearer ${token}`
+                },
+                reconnectDelay: 5000,
+                onConnect: () => {
+                    console.log('[STOMP] Connected');
+                    if (currentRoomId.value) {
+                        subscribeToRoom(currentRoomId.value);
+                    }
+                    resolve();
+                },
+                onStompError: (frame) => {
+                    console.error('[STOMP] Error:', frame.headers['message']);
+                    reject(new Error(frame.headers['message']));
+                }
+            });
+
+            stompClient.activate();
+        });
     }
 
     function subscribeToRoom(roomId: string) {

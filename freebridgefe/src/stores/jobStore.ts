@@ -250,11 +250,11 @@ export const useJobStore = defineStore('job', () => {
         applications.value.push(newApp);
     }
 
-    function updateApplicationStatus(
+    async function updateApplicationStatus(
         id: string,
         status: Application['status'],
         rejectionReason?: string
-    ): string | null {
+    ): Promise<string | null> {
         const index = applications.value.findIndex((app) => app.id === id);
         if (index === -1) return null;
 
@@ -273,7 +273,7 @@ export const useJobStore = defineStore('job', () => {
                 const employerId = String(job.employerId);
                 const freelancerId = String(app.freelancerId);
 
-                const roomId = chatStore.createRoom(
+                const roomId = await chatStore.createRoom(
                     [employerId, freelancerId],
                     {
                         [employerId]: job.employerName || 'Employer',
@@ -283,10 +283,15 @@ export const useJobStore = defineStore('job', () => {
                         relatedJobId: job.id,
                         relatedApplicationId: app.id
                     }
-                );
+                ).catch((e) => {
+                    console.error('Failed to create room:', e);
+                    return null;
+                });
 
-                chatStore.selectRoom(roomId);
-                return roomId;
+                if (roomId) {
+                    chatStore.selectRoom(roomId);
+                    return roomId;
+                }
             }
         }
 

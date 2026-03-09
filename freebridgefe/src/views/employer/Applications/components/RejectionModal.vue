@@ -24,13 +24,13 @@ const isValid = computed(() => {
   return selectedReason.value && (selectedReason.value !== 'OTHER' || customReason.value.trim());
 });
 
-const handleSubmit = (e: Event) => {
+const handleSubmit = async (e: Event) => {
   e.preventDefault();
 
   const reasonLabel = rejectionReasons.find((r) => r.value === selectedReason.value)?.label || '';
   const finalReason = selectedReason.value === 'OTHER' ? customReason.value : reasonLabel;
 
-  jobStore.updateApplicationStatus(props.application.id, 'REJECTED', finalReason);
+  await jobStore.updateApplicationStatus(props.application.id, 'REJECTED', finalReason);
   alert('지원이 거절되었습니다.');
   props.onClose();
 };

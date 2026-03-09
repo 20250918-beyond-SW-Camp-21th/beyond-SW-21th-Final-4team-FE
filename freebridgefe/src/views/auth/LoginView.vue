@@ -29,10 +29,6 @@ const handleLogin = async (e: Event) => {
       password: password.value
     });
 
-    // 채팅 WebSocket 연결 및 채팅방 목록 로드
-    chatStore.connectWebSocket();
-    chatStore.fetchRooms();
-    
     // Success - redirect based on role
     if (data.user.role === 'EMPLOYER') {
       router.push('/employer/dashboard');
