@@ -45,6 +45,7 @@ export const useChatStore = defineStore('chat', () => {
     const isLoadingMessages = ref<{ [roomId: string]: boolean }>({});
     const pendingMessages = ref<any[]>([]);
     const messageBuffer = ref<{ [roomId: string]: ChatMessage[] }>({});
+    const hasLoadedHistory = ref<{ [roomId: string]: boolean }>({});
 
     // ── STOMP WebSocket ────────────────────────────────────────────────────
     let stompClient: Client | null = null;
@@ -72,6 +73,9 @@ export const useChatStore = defineStore('chat', () => {
                     if (currentRoomId.value) {
                         subscribeToRoom(currentRoomId.value);
                     }
+
+                    // Subscribe to all rooms to receive global unread counts
+                    rooms.value.forEach(r => subscribeToRoom(r.id));
 
                     // Flush pending messages on reconnect
                     while (pendingMessages.value.length > 0) {
@@ -191,6 +195,11 @@ export const useChatStore = defineStore('chat', () => {
         try {
             const fetchedRooms = await getMyChatRooms();
             rooms.value = fetchedRooms;
+
+            // Subscribe to all fetched rooms to receive background updates
+            if (stompClient && stompClient.connected) {
+                rooms.value.forEach(r => subscribeToRoom(r.id));
+            }
         } catch (e) {
             console.error('[Chat] Failed to fetch rooms:', e);
         } finally {
@@ -210,6 +219,7 @@ export const useChatStore = defineStore('chat', () => {
                 messages.value[roomId] = [...result.content, ...messages.value[roomId]];
             } else {
                 messages.value[roomId] = result.content;
+                hasLoadedHistory.value[roomId] = true;
             }
 
             // 로딩 중 쌓인 버퍼 머지 및 중복 제거
@@ -316,7 +326,7 @@ export const useChatStore = defineStore('chat', () => {
             }
         }
 
-        if (!messages.value[roomId] || messages.value[roomId].length === 0) {
+        if (!hasLoadedHistory.value[roomId]) {
             // Await fetchMessages completes before fully proceeding, but subscribe To room immediately.
             // Loading buffer will handle the realtime messages.
             fetchMessages(roomId);
@@ -415,6 +425,9 @@ export const useChatStore = defineStore('chat', () => {
             });
             rooms.value.unshift(newRoom);
             messages.value[newRoom.id] = [];
+            if (stompClient && stompClient.connected) {
+                subscribeToRoom(newRoom.id);
+            }
             return newRoom.id;
         } catch (e) {
             console.error('[Chat] Failed to create room:', e);
