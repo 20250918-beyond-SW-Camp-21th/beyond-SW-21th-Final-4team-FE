@@ -54,13 +54,23 @@ export interface ResumeDetail {
 }
 
 interface ResumeResponseDto {
+  basicInfo: ResumeBasicInfoDto | null;
   educations: EducationDto[];
   careers: CareerDto[];
   certifications: CertificationDto[];
 }
 
+interface ResumeBasicInfoDto {
+  name: string | null;
+  birthDate: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+}
+
 interface EducationDto {
   educationId: number | null;
+  schoolType: string | null;
   schoolName: string | null;
   major: string | null;
   admissionDate: string | null;
@@ -71,7 +81,10 @@ interface EducationDto {
 interface CareerDto {
   careerId: number | null;
   companyName: string | null;
+  department: string | null;
   role: string | null;
+  jobType: string | null;
+  employmentType: string | null;
   startDate: string | null;
   endDate: string | null;
   description: string | null;
@@ -128,9 +141,10 @@ export const getResumeDetail = async (): Promise<ResumeDetail> => {
   );
 
   const data = response.data.data;
+  const basicInfo = data?.basicInfo;
   const educations = (data?.educations ?? []).map((edu, index) => ({
     id: edu.educationId ?? index + 1,
-    schoolType: '미입력',
+    schoolType: edu.schoolType ?? '미입력',
     schoolName: edu.schoolName ?? '',
     major: edu.major ?? '',
     status: mapEduStatusFromEnum(edu.status),
@@ -142,10 +156,10 @@ export const getResumeDetail = async (): Promise<ResumeDetail> => {
   const careers = (data?.careers ?? []).map((career, index) => ({
     id: career.careerId ?? index + 1,
     companyName: career.companyName ?? '',
-    department: '',
+    department: career.department ?? '',
     position: career.role ?? '',
-    jobType: '',
-    employmentType: '',
+    jobType: career.jobType ?? '',
+    employmentType: career.employmentType ?? '',
     startDate: career.startDate ?? '',
     endDate: career.endDate ?? '',
     description: career.description ?? '',
@@ -162,11 +176,11 @@ export const getResumeDetail = async (): Promise<ResumeDetail> => {
 
   return {
     id: 0,
-    name: '',
-    birthDate: '',
-    phone: '',
-    email: '',
-    address: '',
+    name: basicInfo?.name ?? '',
+    birthDate: basicInfo?.birthDate ?? '',
+    phone: basicInfo?.phone ?? '',
+    email: basicInfo?.email ?? '',
+    address: basicInfo?.address ?? '',
     educations,
     careers,
     certifications,
