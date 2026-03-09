@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Search, Filter, Users, Star, DollarSign, SlidersHorizontal, Send } from 'lucide-vue-next';
-import { useFreelancerStore } from '@/stores/freelancerStore';
+import { computed, onMounted, ref } from 'vue';
+import { Search, Filter, Users, Star, DollarSign, SlidersHorizontal, Send, BriefcaseBusiness, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { getEmployerFreelancers, type EmployerFreelancerSearchItem } from '@/api/MyPage/employerFreelancerApi';
 import { useFavoritesStore } from '@/stores/favoritesStore';
 import type { User } from '@/types';
 import ProposalModal from '@/views/employer/Recommended/components/ProposalModal.vue';
 
-const freelancerStore = useFreelancerStore();
 const favoritesStore = useFavoritesStore();
+const pageSize = 20;
 
 const searchQueryInput = ref('');
 const selectedSkillInput = ref('ALL');
@@ -20,23 +20,30 @@ const selectedSkill = ref('ALL');
 const minExperience = ref(0);
 const maxMonthlySalary = ref(10000000);
 const favoriteOnly = ref(false);
+const freelancers = ref<EmployerFreelancerSearchItem[]>([]);
+const isLoading = ref(false);
+const loadError = ref<string | null>(null);
+const currentPage = ref(0);
+const totalPages = ref(0);
+const totalElements = ref(0);
 const selectedFreelancer = ref<User | null>(null);
 
 const allSkills = computed(() => {
   const skills = new Set<string>();
-  freelancerStore.freelancers.forEach((freelancer) => {
+  freelancers.value.forEach((freelancer) => {
     freelancer.skills?.forEach((skill) => skills.add(skill));
   });
   return ['ALL', ...Array.from(skills).sort()];
 });
 
-const filteredFreelancers = computed<User[]>(() => {
+const filteredFreelancers = computed<EmployerFreelancerSearchItem[]>(() => {
   const query = searchQuery.value.trim().toLowerCase();
-  return freelancerStore.freelancers.filter((freelancer) => {
+  return freelancers.value.filter((freelancer) => {
     const matchesQuery =
       !query ||
       freelancer.name.toLowerCase().includes(query) ||
-      freelancer.bio?.toLowerCase().includes(query) ||
+      freelancer.job?.toLowerCase().includes(query) ||
+      freelancer.introduction?.toLowerCase().includes(query) ||
       freelancer.skills?.some((skill) => skill.toLowerCase().includes(query));
 
     const matchesSkill =
@@ -44,12 +51,12 @@ const filteredFreelancers = computed<User[]>(() => {
       freelancer.skills?.some((skill) => skill === selectedSkill.value);
 
     const matchesExperience =
-      (freelancer.experience ?? 0) >= minExperience.value;
+      (freelancer.careerYears ?? 0) >= minExperience.value;
 
     const matchesRate =
-      (freelancer.monthlySalary ?? 0) <= maxMonthlySalary.value;
+      (freelancer.wage ?? 0) <= maxMonthlySalary.value;
 
-    const matchesFavorite = !favoriteOnly.value || isFavorite(freelancer.id);
+    const matchesFavorite = !favoriteOnly.value || isFavorite(freelancer.freelancerId);
 
     return matchesQuery && matchesSkill && matchesExperience && matchesRate && matchesFavorite;
   });
@@ -57,19 +64,60 @@ const filteredFreelancers = computed<User[]>(() => {
 
 const formatSkills = (skills?: string[]) => skills?.slice(0, 6) || [];
 
-const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
+const formatMoney = (amount?: number | null) => (amount ?? 0).toLocaleString();
 
-const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
+const getInitial = (name: string) => name?.trim().charAt(0) || '?';
 
-const applyFilters = () => {
+const isFavorite = (id: number) => favoritesStore.favoriteIds.includes(String(id));
+
+const toggleFavorite = (id: number) => favoritesStore.toggleFavorite(String(id));
+
+const toProposalFreelancer = (freelancer: EmployerFreelancerSearchItem): User => ({
+  id: String(freelancer.freelancerId),
+  role: 'FREELANCER',
+  name: freelancer.name,
+  email: 'hidden@example.com',
+  avatar: freelancer.avatarUrl ?? undefined,
+  skills: freelancer.skills,
+  experience: freelancer.careerYears ?? 0,
+  monthlySalary: freelancer.wage ?? 0,
+  bio: freelancer.introduction ?? freelancer.job ?? '',
+});
+
+const loadFreelancers = async () => {
+  isLoading.value = true;
+  loadError.value = null;
+
+  try {
+    const response = await getEmployerFreelancers({
+      page: currentPage.value,
+      size: pageSize,
+      keyword: searchQuery.value || undefined,
+    });
+    freelancers.value = response.items;
+    totalPages.value = response.totalPages;
+    totalElements.value = response.totalElements;
+  } catch (error: any) {
+    freelancers.value = [];
+    totalPages.value = 0;
+    totalElements.value = 0;
+    loadError.value = error?.response?.data?.message || error?.message || '프리랜서 목록을 불러오지 못했습니다.';
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const applyFilters = async () => {
   searchQuery.value = searchQueryInput.value;
   selectedSkill.value = selectedSkillInput.value;
   minExperience.value = minExperienceInput.value;
   maxMonthlySalary.value = maxMonthlySalaryInput.value;
   favoriteOnly.value = favoriteOnlyInput.value;
+  currentPage.value = 0;
+  await loadFreelancers();
 };
 
-const resetFilters = () => {
+const resetFilters = async () => {
   searchQueryInput.value = '';
   selectedSkillInput.value = 'ALL';
   minExperienceInput.value = 0;
@@ -81,7 +129,25 @@ const resetFilters = () => {
   minExperience.value = 0;
   maxMonthlySalary.value = 10000000;
   favoriteOnly.value = false;
+  currentPage.value = 0;
+  await loadFreelancers();
 };
+
+const canGoPrev = computed(() => currentPage.value > 0);
+const canGoNext = computed(() => currentPage.value + 1 < totalPages.value);
+
+const movePage = async (nextPage: number) => {
+  if (nextPage < 0 || nextPage >= totalPages.value || nextPage === currentPage.value) {
+    return;
+  }
+
+  currentPage.value = nextPage;
+  await loadFreelancers();
+};
+
+onMounted(() => {
+  void loadFreelancers();
+});
 </script>
 
 <template>
@@ -92,6 +158,9 @@ const resetFilters = () => {
         <h1 class="text-3xl md:text-4xl font-bold">프리랜서 찾기</h1>
       </div>
       <p class="text-white/60">전체 프리랜서를 조건별로 검색해보세요</p>
+      <p class="text-sm text-white/40">
+        이름/직무/소개는 서버에서 조회하고, 스킬·경력·희망금액·즐겨찾기는 현재 조회 결과에서 추가 필터링합니다.
+      </p>
 
       <div class="grid gap-4 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] items-stretch">
         <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
@@ -172,28 +241,59 @@ const resetFilters = () => {
       </div>
     </div>
 
-    <div v-if="filteredFreelancers.length === 0" class="bg-white/5 border border-white/10 rounded-3xl p-12 text-center text-white/50">
+    <div class="mb-6 flex items-center justify-between gap-4 text-sm text-white/60">
+      <span>검색 결과 {{ totalElements.toLocaleString() }}명</span>
+      <span v-if="totalPages > 0">페이지 {{ currentPage + 1 }} / {{ totalPages }}</span>
+    </div>
+
+    <div v-if="isLoading" class="bg-white/5 border border-white/10 rounded-3xl p-12 text-center text-white/50">
+      프리랜서 목록을 불러오는 중입니다.
+    </div>
+
+    <div v-else-if="loadError" class="bg-red-500/10 border border-red-400/20 rounded-3xl p-12 text-center text-red-200">
+      {{ loadError }}
+    </div>
+
+    <div v-else-if="filteredFreelancers.length === 0" class="bg-white/5 border border-white/10 rounded-3xl p-12 text-center text-white/50">
       조건에 맞는 프리랜서가 없습니다.
     </div>
 
     <div v-else class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
       <div
         v-for="freelancer in filteredFreelancers"
-        :key="freelancer.id"
+        :key="freelancer.freelancerId"
         class="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all"
       >
         <div class="flex items-start gap-4 mb-4">
-          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-2xl font-bold">
-            {{ freelancer.name[0] }}
+          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 overflow-hidden flex items-center justify-center text-white text-2xl font-bold">
+            <img
+              v-if="freelancer.avatarUrl"
+              :src="freelancer.avatarUrl"
+              :alt="`${freelancer.name} 프로필 이미지`"
+              class="h-full w-full object-cover"
+            />
+            <span v-else>{{ getInitial(freelancer.name) }}</span>
           </div>
           <div class="flex-1">
-            <div class="text-xl font-semibold">{{ freelancer.name }}</div>
-            <div class="text-sm text-white/60">{{ freelancer.experience }}년 경력</div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="text-xl font-semibold">{{ freelancer.name }}</div>
+              <span
+                v-if="freelancer.grade"
+                class="px-2 py-0.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 text-xs text-emerald-300"
+              >
+                {{ freelancer.grade }}
+              </span>
+            </div>
+            <div class="mt-1 flex items-center gap-2 text-sm text-white/60">
+              <BriefcaseBusiness class="w-4 h-4" />
+              <span>{{ freelancer.job || '직무 정보 없음' }}</span>
+            </div>
+            <div class="text-sm text-white/60">{{ freelancer.careerYears ?? 0 }}년 경력</div>
           </div>
         </div>
 
         <p class="text-white/70 text-sm mb-4 line-clamp-2 min-h-[40px]">
-          {{ freelancer.bio || '소개가 아직 등록되지 않았습니다.' }}
+          {{ freelancer.introduction || '소개가 아직 등록되지 않았습니다.' }}
         </p>
 
         <div class="flex flex-wrap gap-2 mb-5">
@@ -208,25 +308,25 @@ const resetFilters = () => {
 
         <div class="flex items-center justify-between pt-4 border-t border-white/10">
           <div class="text-sm text-white/60">
-            월급 <span class="text-white font-semibold">{{ freelancer.monthlySalary?.toLocaleString() }}원</span>
+            희망 금액 <span class="text-white font-semibold">{{ formatMoney(freelancer.wage) }}원</span>
           </div>
           <div class="flex items-center gap-2">
             <button
               type="button"
-              @click="toggleFavorite(freelancer.id)"
+              @click="toggleFavorite(freelancer.freelancerId)"
               class="px-3 py-2 rounded-lg border transition-all"
-              :class="isFavorite(freelancer.id)
+              :class="isFavorite(freelancer.freelancerId)
                 ? 'bg-yellow-400/20 border-yellow-400/40 text-yellow-300'
                 : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'"
             >
               <Star
                 class="w-4 h-4"
-                :class="isFavorite(freelancer.id) ? 'fill-yellow-400 text-yellow-400' : ''"
+                :class="isFavorite(freelancer.freelancerId) ? 'fill-yellow-400 text-yellow-400' : ''"
               />
             </button>
             <button
               type="button"
-              @click="selectedFreelancer = freelancer"
+              @click="selectedFreelancer = toProposalFreelancer(freelancer)"
               class="px-4 py-2 bg-emerald-400 text-black rounded-lg font-semibold hover:bg-emerald-300 transition-colors flex items-center gap-2"
             >
               <Send class="w-4 h-4" />
@@ -235,6 +335,30 @@ const resetFilters = () => {
           </div>
         </div>
       </div>
+    </div>
+
+    <div v-if="!isLoading && totalPages > 1" class="mt-8 flex items-center justify-center gap-3">
+      <button
+        type="button"
+        @click="movePage(currentPage - 1)"
+        :disabled="!canGoPrev"
+        class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ChevronLeft class="h-4 w-4" />
+        이전
+      </button>
+      <div class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+        {{ currentPage + 1 }} / {{ totalPages }}
+      </div>
+      <button
+        type="button"
+        @click="movePage(currentPage + 1)"
+        :disabled="!canGoNext"
+        class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        다음
+        <ChevronRight class="h-4 w-4" />
+      </button>
     </div>
 
     <ProposalModal
