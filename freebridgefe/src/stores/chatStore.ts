@@ -1,11 +1,16 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 import { useAuthStore } from '@/stores/authStore';
 import type { ChatRoom, ChatMessage } from '@/types';
+import { getMyChatRooms, getChatMessages, createChatRoom as apiCreateRoom } from '@/api/chatApi';
+import { getAccessToken } from '@/api/axiosInstance';
 
 export const useChatStore = defineStore('chat', () => {
     const authStore = useAuthStore();
 
+    // ── 참가자 ID 유틸 ─────────────────────────────────────────────────────
     function getCurrentChatParticipantId(): string | null {
         if (!authStore.user) return null;
 
@@ -32,112 +37,242 @@ export const useChatStore = defineStore('chat', () => {
         return room.participants.find((id) => !myIds.includes(String(id)));
     }
 
-    // Mock Data
-    const rooms = ref<ChatRoom[]>([
-        {
-            id: 'room1',
-            participants: ['e1', 'f1'],
-            participantNames: {
-                'e1': '스타트업 A',
-                'f1': '김프론트'
-            },
-            lastMessage: {
-                id: 'm1',
-                roomId: 'room1',
-                senderId: 'e1',
-                content: '안녕하세요, 지원서 잘 보았습니다. 채팅으로 이야기 나누고 싶습니다.',
-                type: 'TEXT',
-                createdAt: new Date(Date.now() - 1000000),
-                readBy: ['e1', 'f1']
-            },
-            unreadCount: { 'e1': 0, 'f1': 0 },
-            relatedJobId: 'job1',
-            relatedApplicationId: 'app1',
-            contractId: 1,
-            createdAt: new Date(Date.now() - 2000000),
-            updatedAt: new Date(Date.now() - 1000000)
-        },
-        {
-            id: 'room2',
-            participants: ['e1', 'f3'],
-            participantNames: {
-                'e1': '스타트업 A',
-                'f3': '박풀스택'
-            },
-            lastMessage: {
-                id: 'm2',
-                roomId: 'room2',
-                senderId: 'f3',
-                content: '제안 주셔서 감사합니다. 긍정적으로 검토하겠습니다.',
-                type: 'TEXT',
-                createdAt: new Date(Date.now() - 500000),
-                readBy: ['f3']
-            },
-            unreadCount: { 'e1': 1, 'f3': 0 },
-            relatedJobId: 'job2',
-            createdAt: new Date(Date.now() - 1000000),
-            updatedAt: new Date(Date.now() - 500000)
-        }
-    ]);
-    const messages = ref<{ [roomId: string]: ChatMessage[] }>({
-        'room1': [
-            {
-                id: 'm0-1',
-                roomId: 'room1',
-                senderId: 'SYSTEM',
-                content: '채팅방이 생성되었습니다.',
-                type: 'SYSTEM',
-                createdAt: new Date(Date.now() - 2000000),
-                readBy: ['e1', 'f1']
-            },
-            {
-                id: 'm1',
-                roomId: 'room1',
-                senderId: 'e1',
-                content: '안녕하세요, 지원서 잘 보았습니다. 채팅으로 이야기 나누고 싶습니다.',
-                type: 'TEXT',
-                createdAt: new Date(Date.now() - 1000000),
-                readBy: ['e1', 'f1']
-            },
-            {
-                id: 'm-sys-1',
-                roomId: 'room1',
-                senderId: 'e1',
-                content: '프로젝트 계약 요청',
-                type: 'CONTRACT_ALERT',
-                metadata: {
-                    contractId: 2,
-                    status: 'WAITING_SIGNATURE'
-                },
-                createdAt: new Date(Date.now() - 900000),
-                readBy: ['e1', 'f1']
-            }
-        ],
-        'room2': [
-            {
-                id: 'm0-2',
-                roomId: 'room2',
-                senderId: 'SYSTEM',
-                content: '제안이 수락되어 채팅방이 생성되었습니다.',
-                type: 'SYSTEM',
-                createdAt: new Date(Date.now() - 1000000),
-                readBy: ['e1', 'f3']
-            },
-            {
-                id: 'm2',
-                roomId: 'room2',
-                senderId: 'f3',
-                content: '제안 주셔서 감사합니다. 긍정적으로 검토하겠습니다.',
-                type: 'TEXT',
-                createdAt: new Date(Date.now() - 500000),
-                readBy: ['f3']
-            }
-        ]
-    });
-
+    // ── 상태 ───────────────────────────────────────────────────────────────
+    const rooms = ref<ChatRoom[]>([]);
+    const messages = ref<{ [roomId: string]: ChatMessage[] }>({});
     const currentRoomId = ref<string | null>(null);
+    const isLoadingRooms = ref(false);
+    const isLoadingMessages = ref<{ [roomId: string]: boolean }>({});
+    const pendingMessages = ref<any[]>([]);
+    const messageBuffer = ref<{ [roomId: string]: ChatMessage[] }>({});
+    const hasLoadedHistory = ref<{ [roomId: string]: boolean }>({});
 
-    // Getters
+    // ── STOMP WebSocket ────────────────────────────────────────────────────
+    let stompClient: Client | null = null;
+    const subscriptions: Record<string, { unsubscribe: () => void }> = {};
+
+    function connectWebSocket(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            const token = getAccessToken(); // axiosInstance의 토큰 키 사용
+            if (!token) {
+                resolve();
+                return;
+            }
+
+            stompClient = new Client({
+                webSocketFactory: () =>
+                    new SockJS(
+                        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/ws/chat`
+                    ),
+                connectHeaders: {
+                    Authorization: `Bearer ${token}`
+                },
+                reconnectDelay: 5000,
+                onConnect: () => {
+                    console.log('[STOMP] Connected');
+                    if (currentRoomId.value) {
+                        subscribeToRoom(currentRoomId.value);
+                    }
+
+                    // Subscribe to all rooms to receive global unread counts
+                    rooms.value.forEach(r => subscribeToRoom(r.id));
+
+                    // Flush pending messages on reconnect
+                    while (pendingMessages.value.length > 0) {
+                        const payload = pendingMessages.value.shift();
+                        stompClient?.publish({
+                            destination: '/app/chat/message',
+                            body: JSON.stringify(payload)
+                        });
+                    }
+                    resolve();
+                },
+                onStompError: (frame) => {
+                    console.error('[STOMP] Error:', frame.headers['message']);
+                    reject(new Error(frame.headers['message']));
+                }
+            });
+
+            stompClient.activate();
+        });
+    }
+
+    function subscribeToRoom(roomId: string) {
+        if (!stompClient || !stompClient.connected) return;
+        if (subscriptions[roomId]) return; // 이미 구독 중
+
+        const sub = stompClient.subscribe(`/topic/chat/room/${roomId}`, (stompMessage) => {
+            try {
+                const raw = JSON.parse(stompMessage.body);
+                const msg: ChatMessage = {
+                    id: raw.messageId || raw.id || `ws-${Date.now()}`,
+                    roomId: raw.roomId,
+                    senderId: raw.senderId,
+                    content: raw.content,
+                    type: raw.type,
+                    metadata: raw.metadata,
+                    createdAt: raw.createdAt ? new Date(raw.createdAt) : new Date(),
+                    readBy: raw.readBy ?? []
+                };
+
+                if (!messages.value[roomId]) {
+                    messages.value[roomId] = [];
+                }
+
+                // Remove from pending queue if present
+                pendingMessages.value = pendingMessages.value.filter(
+                    (p) => !(p.content === msg.content && p.senderId === msg.senderId)
+                );
+
+                // 로딩 중이라면 버퍼에만 저장하고 반환
+                if (isLoadingMessages.value[roomId]) {
+                    if (!messageBuffer.value[roomId]) messageBuffer.value[roomId] = [];
+                    // 버퍼 중복 방지 (id 기반)
+                    const existsInBuffer = messageBuffer.value[roomId].some((m) => m.id === msg.id);
+                    if (!existsInBuffer) {
+                        messageBuffer.value[roomId].push(msg);
+                    }
+                    return;
+                }
+
+                // 낙관적 메시지를 실제 서버 메시지로 교체 (content 동일 + optimistic ID인 경우)
+                const optimisticIdx = messages.value[roomId].findIndex(
+                    (m) => m.id.startsWith('m-local-') && m.content === msg.content && m.senderId === msg.senderId
+                );
+                if (optimisticIdx !== -1) {
+                    messages.value[roomId][optimisticIdx] = msg;
+                } else {
+                    // 일반 중복 방지 (id 기반)
+                    const exists = messages.value[roomId].some((m) => m.id === msg.id);
+                    if (!exists) {
+                        messages.value[roomId].push(msg);
+                    }
+                }
+
+                // 방 목록 lastMessage, updatedAt 갱신
+                const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
+                if (roomIndex !== -1) {
+                    rooms.value[roomIndex].lastMessage = msg;
+                    rooms.value[roomIndex].updatedAt = msg.createdAt;
+
+                    // 현재 방이 아닌 경우 unreadCount 증가
+                    if (currentRoomId.value !== roomId) {
+                        const myIds = getMyParticipantIds();
+                        rooms.value[roomIndex].participants.forEach((p) => {
+                            if (!myIds.includes(p)) return;
+                            rooms.value[roomIndex].unreadCount[p] =
+                                (rooms.value[roomIndex].unreadCount[p] || 0) + 1;
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error('[STOMP] Failed to parse message:', e);
+            }
+        });
+
+        subscriptions[roomId] = sub;
+    }
+
+    function unsubscribeFromRoom(roomId: string) {
+        if (subscriptions[roomId]) {
+            subscriptions[roomId].unsubscribe();
+            delete subscriptions[roomId];
+        }
+    }
+
+    function disconnectWebSocket() {
+        if (stompClient) {
+            stompClient.deactivate();
+            stompClient = null;
+        }
+        Object.keys(subscriptions).forEach((id) => unsubscribeFromRoom(id));
+    }
+
+    // ── REST: 채팅방 목록 조회 ──────────────────────────────────────────────
+    async function fetchRooms() {
+        if (!authStore.isAuthenticated) return;
+        isLoadingRooms.value = true;
+        try {
+            const fetchedRooms = await getMyChatRooms();
+            rooms.value = fetchedRooms;
+
+            // Subscribe to all fetched rooms to receive background updates
+            if (stompClient && stompClient.connected) {
+                rooms.value.forEach(r => subscribeToRoom(r.id));
+            }
+        } catch (e) {
+            console.error('[Chat] Failed to fetch rooms:', e);
+        } finally {
+            isLoadingRooms.value = false;
+        }
+    }
+
+    // ── REST: 이전 메시지 조회 ──────────────────────────────────────────────
+    async function fetchMessages(roomId: string, cursorDateStr?: string) {
+        isLoadingMessages.value[roomId] = true;
+        try {
+            const result = await getChatMessages(roomId, cursorDateStr, 30);
+            if (!messages.value[roomId]) {
+                messages.value[roomId] = [];
+            }
+            if (cursorDateStr) {
+                messages.value[roomId] = [...result.content, ...messages.value[roomId]];
+            } else {
+                messages.value[roomId] = result.content;
+                hasLoadedHistory.value[roomId] = true;
+            }
+
+            // 로딩 중 쌓인 버퍼 머지 및 중복 제거
+            const buffer = messageBuffer.value[roomId];
+            if (buffer && buffer.length > 0) {
+                buffer.forEach((bufferedMsg) => {
+                    // content+senderId로 낙관적 UI인지 확인
+                    const optimisticIdx = messages.value[roomId].findIndex(
+                        (m) =>
+                            m.id.startsWith('m-local-') &&
+                            m.content === bufferedMsg.content &&
+                            m.senderId === bufferedMsg.senderId
+                    );
+                    if (optimisticIdx !== -1) {
+                        messages.value[roomId][optimisticIdx] = bufferedMsg;
+                    } else {
+                        // 중복 확인 후 추가
+                        const exists = messages.value[roomId].some((m) => m.id === bufferedMsg.id);
+                        if (!exists) {
+                            messages.value[roomId].push(bufferedMsg);
+                        }
+                    }
+                });
+
+                // 최신 메시지 방 목록 업데이트
+                const lastBufferedMsg = buffer[buffer.length - 1];
+                const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
+                if (roomIndex !== -1 && lastBufferedMsg) {
+                    rooms.value[roomIndex].lastMessage = lastBufferedMsg;
+                    const newTime = new Date(lastBufferedMsg.createdAt).getTime();
+                    if (newTime > new Date(rooms.value[roomIndex].updatedAt).getTime()) {
+                        rooms.value[roomIndex].updatedAt = lastBufferedMsg.createdAt;
+                    }
+                }
+
+                messageBuffer.value[roomId] = []; // flush
+            }
+
+            // 시간순 정렬 (혹시 모를 꼬임 방지)
+            messages.value[roomId].sort(
+                (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+            );
+
+            return result;
+        } catch (e) {
+            console.error('[Chat] Failed to fetch messages:', e);
+            return null;
+        } finally {
+            isLoadingMessages.value[roomId] = false;
+        }
+    }
+
+    // ── Getters ────────────────────────────────────────────────────────────
     function normalizeIdForRoom(room: ChatRoom, id: string): string {
         const raw = String(id);
         if (/^[ef]\d+$/i.test(raw)) return raw.toLowerCase();
@@ -152,16 +287,18 @@ export const useChatStore = defineStore('chat', () => {
         if (!authStore.user) return [];
         const myIds = getMyParticipantIds();
 
-        return rooms.value.filter((room) => {
-            const normalizedMyIds = myIds.map((id) => normalizeIdForRoom(room, id));
-            const isParticipant = room.participants
-                .map((id) => normalizeIdForRoom(room, String(id)))
-                .some((id) => normalizedMyIds.includes(id));
-            const hasLeft = (room.leftBy || [])
-                .map((id) => normalizeIdForRoom(room, String(id)))
-                .some((id) => normalizedMyIds.includes(id));
-            return isParticipant && !hasLeft;
-        }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        return rooms.value
+            .filter((room) => {
+                const normalizedMyIds = myIds.map((id) => normalizeIdForRoom(room, id));
+                const isParticipant = room.participants
+                    .map((id) => normalizeIdForRoom(room, String(id)))
+                    .some((id) => normalizedMyIds.includes(id));
+                const hasLeft = (room.leftBy || [])
+                    .map((id) => normalizeIdForRoom(room, String(id)))
+                    .some((id) => normalizedMyIds.includes(id));
+                return isParticipant && !hasLeft;
+            })
+            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     });
 
     const currentMessages = computed(() => {
@@ -170,18 +307,16 @@ export const useChatStore = defineStore('chat', () => {
     });
 
     const currentRoom = computed(() => {
-        return rooms.value.find(r => r.id === currentRoomId.value);
+        return rooms.value.find((r) => r.id === currentRoomId.value);
     });
 
-    // Actions
+    // ── 방 선택: 메시지 로드 + WebSocket 구독 ──────────────────────────────
     function selectRoom(roomId: string) {
         currentRoomId.value = roomId;
-        // Mark as read logic would go here
+
         if (authStore.user) {
             const myIds = getMyParticipantIds();
-
-            // Reset unread count
-            const roomIndex = rooms.value.findIndex(r => r.id === roomId);
+            const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
             if (roomIndex !== -1) {
                 myIds.forEach((id) => {
                     if (id in rooms.value[roomIndex].unreadCount) {
@@ -190,173 +325,117 @@ export const useChatStore = defineStore('chat', () => {
                 });
             }
         }
+
+        if (!hasLoadedHistory.value[roomId]) {
+            // Await fetchMessages completes before fully proceeding, but subscribe To room immediately.
+            // Loading buffer will handle the realtime messages.
+            fetchMessages(roomId);
+        }
+
+        subscribeToRoom(roomId);
     }
 
-    function sendMessage(content: string, type: ChatMessage['type'] = 'TEXT', metadata?: any, roomId?: string, senderIdOverride?: string) {
-
+    // ── 메시지 전송 (STOMP → 로컬 Fallback) ────────────────────────────────
+    function sendMessage(
+        content: string,
+        type: ChatMessage['type'] = 'TEXT',
+        metadata?: any,
+        roomId?: string,
+        senderIdOverride?: string
+    ) {
         const targetRoomId = roomId ?? currentRoomId.value;
         if (!targetRoomId) return;
 
-        if (type !== 'SYSTEM' && isRoomReadOnly(targetRoomId)) {
-            return;
-        }
-
-        // If no user is logged in, only allow sending if it's a system message override
+        if (type !== 'SYSTEM' && isRoomReadOnly(targetRoomId)) return;
         if (!authStore.user && !senderIdOverride) return;
 
         const senderId = senderIdOverride || getCurrentChatParticipantId() || String(authStore.user?.id);
+        const tempId = `m-local-${Date.now()}`;
+        const payload = { roomId: targetRoomId, content, type, metadata, tempId, senderId };
 
+        if (stompClient && stompClient.connected) {
+            stompClient.publish({
+                destination: '/app/chat/message',
+                body: JSON.stringify(payload)
+            });
+        } else {
+            pendingMessages.value.push(payload);
+        }
+
+        // 낙관적 UI / 로컬 추가
         const newMessage: ChatMessage = {
-            id: `m-${Date.now()}`,
+            id: tempId,
             roomId: targetRoomId,
-            senderId: senderId,
+            senderId,
             content,
             type,
             metadata,
             createdAt: new Date(),
-            readBy: [] // System messages might be read by everyone instantly, but let's stick to standard
+            readBy: authStore.user ? [senderId] : []
         };
 
-        // If it's a real user, add them to readBy
-        if (authStore.user && getMyParticipantIds().includes(senderId)) {
-            newMessage.readBy.push(senderId);
-        }
-
-        // Add to messages list
         if (!messages.value[targetRoomId]) {
             messages.value[targetRoomId] = [];
         }
         messages.value[targetRoomId].push(newMessage);
 
-        // Update Room info
-        const roomIndex = rooms.value.findIndex(r => r.id === targetRoomId);
-        if (roomIndex !== -1) {
-            rooms.value[roomIndex].lastMessage = newMessage;
-            rooms.value[roomIndex].updatedAt = new Date();
-
-            // Increment unread for others (skip if system message?)
-            // Usually system messages also increment unread count for participants
-            rooms.value[roomIndex].participants.forEach(p => {
-                if (p !== senderId) {
-                    rooms.value[roomIndex].unreadCount[p] = (rooms.value[roomIndex].unreadCount[p] || 0) + 1;
-                }
-            });
-        }
+        // 주의: rooms.value lastMessage 및 unreadCount는 STOMP 응답(ack) 수신 시에만 갱신하여 
+        // 영구적인 상태 불일치를 방지합니다.
     }
 
     function sendSystemMessage(roomId: string, content: string, type: ChatMessage['type'] = 'SYSTEM') {
         sendMessage(content, type, undefined, roomId, 'SYSTEM');
     }
 
-    function createRoom(participants: string[], names: { [key: string]: string }, context: any) {
+    // ── 채팅방 생성 (REST API) ──────────────────────────────────────────────
+    async function createRoom(
+        participants: string[],
+        names: { [key: string]: string },
+        context: any
+    ) {
         const myIds = getMyParticipantIds();
         const myNormalizedId = getCurrentChatParticipantId();
         const normalizedParticipants = Array.from(
             new Set(
-                participants.map((participantId) => {
-                    const id = String(participantId);
-                    if (myNormalizedId && myIds.includes(id)) {
-                        return myNormalizedId;
-                    }
-                    return id;
+                participants.map((id) => {
+                    const sid = String(id);
+                    if (myNormalizedId && myIds.includes(sid)) return myNormalizedId;
+                    return sid;
                 })
             )
         );
-        const normalizedNames = Object.entries(names).reduce<{ [key: string]: string }>((acc, [id, name]) => {
-            const normalizedId = myNormalizedId && myIds.includes(String(id)) ? myNormalizedId : String(id);
-            acc[normalizedId] = name;
-            return acc;
-        }, {});
 
-        // Check if room already exists
-        const existingRoom = rooms.value.find(r =>
-            r.participants.every(p => normalizedParticipants.includes(p)) &&
-            normalizedParticipants.every(p => r.participants.includes(p)) &&
-            // Optional: strict check including JobID if we want separate rooms per job
-            r.relatedJobId !== undefined && context.relatedJobId !== undefined &&
-            r.relatedJobId === context.relatedJobId
+        const existingRoom = rooms.value.find(
+            (r) =>
+                r.participants.every((p) => normalizedParticipants.includes(p)) &&
+                normalizedParticipants.every((p) => r.participants.includes(p)) &&
+                r.relatedJobId !== undefined &&
+                context.relatedJobId !== undefined &&
+                r.relatedJobId === context.relatedJobId
         );
+        if (existingRoom) return existingRoom.id;
 
-        if (existingRoom) {
-            return existingRoom.id;
-        }
-
-        const newRoomId = `room-${Date.now()}`;
-        const newRoom: ChatRoom = {
-            ...context, // Apply context first (so it doesn't override critical fields)
-            id: newRoomId,
-            participants: normalizedParticipants,
-            participantNames: normalizedNames,
-            unreadCount: {},
-            createdAt: new Date(),
-            updatedAt: new Date()
-        };
-
-        // Initialize unread counts
-        normalizedParticipants.forEach(p => {
-            newRoom.unreadCount[p] = 0;
-        });
-
-        rooms.value.unshift(newRoom);
-        messages.value[newRoomId] = [
-            {
-                id: `m0-${newRoomId}`,
-                roomId: newRoomId,
-                senderId: 'SYSTEM',
-                content: '채팅방이 생성되었습니다.',
-                type: 'SYSTEM',
-                createdAt: new Date(),
-                readBy: normalizedParticipants
+        try {
+            const newRoom = await apiCreateRoom({
+                participants: normalizedParticipants,
+                participantNames: names,
+                relatedJobId: context.relatedJobId,
+                relatedApplicationId: context.relatedApplicationId,
+                relatedProposalId: context.relatedProposalId
+            });
+            rooms.value.unshift(newRoom);
+            messages.value[newRoom.id] = [];
+            if (stompClient && stompClient.connected) {
+                subscribeToRoom(newRoom.id);
             }
-        ];
-
-        return newRoomId;
-    }
-
-    // Docking Chat State
-    const isRoomListOpen = ref(false);
-    const openDockedRooms = ref<{ roomId: string; minimized: boolean }[]>([]);
-
-    function toggleRoomList() {
-        isRoomListOpen.value = !isRoomListOpen.value;
-    }
-
-    function openDockedRoom(roomId: string) {
-        const existing = openDockedRooms.value.find(r => r.roomId === roomId);
-        if (existing) {
-            existing.minimized = false;
-        } else {
-            // Maximum 3 docked windows for example
-            if (openDockedRooms.value.length >= 3) {
-                openDockedRooms.value.shift(); // Remove oldest
-            }
-            openDockedRooms.value.push({ roomId, minimized: false });
-        }
-        selectRoom(roomId);
-    }
-
-    function closeDockedRoom(roomId: string) {
-        openDockedRooms.value = openDockedRooms.value.filter(r => r.roomId !== roomId);
-    }
-
-    function minimizeDockedRoom(roomId: string, minimized: boolean) {
-        const room = openDockedRooms.value.find(r => r.roomId === roomId);
-        if (room) {
-            room.minimized = minimized;
+            return newRoom.id;
+        } catch (e) {
+            console.error('[Chat] Failed to create room:', e);
+            throw e;
         }
     }
 
-    function resetChatUIState() {
-        currentRoomId.value = null;
-        isRoomListOpen.value = false;
-        openDockedRooms.value = [];
-    }
-
-    function resetDockedUIState() {
-        isRoomListOpen.value = false;
-        openDockedRooms.value = [];
-    }
-
+    // ── 방 관련 유틸 ───────────────────────────────────────────────────────
     function isRoomReadOnly(roomId: string): boolean {
         const room = rooms.value.find((r) => r.id === roomId);
         if (!room || !authStore.user) return false;
@@ -374,39 +453,34 @@ export const useChatStore = defineStore('chat', () => {
         const myIds = getMyParticipantIds();
         const leaverName = authStore.user?.name || '상대방';
 
-        // Notify others before marking leave
         sendSystemMessage(roomId, `${leaverName}님이 채팅방을 나갔습니다.`, 'SYSTEM');
 
         const currentLeftBy = room.leftBy || [];
         const primaryId = getCurrentChatParticipantId();
-        const leftBy = Array.from(new Set([
-            ...currentLeftBy.map((id) => normalizeIdForRoom(room, String(id))),
-            ...(primaryId ? [normalizeIdForRoom(room, primaryId)] : []),
-            ...myIds.map((id) => normalizeIdForRoom(room, String(id)))
-        ]));
+        const leftBy = Array.from(
+            new Set([
+                ...currentLeftBy.map((id) => normalizeIdForRoom(room, String(id))),
+                ...(primaryId ? [normalizeIdForRoom(room, primaryId)] : []),
+                ...myIds.map((id) => normalizeIdForRoom(room, String(id)))
+            ])
+        );
 
-        const participantIds = Array.from(new Set(
-            room.participants.map((id) => normalizeIdForRoom(room, String(id)))
-        ));
+        const participantIds = Array.from(
+            new Set(room.participants.map((id) => normalizeIdForRoom(room, String(id))))
+        );
         const hasEveryoneLeft = participantIds.every((id) => leftBy.includes(id));
 
         if (hasEveryoneLeft) {
             rooms.value = rooms.value.filter((r) => r.id !== roomId);
-            if (messages.value[roomId]) {
-                delete messages.value[roomId];
-            }
+            if (messages.value[roomId]) delete messages.value[roomId];
         } else {
-            rooms.value[roomIndex] = {
-                ...room,
-                leftBy,
-                updatedAt: new Date()
-            };
+            rooms.value[roomIndex] = { ...room, leftBy, updatedAt: new Date() };
         }
 
-        if (currentRoomId.value === roomId) {
-            currentRoomId.value = null;
-        }
-        openDockedRooms.value = openDockedRooms.value.filter((room) => room.roomId !== roomId);
+        unsubscribeFromRoom(roomId);
+
+        if (currentRoomId.value === roomId) currentRoomId.value = null;
+        openDockedRooms.value = openDockedRooms.value.filter((r) => r.roomId !== roomId);
     }
 
     function updateRoomContract(roomId: string, contractId: number | null) {
@@ -418,10 +492,53 @@ export const useChatStore = defineStore('chat', () => {
         };
     }
 
+    // ── Docking Chat State ─────────────────────────────────────────────────
+    const isRoomListOpen = ref(false);
+    const openDockedRooms = ref<{ roomId: string; minimized: boolean }[]>([]);
+
+    function toggleRoomList() {
+        isRoomListOpen.value = !isRoomListOpen.value;
+    }
+
+    function openDockedRoom(roomId: string) {
+        const existing = openDockedRooms.value.find((r) => r.roomId === roomId);
+        if (existing) {
+            existing.minimized = false;
+        } else {
+            if (openDockedRooms.value.length >= 3) {
+                openDockedRooms.value.shift();
+            }
+            openDockedRooms.value.push({ roomId, minimized: false });
+        }
+        selectRoom(roomId);
+    }
+
+    function closeDockedRoom(roomId: string) {
+        openDockedRooms.value = openDockedRooms.value.filter((r) => r.roomId !== roomId);
+    }
+
+    function minimizeDockedRoom(roomId: string, minimized: boolean) {
+        const room = openDockedRooms.value.find((r) => r.roomId === roomId);
+        if (room) room.minimized = minimized;
+    }
+
+    function resetChatUIState() {
+        currentRoomId.value = null;
+        isRoomListOpen.value = false;
+        openDockedRooms.value = [];
+    }
+
+    function resetDockedUIState() {
+        isRoomListOpen.value = false;
+        openDockedRooms.value = [];
+    }
+
     return {
         rooms,
         messages,
         currentRoomId,
+        isLoadingRooms,
+        isLoadingMessages,
         myRooms,
         currentMessages,
         currentRoom,
@@ -429,10 +546,14 @@ export const useChatStore = defineStore('chat', () => {
         sendMessage,
         sendSystemMessage,
         createRoom,
+        fetchRooms,
+        fetchMessages,
+        connectWebSocket,
+        disconnectWebSocket,
+        subscribeToRoom,
         getCurrentChatParticipantId,
         getMyParticipantIds,
         getOtherParticipantId,
-        // Docking exports
         isRoomListOpen,
         openDockedRooms,
         toggleRoomList,
