@@ -1,4 +1,4 @@
-﻿import apiClient from '@/api/axiosInstance';
+import apiClient from '@/api/axiosInstance';
 
 interface ApiResponse<T> {
     success: boolean;
@@ -85,7 +85,10 @@ export const calculateGrade = async (req: GradeCalculationRequest): Promise<Grad
     return response.data.data.grade;
 };
 
-export const saveGrade = async (_req: GradeSaveRequest): Promise<boolean> => {
-    // TODO: 등급 저장 API가 준비되면 연동
-    throw new Error('saveGrade API not available');
+export const saveGrade = async (req: GradeSaveRequest): Promise<boolean> => {
+    const response = await apiClient.post<ApiResponse<null>>(
+        '/api/freelancer/mypage/grade',
+        req
+    );
+    return response.data.success;
 };
