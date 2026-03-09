@@ -211,11 +211,23 @@ export const updateFreelancerProfile = async (
   updatedProfile: Partial<FreelancerProfileDashboard>,
 ): Promise<FreelancerProfileDashboard> => {
   await apiClient.put<ApiResponse<null>>("/api/freelancer/mypage/profile", {
+    name: updatedProfile.name ?? "",
     job: updatedProfile.job ?? "",
     introduction: updatedProfile.introduction ?? "",
     careerYears: updatedProfile.careerYears ?? 0,
     wage: updatedProfile.salary ?? 0,
     skills: updatedProfile.skills ?? [],
+    workType: updatedProfile.workConditions?.type ?? null,
+    availableStartDate: updatedProfile.workConditions?.startDate ?? null,
+    workStyle: updatedProfile.workConditions?.workStyle ?? null,
+    workLocation: updatedProfile.workConditions?.location ?? null,
+    expertiseProgramming: updatedProfile.expertise?.programming ?? null,
+    expertiseFramework: updatedProfile.expertise?.framework ?? null,
+    expertiseProblemSolving: updatedProfile.expertise?.problemSolving ?? null,
+    collaborationCommunication: updatedProfile.collaboration?.communication ?? null,
+    collaborationScheduleAdherence: updatedProfile.collaboration?.scheduleAdherence ?? null,
+    collaborationDispute: updatedProfile.collaboration?.dispute ?? null,
+    averageRating: updatedProfile.averageRating ?? null,
   });
 
   const refreshed = await getFreelancerProfile("me");
