@@ -210,6 +210,11 @@ export const updateFreelancerProfile = async (
   _userId: string,
   updatedProfile: Partial<FreelancerProfileDashboard>,
 ): Promise<FreelancerProfileDashboard> => {
+  const workType = updatedProfile.workConditions?.type?.trim() || null;
+  const availableStartDate = updatedProfile.workConditions?.startDate?.trim() || null;
+  const workStyle = updatedProfile.workConditions?.workStyle?.trim() || null;
+  const workLocation = updatedProfile.workConditions?.location?.trim() || null;
+
   await apiClient.put<ApiResponse<null>>("/api/freelancer/mypage/profile", {
     name: updatedProfile.name ?? "",
     job: updatedProfile.job ?? "",
@@ -217,10 +222,10 @@ export const updateFreelancerProfile = async (
     careerYears: updatedProfile.careerYears ?? 0,
     wage: updatedProfile.salary ?? 0,
     skills: updatedProfile.skills ?? [],
-    workType: updatedProfile.workConditions?.type ?? null,
-    availableStartDate: updatedProfile.workConditions?.startDate ?? null,
-    workStyle: updatedProfile.workConditions?.workStyle ?? null,
-    workLocation: updatedProfile.workConditions?.location ?? null,
+    workType,
+    availableStartDate,
+    workStyle,
+    workLocation,
     expertiseProgramming: updatedProfile.expertise?.programming ?? null,
     expertiseFramework: updatedProfile.expertise?.framework ?? null,
     expertiseProblemSolving: updatedProfile.expertise?.problemSolving ?? null,
