@@ -65,7 +65,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginData> => {
  * Register a new user
  */
 export const register = async (userData: RegisterRequest): Promise<RegisterData> => {
-    console.log('Sending signup request with payload:', JSON.stringify(userData, null, 2));
+    // Debug logging removed to prevent PII exposure
     const response = await apiClient.post<ApiResponse<RegisterData>>('/api/users/signup', userData);
     return response.data.data;
 };
