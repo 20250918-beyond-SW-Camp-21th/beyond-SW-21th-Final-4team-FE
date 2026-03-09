@@ -30,7 +30,8 @@ export interface BackendChatMessageResponse {
 }
 
 export interface CursorPageResponse<T> {
-    content: T[];
+    items?: T[];
+    content?: T[];
     nextCursor?: string;
     hasNext: boolean;
 }
@@ -94,9 +95,10 @@ export async function getChatMessages(
         `/api/chat/rooms/${roomId}/messages`,
         { params }
     );
+    const messageItems = res.data.items ?? res.data.content ?? [];
 
     return {
-        content: res.data.content.map(mapToChatMessage),
+        content: messageItems.map(mapToChatMessage),
         nextCursor: res.data.nextCursor,
         hasNext: res.data.hasNext
     };
@@ -116,3 +118,4 @@ export async function createChatRoom(body: {
     const res = await apiClient.post<BackendChatRoomResponse>('/api/chat/rooms', body);
     return mapToChatRoom(res.data);
 }
+

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
     FilePlus,
@@ -17,10 +17,13 @@ import {
     Clock,
     Briefcase,
     MapPin,
+    AlertCircle,
+    Loader2,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { useContractStore, type Contract, type ContractWithDetails } from '@/stores/contractStore';
-import { useFreelancerStore } from '@/stores/freelancerStore';
+import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
+import { createContract, getEmployerRecruitmentProjects, getMatchedFreelancers, type EmployerProject, type MatchedFreelancer } from '@/api/contractApi';
+import { getEmployerProfile } from '@/api/MyPage/employer';
 import SignaturePadModal from './components/SignaturePadModal.vue';
 import ContractPreview from '@/components/contract/ContractPreview.vue';
 
@@ -29,11 +32,90 @@ type CreateContractState = 'form' | 'preview' | 'signing' | 'success';
 const router = useRouter();
 const authStore = useAuthStore();
 const contractStore = useContractStore();
-const freelancerStore = useFreelancerStore();
 
 const state = ref<CreateContractState>('form');
 const currentStep = ref(1);
 const totalSteps = 2;
+const isSubmitting = ref(false);
+const submitError = ref('');
+
+// Projects & matched freelancers
+const projectOptions = ref<EmployerProject[]>([]);
+const isLoadingProjects = ref(false);
+const projectLoadError = ref('');
+const selectedProjectId = ref<number | ''>('');
+const freelancerOptions = ref<MatchedFreelancer[]>([]);
+const isLoadingFreelancers = ref(false);
+const freelancerLoadError = ref('');
+
+function extractArray<T>(data: any): T[] {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.content)) return data.content;
+    return [];
+}
+
+async function loadMatchedFreelancers(id: number) {
+    isLoadingFreelancers.value = true;
+    freelancerLoadError.value = '';
+    freelancerOptions.value = [];
+    selectedFreelancerId.value = '';
+    try {
+        const data = await getMatchedFreelancers(id);
+        freelancerOptions.value = data.content;
+        if (data.content.length === 0) {
+            freelancerLoadError.value = '이 프로젝트에 매칭된 프리랜서가 없습니다.';
+        }
+    } catch (e: any) {
+        const msg = e?.response?.data?.message || e?.message || '';
+        freelancerLoadError.value = `프리랜서 목록을 불러오지 못했습니다. ${msg}`;
+        console.error('Failed to load matched freelancers:', e);
+    } finally {
+        isLoadingFreelancers.value = false;
+    }
+}
+
+async function onProjectSelect(id: number | '') {
+    selectedProjectId.value = id;
+    freelancerLoadError.value = '';
+    if (id !== '') {
+        await loadMatchedFreelancers(Number(id));
+    } else {
+        freelancerOptions.value = [];
+        selectedFreelancerId.value = '';
+    }
+}
+
+onMounted(async () => {
+    isLoadingProjects.value = true;
+    projectLoadError.value = '';
+
+    const [projectsResult, profileResult] = await Promise.allSettled([
+        getEmployerRecruitmentProjects(),
+        getEmployerProfile(),
+    ]);
+
+    if (projectsResult.status === 'fulfilled') {
+        projectOptions.value = extractArray<EmployerProject>(projectsResult.value);
+        if (projectOptions.value.length === 0) {
+            projectLoadError.value = '등록된 프로젝트가 없습니다.';
+        }
+    } else {
+        const e = projectsResult.reason;
+        const msg = e?.response?.data?.message || e?.message || '';
+        projectLoadError.value = `프로젝트 목록을 불러오지 못했습니다. ${msg}`;
+        console.error('Failed to load projects:', e);
+    }
+
+    if (profileResult.status === 'fulfilled') {
+        const profile = profileResult.value;
+        if (profile.companyName) employerBusinessName.value = profile.companyName;
+        if (profile.location) employerAddress.value = profile.location;
+        // CEO name: fallback to auth user name
+        if (!employerCEO.value) employerCEO.value = authStore.user?.name || '';
+    }
+
+    isLoadingProjects.value = false;
+});
 
 // Step 1: Basic Info
 const selectedFreelancerId = ref<number | ''>('');
@@ -43,7 +125,6 @@ const startDate = ref('');
 const endDate = ref('');
 const budget = ref('');
 const paymentDay = ref<number>(25);
-const commissionRate = ref<number>(0.05);
 
 // Step 2: Work Schedule
 type WorkScheduleType = 'FLEXIBLE' | 'FIXED';
@@ -55,32 +136,25 @@ const breakEndTime = ref('13:00');
 const workDaysPerWeek = ref<number>(5);
 const weeklyHoliday = ref('토, 일');
 
-// Employer Info (auto-filled from user entity)
+// Employer Info (editable, pre-filled from user profile)
 const employerBusinessName = ref(authStore.user?.companyName || authStore.user?.name || '');
 const employerAddress = ref(authStore.user?.companyAddress || '');
 const employerCEO = ref(authStore.user?.representativeName || '');
 
-// Freelancer Info (will be filled when selected)
-const freelancerAddress = ref('');
-const freelancerPhone = ref('');
-
 // Created contract reference
 const createdContract = ref<ContractWithDetails | null>(null);
 
-const freelancerOptions = computed(() =>
-    freelancerStore.freelancers.filter((u) => u.role === 'FREELANCER')
-);
-
 const selectedFreelancer = computed(() =>
-    freelancerOptions.value.find((f) => f.id === String(selectedFreelancerId.value))
+    freelancerOptions.value.find((f) => f.freelancerId === Number(selectedFreelancerId.value))
 );
 
 // Validation
 const isStep1Valid = computed(
     () =>
-        selectedFreelancerId.value &&
-        projectName.value &&
-        jobDescription.value &&
+        selectedProjectId.value !== '' &&
+        selectedFreelancerId.value !== '' &&
+        projectName.value.trim() &&
+        jobDescription.value.trim() &&
         startDate.value &&
         endDate.value &&
         budget.value &&
@@ -88,8 +162,9 @@ const isStep1Valid = computed(
 );
 
 const isStep2Valid = computed(() => {
-    // For flexible work, only need work type selection
-    // For fixed schedule, need all time fields
+    if (!employerBusinessName.value.trim() || !employerAddress.value.trim() || !employerCEO.value.trim()) {
+        return false;
+    }
     if (workScheduleType.value === 'FIXED') {
         return (
             workStartTime.value &&
@@ -100,7 +175,7 @@ const isStep2Valid = computed(() => {
             weeklyHoliday.value
         );
     }
-    return true; // Flexible work doesn't require specific times
+    return true;
 });
 
 const isFormValid = computed(() => isStep1Valid.value && isStep2Valid.value);
@@ -110,7 +185,7 @@ const previewContract = computed(() => {
     const isFlexible = workScheduleType.value === 'FLEXIBLE';
     return {
         projectName: projectName.value,
-        freelancerId: Number(selectedFreelancerId.value),
+        freelancerId: selectedFreelancer.value?.freelancerId ?? Number(selectedFreelancerId.value),
         employerId: Number(authStore.user?.id),
         startDate: startDate.value ? new Date(startDate.value) : undefined,
         endDate: endDate.value ? new Date(endDate.value) : undefined,
@@ -120,16 +195,14 @@ const previewContract = computed(() => {
         workLocation: '원격근무',
         workStartTime: isFlexible ? '자율' : workStartTime.value,
         workEndTime: isFlexible ? '자율' : workEndTime.value,
-        breakStartTime: isFlexible ? '자율' : breakStartTime.value,
-        breakEndTime: isFlexible ? '자율' : breakEndTime.value,
+        breakStartTime: breakStartTime.value,
+        breakEndTime: breakEndTime.value,
         workDaysPerWeek: isFlexible ? 5 : workDaysPerWeek.value,
         weeklyHoliday: isFlexible ? '토, 일' : weeklyHoliday.value,
         employerBusinessName: employerBusinessName.value,
         employerAddress: employerAddress.value,
         employerCEO: employerCEO.value,
-        freelancerAddress: freelancerAddress.value,
-        freelancerPhone: freelancerPhone.value,
-        freelancerName: selectedFreelancer.value?.name || '',
+        freelancerName: selectedFreelancer.value?.freelancerName || '',
         employerName: employerBusinessName.value,
     };
 });
@@ -155,57 +228,54 @@ const handleStartSigning = () => {
     state.value = 'signing';
 };
 
-const handleSign = (signatureDataUrl: string) => {
-    if (!selectedFreelancer.value || !authStore.user) return;
+const handleSign = async (data: { signature: string }) => {
+    const signatureDataUrl = data.signature;
+    if (!selectedFreelancer.value || !authStore.user || selectedProjectId.value === '') return;
 
-    const newId = Date.now();
-    const newContractId = 1000 + (newId % 10000);
+    isSubmitting.value = true;
+    submitError.value = '';
+
     const isFlexible = workScheduleType.value === 'FLEXIBLE';
 
-    const newContract: Contract = {
-        id: newId,
-        contractId: newContractId,
-        projectName: projectName.value,
-        freelancerId: Number(selectedFreelancer.value.id),
-        employerId: Number(authStore.user.id),
-        startDate: new Date(startDate.value),
-        endDate: new Date(endDate.value),
-        status: 'WAITING_SIGNATURE',
-        budget: Number(budget.value),
-        commissionRate: commissionRate.value,
-        paymentDay: paymentDay.value,
-        contractPdfUrl: `/contracts/${newContractId}_contract.pdf`,
-        // 표준근로계약서 필드
-        jobDescription: jobDescription.value,
-        workLocation: '원격근무',
-        workStartTime: isFlexible ? '자율' : workStartTime.value,
-        workEndTime: isFlexible ? '자율' : workEndTime.value,
-        breakStartTime: isFlexible ? '자율' : breakStartTime.value,
-        breakEndTime: isFlexible ? '자율' : breakEndTime.value,
-        workDaysPerWeek: isFlexible ? 5 : workDaysPerWeek.value,
-        weeklyHoliday: isFlexible ? '토, 일' : weeklyHoliday.value,
-        employerBusinessName: employerBusinessName.value,
-        employerAddress: employerAddress.value,
-        employerCEO: employerCEO.value,
-        freelancerAddress: freelancerAddress.value,
-        freelancerPhone: freelancerPhone.value,
-        // Signatures
-        employerSignature: signatureDataUrl,
-        employerSignedDate: new Date(),
-    };
+    try {
+        const response = await createContract({
+            projectName: projectName.value,
+            freelancerId: selectedFreelancer.value.freelancerId,
+            freelancerName: selectedFreelancer.value.freelancerName,
+            startDate: startDate.value,
+            endDate: endDate.value,
+            budget: Number(budget.value),
+            paymentDay: paymentDay.value,
+            jobDescription: jobDescription.value,
+            workLocation: '원격근무',
+            workStartTime: isFlexible ? '자율' : workStartTime.value,
+            workEndTime: isFlexible ? '자율' : workEndTime.value,
+            breakStartTime: breakStartTime.value,
+            breakEndTime: breakEndTime.value,
+            workDaysPerWeek: isFlexible ? 5 : workDaysPerWeek.value,
+            weeklyHoliday: isFlexible ? '토, 일' : weeklyHoliday.value,
+            employerBusinessName: employerBusinessName.value,
+            employerAddress: employerAddress.value,
+            employerCEO: employerCEO.value,
+            employerSignature: signatureDataUrl,
+        });
 
-    contractStore.addContract(newContract);
-
-    createdContract.value = {
-        ...newContract,
-        freelancerName: selectedFreelancer.value.name,
-        employerName: authStore.user.companyName || authStore.user.name,
-    };
-    state.value = 'success';
+        contractStore.addContract(response);
+        createdContract.value = response;
+        state.value = 'success';
+    } catch (err: any) {
+        const msg = err?.response?.data?.message || err?.message || '계약서 생성에 실패했습니다.';
+        submitError.value = msg;
+        state.value = 'preview'; // go back to preview on error
+    } finally {
+        isSubmitting.value = false;
+    }
 };
 
 const handleReset = () => {
+    selectedProjectId.value = '';
     selectedFreelancerId.value = '';
+    freelancerOptions.value = [];
     projectName.value = '';
     jobDescription.value = '';
     startDate.value = '';
@@ -219,8 +289,7 @@ const handleReset = () => {
     breakEndTime.value = '13:00';
     workDaysPerWeek.value = 5;
     weeklyHoliday.value = '토, 일';
-    freelancerAddress.value = '';
-    freelancerPhone.value = '';
+    submitError.value = '';
     createdContract.value = null;
     currentStep.value = 1;
     state.value = 'form';
@@ -288,30 +357,76 @@ const navigateToContracts = () => {
                             <input
                                 v-model="employerBusinessName"
                                 type="text"
-                                class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors"
+                                placeholder="기업명을 입력하세요"
+                                class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-blue-500/50 focus:outline-none transition-colors"
                             />
+                        </div>
+
+                        <!-- Project Select -->
+                        <div>
+                            <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
+                                <FolderOpen class="w-4 h-4" />
+                                채용 프로젝트
+                            </label>
+                            <div class="relative">
+                                <select
+                                    :value="selectedProjectId"
+                                    @change="onProjectSelect(($event.target as HTMLSelectElement).value === '' ? '' : Number(($event.target as HTMLSelectElement).value))"
+                                    :disabled="isLoadingProjects"
+                                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-50"
+                                >
+                                    <option value="" class="bg-gray-900">
+                                        {{ isLoadingProjects ? '불러오는 중...' : '프로젝트를 선택하세요' }}
+                                    </option>
+                                    <option
+                                        v-for="p in projectOptions"
+                                        :key="p.projectId"
+                                        :value="p.projectId"
+                                        class="bg-gray-900"
+                                    >
+                                        {{ p.projectName || `프로젝트 #${p.projectId} (${p.status})` }}
+                                    </option>
+                                </select>
+                                <Loader2 v-if="isLoadingProjects" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-white/40" />
+                            </div>
+                            <p v-if="projectLoadError" class="mt-1 text-xs text-red-400">{{ projectLoadError }}</p>
                         </div>
 
                         <!-- Freelancer Select -->
                         <div>
                             <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
                                 <User class="w-4 h-4" />
-                                프리랜서
+                                매칭된 프리랜서
                             </label>
-                            <select
-                                v-model="selectedFreelancerId"
-                                class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors appearance-none cursor-pointer"
-                            >
-                                <option value="" class="bg-gray-900">프리랜서를 선택하세요</option>
-                                <option
-                                    v-for="f in freelancerOptions"
-                                    :key="f.id"
-                                    :value="f.id"
-                                    class="bg-gray-900"
+                            <div class="relative">
+                                <select
+                                    v-model="selectedFreelancerId"
+                                    :disabled="selectedProjectId === '' || isLoadingFreelancers"
+                                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors appearance-none cursor-pointer disabled:opacity-50"
                                 >
-                                    {{ f.name }}
-                                </option>
-                            </select>
+                                    <option value="" class="bg-gray-900">
+                                        {{ isLoadingFreelancers ? '불러오는 중...' : selectedProjectId === '' ? '프로젝트를 먼저 선택하세요' : '프리랜서를 선택하세요' }}
+                                    </option>
+                                    <option
+                                        v-for="f in freelancerOptions"
+                                        :key="f.freelancerId"
+                                        :value="f.freelancerId"
+                                        class="bg-gray-900"
+                                    >
+                                        {{ f.freelancerName }}
+                                    </option>
+                                </select>
+                                <Loader2 v-if="isLoadingFreelancers" class="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-white/40" />
+                            </div>
+                            <p v-if="freelancerLoadError" class="mt-1 text-xs text-red-400">{{ freelancerLoadError }}</p>
+                            <!-- Freelancer profile preview -->
+                            <div
+                                v-if="selectedFreelancer"
+                                class="mt-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm space-y-1"
+                            >
+                                <div class="text-white/60">직무: <span class="text-white">{{ selectedFreelancer.job }}</span></div>
+                                <div class="text-white/60">등급: <span class="text-white">{{ selectedFreelancer.grade }}</span></div>
+                            </div>
                         </div>
 
                         <!-- Project Name -->
@@ -373,12 +488,12 @@ const navigateToContracts = () => {
                             <div>
                                 <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
                                     <DollarSign class="w-4 h-4" />
-                                    계약금액 (원)
+                                    월 급여 (원)
                                 </label>
                                 <input
                                     v-model="budget"
                                     type="number"
-                                    placeholder="계약금액"
+                                    placeholder="월 급여액"
                                     class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-blue-500/50 focus:outline-none transition-colors"
                                 />
                             </div>
@@ -394,7 +509,7 @@ const navigateToContracts = () => {
                                     <option :value="10" class="bg-gray-900">매월 10일</option>
                                     <option :value="15" class="bg-gray-900">매월 15일</option>
                                     <option :value="25" class="bg-gray-900">매월 25일</option>
-                                    <option :value="31" class="bg-gray-900">매월 말일</option>
+                                    <option :value="28" class="bg-gray-900">매월 28일</option>
                                 </select>
                             </div>
                         </div>
@@ -415,7 +530,7 @@ const navigateToContracts = () => {
                         </button>
                     </template>
 
-                    <!-- Step 2: Work Schedule & Details -->
+                    <!-- Step 2: Work Schedule & Employer Details -->
                     <template v-else-if="currentStep === 2">
                         <!-- Work Schedule Type -->
                         <div>
@@ -449,7 +564,7 @@ const navigateToContracts = () => {
                             </div>
                         </div>
 
-                        <!-- Fixed Schedule Details (only shown when FIXED is selected) -->
+                        <!-- Fixed Schedule Details -->
                         <template v-if="workScheduleType === 'FIXED'">
                             <!-- Work Hours -->
                             <div class="grid md:grid-cols-2 gap-4">
@@ -465,26 +580,6 @@ const navigateToContracts = () => {
                                     <label class="text-sm font-medium text-white/60 mb-2 block">근무 종료시간</label>
                                     <input
                                         v-model="workEndTime"
-                                        type="time"
-                                        class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors [color-scheme:dark]"
-                                    />
-                                </div>
-                            </div>
-
-                            <!-- Break Hours -->
-                            <div class="grid md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-sm font-medium text-white/60 mb-2 block">휴게 시작시간</label>
-                                    <input
-                                        v-model="breakStartTime"
-                                        type="time"
-                                        class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors [color-scheme:dark]"
-                                    />
-                                </div>
-                                <div>
-                                    <label class="text-sm font-medium text-white/60 mb-2 block">휴게 종료시간</label>
-                                    <input
-                                        v-model="breakEndTime"
                                         type="time"
                                         class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors [color-scheme:dark]"
                                     />
@@ -514,24 +609,55 @@ const navigateToContracts = () => {
                             </div>
                         </template>
 
-                        <!-- Employer Info Display (read-only) -->
+                        <!-- Break Time (always shown) -->
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm font-medium text-white/60 mb-2 block">휴게 시작시간</label>
+                                <input
+                                    v-model="breakStartTime"
+                                    type="time"
+                                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors [color-scheme:dark]"
+                                />
+                            </div>
+                            <div>
+                                <label class="text-sm font-medium text-white/60 mb-2 block">휴게 종료시간</label>
+                                <input
+                                    v-model="breakEndTime"
+                                    type="time"
+                                    class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white focus:border-blue-500/50 focus:outline-none transition-colors [color-scheme:dark]"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Employer Info (editable) -->
                         <div class="pt-4 border-t border-white/10">
                             <h3 class="text-lg font-semibold mb-4">사업주 정보</h3>
-                            <div class="p-4 bg-white/5 rounded-xl space-y-2">
-                                <div class="flex items-center gap-2 text-white/80">
-                                    <Building2 class="w-4 h-4 text-white/40" />
-                                    <span>{{ employerBusinessName }}</span>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
+                                        <MapPin class="w-4 h-4" />
+                                        사업장 주소
+                                    </label>
+                                    <input
+                                        v-model="employerAddress"
+                                        type="text"
+                                        placeholder="예: 서울특별시 강남구 테헤란로 123"
+                                        class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-blue-500/50 focus:outline-none transition-colors"
+                                    />
                                 </div>
-                                <div class="flex items-center gap-2 text-white/80">
-                                    <MapPin class="w-4 h-4 text-white/40" />
-                                    <span>{{ employerAddress || '주소 미등록' }}</span>
-                                </div>
-                                <div class="flex items-center gap-2 text-white/80">
-                                    <User class="w-4 h-4 text-white/40" />
-                                    <span>대표자: {{ employerCEO || '미등록' }}</span>
+                                <div>
+                                    <label class="flex items-center gap-2 text-sm font-medium text-white/60 mb-2">
+                                        <User class="w-4 h-4" />
+                                        대표자명
+                                    </label>
+                                    <input
+                                        v-model="employerCEO"
+                                        type="text"
+                                        placeholder="대표자명을 입력하세요"
+                                        class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 focus:border-blue-500/50 focus:outline-none transition-colors"
+                                    />
                                 </div>
                             </div>
-                            <p class="mt-2 text-xs text-white/40">* 사업주 정보는 계정 설정에서 수정할 수 있습니다</p>
                         </div>
 
                         <!-- Buttons -->
@@ -572,6 +698,15 @@ const navigateToContracts = () => {
                 <p class="text-white/60">내용을 확인하고 서명을 진행하세요</p>
             </div>
 
+            <!-- Error Banner -->
+            <div
+                v-if="submitError"
+                class="max-w-4xl mx-auto mb-6 flex items-center gap-3 px-5 py-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400"
+            >
+                <AlertCircle class="w-5 h-5 flex-shrink-0" />
+                <span class="text-sm">{{ submitError }}</span>
+            </div>
+
             <div class="mb-6">
                 <ContractPreview :contract="previewContract" />
             </div>
@@ -606,9 +741,21 @@ const navigateToContracts = () => {
 
             <SignaturePadModal
                 :signerName="employerCEO || authStore.user?.name || ''"
+                :disabled="isSubmitting"
                 @sign="handleSign"
                 @close="state = 'preview'"
             />
+
+            <!-- Submitting overlay -->
+            <div
+                v-if="isSubmitting"
+                class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+            >
+                <div class="flex flex-col items-center gap-4 text-white">
+                    <Loader2 class="w-10 h-10 animate-spin" />
+                    <span class="text-lg font-medium">계약서를 생성하는 중...</span>
+                </div>
+            </div>
         </template>
 
         <!-- Success State -->
@@ -645,16 +792,16 @@ const navigateToContracts = () => {
                                 <span class="font-medium">{{ createdContract.projectName }}</span>
                             </div>
                             <div class="text-sm text-white/50">
-                                프리랜서: {{ createdContract.freelancerName }}
+                                계약번호: #{{ createdContract.contractId }}
                             </div>
                             <div class="text-sm text-white/50">
-                                업무 내용: {{ createdContract.jobDescription }}
+                                프리랜서: {{ createdContract.freelancerName }}
                             </div>
                             <div class="text-sm text-white/50">
                                 계약 기간: {{ new Date(createdContract.startDate).toLocaleDateString('ko-KR') }} ~ {{ new Date(createdContract.endDate).toLocaleDateString('ko-KR') }}
                             </div>
                             <div class="text-sm text-white/50">
-                                계약금액: {{ createdContract.budget.toLocaleString() }}원
+                                월 급여: {{ createdContract.budget.toLocaleString() }}원
                             </div>
                             <div class="mt-3 pt-3 border-t border-white/10">
                                 <span class="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 text-orange-400 text-xs rounded-full">
@@ -688,7 +835,6 @@ const navigateToContracts = () => {
 </template>
 
 <style scoped>
-/* Hide browser default number input spinners */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
     -webkit-appearance: none;

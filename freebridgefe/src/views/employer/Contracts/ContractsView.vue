@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import {
     FileText,
@@ -140,6 +140,10 @@ const resetFilters = () => {
     sortOption.value = 'most_recent';
     isDropdownOpen.value = false;
 };
+
+onMounted(() => {
+    contractStore.fetchContracts();
+});
 </script>
 
 <template>
