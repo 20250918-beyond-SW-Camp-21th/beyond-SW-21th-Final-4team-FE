@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 
 import {
   DollarSign,
@@ -44,14 +44,14 @@ const dateRangeOptions = [
 
 const statusFilters = [
     { value: 'ALL', label: '전체' },
-    { value: 'HOLDING', label: '지급 예정' },
+    { value: 'PENDING', label: '지급 예정' },
     { value: 'PAID', label: '지급 완료' },
 ];
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; badgeBg: string; icon: any }> = {
-    HOLDING: { label: '지급 예정', color: 'text-blue-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-blue-500/20 border border-blue-500/30 text-blue-400', icon: Calendar },
-    PROCESSING: { label: '지급 예정', color: 'text-blue-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-blue-500/20 border border-blue-500/30 text-blue-400', icon: Calendar },
+    PENDING: { label: '지급 예정', color: 'text-blue-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-blue-500/20 border border-blue-500/30 text-blue-400', icon: Calendar },
     PAID: { label: '지급 완료', color: 'text-green-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-green-500/20 border border-green-500/30 text-green-400', icon: CheckCircle },
+    CANCELLED: { label: '취소됨', color: 'text-rose-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-rose-500/20 border border-rose-500/30 text-rose-400', icon: AlertCircle },
 };
 
 // Base Data
@@ -89,23 +89,23 @@ const filteredSettlements = computed(() => {
     const today = new Date();
     if (selectedDateRange.value === 'THIS_MONTH') {
         result = result.filter((s) => {
-            const d = new Date(s.expectedPaidDate);
+            const d = new Date(s.scheduledDate);
             return d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
         });
     } else if (selectedDateRange.value === 'LAST_MONTH') {
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         result = result.filter((s) => {
-            const d = new Date(s.expectedPaidDate);
+            const d = new Date(s.scheduledDate);
             return (
                 d.getMonth() === lastMonth.getMonth() && d.getFullYear() === lastMonth.getFullYear()
             );
         });
     } else if (selectedDateRange.value === 'LAST_3_MONTHS') {
         const threeMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 3, 1);
-        result = result.filter((s) => new Date(s.expectedPaidDate) >= threeMonthsAgo);
+        result = result.filter((s) => new Date(s.scheduledDate) >= threeMonthsAgo);
     }
 
-    result.sort((a, b) => new Date(a.expectedPaidDate).getTime() - new Date(b.expectedPaidDate).getTime());
+    result.sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime());
     return result;
 });
 
@@ -119,9 +119,9 @@ const paginatedSettlements = computed(() => {
 });
 
 
-// 지급 예정 금액 (HOLDING or PROCESSING)
+// 지급 예정 금액 (PENDING)
 const pendingAmount = computed(() => mySettlements.value
-    .filter((s) => s.status === 'HOLDING' || s.status === 'PROCESSING')
+    .filter((s) => s.status === 'PENDING')
     .reduce((sum, s) => sum + s.netAmount, 0));
 
 // 지급 완료 금액 (PAID)
@@ -165,6 +165,18 @@ const handleDownload = (settlement: FreelancerSettlementWithDetails) => {
     // Mock download
     alert(`정산 내역서 다운로드: ${settlement.projectName}`);
 };
+
+onMounted(async () => {
+    try {
+        await Promise.all([
+            contractStore.fetchContracts(),
+            contractStore.fetchFreelancerSettlements(),
+            contractStore.fetchFreelancerSettlementSummary().catch(() => undefined),
+        ]);
+    } catch (error) {
+        console.error('Failed to initialize freelancer settlements:', error);
+    }
+});
 </script>
 
 <template>

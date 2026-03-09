@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import {
     Receipt,
     Calendar,
@@ -48,12 +48,14 @@ const statusFilters = [
     { value: 'ISSUED', label: '청구됨' },
     { value: 'PAID', label: '결제 완료' },
     { value: 'DISBURSED', label: '지급 완료' },
+    { value: 'CANCELLED', label: '취소됨' },
 ];
 
 const statusConfig: Record<string, { label: string; icon: typeof CheckCircle }> = {
     ISSUED: { label: '청구됨', icon: Clock },
     PAID: { label: '결제 완료', icon: CheckCircle },
     DISBURSED: { label: '지급 완료', icon: Send },
+    CANCELLED: { label: '취소됨', icon: AlertCircle },
 };
 
 // Filter settlements by current employer
@@ -131,6 +133,7 @@ const statusCounts = computed(() => ({
     ISSUED: mySettlements.value.filter((s) => s.status === 'ISSUED').length,
     PAID: mySettlements.value.filter((s) => s.status === 'PAID').length,
     DISBURSED: mySettlements.value.filter((s) => s.status === 'DISBURSED').length,
+    CANCELLED: mySettlements.value.filter((s) => s.status === 'CANCELLED').length,
 }));
 
 // Total amounts
@@ -202,6 +205,19 @@ const resetFilters = () => {
     isDropdownOpen.value = false;
     currentPage.value = 1;
 };
+
+onMounted(async () => {
+    try {
+        await Promise.all([
+            contractStore.fetchContracts(),
+            contractStore.fetchEmployerSettlements(),
+            contractStore.fetchEmployerSettlementSummary().catch(() => undefined),
+            contractStore.fetchEmployerNextSettlement().catch(() => undefined),
+        ]);
+    } catch (error) {
+        console.error('Failed to initialize employer settlements:', error);
+    }
+});
 </script>
 
 <template>
@@ -481,10 +497,16 @@ const resetFilters = () => {
                             결제 완료
                         </div>
                         <div
-                            v-else
+                            v-else-if="settlement.status === 'DISBURSED'"
                             class="px-3 py-1.5 rounded-full text-sm font-medium bg-green-500/20 border border-green-500/30 text-green-400"
                         >
                             지급 완료
+                        </div>
+                        <div
+                            v-else
+                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-rose-500/20 border border-rose-500/30 text-rose-400"
+                        >
+                            취소됨
                         </div>
 
                         <!-- Pay Button (only for ISSUED) -->

@@ -19,6 +19,9 @@ const statusDisplay = computed(() => {
   if (isPaid.value) {
     return { label: '지급 완료', color: 'text-green-400', bg: 'bg-green-400/10 border-green-400/30' };
   }
+  if (props.settlement.status === 'CANCELLED') {
+    return { label: '취소됨', color: 'text-rose-400', bg: 'bg-rose-400/10 border-rose-400/30' };
+  }
   return { label: '지급 예정', color: 'text-blue-400', bg: 'bg-blue-400/10 border-blue-400/30' };
 });
 
