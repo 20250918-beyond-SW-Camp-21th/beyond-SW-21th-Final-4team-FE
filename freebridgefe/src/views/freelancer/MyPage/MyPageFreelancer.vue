@@ -16,13 +16,14 @@ import {
   Users,
   Upload,
   Download,
+  Eye,
   AlertTriangle,
   X,
   Edit3,
   TrendingUp,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { getFreelancerProfile, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
+import { getFreelancerProfile, uploadFreelancerPortfolio, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
 import {
     getFreelancerReviewSummary,
     getFreelancerAiPositivityIndex,
@@ -207,30 +208,43 @@ const getGradeColor = (grade: string) => {
 };
 
 const fileInput = ref<HTMLInputElement | null>(null);
+const isPortfolioUploading = ref(false);
 
 const handlePortfolioUpload = () => {
     fileInput.value?.click();
 };
 
-const onFileChange = (event: Event) => {
+const onFileChange = async (event: Event) => {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     
     if (file) {
-        if (profile.value.portfolio.fileUrl) {
-            URL.revokeObjectURL(profile.value.portfolio.fileUrl);
+        try {
+            isPortfolioUploading.value = true;
+            const uploaded = await uploadFreelancerPortfolio(file);
+            profile.value.portfolio = {
+                fileUrl: uploaded.fileUrl,
+                fileName: uploaded.fileName || file.name,
+                lastUpdated: uploaded.lastUpdated || new Date().toLocaleDateString(),
+            };
+            alert('포트폴리오가 업로드되었습니다.');
+        } catch (error) {
+            console.error('Failed to upload portfolio:', error);
+            alert('포트폴리오 업로드에 실패했습니다.');
+        } finally {
+            isPortfolioUploading.value = false;
         }
-        // Create object URL for the file
-        const fileUrl = URL.createObjectURL(file);
-        
-        // Update profile (Mock update)
-        profile.value.portfolio = {
-            fileUrl: fileUrl,
-            fileName: file.name,
-            lastUpdated: new Date().toLocaleDateString()
-        };
-        
-        alert('포트폴리오가 업로드되었습니다.');
+    }
+};
+
+const viewPortfolio = () => {
+    const fileUrl = profile.value.portfolio.fileUrl;
+    const isValid = fileUrl && typeof fileUrl === 'string' && fileUrl.trim() !== '' && fileUrl !== '#';
+
+    if (isValid) {
+        window.open(fileUrl, '_blank');
+    } else {
+        alert('확인할 포트폴리오가 없습니다.');
     }
 };
 
@@ -598,7 +612,7 @@ const hideChurnAlert = ref(false);
                 <!-- Resume/Portfolio -->
                 <div class="bg-[#1e293b]/50 rounded-2xl p-6 border border-white/5 backdrop-blur-sm h-full flex flex-col">
                     <div class="flex justify-between items-center mb-6">
-                        <h4 class="font-bold text-base text-white">고용주 평가</h4>
+                        <h4 class="font-bold text-base text-white">포트폴리오</h4>
                         <input 
                             type="file" 
                             ref="fileInput" 
@@ -606,11 +620,34 @@ const hideChurnAlert = ref(false);
                             accept=".pdf"
                             @change="onFileChange"
                         />
-                        <button @click="handlePortfolioUpload" class="text-slate-500 hover:text-white transition-colors"><Upload class="w-4 h-4" /></button>
+                        <div class="flex items-center gap-2">
+                            <button
+                                @click="viewPortfolio"
+                                class="text-slate-500 hover:text-white transition-colors"
+                                title="보기"
+                            >
+                                <Eye class="w-4 h-4" />
+                            </button>
+                            <button
+                                @click="downloadPortfolio"
+                                class="text-slate-500 hover:text-white transition-colors"
+                                title="다운로드"
+                            >
+                                <Download class="w-4 h-4" />
+                            </button>
+                            <button
+                                @click="handlePortfolioUpload"
+                                class="text-slate-500 hover:text-white transition-colors"
+                                :disabled="isPortfolioUploading"
+                                title="업로드"
+                            >
+                                <Upload class="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
                     <div class="flex-1 flex flex-col items-center justify-center text-center space-y-4 py-4">
                         <div class="w-full bg-white/5 border border-dashed border-white/10 rounded-xl p-4 flex items-center justify-between group hover:border-blue-500/50 hover:bg-blue-500/5 transition-all cursor-pointer">
-                            <div class="flex items-center gap-3" @click="downloadPortfolio">
+                            <div class="flex items-center gap-3" @click="viewPortfolio">
                                 <div class="w-10 h-10 bg-red-400/20 rounded-lg flex items-center justify-center text-red-400">
                                     <FileText class="w-5 h-5" />
                                 </div>

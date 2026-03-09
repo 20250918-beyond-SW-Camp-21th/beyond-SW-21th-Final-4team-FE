@@ -10,6 +10,8 @@ interface FreelancerProfileResponseDto {
   basicProfile: {
     avatarUrl: string | null;
     name: string | null;
+    email?: string | null;
+    phone?: string | null;
     job: string | null;
     introduction: string | null;
     grade: string | null;
@@ -17,6 +19,33 @@ interface FreelancerProfileResponseDto {
     wage: number | null;
     skills: string[] | null;
     status: string | null;
+    workConditions?: {
+      workType?: string | null;
+      availableStartDate?: string | null;
+      workStyle?: string | null;
+      workLocation?: string | null;
+    } | null;
+    expertise?: {
+      programming?: number | null;
+      framework?: number | null;
+      problemSolving?: number | null;
+    } | null;
+    collaboration?: {
+      communication?: number | null;
+      scheduleAdherence?: number | null;
+      dispute?: number | null;
+    } | null;
+    averageRating?: number | null;
+    portfolio?: {
+      fileUrl?: string | null;
+      fileName?: string | null;
+      lastUpdated?: string | null;
+    } | null;
+    crmAlerts?: {
+      isRateBumpEligible?: boolean | null;
+      isBurnoutWarning?: boolean | null;
+      isChurnWarning?: boolean | null;
+    } | null;
   };
   stats: {
     statContact: number | null;
@@ -142,32 +171,37 @@ export const getFreelancerProfile = async (
     careerYears: basic.careerYears ?? 0,
     salary: basic.wage ?? 0,
     workConditions: {
-      type: "",
-      startDate: "",
-      workStyle: "",
-      location: "",
+      type: basic.workConditions?.workType ?? "",
+      startDate: basic.workConditions?.availableStartDate ?? "",
+      workStyle: basic.workConditions?.workStyle ?? "",
+      location: basic.workConditions?.workLocation ?? "",
     },
     skills: basic.skills ?? [],
     expertise: {
-      programming: 0,
-      framework: 0,
-      problemSolving: 0,
+      programming: basic.expertise?.programming ?? 0,
+      framework: basic.expertise?.framework ?? 0,
+      problemSolving: basic.expertise?.problemSolving ?? 0,
     },
     collaboration: {
-      communication: 0,
-      scheduleAdherence: 0,
-      dispute: 0,
+      communication: basic.collaboration?.communication ?? 0,
+      scheduleAdherence: basic.collaboration?.scheduleAdherence ?? 0,
+      dispute: basic.collaboration?.dispute ?? 0,
     },
-    averageRating: 0,
+    averageRating: basic.averageRating ?? 0,
     statContact: stats.statContact ?? 0,
     statChat: stats.statChat ?? 0,
     statContract: stats.statContract ?? 0,
     statInteresting: 0,
     statCompleted: 0,
     portfolio: {
-      fileUrl: null,
-      fileName: "",
-      lastUpdated: "",
+      fileUrl: basic.portfolio?.fileUrl ?? null,
+      fileName: basic.portfolio?.fileName ?? "",
+      lastUpdated: basic.portfolio?.lastUpdated ?? "",
+    },
+    crmAlerts: {
+      isRateBumpEligible: basic.crmAlerts?.isRateBumpEligible ?? false,
+      isBurnoutWarning: basic.crmAlerts?.isBurnoutWarning ?? false,
+      isChurnWarning: basic.crmAlerts?.isChurnWarning ?? false,
     },
   };
 };
@@ -201,4 +235,20 @@ export const uploadFreelancerAvatar = async (file: File): Promise<string> => {
     form,
   );
   return response.data.data;
+};
+
+export const uploadFreelancerPortfolio = async (
+  file: File,
+): Promise<FreelancerProfileDashboard["portfolio"]> => {
+  const form = new FormData();
+  form.append("file", file);
+  const response = await apiClient.post<
+    ApiResponse<{ fileUrl: string | null; fileName: string | null; lastUpdated: string | null }>
+  >("/api/freelancer/mypage/portfolio", form);
+
+  return {
+    fileUrl: response.data.data.fileUrl ?? null,
+    fileName: response.data.data.fileName ?? "",
+    lastUpdated: response.data.data.lastUpdated ?? "",
+  };
 };
