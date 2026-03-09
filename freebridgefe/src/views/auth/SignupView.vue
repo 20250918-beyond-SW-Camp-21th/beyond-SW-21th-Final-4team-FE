@@ -20,6 +20,12 @@ const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 
+// Input Refs for Navigation
+const nameInput = ref<HTMLInputElement | null>(null);
+const emailInput = ref<HTMLInputElement | null>(null);
+const passwordInput = ref<HTMLInputElement | null>(null);
+const confirmPasswordInput = ref<HTMLInputElement | null>(null);
+
 // State
 const role = ref<UserRole>('FREELANCER');
 const formData = ref({
@@ -37,6 +43,7 @@ const formData = ref({
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
 const errors = ref<Record<string, string>>({});
+const touchedFields = ref<Record<string, boolean>>({});
 const isEmailChecking = ref(false);
 const isEmailAvailable = ref(false);
 
@@ -89,54 +96,65 @@ const switchRole = (newRole: UserRole) => {
   formData.value.agreeMarketing = false;
 };
 
-const validateForm = () => {
+const validateForm = (isSubmitting = false) => {
   const newErrors: Record<string, string> = {};
 
+  // 이름 검증
   if (!formData.value.name.trim()) {
     newErrors.name = isEmployer.value ? '고용주명을 입력해주세요' : '이름을 입력해주세요';
   }
 
+  // 이메일 검증
   if (!formData.value.email.trim()) {
     newErrors.email = '이메일을 입력해주세요';
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) {
     newErrors.email = '올바른 이메일 형식이 아닙니다';
-  } else if (!isEmailAvailable.value) {
-    newErrors.email = '이미 사용 중이거나 확인되지 않은 이메일입니다';
+  } else if (!isEmailAvailable.value && !isEmailChecking.value) {
+    if (formData.value.email.trim()) {
+      newErrors.email = '이미 사용 중이거나 확인되지 않은 이메일입니다';
+    }
   }
 
+  // 비밀번호 검증
   if (!formData.value.password) {
     newErrors.password = '비밀번호를 입력해주세요';
   } else if (formData.value.password.length < 8) {
     newErrors.password = '비밀번호는 8자 이상이어야 합니다';
-  } else if (!/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(formData.value.password)) {
-    newErrors.password = '영문, 숫자, 특수문자를 포함해야 합니다';
+  } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/.test(formData.value.password)) {
+    newErrors.password = '대문자, 소문자, 숫자, 특수문자를 모두 포함해야 합니다';
   }
 
+  // 비밀번호 확인 검증
   if (formData.value.password !== formData.value.confirmPassword) {
     newErrors.confirmPassword = '비밀번호가 일치하지 않습니다';
   }
 
-
-
-  if (!formData.value.agreeService) {
-    newErrors.agreeService = '서비스 이용약관에 동의해주세요';
+  // 약관 동의 검증 (제출 시에만 에러 표시)
+  if (isSubmitting) {
+    if (!formData.value.agreeService) newErrors.agreeService = '서비스 이용약관에 동의해주세요';
+    if (!formData.value.agreePrivacy) newErrors.agreePrivacy = '개인정보 수집 및 이용에 동의해주세요';
+    if (!isEmployer.value && !formData.value.agreeThirdParty) newErrors.agreeThirdParty = '개인정보 제3자 제공에 동의해주세요';
   }
 
-  if (!formData.value.agreePrivacy) {
-    newErrors.agreePrivacy = '개인정보 수집 및 이용에 동의해주세요';
-  }
+  // UI에 표시할 에러 필터링 (touched이거나 제출 중일 때만 표시)
+  const filteredErrors: Record<string, string> = {};
+  Object.keys(newErrors).forEach(key => {
+    if (touchedFields.value[key] || isSubmitting) {
+      filteredErrors[key] = newErrors[key];
+    }
+  });
 
-  if (!isEmployer.value && !formData.value.agreeThirdParty) {
-    newErrors.agreeThirdParty = '개인정보 제3자 제공에 동의해주세요';
-  }
-
-  errors.value = newErrors;
+  errors.value = filteredErrors;
   return Object.keys(newErrors).length === 0;
 };
 
-const handleSubmit = async () => {
+const handleBlur = (field: string) => {
+  touchedFields.value[field] = true;
+  validateForm();
+};
 
-  if (!validateForm()) return;
+const handleSubmit = async () => {
+  if (!validateForm(true)) return;
 
   try {
     const newUser: User = {
@@ -145,10 +163,11 @@ const handleSubmit = async () => {
       email: formData.value.email,
       password: formData.value.password,
       role: role.value,
+      termsAgreed: formData.value.agreeService,
+      privacyAgreed: formData.value.agreePrivacy,
       createdAt: new Date(),
       agreedToTermsAt: new Date(),
       isEmailVerified: false,
-      // skills removed
     };
 
     // Start 2FA Signup Process
@@ -192,6 +211,9 @@ const checkEmail = async () => {
   if (!formData.value.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) return;
   
   isEmailChecking.value = true;
+  // Clear any existing availability error while checking
+  validateForm();
+
   try {
     const isAvailable = await authStore.checkEmailDuplicate(formData.value.email);
     isEmailAvailable.value = isAvailable;
@@ -204,6 +226,15 @@ const checkEmail = async () => {
     console.error(e);
   } finally {
     isEmailChecking.value = false;
+    // Final validation refresh after check completes
+    validateForm();
+  }
+};
+
+const focusNext = (e: KeyboardEvent, nextRef: HTMLInputElement | null) => {
+  e.preventDefault();
+  if (nextRef) {
+    nextRef.focus();
   }
 };
 </script>
@@ -303,8 +334,12 @@ const checkEmail = async () => {
               <Building2 v-if="isEmployer" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <UserIcon v-else class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input
+                ref="nameInput"
                 type="text"
                 v-model="formData.name"
+                @blur="handleBlur('name')"
+                @keydown.enter="focusNext($event, emailInput)"
+                spellcheck="false"
                 :placeholder="isEmployer ? '예: 테크스타트업' : '예: 홍길동'"
                 class="w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl focus:outline-none transition-colors text-white placeholder:text-white/30"
                 :class="errors.name ? 'border-red-500/50' : 'border-white/10 focus:border-white/30'"
@@ -325,9 +360,14 @@ const checkEmail = async () => {
               <div class="relative">
                 <Mail class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
                 <input
+                  ref="emailInput"
                   type="email"
                   v-model="formData.email"
-                  @blur="checkEmail"
+                  @blur="() => { handleBlur('email'); checkEmail(); }"
+                  @keydown.enter="focusNext($event, passwordInput)"
+                  spellcheck="false"
+                  autocapitalize="none"
+                  autocomplete="email"
                   placeholder="your@email.com"
                   class="w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl focus:outline-none transition-colors text-white placeholder:text-white/30"
                   :class="errors.email ? 'border-red-500/50' : (isEmailAvailable ? 'border-green-500/50' : 'border-white/10 focus:border-white/30')"
@@ -354,8 +394,13 @@ const checkEmail = async () => {
             <div class="relative">
               <Lock class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input
+                ref="passwordInput"
                 :type="showPassword ? 'text' : 'password'"
                 v-model="formData.password"
+                @blur="handleBlur('password')"
+                @keydown.enter="focusNext($event, confirmPasswordInput)"
+                spellcheck="false"
+                autocapitalize="none"
                 placeholder="영문, 숫자, 특수문자 포함 8자 이상"
                 class="w-full pl-12 pr-12 py-4 bg-white/5 border rounded-2xl focus:outline-none transition-colors text-white placeholder:text-white/30"
                 :class="errors.password ? 'border-red-500/50' : 'border-white/10 focus:border-white/30'"
@@ -384,8 +429,13 @@ const checkEmail = async () => {
             <div class="relative">
               <Lock class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input
+                ref="confirmPasswordInput"
                 :type="showConfirmPassword ? 'text' : 'password'"
                 v-model="formData.confirmPassword"
+                @blur="handleBlur('confirmPassword')"
+                @keydown.enter="handleSubmit"
+                spellcheck="false"
+                autocapitalize="none"
                 placeholder="비밀번호 재입력"
                 class="w-full pl-12 pr-12 py-4 bg-white/5 border rounded-2xl focus:outline-none transition-colors text-white placeholder:text-white/30"
                 :class="errors.confirmPassword ? 'border-red-500/50' : 'border-white/10 focus:border-white/30'"
