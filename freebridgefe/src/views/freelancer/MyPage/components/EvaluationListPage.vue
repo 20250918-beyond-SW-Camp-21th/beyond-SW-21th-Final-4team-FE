@@ -36,28 +36,47 @@ const authStore = useAuthStore();
 const evaluations = ref<Evaluation[]>([]);
 const rejectionFeedbacks = ref<RejectionFeedback[]>([]);
 const isLoading = ref(true);
+const evaluationsUnavailable = ref(false);
+const rejectionUnavailable = ref(false);
 
 const activeTab = ref<"evaluation" | "rejection">("evaluation");
 
 // 필터 상태 (Sort removed)
 const searchQuery = ref("");
 
+const isUnavailableError = (error: unknown) =>
+  error instanceof Error && error.message.includes("API not implemented");
+
 onMounted(async () => {
   try {
     isLoading.value = true;
+    evaluationsUnavailable.value = false;
+    rejectionUnavailable.value = false;
     const userId = authStore.user?.id || "guest";
-    // Mock API Calls
-    const [evalData, rejectionData] = await Promise.all([
+    const [evalResult, rejectionResult] = await Promise.allSettled([
       getEvaluations(userId),
       getRejectionFeedbacks(userId),
     ]);
-    evaluations.value = evalData || [];
-    rejectionFeedbacks.value = rejectionData || [];
-  } catch (e) {
-    console.error("Failed to fetch data", e);
-    // Explicitly set to empty array on error to break out of loading loops securely
-    evaluations.value = [];
-    rejectionFeedbacks.value = [];
+
+    if (evalResult.status === "fulfilled") {
+      evaluations.value = evalResult.value || [];
+    } else if (isUnavailableError(evalResult.reason)) {
+      evaluationsUnavailable.value = true;
+      evaluations.value = [];
+    } else {
+      console.error("Failed to fetch evaluations", evalResult.reason);
+      evaluations.value = [];
+    }
+
+    if (rejectionResult.status === "fulfilled") {
+      rejectionFeedbacks.value = rejectionResult.value || [];
+    } else if (isUnavailableError(rejectionResult.reason)) {
+      rejectionUnavailable.value = true;
+      rejectionFeedbacks.value = [];
+    } else {
+      console.error("Failed to fetch rejection feedbacks", rejectionResult.reason);
+      rejectionFeedbacks.value = [];
+    }
   } finally {
     isLoading.value = false;
   }
@@ -203,6 +222,14 @@ const handleAiAnalysis = async () => {
         <div
           class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"
         ></div>
+      </div>
+
+      <div
+        v-else-if="evaluationsUnavailable"
+        class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border border-white/10 border-dashed text-slate-400 animate-fade-in"
+      >
+        <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
+        <p>평가 기능이 준비 중입니다.</p>
       </div>
 
       <div v-else-if="props.profile">
@@ -584,9 +611,17 @@ const handleAiAnalysis = async () => {
 
       <!-- Rejection List -->
       <template v-else>
+        <div
+          v-if="rejectionUnavailable"
+          class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-2xl border border-white/10 border-dashed text-slate-500"
+        >
+          <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
+          <p>거절 사유 기능이 준비 중입니다.</p>
+        </div>
+
         <!-- Empty State -->
         <div
-          v-if="filteredRejections.length === 0"
+          v-else-if="filteredRejections.length === 0"
           class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-2xl border border-white/10 border-dashed text-slate-500"
         >
           <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
