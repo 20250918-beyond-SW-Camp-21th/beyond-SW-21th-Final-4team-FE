@@ -158,6 +158,10 @@ export const getFreelancerProfile = async (
   const response = await apiClient.get<ApiResponse<FreelancerProfileResponseDto>>(
     "/api/freelancer/mypage/profile",
   );
+  if (!response.data.success || !response.data.data) {
+    const message = response.data.message ?? "Unknown error";
+    throw new Error(`getFreelancerProfile failed (/api/freelancer/mypage/profile): ${message}`);
+  }
   const dto = response.data.data;
   const basic = dto?.basicProfile ?? {};
   const stats = dto?.stats ?? {};
@@ -265,7 +269,14 @@ export const updateFreelancerProfile = async (
     }
   }
 
-  await apiClient.put<ApiResponse<null>>("/api/freelancer/mypage/profile", payload);
+  const updateResponse = await apiClient.put<ApiResponse<null>>(
+    "/api/freelancer/mypage/profile",
+    payload,
+  );
+  if (!updateResponse.data.success) {
+    const message = updateResponse.data.message ?? "Unknown error";
+    throw new Error(`updateFreelancerProfile failed (/api/freelancer/mypage/profile): ${message}`);
+  }
 
   const refreshed = await getFreelancerProfile("me");
   return {
@@ -283,6 +294,10 @@ export const uploadFreelancerAvatar = async (file: File): Promise<string> => {
     "/api/freelancer/mypage/profile/avatar",
     form,
   );
+  if (!response.data.success || !response.data.data) {
+    const message = response.data.message ?? "Unknown error";
+    throw new Error(`uploadFreelancerAvatar failed (/api/freelancer/mypage/profile/avatar): ${message}`);
+  }
   return response.data.data;
 };
 
@@ -295,9 +310,17 @@ export const uploadFreelancerPortfolio = async (
     ApiResponse<{ fileUrl: string | null; fileName: string | null; lastUpdated: string | null }>
   >("/api/freelancer/mypage/portfolio", form);
 
+  if (!response.data.success || !response.data.data) {
+    const message = response.data.message ?? "Unknown error";
+    throw new Error(`uploadFreelancerPortfolio failed (/api/freelancer/mypage/portfolio): ${message}`);
+  }
+  const { fileUrl, fileName, lastUpdated } = response.data.data;
+  if (!fileUrl || !fileName || !lastUpdated) {
+    throw new Error("uploadFreelancerPortfolio failed: missing portfolio fields");
+  }
   return {
-    fileUrl: response.data.data.fileUrl ?? null,
-    fileName: response.data.data.fileName ?? "",
-    lastUpdated: response.data.data.lastUpdated ?? "",
+    fileUrl,
+    fileName,
+    lastUpdated,
   };
 };

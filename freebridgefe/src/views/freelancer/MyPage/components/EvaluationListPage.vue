@@ -60,9 +60,6 @@ onMounted(async () => {
 
     if (evalResult.status === "fulfilled") {
       evaluations.value = evalResult.value || [];
-    } else if (isUnavailableError(evalResult.reason)) {
-      evaluationsUnavailable.value = true;
-      evaluations.value = [];
     } else {
       console.error("Failed to fetch evaluations", evalResult.reason);
       evaluations.value = [];

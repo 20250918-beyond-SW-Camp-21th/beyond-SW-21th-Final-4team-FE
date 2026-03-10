@@ -79,12 +79,12 @@ export interface RejectionFeedback {
 }
 
 // NOTE: Backend endpoints are not available yet. Throw to let UI show "coming soon".
-export const getRejectionFeedbacks = async (_userId: number): Promise<RejectionFeedback[]> => {
+export const getRejectionFeedbacks = async (_userId: number | 'guest'): Promise<RejectionFeedback[]> => {
     throw new Error('API not implemented: rejection feedbacks unavailable');
 };
 
 // NOTE: Backend endpoints are not available yet. Throw to let UI show "coming soon".
-export const getEvaluations = async (_userId: number): Promise<Evaluation[]> => {
+export const getEvaluations = async (_userId: number | 'guest'): Promise<Evaluation[]> => {
     throw new Error('API not implemented: evaluations unavailable');
 };
 
@@ -106,6 +106,10 @@ export const getFreelancerReviewSummary = async (): Promise<FreelancerReviewSumm
     const response = await apiClient.get<ApiResponse<FreelancerReviewSummary>>(
         '/api/freelancer/mypage/reviews/summary'
     );
+    if (!response.data.success || response.data.data == null) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`getFreelancerReviewSummary failed (/api/freelancer/mypage/reviews/summary): ${message}`);
+    }
     return response.data.data;
 };
 
@@ -113,6 +117,10 @@ export const getFreelancerAiReputationReport = async (): Promise<FreelancerAiRep
     const response = await apiClient.get<ApiResponse<FreelancerAiReputationReport>>(
         '/api/freelancer/mypage/reviews/ai/report'
     );
+    if (!response.data.success || response.data.data == null) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`getFreelancerAiReputationReport failed (/api/freelancer/mypage/reviews/ai/report): ${message}`);
+    }
     return response.data.data;
 };
 
@@ -120,6 +128,10 @@ export const getFreelancerAiPositivityIndex = async (): Promise<FreelancerAiPosi
     const response = await apiClient.get<ApiResponse<FreelancerAiPositivityIndex>>(
         '/api/freelancer/mypage/reviews/ai/positivity'
     );
+    if (!response.data.success || response.data.data == null) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`getFreelancerAiPositivityIndex failed (/api/freelancer/mypage/reviews/ai/positivity): ${message}`);
+    }
     return response.data.data;
 };
 
@@ -127,5 +139,9 @@ export const getFreelancerStrengthWeakness = async (): Promise<FreelancerStrengt
     const response = await apiClient.get<ApiResponse<FreelancerStrengthWeakness>>(
         '/api/freelancer/mypage/reviews/ai/strength-weakness'
     );
+    if (!response.data.success || response.data.data == null) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`getFreelancerStrengthWeakness failed (/api/freelancer/mypage/reviews/ai/strength-weakness): ${message}`);
+    }
     return response.data.data;
 };

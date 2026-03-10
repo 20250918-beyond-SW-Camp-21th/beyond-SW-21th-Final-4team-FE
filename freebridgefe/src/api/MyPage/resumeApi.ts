@@ -98,6 +98,14 @@ interface CertificationDto {
   acquisitionDate: string | null;
 }
 
+const unwrapApiResponse = <T>(response: ApiResponse<T>): T => {
+  if (!response.success || response.data == null) {
+    const message = response.message ?? 'Unknown error';
+    throw new Error(`resumeApi failed: ${message}`);
+  }
+  return response.data;
+};
+
 const EDU_STATUS_LABELS: Record<string, string> = {
   GRADUATED: '졸업',
   ATTENDING: '재학',
@@ -155,8 +163,7 @@ export const getResumeDetail = async (): Promise<ResumeDetail> => {
   const response = await apiClient.get<ApiResponse<ResumeResponseDto>>(
     '/api/freelancer/mypage/resume',
   );
-
-  const data = response.data.data;
+  const data = unwrapApiResponse(response.data);
   const basicInfo = data?.basicInfo;
   const educations = (data?.educations ?? []).map((edu, index) => ({
     id: edu.educationId ?? index + 1,
@@ -205,17 +212,18 @@ export const getResumeDetail = async (): Promise<ResumeDetail> => {
 };
 
 export const updateResumeBasicInfo = async (data: ResumeDetail): Promise<void> => {
-  await apiClient.put<ApiResponse<null>>('/api/freelancer/mypage/resume', {
+  const response = await apiClient.put<ApiResponse<null>>('/api/freelancer/mypage/resume', {
     name: data.name,
     birthDate: normalizeDate(data.birthDate),
     phone: data.phone,
     email: data.email,
     address: data.address,
   });
+  unwrapApiResponse(response.data);
 };
 
 export const addEducation = async (education: Education): Promise<void> => {
-  await apiClient.post<ApiResponse<null>>('/api/freelancer/mypage/resume/educations', {
+  const response = await apiClient.post<ApiResponse<null>>('/api/freelancer/mypage/resume/educations', {
     schoolType: education.schoolType,
     schoolName: education.schoolName,
     major: education.major ?? '',
@@ -223,10 +231,11 @@ export const addEducation = async (education: Education): Promise<void> => {
     entranceDate: normalizeDate(education.entranceDate),
     graduationDate: normalizeDate(education.graduationDate),
   });
+  unwrapApiResponse(response.data);
 };
 
 export const updateEducation = async (index: number, education: Education): Promise<void> => {
-  await apiClient.put<ApiResponse<null>>(`/api/freelancer/mypage/resume/educations/${index}`, {
+  const response = await apiClient.put<ApiResponse<null>>(`/api/freelancer/mypage/resume/educations/${index}`, {
     schoolType: education.schoolType,
     schoolName: education.schoolName,
     major: education.major ?? '',
@@ -234,15 +243,17 @@ export const updateEducation = async (index: number, education: Education): Prom
     entranceDate: normalizeDate(education.entranceDate),
     graduationDate: normalizeDate(education.graduationDate),
   });
+  unwrapApiResponse(response.data);
 };
 
 export const deleteEducation = async (index: number): Promise<void> => {
-  await apiClient.delete<ApiResponse<null>>(`/api/freelancer/mypage/resume/educations/${index}`);
+  const response = await apiClient.delete<ApiResponse<null>>(`/api/freelancer/mypage/resume/educations/${index}`);
+  unwrapApiResponse(response.data);
 };
 
 export const addCareer = async (career: Career): Promise<void> => {
   const isCurrent = career.isCurrent || isCurrentToken(career.endDate);
-  await apiClient.post<ApiResponse<null>>('/api/freelancer/mypage/resume/careers', {
+  const response = await apiClient.post<ApiResponse<null>>('/api/freelancer/mypage/resume/careers', {
     companyName: career.companyName,
     department: career.department,
     position: career.position,
@@ -252,11 +263,12 @@ export const addCareer = async (career: Career): Promise<void> => {
     endDate: isCurrent ? null : normalizeDate(career.endDate),
     description: career.description ?? '',
   });
+  unwrapApiResponse(response.data);
 };
 
 export const updateCareer = async (index: number, career: Career): Promise<void> => {
   const isCurrent = career.isCurrent || isCurrentToken(career.endDate);
-  await apiClient.put<ApiResponse<null>>(`/api/freelancer/mypage/resume/careers/${index}`, {
+  const response = await apiClient.put<ApiResponse<null>>(`/api/freelancer/mypage/resume/careers/${index}`, {
     companyName: career.companyName,
     department: career.department,
     position: career.position,
@@ -266,31 +278,36 @@ export const updateCareer = async (index: number, career: Career): Promise<void>
     endDate: isCurrent ? null : normalizeDate(career.endDate),
     description: career.description ?? '',
   });
+  unwrapApiResponse(response.data);
 };
 
 export const deleteCareer = async (index: number): Promise<void> => {
-  await apiClient.delete<ApiResponse<null>>(`/api/freelancer/mypage/resume/careers/${index}`);
+  const response = await apiClient.delete<ApiResponse<null>>(`/api/freelancer/mypage/resume/careers/${index}`);
+  unwrapApiResponse(response.data);
 };
 
 export const addCertification = async (cert: Certification): Promise<void> => {
-  await apiClient.post<ApiResponse<null>>('/api/freelancer/mypage/resume/certifications', {
+  const response = await apiClient.post<ApiResponse<null>>('/api/freelancer/mypage/resume/certifications', {
     name: cert.name,
     issuer: cert.issuer,
     acquisitionDate: normalizeDate(cert.acquisitionDate),
   });
+  unwrapApiResponse(response.data);
 };
 
 export const updateCertification = async (
   index: number,
   cert: Certification,
 ): Promise<void> => {
-  await apiClient.put<ApiResponse<null>>(`/api/freelancer/mypage/resume/certifications/${index}`, {
+  const response = await apiClient.put<ApiResponse<null>>(`/api/freelancer/mypage/resume/certifications/${index}`, {
     name: cert.name,
     issuer: cert.issuer,
     acquisitionDate: normalizeDate(cert.acquisitionDate),
   });
+  unwrapApiResponse(response.data);
 };
 
 export const deleteCertification = async (index: number): Promise<void> => {
-  await apiClient.delete<ApiResponse<null>>(`/api/freelancer/mypage/resume/certifications/${index}`);
+  const response = await apiClient.delete<ApiResponse<null>>(`/api/freelancer/mypage/resume/certifications/${index}`);
+  unwrapApiResponse(response.data);
 };

@@ -127,6 +127,16 @@ onMounted(async () => {
 const handleSave = async () => {
     try {
         isSaving.value = true;
+        // Commit any in-progress inline edits before saving
+        if (editingEducationIndex.value !== null && editEducationDraft.value) {
+            await saveEditEducation();
+        }
+        if (editingCareerIndex.value !== null && editCareerDraft.value) {
+            await saveEditCareer();
+        }
+        if (editingCertificationIndex.value !== null && editCertificationDraft.value) {
+            await saveEditCertification();
+        }
         await updateResumeBasicInfo(resumeData.value);
 
         const sortedEducationDeletes = [...new Set(deletedEducationIndexes.value)].sort((a, b) => b - a);
@@ -477,6 +487,13 @@ const saveEditCertification = async () => {
                                 <div class="space-y-1">
                                     <label class="text-xs text-slate-500 ml-1">학교 구분</label>
                                     <select v-model="editEducationDraft.schoolType" class="w-full bg-[#0F172A] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm outline-none">
+                                        <option
+                                            v-if="editEducationDraft.schoolType && !['고등학교', '전문대', '대학교'].includes(editEducationDraft.schoolType)"
+                                            :value="editEducationDraft.schoolType"
+                                            disabled
+                                        >
+                                            {{ editEducationDraft.schoolType }}
+                                        </option>
                                         <option value="고등학교">고등학교</option>
                                         <option value="대학교">대학교</option>
                                         <option value="대학원">대학원</option>
