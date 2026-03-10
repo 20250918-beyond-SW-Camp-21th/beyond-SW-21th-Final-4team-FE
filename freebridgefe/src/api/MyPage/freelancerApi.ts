@@ -210,30 +210,62 @@ export const updateFreelancerProfile = async (
   _userId: string,
   updatedProfile: Partial<FreelancerProfileDashboard>,
 ): Promise<FreelancerProfileDashboard> => {
-  const workType = updatedProfile.workConditions?.type?.trim() || null;
-  const availableStartDate = updatedProfile.workConditions?.startDate?.trim() || null;
-  const workStyle = updatedProfile.workConditions?.workStyle?.trim() || null;
-  const workLocation = updatedProfile.workConditions?.location?.trim() || null;
+  const payload: Record<string, unknown> = {};
 
-  await apiClient.put<ApiResponse<null>>("/api/freelancer/mypage/profile", {
-    name: updatedProfile.name ?? "",
-    job: updatedProfile.job ?? "",
-    introduction: updatedProfile.introduction ?? "",
-    careerYears: updatedProfile.careerYears ?? 0,
-    wage: updatedProfile.salary ?? 0,
-    skills: updatedProfile.skills ?? [],
-    workType,
-    availableStartDate,
-    workStyle,
-    workLocation,
-    expertiseProgramming: updatedProfile.expertise?.programming ?? null,
-    expertiseFramework: updatedProfile.expertise?.framework ?? null,
-    expertiseProblemSolving: updatedProfile.expertise?.problemSolving ?? null,
-    collaborationCommunication: updatedProfile.collaboration?.communication ?? null,
-    collaborationScheduleAdherence: updatedProfile.collaboration?.scheduleAdherence ?? null,
-    collaborationDispute: updatedProfile.collaboration?.dispute ?? null,
-    averageRating: updatedProfile.averageRating ?? null,
-  });
+  if (updatedProfile.name !== undefined) payload.name = updatedProfile.name;
+  if (updatedProfile.job !== undefined) payload.job = updatedProfile.job;
+  if (updatedProfile.introduction !== undefined) payload.introduction = updatedProfile.introduction;
+  if (updatedProfile.careerYears !== undefined) payload.careerYears = updatedProfile.careerYears;
+  if (updatedProfile.salary !== undefined) payload.wage = updatedProfile.salary;
+  if (updatedProfile.skills !== undefined) payload.skills = updatedProfile.skills;
+  if (updatedProfile.averageRating !== undefined) {
+    payload.averageRating = updatedProfile.averageRating;
+  }
+
+  if (updatedProfile.workConditions) {
+    if (updatedProfile.workConditions.type !== undefined) {
+      const workType = updatedProfile.workConditions.type?.trim() || null;
+      payload.workType = workType;
+    }
+    if (updatedProfile.workConditions.startDate !== undefined) {
+      const availableStartDate = updatedProfile.workConditions.startDate?.trim() || null;
+      payload.availableStartDate = availableStartDate;
+    }
+    if (updatedProfile.workConditions.workStyle !== undefined) {
+      const workStyle = updatedProfile.workConditions.workStyle?.trim() || null;
+      payload.workStyle = workStyle;
+    }
+    if (updatedProfile.workConditions.location !== undefined) {
+      const workLocation = updatedProfile.workConditions.location?.trim() || null;
+      payload.workLocation = workLocation;
+    }
+  }
+
+  if (updatedProfile.expertise) {
+    if (updatedProfile.expertise.programming !== undefined) {
+      payload.expertiseProgramming = updatedProfile.expertise.programming;
+    }
+    if (updatedProfile.expertise.framework !== undefined) {
+      payload.expertiseFramework = updatedProfile.expertise.framework;
+    }
+    if (updatedProfile.expertise.problemSolving !== undefined) {
+      payload.expertiseProblemSolving = updatedProfile.expertise.problemSolving;
+    }
+  }
+
+  if (updatedProfile.collaboration) {
+    if (updatedProfile.collaboration.communication !== undefined) {
+      payload.collaborationCommunication = updatedProfile.collaboration.communication;
+    }
+    if (updatedProfile.collaboration.scheduleAdherence !== undefined) {
+      payload.collaborationScheduleAdherence = updatedProfile.collaboration.scheduleAdherence;
+    }
+    if (updatedProfile.collaboration.dispute !== undefined) {
+      payload.collaborationDispute = updatedProfile.collaboration.dispute;
+    }
+  }
+
+  await apiClient.put<ApiResponse<null>>("/api/freelancer/mypage/profile", payload);
 
   const refreshed = await getFreelancerProfile("me");
   return {
