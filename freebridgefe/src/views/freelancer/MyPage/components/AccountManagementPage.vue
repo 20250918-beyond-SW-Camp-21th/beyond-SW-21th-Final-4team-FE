@@ -62,6 +62,11 @@ const notifications = ref({
     contractNotificationEnabled: false,
 });
 
+const notificationsHydrated = ref(false);
+const isSavingNotifications = ref(false);
+let notificationsSaveChain: Promise<void> = Promise.resolve();
+let notificationsSaveCount = 0;
+
 const isSavingInfo = ref(false);
 const isChangingPassword = ref(false);
 
@@ -70,26 +75,40 @@ onMounted(async () => {
         const info = await getAccountInfo();
         accountInfo.value = { ...accountInfo.value, ...info };
         const notificationSettings = await getFreelancerNotificationSettings();
-        notifications.value.requestNotificationEnabled = !!notificationSettings.requestNotificationEnabled;
-        notifications.value.contractNotificationEnabled = !!notificationSettings.contractNotificationEnabled;
+        notifications.value = {
+            requestNotificationEnabled: !!notificationSettings.requestNotificationEnabled,
+            contractNotificationEnabled: !!notificationSettings.contractNotificationEnabled,
+        };
     } catch (error) {
         console.error('Failed to fetch account info:', error);
+    } finally {
+        notificationsHydrated.value = true;
     }
 });
 
-const toggleNotification = async (key: keyof typeof notifications.value) => {
+const toggleNotification = (key: keyof typeof notifications.value) => {
+    if (!notificationsHydrated.value) return;
+    const snapshot = { ...notifications.value };
     const nextValue = !notifications.value[key];
-    notifications.value[key] = nextValue;
-    try {
-        await updateFreelancerNotificationSettings(
-            notifications.value.requestNotificationEnabled,
-            notifications.value.contractNotificationEnabled
-        );
-    } catch (error) {
-        console.error('Failed to update notification settings:', error);
-        notifications.value[key] = !nextValue;
-        alert('?? ?? ??? ??????.');
-    }
+    notifications.value = { ...notifications.value, [key]: nextValue };
+
+    notificationsSaveChain = notificationsSaveChain.then(async () => {
+        notificationsSaveCount += 1;
+        isSavingNotifications.value = true;
+        try {
+            await updateFreelancerNotificationSettings(
+                notifications.value.requestNotificationEnabled,
+                notifications.value.contractNotificationEnabled
+            );
+        } catch (error) {
+            console.error('Failed to update notification settings:', error);
+            notifications.value = snapshot;
+            alert('알림 설정 저장에 실패했습니다.');
+        } finally {
+            notificationsSaveCount -= 1;
+            isSavingNotifications.value = notificationsSaveCount > 0;
+        }
+    });
 };
 
 const handleVerifyIdentity = async () => {
@@ -327,8 +346,8 @@ const resetProfileVerification = () => {
                 <div class="space-y-4">
                      <div
                         v-for="(item, key) in {
-                            requestNotificationEnabled: { label: '???? ?? ??', desc: '???? ??? ???? ??? ????' },
-                            contractNotificationEnabled: { label: '?? ?? ??', desc: '?? ?? ?? ? ??? ????' }
+                            requestNotificationEnabled: { label: '프로젝트 제안 알림', desc: '새로운 프로젝트 제안이 도착하면 알려드립니다.' },
+                            contractNotificationEnabled: { label: '계약 상태 알림', desc: '계약 상태가 변경되면 알림을 받을 수 있습니다.' }
                         }"
                         :key="key"
                         class="flex items-center justify-between p-4 bg-[#1e293b]/30 rounded-2xl border border-white/5 hover:bg-[#1e293b]/50 transition-colors"
@@ -339,7 +358,8 @@ const resetProfileVerification = () => {
                         </div>
                         <button
                             @click="toggleNotification(key as keyof typeof notifications)"
-                            class="relative w-12 h-7 rounded-full transition-colors duration-300 focus:outline-none"
+                            :disabled="!notificationsHydrated || isSavingNotifications"
+                            class="relative w-12 h-7 rounded-full transition-colors duration-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                             :class="notifications[key as keyof typeof notifications] ? 'bg-blue-500' : 'bg-slate-700'"
                         >
                             <div
