@@ -49,6 +49,7 @@ const normalizePlan = (plan?: string): PlanType => {
 };
 
 const planLoading = ref(true);
+const planFetchError = ref<string | null>(null);
 
 const fetchCurrentPlan = async () => {
   planLoading.value = true;
@@ -57,7 +58,7 @@ const fetchCurrentPlan = async () => {
     currentPlan.value = normalizePlan(subscription.currentPlan);
   } catch (error) {
     console.error("Failed to fetch employer plan:", error);
-    currentPlan.value = "FREE";
+    planFetchError.value = "subscription_fetch_failed";
   } finally {
     planLoading.value = false;
   }
