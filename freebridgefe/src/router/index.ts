@@ -91,6 +91,11 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import('@/views/employer/Contracts/ContractsView.vue')
             },
             {
+                path: 'payments',
+                name: 'employer.payments',
+                component: () => import('@/views/employer/Payments/PaymentView.vue')
+            },
+            {
                 path: 'contracts/create',
                 name: 'employer.contracts.create',
                 component: () => import('@/views/employer/Contracts/CreateContractView.vue')
