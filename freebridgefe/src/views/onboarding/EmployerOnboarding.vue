@@ -197,11 +197,13 @@ const nextStep = () => {
                             @change="e => store.updateEmployerData({ size: (e.target as HTMLSelectElement).value as any })"
                             class="block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/50 focus:border-transparent sm:text-sm py-4 px-4 text-white transition-all duration-300 hover:bg-white/10 [&>option]:bg-[#1a1a1a]"
                         >
-                            <option value="SIZE_1_TO_10">1-10명</option>
-                            <option value="SIZE_10_TO_50">10-50명</option>
-                            <option value="SIZE_50_TO_100">50-100명</option>
-                            <option value="SIZE_100_TO_500">100-500명</option>
-                            <option value="SIZE_500_PLUS">500명 이상</option>
+                            <option value="S1_4">1-4명</option>
+                            <option value="S5_9">5-9명</option>
+                            <option value="S10_29">10-29명</option>
+                            <option value="S30_99">30-99명</option>
+                            <option value="S100_299">100-299명</option>
+                            <option value="S300_999">300-999명</option>
+                            <option value="S1000_PLUS">1000명 이상</option>
                         </select>
                     </div>
                 </div>
