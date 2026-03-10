@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { listContracts, type ContractListParams } from '@/api/contractApi';
+import { getUserById } from '@/api/authApi';
 import {
     getEmployerNextSettlement,
     getEmployerSettlementSummary,
@@ -149,7 +150,50 @@ export const useContractStore = defineStore('contract', () => {
 
     async function fetchContracts(params?: ContractListParams) {
         const data = await listContracts(params);
-        contracts.value = data.items || [];
+        const items = (data.items || []) as ContractWithDetails[];
+        contracts.value = items;
+
+        const placeholderPattern = /^user\s*#\s*\d+$/i;
+        const needsName = (name?: string | null) => {
+            if (!name) return true;
+            const trimmed = name.trim();
+            return trimmed.length === 0 || trimmed === 'Unknown' || placeholderPattern.test(trimmed);
+        };
+
+        const missingIds = Array.from(
+            new Set(
+                items
+                    .filter((c) => needsName(c.freelancerName))
+                    .map((c) => Number(c.freelancerId))
+                    .filter((id) => Number.isFinite(id) && id > 0)
+            )
+        );
+
+        if (missingIds.length === 0) return;
+
+        const results = await Promise.allSettled(missingIds.map((id) => getUserById(id)));
+        const idToName = new Map<number, string>();
+
+        results.forEach((result, index) => {
+            if (result.status !== 'fulfilled') return;
+            const user = result.value as Record<string, any>;
+            const name =
+                user?.name ||
+                user?.fullName ||
+                user?.username ||
+                user?.nickname;
+            if (name) {
+                idToName.set(missingIds[index], String(name));
+            }
+        });
+
+        if (idToName.size === 0) return;
+
+        contracts.value = items.map((contract) => {
+            const resolvedName = idToName.get(Number(contract.freelancerId));
+            if (!resolvedName) return contract;
+            return { ...contract, freelancerName: resolvedName };
+        });
     }
 
     async function fetchEmployerSettlements(params?: {
