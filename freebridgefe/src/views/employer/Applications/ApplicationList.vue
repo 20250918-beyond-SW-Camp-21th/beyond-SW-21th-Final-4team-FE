@@ -109,9 +109,9 @@ const getJobTitle = (jobId?: string) => {
   return jobStore.getJobById(jobId)?.title || '프로젝트 정보 없음';
 };
 
-const handleAccept = (app: Application) => {
+const handleAccept = async (app: Application) => {
   if (confirm(`${app.freelancerName}님의 지원을 수락하시겠습니까?`)) {
-    const roomId = jobStore.updateApplicationStatus(app.id, 'ACCEPTED');
+    const roomId = await jobStore.updateApplicationStatus(app.id, 'ACCEPTED');
     if (roomId) {
       const shouldMove = confirm('채팅방이 생성되었습니다. 이동하겠습니까?');
       if (shouldMove) {

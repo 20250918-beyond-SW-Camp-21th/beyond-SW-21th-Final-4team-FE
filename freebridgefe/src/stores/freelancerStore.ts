@@ -256,17 +256,23 @@ export const useFreelancerStore = defineStore("freelancer", () => {
         context.relatedJobId = jobId;
       }
 
-      const roomId = chatStore.createRoom(
+      const roomId = await chatStore.createRoom(
         [employerId, freelancerId],
         {
           [employerId]: proposals.value[index].employerName || "Employer",
           [freelancerId]: proposals.value[index].freelancerName || "Freelancer",
         },
         context,
-      );
+      ).catch((e) => {
+        console.error("Failed to create room:", e);
+        return null;
+      });
 
-      chatStore.selectRoom(roomId);
-      return roomId;
+      if (roomId) {
+        chatStore.selectRoom(roomId);
+        return roomId;
+      }
+      return null;
     }
 
     return true;

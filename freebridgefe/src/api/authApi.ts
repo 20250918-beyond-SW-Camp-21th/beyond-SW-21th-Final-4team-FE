@@ -34,6 +34,7 @@ export interface RegisterRequest {
     role: 'FREELANCER' | 'EMPLOYER';
     termsAgreed: boolean;
     privacyAgreed: boolean;
+    phone?: string;
 }
 
 export interface RegisterData {
@@ -64,6 +65,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginData> => {
  * Register a new user
  */
 export const register = async (userData: RegisterRequest): Promise<RegisterData> => {
+    // Debug logging removed to prevent PII exposure
     const response = await apiClient.post<ApiResponse<RegisterData>>('/api/users/signup', userData);
     return response.data.data;
 };
@@ -80,19 +82,27 @@ export const checkEmailAvailability = async (email: string): Promise<{ exists: b
 };
 
 /**
+ * Send verification code to email
+ */
+export const sendVerification = async (email: string) => {
+    const response = await apiClient.post<ApiResponse<any>>('/api/auth/send-verification', { email });
+    return response.data.data || {};
+};
+
+/**
  * Verify email with code
  */
 export const verifyEmail = async (email: string, code: string) => {
-    const response = await apiClient.post<ApiResponse<any>>('/api/users/verify-email', { email, code });
-    return response.data.data;
+    const response = await apiClient.post<ApiResponse<any>>('/api/auth/verify-email', { email, code });
+    return response.data; // Return full response to check success
 };
 
 /**
  * Resend verification code
  */
 export const resendVerification = async (email: string) => {
-    const response = await apiClient.post<ApiResponse<any>>('/api/users/resend-verification', { email });
-    return response.data.data;
+    const response = await apiClient.post<ApiResponse<any>>('/api/auth/resend-verification', { email });
+    return response.data.data || {};
 };
 
 /**
@@ -190,6 +200,7 @@ export const authApi = {
         return result.available;
     },
     verifyEmail,
+    sendVerification,
     resendVerification,
     getUsers,
     getUserById,
