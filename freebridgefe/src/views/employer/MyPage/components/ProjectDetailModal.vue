@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import {
   X,
@@ -51,6 +51,7 @@ const emit = defineEmits<{
 
 const applicantStatuses = ref<EmployerApplicantStatus[]>([]);
 const isApplicantLoading = ref(false);
+const applicantRequestId = ref(0);
 
 const statusLabel = (status?: string) => {
   const key = (status ?? '').toUpperCase();
@@ -73,26 +74,37 @@ const applicantSummary = computed(() => {
 
 const totalApplicants = computed(() => applicantStatuses.value.length);
 
-const loadApplicantStatus = async () => {
+const loadApplicantStatus = async (requestId: number) => {
   if (!props.project?.id) return;
   const projectId = Number(props.project.id);
   if (!projectId) return;
   try {
     isApplicantLoading.value = true;
-    applicantStatuses.value = await getEmployerApplicantStatus(projectId);
+    const result = await getEmployerApplicantStatus(projectId);
+    if (requestId !== applicantRequestId.value) return;
+    applicantStatuses.value = result;
   } catch (error) {
+    if (requestId !== applicantRequestId.value) return;
     console.error('Failed to fetch applicant status:', error);
     applicantStatuses.value = [];
   } finally {
-    isApplicantLoading.value = false;
+    if (requestId === applicantRequestId.value) {
+      isApplicantLoading.value = false;
+    }
   }
 };
 
 watch(
   () => [props.isOpen, props.project?.id],
-  ([isOpen]) => {
+  ([isOpen], _, onCleanup) => {
+    const requestId = ++applicantRequestId.value;
+    onCleanup(() => {
+      if (applicantRequestId.value === requestId) {
+        applicantRequestId.value = requestId + 1;
+      }
+    });
     if (isOpen) {
-      loadApplicantStatus();
+      loadApplicantStatus(requestId);
     }
   }
 );

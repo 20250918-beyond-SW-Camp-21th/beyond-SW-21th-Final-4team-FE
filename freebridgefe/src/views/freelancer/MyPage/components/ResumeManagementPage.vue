@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useMotion } from "@vueuse/motion";
 import {
@@ -62,6 +62,13 @@ const isSaving = ref(false);
 const deletedEducationIndexes = ref<number[]>([]);
 const deletedCareerIndexes = ref<number[]>([]);
 const deletedCertificationIndexes = ref<number[]>([]);
+
+const editingEducationIndex = ref<number | null>(null);
+const editingCareerIndex = ref<number | null>(null);
+const editingCertificationIndex = ref<number | null>(null);
+const editEducationDraft = ref<Education | null>(null);
+const editCareerDraft = ref<Career | null>(null);
+const editCertificationDraft = ref<Certification | null>(null);
 
 // --- Temporary State for Adding Items ---
 const isAddingEducation = ref(false);
@@ -843,23 +850,3 @@ const saveEditCertification = async () => {
         </div>
     </div>
 </template>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const editingEducationIndex = ref<number | null>(null);
-const editingCareerIndex = ref<number | null>(null);
-const editingCertificationIndex = ref<number | null>(null);
-const editEducationDraft = ref<Education | null>(null);
-const editCareerDraft = ref<Career | null>(null);
-const editCertificationDraft = ref<Certification | null>(null);
