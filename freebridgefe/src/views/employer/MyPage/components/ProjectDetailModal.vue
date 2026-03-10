@@ -51,6 +51,7 @@ const emit = defineEmits<{
 
 const applicantStatuses = ref<EmployerApplicantStatus[]>([]);
 const isApplicantLoading = ref(false);
+const isApplicantError = ref(false);
 const applicantRequestId = ref(0);
 
 const statusLabel = (status?: string) => {
@@ -80,13 +81,14 @@ const loadApplicantStatus = async (requestId: number) => {
   if (!projectId) return;
   try {
     isApplicantLoading.value = true;
+    isApplicantError.value = false;
     const result = await getEmployerApplicantStatus(projectId);
     if (requestId !== applicantRequestId.value) return;
     applicantStatuses.value = result;
   } catch (error) {
     if (requestId !== applicantRequestId.value) return;
     console.error('Failed to fetch applicant status:', error);
-    applicantStatuses.value = [];
+    isApplicantError.value = true;
   } finally {
     if (requestId === applicantRequestId.value) {
       isApplicantLoading.value = false;
@@ -202,6 +204,7 @@ const getFreelancerStatusColor = (status: string) => {
             </h3>
             <div class="bg-white/5 border border-white/10 rounded-xl p-5">
                 <div v-if="isApplicantLoading" class="text-sm text-slate-400">불러오는 중...</div>
+                <div v-else-if="isApplicantError" class="text-sm text-red-400">지원자 상태를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>
                 <div v-else-if="totalApplicants === 0" class="text-sm text-slate-400">지원자 상태 데이터가 없습니다.</div>
                 <div v-else class="flex flex-wrap gap-3">
                     <div
