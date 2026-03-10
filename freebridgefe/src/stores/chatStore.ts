@@ -5,7 +5,7 @@ import SockJS from 'sockjs-client';
 import { useAuthStore } from '@/stores/authStore';
 import type { ChatRoom, ChatMessage } from '@/types';
 import { getMyChatRooms, getChatMessages, createChatRoom as apiCreateRoom } from '@/api/chatApi';
-import { getAccessToken } from '@/api/axiosInstance';
+import { API_BASE_URL, getAccessToken } from '@/api/axiosInstance';
 import { CHAT_MUTED_ROOMS_KEY } from '@/constants/chatUi';
 
 export const useChatStore = defineStore('chat', () => {
@@ -162,7 +162,7 @@ export const useChatStore = defineStore('chat', () => {
             stompClient = new Client({
                 webSocketFactory: () =>
                     new SockJS(
-                        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/ws/chat`
+                        `${API_BASE_URL}/ws/chat`
                     ),
                 connectHeaders: {
                     Authorization: `Bearer ${token}`
