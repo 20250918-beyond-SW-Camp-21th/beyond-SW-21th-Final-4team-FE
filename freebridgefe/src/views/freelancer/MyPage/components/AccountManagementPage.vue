@@ -18,7 +18,13 @@ import {
     AlertCircle
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { getAccountInfo, updateAccountInfo, changeFreelancerPassword } from '@/api/MyPage/accountApi';
+import {
+    getAccountInfo,
+    updateAccountInfo,
+    changeFreelancerPassword,
+    getFreelancerNotificationSettings,
+    updateFreelancerNotificationSettings
+} from '@/api/MyPage/accountApi';
 
 const emit = defineEmits<{
   (e: 'back'): void;
@@ -52,10 +58,14 @@ const showPasswords = ref({
 });
 
 const notifications = ref({
-    email: true,
-    push: true,
-    marketing: false,
+    requestNotificationEnabled: false,
+    contractNotificationEnabled: false,
 });
+
+const notificationsHydrated = ref(false);
+const isSavingNotifications = ref(false);
+let notificationsSaveChain: Promise<void> = Promise.resolve();
+let notificationsSaveCount = 0;
 
 const isSavingInfo = ref(false);
 const isChangingPassword = ref(false);
@@ -64,10 +74,42 @@ onMounted(async () => {
     try {
         const info = await getAccountInfo();
         accountInfo.value = { ...accountInfo.value, ...info };
+        const notificationSettings = await getFreelancerNotificationSettings();
+        notifications.value = {
+            requestNotificationEnabled: !!notificationSettings.requestNotificationEnabled,
+            contractNotificationEnabled: !!notificationSettings.contractNotificationEnabled,
+        };
     } catch (error) {
         console.error('Failed to fetch account info:', error);
+    } finally {
+        notificationsHydrated.value = true;
     }
 });
+
+const toggleNotification = (key: keyof typeof notifications.value) => {
+    if (!notificationsHydrated.value) return;
+    const snapshot = { ...notifications.value };
+    const nextValue = !notifications.value[key];
+    notifications.value = { ...notifications.value, [key]: nextValue };
+
+    notificationsSaveChain = notificationsSaveChain.then(async () => {
+        notificationsSaveCount += 1;
+        isSavingNotifications.value = true;
+        try {
+            await updateFreelancerNotificationSettings(
+                notifications.value.requestNotificationEnabled,
+                notifications.value.contractNotificationEnabled
+            );
+        } catch (error) {
+            console.error('Failed to update notification settings:', error);
+            notifications.value = snapshot;
+            alert('알림 설정 저장에 실패했습니다.');
+        } finally {
+            notificationsSaveCount -= 1;
+            isSavingNotifications.value = notificationsSaveCount > 0;
+        }
+    });
+};
 
 const handleVerifyIdentity = async () => {
     verificationError.value = '';
@@ -304,9 +346,8 @@ const resetProfileVerification = () => {
                 <div class="space-y-4">
                      <div
                         v-for="(item, key) in {
-                            email: { label: '이메일 알림', desc: '프로젝트 제안 및 중요 공지를 이메일로 받습니다' },
-                            push: { label: '푸시 알림', desc: '브라우저 푸시 알림을 받습니다' },
-                            marketing: { label: '마케팅 정보 수신', desc: '프로모션 및 이벤트 정보를 받습니다' }
+                            requestNotificationEnabled: { label: '프로젝트 제안 알림', desc: '새로운 프로젝트 제안이 도착하면 알려드립니다.' },
+                            contractNotificationEnabled: { label: '계약 상태 알림', desc: '계약 상태가 변경되면 알림을 받을 수 있습니다.' }
                         }"
                         :key="key"
                         class="flex items-center justify-between p-4 bg-[#1e293b]/30 rounded-2xl border border-white/5 hover:bg-[#1e293b]/50 transition-colors"
@@ -316,8 +357,9 @@ const resetProfileVerification = () => {
                             <p class="text-xs text-slate-400">{{ item.desc }}</p>
                         </div>
                         <button
-                            @click="notifications[key as keyof typeof notifications] = !notifications[key as keyof typeof notifications]"
-                            class="relative w-12 h-7 rounded-full transition-colors duration-300 focus:outline-none"
+                            @click="toggleNotification(key as keyof typeof notifications)"
+                            :disabled="!notificationsHydrated || isSavingNotifications"
+                            class="relative w-12 h-7 rounded-full transition-colors duration-300 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                             :class="notifications[key as keyof typeof notifications] ? 'bg-blue-500' : 'bg-slate-700'"
                         >
                             <div
