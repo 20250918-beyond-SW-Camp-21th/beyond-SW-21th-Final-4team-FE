@@ -90,5 +90,9 @@ export const saveGrade = async (req: GradeSaveRequest): Promise<boolean> => {
         '/api/freelancer/mypage/grade',
         req
     );
-    return response.data.success;
+    if (!response.data.success) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`saveGrade failed (/api/freelancer/mypage/grade): ${message}`);
+    }
+    return true;
 };
