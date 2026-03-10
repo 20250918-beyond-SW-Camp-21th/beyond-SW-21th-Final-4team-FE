@@ -20,6 +20,7 @@ import {
   HelpCircle,
   Receipt,
   MessageSquare,
+  CreditCard,
 } from 'lucide-vue-next';
 
 const router = useRouter();
@@ -40,6 +41,7 @@ const employerNavItems = [
   { id: 'employer.freelancers', path: '/employer/freelancers', label: '프리랜서 찾기', icon: Users },
   { id: 'employer.recommended', path: '/employer/recommended', label: '추천 프리랜서', icon: TrendingUp },
   { id: 'employer.contracts', path: '/employer/contracts', label: '계약서', icon: FileCheck },
+  { id: 'employer.payments', path: '/employer/payments', label: '결제', icon: CreditCard },
   { id: 'employer.settlements', path: '/employer/settlements', label: '정산', icon: Receipt },
   { id: 'employer.mypage', path: '/employer/mypage', label: '마이페이지', icon: UserCircle },
 ];
