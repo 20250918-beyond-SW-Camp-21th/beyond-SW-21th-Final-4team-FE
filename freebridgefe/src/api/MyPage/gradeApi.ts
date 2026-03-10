@@ -82,6 +82,13 @@ export const calculateGrade = async (req: GradeCalculationRequest): Promise<Grad
         '/api/freelancer/mypage/grade-calculator/calculate',
         req
     );
+    if (!response.data.success) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`calculateGrade failed (/api/freelancer/mypage/grade-calculator/calculate): ${message}`);
+    }
+    if (!response.data.data) {
+        throw new Error('calculateGrade failed: empty response data');
+    }
     return response.data.data.grade;
 };
 

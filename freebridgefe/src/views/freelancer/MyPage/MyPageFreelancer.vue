@@ -139,16 +139,6 @@ onMounted(async () => {
                     const summary = summaryResult.value;
                     profile.value.averageRating = summary.averageRate ?? 0;
                     profile.value.topPercentile = summary.topPercentile ?? 0;
-                    profile.value.expertise = {
-                        programming: summary.expertiseRate ?? 0,
-                        framework: summary.expertiseRate ?? 0,
-                        problemSolving: summary.expertiseRate ?? 0,
-                    };
-                    profile.value.collaboration = {
-                        communication: summary.communicationRate ?? 0,
-                        scheduleAdherence: summary.scheduleRate ?? 0,
-                        dispute: summary.communicationRate ?? 0,
-                    };
                 }
 
                 if (

@@ -222,7 +222,12 @@ const saveEditEducation = async () => {
     const index = editingEducationIndex.value;
     const target = resumeData.value.educations[index];
     if (!target) return;
-    const serverIndex = typeof target.serverIndex === 'number' ? target.serverIndex : index;
+    if (target.isNew || typeof target.serverIndex !== 'number') {
+        resumeData.value.educations[index] = { ...target, ...editEducationDraft.value, isNew: true };
+        cancelEditEducation();
+        return;
+    }
+    const serverIndex = target.serverIndex;
     await updateEducation(serverIndex, editEducationDraft.value);
     resumeData.value.educations[index] = { ...target, ...editEducationDraft.value, isNew: false };
     cancelEditEducation();
@@ -277,7 +282,12 @@ const saveEditCareer = async () => {
     const index = editingCareerIndex.value;
     const target = resumeData.value.careers[index];
     if (!target) return;
-    const serverIndex = typeof target.serverIndex === 'number' ? target.serverIndex : index;
+    if (target.isNew || typeof target.serverIndex !== 'number') {
+        resumeData.value.careers[index] = { ...target, ...editCareerDraft.value, isNew: true };
+        cancelEditCareer();
+        return;
+    }
+    const serverIndex = target.serverIndex;
     await updateCareer(serverIndex, editCareerDraft.value);
     resumeData.value.careers[index] = { ...target, ...editCareerDraft.value, isNew: false };
     cancelEditCareer();
@@ -327,7 +337,12 @@ const saveEditCertification = async () => {
     const index = editingCertificationIndex.value;
     const target = resumeData.value.certifications[index];
     if (!target) return;
-    const serverIndex = typeof target.serverIndex === 'number' ? target.serverIndex : index;
+    if (target.isNew || typeof target.serverIndex !== 'number') {
+        resumeData.value.certifications[index] = { ...target, ...editCertificationDraft.value, isNew: true };
+        cancelEditCertification();
+        return;
+    }
+    const serverIndex = target.serverIndex;
     await updateCertification(serverIndex, editCertificationDraft.value);
     resumeData.value.certifications[index] = { ...target, ...editCertificationDraft.value, isNew: false };
     cancelEditCertification();

@@ -27,6 +27,7 @@ export interface Career {
   employmentType: string;
   startDate: string;
   endDate: string;
+  isCurrent?: boolean;
   description?: string;
   serverIndex?: number;
   isNew?: boolean;
@@ -121,13 +122,28 @@ const mapEduStatusToEnum = (label?: string): string => {
   return EDU_STATUS_ENUMS[label] ?? 'OTHER';
 };
 
+const isCurrentToken = (value?: string | null): boolean => {
+  if (!value) return false;
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+    const tokens = [
+    "재직중",
+    "재직 중",
+    "현재",
+    "현직",
+    "재직",
+  ];
+  return tokens.includes(trimmed);
+};
+
 const normalizeDate = (value?: string | null): string | null => {
   if (!value) return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
+  if (isCurrentToken(trimmed)) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
   if (/^\d{4}\.\d{2}$/.test(trimmed)) {
-    return `${trimmed.replace('.', '-')}-01`;
+    return `${trimmed.replace(".", "-")}-01`;
   }
   if (/^\d{4}-\d{2}$/.test(trimmed)) {
     return `${trimmed}-01`;
@@ -162,6 +178,7 @@ export const getResumeDetail = async (): Promise<ResumeDetail> => {
     employmentType: career.employmentType ?? '',
     startDate: career.startDate ?? '',
     endDate: career.endDate ?? '',
+    isCurrent: career.endDate == null,
     description: career.description ?? '',
     serverIndex: career.careerId ?? index,
   }));
@@ -224,6 +241,7 @@ export const deleteEducation = async (index: number): Promise<void> => {
 };
 
 export const addCareer = async (career: Career): Promise<void> => {
+  const isCurrent = career.isCurrent || isCurrentToken(career.endDate);
   await apiClient.post<ApiResponse<null>>('/api/freelancer/mypage/resume/careers', {
     companyName: career.companyName,
     department: career.department,
@@ -231,12 +249,13 @@ export const addCareer = async (career: Career): Promise<void> => {
     jobType: career.jobType,
     employmentType: career.employmentType,
     startDate: normalizeDate(career.startDate),
-    endDate: normalizeDate(career.endDate),
+    endDate: isCurrent ? null : normalizeDate(career.endDate),
     description: career.description ?? '',
   });
 };
 
 export const updateCareer = async (index: number, career: Career): Promise<void> => {
+  const isCurrent = career.isCurrent || isCurrentToken(career.endDate);
   await apiClient.put<ApiResponse<null>>(`/api/freelancer/mypage/resume/careers/${index}`, {
     companyName: career.companyName,
     department: career.department,
@@ -244,7 +263,7 @@ export const updateCareer = async (index: number, career: Career): Promise<void>
     jobType: career.jobType,
     employmentType: career.employmentType,
     startDate: normalizeDate(career.startDate),
-    endDate: normalizeDate(career.endDate),
+    endDate: isCurrent ? null : normalizeDate(career.endDate),
     description: career.description ?? '',
   });
 };
