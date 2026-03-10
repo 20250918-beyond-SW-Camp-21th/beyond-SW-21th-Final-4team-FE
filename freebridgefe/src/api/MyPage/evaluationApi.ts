@@ -78,14 +78,14 @@ export interface RejectionFeedback {
     tags?: string[];
 }
 
+// NOTE: Backend endpoints are not available yet. Throw to let UI show "coming soon".
 export const getRejectionFeedbacks = async (_userId: number): Promise<RejectionFeedback[]> => {
-    console.warn('getRejectionFeedbacks: backend endpoint not available yet.');
-    return [];
+    throw new Error('API not implemented: rejection feedbacks unavailable');
 };
 
+// NOTE: Backend endpoints are not available yet. Throw to let UI show "coming soon".
 export const getEvaluations = async (_userId: number): Promise<Evaluation[]> => {
-    console.warn('getEvaluations: backend endpoint not available yet.');
-    return [];
+    throw new Error('API not implemented: evaluations unavailable');
 };
 
 export const getEmployerReviewSummary = async (): Promise<EmployerReviewSummary> => {
