@@ -24,6 +24,7 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle; co
     ISSUED: { label: '청구됨', icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-400/10 border-yellow-400/30' },
     PAID: { label: '결제 완료', icon: CheckCircle, color: 'text-blue-400', bg: 'bg-blue-400/10 border-blue-400/30' },
     DISBURSED: { label: '지급 완료', icon: Send, color: 'text-green-400', bg: 'bg-green-400/10 border-green-400/30' },
+    CANCELLED: { label: '취소됨', icon: X, color: 'text-rose-400', bg: 'bg-rose-400/10 border-rose-400/30' },
 };
 
 

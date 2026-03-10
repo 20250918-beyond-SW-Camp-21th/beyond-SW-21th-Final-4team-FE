@@ -1,6 +1,19 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { listContracts, type ContractListParams } from '@/api/contractApi';
+import {
+    getEmployerNextSettlement,
+    getEmployerSettlementSummary,
+    getFreelancerSettlementSummary,
+    listEmployerSettlements,
+    listFreelancerSettlements,
+    verifyEmployerPayment,
+    type EmployerSettlementItem,
+    type EmployerSettlementSummary,
+    type FreelancerSettlementItem,
+    type FreelancerSettlementSummary,
+    type VerifyEmployerPaymentResponse,
+} from '@/api/settlementApi';
 
 export interface Contract {
     id: number;
@@ -35,18 +48,15 @@ export interface Contract {
     freelancerAddress?: string;
     freelancerPhone?: string;
 
-    // Signature tracking
     employerSignature?: string;
     employerSignedDate?: Date | string;
     freelancerSignature?: string;
     freelancerSignedDate?: Date | string;
 
-    // From list/detail API responses
     employerSigned?: boolean;
     freelancerSigned?: boolean;
 }
 
-// EmployerSettlement Entity
 export interface EmployerSettlement {
     id: number;
     contractId: number;
@@ -54,7 +64,7 @@ export interface EmployerSettlement {
     platformFee: number;
     totalPayment: number;
     installmentNumber: number;
-    status: 'PAID' | 'DISBURSED' | 'CANCELLED';
+    status: 'ISSUED' | 'PAID' | 'DISBURSED' | 'CANCELLED';
     invoicePdfUrl: string | null;
     dueDate: Date | string;
     paidDate?: Date | string;
@@ -75,7 +85,6 @@ export interface FreelancerSettlement {
     receiptPdfUrl?: string | null;
 }
 
-// Helper interface for UI display (joined data)
 export interface ContractWithDetails extends Contract {
     freelancerName: string;
     employerName: string;
@@ -86,7 +95,7 @@ export interface EmployerSettlementWithDetails extends EmployerSettlement {
     freelancerName: string;
     freelancerId: number;
     employerId: number;
-    totalAmount: number; // alias for totalPayment for UI compatibility
+    totalAmount: number;
 }
 
 export interface FreelancerSettlementWithDetails extends FreelancerSettlement {
@@ -94,15 +103,24 @@ export interface FreelancerSettlementWithDetails extends FreelancerSettlement {
     employerName: string;
 }
 
+const getPagedItems = <T>(payload: { content?: T[]; items?: T[] } | undefined | null): T[] => {
+    if (!payload) return [];
+    if (Array.isArray(payload.content)) return payload.content;
+    if (Array.isArray(payload.items)) return payload.items;
+    return [];
+};
+
 export const useContractStore = defineStore('contract', () => {
     const contracts = ref<ContractWithDetails[]>([]);
     const employerSettlements = ref<EmployerSettlement[]>([]);
     const freelancerSettlements = ref<FreelancerSettlement[]>([]);
+    const isSettlementLoading = ref(false);
+    const employerSettlementSummary = ref<EmployerSettlementSummary | null>(null);
+    const freelancerSettlementSummary = ref<FreelancerSettlementSummary | null>(null);
+    const employerNextSettlement = ref<EmployerSettlementItem | null>(null);
 
-    // Computed: contracts already include names from API response
     const contractsWithDetails = computed<ContractWithDetails[]>(() => contracts.value);
 
-    // Computed: EmployerSettlements with contract details
     const employerSettlementsWithDetails = computed<EmployerSettlementWithDetails[]>(() => {
         return employerSettlements.value.map((settlement) => {
             const contract = contracts.value.find((c) => c.id === settlement.contractId);
@@ -118,7 +136,6 @@ export const useContractStore = defineStore('contract', () => {
         });
     });
 
-    // Computed: FreelancerSettlements with contract details
     const freelancerSettlementsWithDetails = computed<FreelancerSettlementWithDetails[]>(() => {
         return freelancerSettlements.value.map((settlement) => {
             const contract = contracts.value.find((c) => c.id === settlement.contractId);
@@ -130,10 +147,64 @@ export const useContractStore = defineStore('contract', () => {
         });
     });
 
-    // Actions
     async function fetchContracts(params?: ContractListParams) {
         const data = await listContracts(params);
         contracts.value = data.items || [];
+    }
+
+    async function fetchEmployerSettlements(params?: {
+        status?: string;
+        dateRange?: string;
+        sort?: string;
+        page?: number;
+        size?: number;
+    }) {
+        isSettlementLoading.value = true;
+        try {
+            const data = await listEmployerSettlements(params);
+            employerSettlements.value = getPagedItems(data) as EmployerSettlement[];
+        } finally {
+            isSettlementLoading.value = false;
+        }
+    }
+
+    async function fetchFreelancerSettlements(params?: {
+        status?: string;
+        dateRange?: string;
+        search?: string;
+        sort?: string;
+        page?: number;
+        size?: number;
+    }) {
+        isSettlementLoading.value = true;
+        try {
+            const data = await listFreelancerSettlements(params);
+            freelancerSettlements.value = getPagedItems(data) as FreelancerSettlement[];
+        } finally {
+            isSettlementLoading.value = false;
+        }
+    }
+
+    async function fetchEmployerSettlementSummary() {
+        employerSettlementSummary.value = await getEmployerSettlementSummary();
+    }
+
+    async function fetchFreelancerSettlementSummary() {
+        freelancerSettlementSummary.value = await getFreelancerSettlementSummary();
+    }
+
+    async function fetchEmployerNextSettlement() {
+        employerNextSettlement.value = await getEmployerNextSettlement();
+    }
+
+    async function verifyEmployerSettlementPayment(paymentId: string, contractId: number) {
+        const result = await verifyEmployerPayment({ paymentId, contractId });
+        await Promise.all([
+            fetchEmployerSettlements(),
+            fetchEmployerSettlementSummary().catch(() => undefined),
+            fetchEmployerNextSettlement().catch(() => undefined),
+        ]);
+        return result;
     }
 
     function addContract(contract: ContractWithDetails) {
@@ -156,6 +227,13 @@ export const useContractStore = defineStore('contract', () => {
         }
     }
 
+    function markEmployerSettlementPaid(settlementId: number) {
+        updateEmployerSettlement(settlementId, {
+            status: 'PAID',
+            paidDate: new Date().toISOString(),
+        });
+    }
+
     function updateFreelancerSettlement(settlementId: number, updates: Partial<FreelancerSettlement>) {
         const index = freelancerSettlements.value.findIndex((s) => s.id === settlementId);
         if (index !== -1) {
@@ -165,19 +243,27 @@ export const useContractStore = defineStore('contract', () => {
     }
 
     return {
-        // Raw data
         contracts,
         employerSettlements,
         freelancerSettlements,
-        // Computed with details
+        isSettlementLoading,
+        employerSettlementSummary,
+        freelancerSettlementSummary,
+        employerNextSettlement,
         contractsWithDetails,
         employerSettlementsWithDetails,
         freelancerSettlementsWithDetails,
-        // Actions
         fetchContracts,
+        fetchEmployerSettlements,
+        fetchFreelancerSettlements,
+        fetchEmployerSettlementSummary,
+        fetchFreelancerSettlementSummary,
+        fetchEmployerNextSettlement,
+        verifyEmployerSettlementPayment,
         addContract,
         updateContract,
         updateEmployerSettlement,
+        markEmployerSettlementPaid,
         updateFreelancerSettlement,
     };
 });
