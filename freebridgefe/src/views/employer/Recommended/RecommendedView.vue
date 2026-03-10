@@ -4,7 +4,7 @@ import { TrendingUp, Send, Star } from "lucide-vue-next";
 import { useFreelancerStore } from "@/stores/freelancerStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useJobStore } from "@/stores/jobStore";
-import { getEmployerProfile } from "@/api/MyPage/employer";
+import { getEmployerSubscription } from "@/api/MyPage/accountApi";
 import ProposalModal from "./components/ProposalModal.vue";
 import type { User } from "@/types";
 
@@ -53,8 +53,8 @@ const planLoading = ref(true);
 const fetchCurrentPlan = async () => {
   planLoading.value = true;
   try {
-    const profile = await getEmployerProfile();
-    currentPlan.value = normalizePlan(profile.plan);
+    const subscription = await getEmployerSubscription();
+    currentPlan.value = normalizePlan(subscription.currentPlan);
   } catch (error) {
     console.error("Failed to fetch employer plan:", error);
     currentPlan.value = "FREE";
