@@ -153,11 +153,17 @@ export const useContractStore = defineStore('contract', () => {
         const items = (data.items || []) as ContractWithDetails[];
         contracts.value = items;
 
-        const placeholderPattern = /^user\s*#\s*\d+$/i;
+        const placeholderPattern = /(user|사용자)\s*#\s*\d+/i;
+        const numericOnlyPattern = /^\s*#?\d+\s*$/;
         const needsName = (name?: string | null) => {
             if (!name) return true;
             const trimmed = name.trim();
-            return trimmed.length === 0 || trimmed === 'Unknown' || placeholderPattern.test(trimmed);
+            return (
+                trimmed.length === 0 ||
+                trimmed === 'Unknown' ||
+                placeholderPattern.test(trimmed) ||
+                numericOnlyPattern.test(trimmed)
+            );
         };
 
         const missingIds = Array.from(
@@ -177,11 +183,15 @@ export const useContractStore = defineStore('contract', () => {
         results.forEach((result, index) => {
             if (result.status !== 'fulfilled') return;
             const user = result.value as Record<string, any>;
+            const payload = user?.data ?? user;
             const name =
-                user?.name ||
-                user?.fullName ||
-                user?.username ||
-                user?.nickname;
+                payload?.name ||
+                payload?.fullName ||
+                payload?.username ||
+                payload?.nickname ||
+                payload?.userName ||
+                payload?.memberName ||
+                payload?.realName;
             if (name) {
                 idToName.set(missingIds[index], String(name));
             }
