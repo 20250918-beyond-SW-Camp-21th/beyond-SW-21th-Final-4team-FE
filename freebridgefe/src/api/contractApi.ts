@@ -134,7 +134,7 @@ export interface MatchedFreelancersResponse {
 export const listContracts = async (
   params: ContractListParams = {},
 ): Promise<ContractListResponseDto> => {
-  const response = await apiClient.get<ApiResponse<ContractListResponseDto>>('/api/v1/contracts', {
+  const response = await apiClient.get<ApiResponse<ContractListResponseDto>>('/api/contracts', {
     params: {
       status: params.status,
       search: params.search,
@@ -147,17 +147,17 @@ export const listContracts = async (
 };
 
 export async function getContract(contractId: number): Promise<ContractResponseDto> {
-  const response = await apiClient.get<ApiResponse<ContractResponseDto>>(`/api/v1/contracts/${contractId}`);
+  const response = await apiClient.get<ApiResponse<ContractResponseDto>>(`/api/contracts/${contractId}`);
   return response.data.data;
 }
 
 export async function getContractPdfUrl(contractId: number): Promise<string> {
-  const response = await apiClient.get<ApiResponse<string>>(`/api/v1/contracts/${contractId}/pdf`);
+  const response = await apiClient.get<ApiResponse<string>>(`/api/contracts/${contractId}/pdf`);
   return response.data.data;
 }
 
 export async function createContract(data: CreateContractRequest): Promise<ContractResponseDto> {
-  const response = await apiClient.post<ApiResponse<ContractResponseDto>>('/api/v1/contracts', data);
+  const response = await apiClient.post<ApiResponse<ContractResponseDto>>('/api/contracts', data);
   return response.data.data;
 }
 
@@ -166,7 +166,7 @@ export async function signContract(
   data: SignContractRequest,
 ): Promise<ContractResponseDto> {
   const response = await apiClient.patch<ApiResponse<ContractResponseDto>>(
-    `/api/v1/contracts/${contractId}/sign`,
+    `/api/contracts/${contractId}/sign`,
     data,
   );
   return response.data.data;
@@ -174,14 +174,14 @@ export async function signContract(
 
 export async function completeContract(contractId: number): Promise<ContractResponseDto> {
   const response = await apiClient.patch<ApiResponse<ContractResponseDto>>(
-    `/api/v1/contracts/${contractId}/complete`,
+    `/api/contracts/${contractId}/complete`,
   );
   return response.data.data;
 }
 
 export async function rejectContract(contractId: number): Promise<ContractResponseDto> {
   const response = await apiClient.patch<ApiResponse<ContractResponseDto>>(
-    `/api/v1/contracts/${contractId}/reject`,
+    `/api/contracts/${contractId}/reject`,
   );
   return response.data.data;
 }
