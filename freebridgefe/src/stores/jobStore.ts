@@ -370,13 +370,17 @@ export const useJobStore = defineStore('job', () => {
             message: app.message
         });
 
-        const newApp: Application = {
-            ...app,
-            id: String(result.applicationId),
-            createdAt: new Date()
-        };
-        applications.value = [newApp, ...applications.value.filter((item) => item.id !== newApp.id)];
-        return newApp;
+        await fetchFreelancerApplications();
+
+        const persistedApplication = applications.value.find(
+            (item) => item.id === String(result.applicationId)
+        );
+
+        if (!persistedApplication) {
+            throw new Error('지원 등록 응답은 성공했지만 새 지원 내역이 조회되지 않았습니다.');
+        }
+
+        return persistedApplication;
     }
 
     async function updateApplicationStatus(
@@ -406,10 +410,13 @@ export const useJobStore = defineStore('job', () => {
         await fetchJobPostings().catch((error) => {
             console.warn('Failed to refresh job postings after application status update:', error);
         });
+        await fetchEmployerApplications().catch((error) => {
+            console.warn('Failed to refresh applications after application status update:', error);
+        });
 
         if (status === 'ACCEPTED') {
             const chatStore = useChatStore();
-            const app = applications.value[index];
+            const app = applications.value.find((application) => application.id === id) ?? applications.value[index];
             const job = getJobById(app.jobId);
 
             if (job) {
