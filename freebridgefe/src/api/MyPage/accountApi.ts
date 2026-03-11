@@ -46,8 +46,14 @@ export const getAccountInfo = async (): Promise<AccountInfo> => {
 };
 
 export const updateAccountInfo = async (_data: Partial<AccountInfo>): Promise<boolean> => {
-    // TODO: User API에 계정 수정 엔드포인트 추가 필요
-    throw new Error('updateAccountInfo not implemented: backend endpoint missing');
+    const response = await apiClient.put<ApiResponse<AccountInfo>>('/api/users/me/info', {
+        name: _data.name,
+        phone: _data.phone
+    });
+    if (response.data.success !== true) {
+        throw new Error(response.data.message ?? 'Failed to update account info');
+    }
+    return true;
 };
 
 export const changeEmployerPassword = async (data: PasswordChange): Promise<boolean> => {

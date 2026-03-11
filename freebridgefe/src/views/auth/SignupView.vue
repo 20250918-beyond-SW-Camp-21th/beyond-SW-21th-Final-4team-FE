@@ -33,6 +33,7 @@ const formData = ref({
   password: '',
   confirmPassword: '',
   company: '',
+  phone: '',
 
   agreeService: false,
   agreePrivacy: false,
@@ -163,7 +164,7 @@ const handleSubmit = async () => {
       role: role.value,
       termsAgreed: formData.value.agreeService,
       privacyAgreed: formData.value.agreePrivacy,
-      phone: '' // Added as empty string for now
+      phone: formData.value.phone
     };
 
     // Start 2FA Signup Process
