@@ -98,6 +98,23 @@ export interface FreelancerMypageProjectDto {
   appliedAt: number | null;
 }
 
+export interface EmployerRejectionReasonCreatePayload {
+  projectId: number;
+  projectTitle: string;
+  freelancerId: number;
+  reason: string;
+}
+
+export interface EmployerRejectionReasonResponseDto {
+  id: number;
+  projectId: number;
+  projectTitle: string;
+  employerId: number;
+  freelancerId: number;
+  reason: string;
+  createdAt: string;
+}
+
 export const getEmployerReceivedReviews = async (
   page = 0,
   size = 100,
@@ -225,4 +242,53 @@ export const getFreelancerMypageProjects = async (
   );
 
   return response.data.data ?? [];
+};
+
+export const createEmployerRejectionReason = async (
+  payload: EmployerRejectionReasonCreatePayload,
+): Promise<number> => {
+  const response = await apiClient.post<ApiResponse<number>>(
+    '/api/employer/rejection-reasons',
+    payload,
+  );
+
+  return response.data.data;
+};
+
+export const getEmployerRejectionReasons = async (
+  page = 0,
+  size = 100,
+  title?: string,
+): Promise<PagedResponseDto<EmployerRejectionReasonResponseDto>> => {
+  const response = await apiClient.get<ApiResponse<PagedResponseDto<EmployerRejectionReasonResponseDto>>>(
+    '/api/employer/rejection-reasons',
+    {
+      params: {
+        page,
+        size,
+        ...(title?.trim() ? { title: title.trim() } : {}),
+      },
+    },
+  );
+
+  return response.data.data;
+};
+
+export const getFreelancerRejectionReasons = async (
+  page = 0,
+  size = 100,
+  title?: string,
+): Promise<PagedResponseDto<EmployerRejectionReasonResponseDto>> => {
+  const response = await apiClient.get<ApiResponse<PagedResponseDto<EmployerRejectionReasonResponseDto>>>(
+    '/api/freelancer/rejection-reasons',
+    {
+      params: {
+        page,
+        size,
+        ...(title?.trim() ? { title: title.trim() } : {}),
+      },
+    },
+  );
+
+  return response.data.data;
 };

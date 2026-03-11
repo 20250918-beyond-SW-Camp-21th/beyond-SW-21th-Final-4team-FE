@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { computed, onMounted } from 'vue';
 import {
   Check,
   X,
@@ -19,13 +19,11 @@ import { useRouter } from 'vue-router';
 import { useJobStore } from '@/stores/jobStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import type { Application, ApplicationStatus } from '@/types';
-import RejectionModal from './components/RejectionModal.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
-const rejectingApp = ref<Application | null>(null);
 
 onMounted(async () => {
   const [jobsResult, proposalsResult, applicationsResult] = await Promise.allSettled([
@@ -131,6 +129,20 @@ const handleAccept = async (app: Application) => {
       alert(error?.response?.data?.message || error?.message || '지원 수락에 실패했습니다.');
     }
   }
+};
+
+const handleReject = (app: Application) => {
+  const jobTitle = getJobTitle(app.jobId);
+  router.push({
+    name: 'employer.applications.reject',
+    params: { applicationId: app.id },
+    query: {
+      jobId: app.jobId,
+      title: jobTitle,
+      freelancerId: app.freelancerId,
+      freelancerName: app.freelancerName,
+    },
+  });
 };
 
 const formatDate = (date: Date | string) => {
@@ -391,7 +403,7 @@ const formatDate = (date: Date | string) => {
                       수락
                     </button>
                     <button
-                      @click="rejectingApp = app"
+                      @click="handleReject(app)"
                       class="px-5 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full hover:shadow-lg transition-all flex items-center gap-2 font-medium"
                     >
                       <X class="w-4 h-4" />
@@ -450,19 +462,5 @@ const formatDate = (date: Date | string) => {
       </div>
     </div>
 
-    <transition
-      enter-active-class="transition duration-200 ease-out"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition duration-150 ease-in"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <RejectionModal
-        v-if="rejectingApp"
-        :application="rejectingApp"
-        @close="rejectingApp = null"
-      />
-    </transition>
   </div>
 </template>

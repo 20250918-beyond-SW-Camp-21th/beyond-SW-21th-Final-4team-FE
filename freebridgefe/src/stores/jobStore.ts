@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
 import { getUserById } from '@/api/authApi';
+import { getEmployerRejectionReasons, getFreelancerRejectionReasons } from '@/api/reviewApi';
 import type { Application, JobPosting, JobStatus } from '@/types';
 import {
     acceptEmployerApplication,
@@ -202,6 +203,60 @@ export const useJobStore = defineStore('job', () => {
         return items.map((item) => mapApplication(item, names));
     }
 
+    async function attachEmployerRejectionReasons(items: Application[]): Promise<Application[]> {
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER' || items.length === 0) {
+            return items;
+        }
+
+        try {
+            const response = await getEmployerRejectionReasons(0, 200);
+            const reasonsByKey = new Map(
+                (response.content ?? []).map((reason) => [
+                    `${reason.projectId}:${reason.freelancerId}`,
+                    reason.reason
+                ])
+            );
+
+            return items.map((item) => ({
+                ...item,
+                rejectionReason:
+                    item.status === 'REJECTED'
+                        ? reasonsByKey.get(`${item.jobId}:${item.freelancerId}`) || item.rejectionReason
+                        : undefined
+            }));
+        } catch (error) {
+            console.warn('Failed to fetch employer rejection reasons:', error);
+            return items;
+        }
+    }
+
+    async function attachFreelancerRejectionReasons(items: Application[]): Promise<Application[]> {
+        if (!authStore.user || authStore.user.role !== 'FREELANCER' || items.length === 0) {
+            return items;
+        }
+
+        try {
+            const response = await getFreelancerRejectionReasons(0, 200);
+            const reasonsByKey = new Map(
+                (response.content ?? []).map((reason) => [
+                    `${reason.projectId}:${reason.freelancerId}`,
+                    reason.reason
+                ])
+            );
+
+            return items.map((item) => ({
+                ...item,
+                rejectionReason:
+                    item.status === 'REJECTED'
+                        ? reasonsByKey.get(`${item.jobId}:${item.freelancerId}`) || item.rejectionReason
+                        : undefined
+            }));
+        } catch (error) {
+            console.warn('Failed to fetch freelancer rejection reasons:', error);
+            return items;
+        }
+    }
+
     const isFavorite = (id: string): boolean => {
         const target = getJobById(id);
         return Boolean(target?.favorite);
@@ -251,7 +306,8 @@ export const useJobStore = defineStore('job', () => {
 
         try {
             const response = await getEmployerApplications(page, size);
-            applications.value = await hydrateApplications(response.content ?? []);
+            const hydrated = await hydrateApplications(response.content ?? []);
+            applications.value = await attachEmployerRejectionReasons(hydrated);
             return response;
         } catch (error) {
             applications.value = [];
@@ -273,7 +329,8 @@ export const useJobStore = defineStore('job', () => {
 
         try {
             const response = await getFreelancerApplications(page, size);
-            applications.value = await hydrateApplications(response.content ?? []);
+            const hydrated = await hydrateApplications(response.content ?? []);
+            applications.value = await attachFreelancerRejectionReasons(hydrated);
             return response;
         } catch (error) {
             applications.value = [];
@@ -357,6 +414,10 @@ export const useJobStore = defineStore('job', () => {
 
     function getApplicationsByJob(jobId: string) {
         return applications.value.filter((app) => app.jobId === jobId);
+    }
+
+    function getApplicationById(applicationId: string) {
+        return applications.value.find((app) => app.id === applicationId);
     }
 
     async function addApplication(app: Omit<Application, 'id' | 'createdAt'>): Promise<Application> {
@@ -466,6 +527,7 @@ export const useJobStore = defineStore('job', () => {
         isFavorite,
         toggleFavorite,
         getApplicationsByJob,
+        getApplicationById,
         addApplication,
         updateApplicationStatus
     };
