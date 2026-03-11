@@ -145,7 +145,7 @@ const getFreelancerStatusColor = (status: string) => {
            </div>
            <h2 class="text-xl font-semibold text-white">{{ project.title }}</h2>
         </div>
-        <button @click="$emit('close')" class="p-2 transition-colors rounded-full bg-white/5 hover:bg-white/5 text-white/70 hover:text-white">
+        <button @click="$emit('close')" class="p-2 transition-colors rounded-full bg-white/5 hover:bg-white/15 text-white/70 hover:text-white">
           <X class="w-5 h-5" />
         </button>
       </div>
@@ -226,7 +226,7 @@ const getFreelancerStatusColor = (status: string) => {
 
       <!-- Footer Actions -->
       <div class="sticky bottom-0 z-10 p-6 border-t bg-black/50 border-white/10 flex justify-end">
-          <button @click="$emit('close')" class="px-6 py-2.5 text-sm font-semibold text-white/80 hover:text-white bg-white/5 hover:bg-white/5 rounded-full transition-colors">
+          <button @click="$emit('close')" class="px-6 py-2.5 text-sm font-semibold text-white/80 hover:text-white bg-white/5 hover:bg-white/15 rounded-full transition-colors">
               닫기
           </button>
       </div>
