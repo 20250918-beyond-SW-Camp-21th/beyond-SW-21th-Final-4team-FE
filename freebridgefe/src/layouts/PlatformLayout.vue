@@ -76,6 +76,18 @@ const navigate = (item: any) => {
 
 const isActive = (path: string) => route.path.startsWith(path);
 
+const handleAlertClick = (roomId: string, alertId: string) => {
+  chatStore.dismissAlert(alertId);
+  if (!route.path.startsWith('/chat')) {
+    router.push('/chat');
+  }
+  chatStore.selectRoom(roomId);
+};
+
+const dismissAlert = (alertId: string) => {
+  chatStore.dismissAlert(alertId);
+};
+
 onMounted(async () => {
   if (authStore.isAuthenticated) {
     try {
@@ -97,10 +109,13 @@ watch(
     const wasChatRoute = oldPath?.startsWith('/chat');
     const isNowChatRoute = newPath.startsWith('/chat');
 
+    chatStore.setMainChatVisible(isNowChatRoute);
+
     if (wasChatRoute && !isNowChatRoute) {
       chatStore.resetDockedUIState();
     }
-  }
+  },
+  { immediate: true }
 );
 </script>
 
@@ -259,6 +274,38 @@ watch(
         </transition>
       </router-view>
     </main>
+    <div v-if="chatStore.chatAlerts.length > 0" class="fixed top-24 right-4 z-[70] w-[320px] space-y-2">
+      <div
+        v-for="alert in chatStore.chatAlerts"
+        :key="alert.id"
+        class="w-full p-3 rounded-xl bg-slate-900/95 border border-white/10 hover:border-emerald-400/50 transition-all shadow-lg"
+      >
+        <div class="flex items-start gap-3">
+          <button
+            class="flex-1 min-w-0 text-left"
+            @click="handleAlertClick(alert.roomId, alert.id)"
+          >
+            <div class="flex items-start gap-3">
+              <div class="mt-0.5 w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                <MessageSquare class="w-4 h-4 text-emerald-300" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs text-slate-400 mb-1">새 메시지</p>
+                <p class="text-sm font-semibold text-white truncate">{{ alert.senderName }}</p>
+                <p class="text-xs text-slate-300 truncate mt-1">{{ alert.content }}</p>
+              </div>
+            </div>
+          </button>
+          <button
+            class="p-1 text-slate-500 hover:text-white"
+            @click="dismissAlert(alert.id)"
+            title="닫기"
+          >
+            <X class="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Global Docked Chat -->
     <DockedChatContainer v-if="!isChatRoute" class="hidden lg:flex" />
@@ -274,3 +321,5 @@ watch(
     scrollbar-width: none;
 }
 </style>
+
+
