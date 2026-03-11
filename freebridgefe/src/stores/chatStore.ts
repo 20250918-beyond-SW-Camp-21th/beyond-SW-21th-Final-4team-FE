@@ -5,7 +5,8 @@ import SockJS from 'sockjs-client';
 import { useAuthStore } from '@/stores/authStore';
 import type { ChatRoom, ChatMessage } from '@/types';
 import { getMyChatRooms, getChatMessages, createChatRoom as apiCreateRoom } from '@/api/chatApi';
-import { getAccessToken } from '@/api/axiosInstance';
+import { API_BASE_URL, getAccessToken } from '@/api/axiosInstance';
+import { CHAT_MUTED_ROOMS_KEY } from '@/constants/chatUi';
 
 export const useChatStore = defineStore('chat', () => {
     const authStore = useAuthStore();
@@ -20,6 +21,13 @@ export const useChatStore = defineStore('chat', () => {
     type PendingChatMessage = {
         payload: OutboundChatMessagePayload;
         senderId: string;
+    };
+    type ChatAlert = {
+        id: string;
+        roomId: string;
+        senderName: string;
+        content: string;
+        createdAt: Date;
     };
 
     // ── 참가자 ID 유틸 ─────────────────────────────────────────────────────
@@ -58,10 +66,91 @@ export const useChatStore = defineStore('chat', () => {
     const pendingMessages = ref<PendingChatMessage[]>([]);
     const messageBuffer = ref<{ [roomId: string]: ChatMessage[] }>({});
     const hasLoadedHistory = ref<{ [roomId: string]: boolean }>({});
+    const chatAlerts = ref<ChatAlert[]>([]);
+    const isMainChatVisible = ref(false);
 
     // ── STOMP WebSocket ────────────────────────────────────────────────────
     let stompClient: Client | null = null;
     const subscriptions: Record<string, { unsubscribe: () => void }> = {};
+
+    function isRoomMuted(roomId: string): boolean {
+        if (typeof window === 'undefined') return false;
+
+        const stored = localStorage.getItem(CHAT_MUTED_ROOMS_KEY);
+        if (!stored) return false;
+
+        try {
+            const parsed = JSON.parse(stored);
+            if (!Array.isArray(parsed)) return false;
+            return parsed.includes(roomId);
+        } catch {
+            return false;
+        }
+    }
+
+    function dismissAlert(alertId: string) {
+        chatAlerts.value = chatAlerts.value.filter((alert) => alert.id !== alertId);
+    }
+
+    function playIncomingAlertSound() {
+        if (typeof window === 'undefined') return;
+
+        const audioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!audioContextClass) return;
+
+        const context = new audioContextClass();
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, context.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(660, context.currentTime + 0.14);
+
+        gainNode.gain.setValueAtTime(0.001, context.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.2);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+
+        oscillator.start(context.currentTime);
+        oscillator.stop(context.currentTime + 0.2);
+
+        window.setTimeout(() => {
+            context.close().catch(() => undefined);
+        }, 250);
+    }
+
+    function triggerIncomingAlert(room: ChatRoom, message: ChatMessage) {
+        const senderName = room.participantNames[message.senderId] || '새 메시지';
+        const nextAlert: ChatAlert = {
+            id: `alert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            roomId: room.id,
+            senderName,
+            content: message.content || '(내용 없음)',
+            createdAt: new Date()
+        };
+
+        chatAlerts.value = [nextAlert, ...chatAlerts.value].slice(0, 5);
+        window.setTimeout(() => {
+            dismissAlert(nextAlert.id);
+        }, 4000);
+
+        playIncomingAlertSound();
+
+        if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
+        if (document.visibilityState === 'visible') return;
+        if (Notification.permission !== 'granted') return;
+
+        const browserNotification = new Notification(senderName, {
+            body: message.content || '새 메시지가 도착했습니다.'
+        });
+        browserNotification.onclick = () => {
+            window.focus();
+            selectRoom(room.id);
+            browserNotification.close();
+        };
+    }
 
     function connectWebSocket(): Promise<void> {
         return new Promise((resolve, reject) => {
@@ -74,7 +163,7 @@ export const useChatStore = defineStore('chat', () => {
             stompClient = new Client({
                 webSocketFactory: () =>
                     new SockJS(
-                        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/ws/chat`
+                        `${API_BASE_URL}/ws/chat`
                     ),
                 connectHeaders: {
                     Authorization: `Bearer ${token}`
@@ -178,14 +267,22 @@ export const useChatStore = defineStore('chat', () => {
                     rooms.value[roomIndex].lastMessage = msg;
                     rooms.value[roomIndex].updatedAt = msg.createdAt;
 
-                    // 현재 방이 아닌 경우 unreadCount 증가
-                    if (currentRoomId.value !== roomId) {
+                    const roomIsVisible = isRoomVisible(roomId);
+
+                    // 실제로 보이지 않는 방인 경우 unreadCount 증가
+                    if (!roomIsVisible) {
                         const myIds = getMyParticipantIds();
                         rooms.value[roomIndex].participants.forEach((p) => {
                             if (!myIds.includes(p)) return;
                             rooms.value[roomIndex].unreadCount[p] =
                                 (rooms.value[roomIndex].unreadCount[p] || 0) + 1;
                         });
+                    }
+
+                    const isMine = getMyParticipantIds().includes(msg.senderId);
+                    const shouldAlert = !roomIsVisible && !isMine && !isRoomMuted(roomId);
+                    if (shouldAlert) {
+                        triggerIncomingAlert(rooms.value[roomIndex], msg);
                     }
                 }
             } catch (e) {
@@ -523,6 +620,19 @@ export const useChatStore = defineStore('chat', () => {
     const isRoomListOpen = ref(false);
     const openDockedRooms = ref<{ roomId: string; minimized: boolean }[]>([]);
 
+    function setMainChatVisible(isVisible: boolean) {
+        isMainChatVisible.value = isVisible;
+    }
+
+    function isRoomVisible(roomId: string) {
+        if (isMainChatVisible.value && currentRoomId.value === roomId) {
+            return true;
+        }
+
+        const dockedRoom = openDockedRooms.value.find((room) => room.roomId === roomId);
+        return Boolean(dockedRoom && !dockedRoom.minimized);
+    }
+
     function toggleRoomList() {
         isRoomListOpen.value = !isRoomListOpen.value;
     }
@@ -582,6 +692,7 @@ export const useChatStore = defineStore('chat', () => {
         getMyParticipantIds,
         getOtherParticipantId,
         isRoomListOpen,
+        setMainChatVisible,
         openDockedRooms,
         toggleRoomList,
         openDockedRoom,
@@ -591,8 +702,12 @@ export const useChatStore = defineStore('chat', () => {
         resetDockedUIState,
         leaveRoom,
         isRoomReadOnly,
-        updateRoomContract
+        updateRoomContract,
+        chatAlerts,
+        dismissAlert
     };
 });
+
+
 
 

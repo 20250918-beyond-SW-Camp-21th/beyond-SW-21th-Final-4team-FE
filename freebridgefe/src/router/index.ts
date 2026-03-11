@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { getEmployerProfile } from '@/api/MyPage/employer'
+import { getEmployerSubscription } from '@/api/MyPage/accountApi'
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -69,6 +70,11 @@ const routes: Array<RouteRecordRaw> = [
                 path: 'applications',
                 name: 'employer.applications',
                 component: () => import('@/views/employer/Applications/ApplicationList.vue')
+            },
+            {
+                path: 'applications/:applicationId/reject',
+                name: 'employer.applications.reject',
+                component: () => import('@/views/employer/Applications/ApplicationRejectReasonWrite.vue')
             },
             {
                 path: 'recommended',
@@ -226,8 +232,8 @@ router.beforeEach(async (to, _from, next) => {
 
     if (to.name === 'employer.recommended' && authStore.user?.role === 'EMPLOYER') {
         try {
-            const profile = await getEmployerProfile()
-            const normalizedPlan = normalizeEmployerPlan(profile.plan)
+            const subscription = await getEmployerSubscription()
+            const normalizedPlan = normalizeEmployerPlan(subscription.currentPlan)
 
             if (!['PRO', 'PRIME'].includes(normalizedPlan)) {
                 alert('추천 프리랜서 기능은 프로 플랜 이상에서만 사용할 수 있습니다. 구독 레벨을 높여주세요.')

@@ -178,7 +178,6 @@ watch(selectedDateRange, () => {
 
 const handleDownload = (settlement: EmployerSettlementWithDetails) => {
     // Mock download - in real app, this would download from invoicePdfUrl
-    console.log('Downloading invoice:', settlement.invoicePdfUrl);
     alert(`청구서 다운로드: ${settlement.projectName} - ${settlement.installmentNumber}차`);
 };
 
@@ -208,8 +207,8 @@ onMounted(async () => {
             contractStore.fetchEmployerSettlementSummary().catch(() => undefined),
             contractStore.fetchEmployerNextSettlement().catch(() => undefined),
         ]);
-    } catch (error) {
-        console.error('Failed to initialize employer settlements:', error);
+    } catch {
+        // Initial load failures surface via UI that depends on store data.
     }
 });
 </script>

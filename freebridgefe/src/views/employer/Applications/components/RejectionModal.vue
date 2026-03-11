@@ -12,6 +12,8 @@ const props = defineProps<{
 const jobStore = useJobStore();
 const selectedReason = ref('');
 const customReason = ref('');
+const isSubmitting = ref(false);
+const submitError = ref('');
 
 const rejectionReasons = [
   { value: 'SKILL_MISMATCH', label: '기술 스택 불일치' },
@@ -30,9 +32,18 @@ const handleSubmit = async (e: Event) => {
   const reasonLabel = rejectionReasons.find((r) => r.value === selectedReason.value)?.label || '';
   const finalReason = selectedReason.value === 'OTHER' ? customReason.value : reasonLabel;
 
-  await jobStore.updateApplicationStatus(props.application.id, 'REJECTED', finalReason);
-  alert('지원이 거절되었습니다.');
-  props.onClose();
+  isSubmitting.value = true;
+  submitError.value = '';
+
+  try {
+    await jobStore.updateApplicationStatus(props.application.id, 'REJECTED', finalReason);
+    alert('지원이 거절되었습니다.');
+    props.onClose();
+  } catch (error: any) {
+    submitError.value = error?.response?.data?.message || error?.message || '지원 거절에 실패했습니다.';
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 </script>
 
@@ -59,6 +70,13 @@ const handleSubmit = async (e: Event) => {
       </div>
 
       <form @submit="handleSubmit" class="p-6">
+        <div
+          v-if="submitError"
+          class="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
+          {{ submitError }}
+        </div>
+
         <!-- 경고 메시지 -->
         <div class="bg-orange-500/20 border border-orange-400/30 rounded-2xl p-4 mb-6 flex gap-3">
           <AlertCircle class="w-5 h-5 text-orange-300 flex-shrink-0 mt-0.5" />
@@ -131,10 +149,10 @@ const handleSubmit = async (e: Event) => {
           </button>
           <button
             type="submit"
-            :disabled="!isValid"
+            :disabled="!isValid || isSubmitting"
             class="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-2xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
           >
-            거절하기
+            {{ isSubmitting ? '거절 중...' : '거절하기' }}
           </button>
         </div>
       </form>

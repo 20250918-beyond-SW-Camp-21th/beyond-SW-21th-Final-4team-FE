@@ -9,6 +9,7 @@ export interface BackendChatRoomResponse {
     participantNames: Record<string, string>;
     lastMessage?: BackendChatMessageResponse;
     unreadCount: Record<string, number>;
+    participantPresence?: Record<string, boolean>;
     relatedJobId?: string;
     relatedApplicationId?: string;
     relatedProposalId?: string;
@@ -45,6 +46,7 @@ function mapToChatRoom(r: BackendChatRoomResponse): ChatRoom {
         participantNames: r.participantNames,
         lastMessage: r.lastMessage ? mapToChatMessage(r.lastMessage) : undefined,
         unreadCount: r.unreadCount ?? {},
+        participantPresence: r.participantPresence ?? {},
         relatedJobId: r.relatedJobId,
         relatedApplicationId: r.relatedApplicationId,
         relatedProposalId: r.relatedProposalId,
