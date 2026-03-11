@@ -6,7 +6,6 @@ import {
   FileText,
   Link as LinkIcon,
   AlertCircle,
-  Users,
   Sparkles,
   Send,
   Inbox,
@@ -65,15 +64,6 @@ const mySentProposals = computed(() => {
     const nameMatched = proposal.employerName === currentEmployerName.value;
     return idMatched || nameMatched;
   });
-});
-
-const groupedApplications = computed(() => {
-  return myJobs.value
-    .map((job) => ({
-      job,
-      applications: myReceivedApplications.value.filter((app) => app.jobId === job.id),
-    }))
-    .filter((group) => group.applications.length > 0);
 });
 
 const statusConfig: Record<ApplicationStatus, { icon: any; label: string; gradient: string }> = {
@@ -344,117 +334,99 @@ const formatDate = (date: Date | string) => {
           아직 받은 지원서가 없습니다.
         </div>
 
-        <div v-else class="space-y-8">
+        <div v-else class="space-y-4">
           <div
-            v-for="(group, index) in groupedApplications"
-            :key="group.job.id"
+            v-for="(app, index) in myReceivedApplications"
+            :key="app.id"
             class="bg-white/5 border border-white/10 rounded-2xl p-6"
             v-motion
             :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 70 } }"
+            :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
           >
-            <div class="flex items-center justify-between mb-6">
-              <div>
-                <h3 class="text-2xl font-bold text-white mb-2">{{ group.job.title }}</h3>
-                <div class="flex items-center gap-2 text-white/60">
-                  <Users class="w-4 h-4" />
-                  <span>총 {{ group.applications.length }}명의 지원자</span>
+            <div class="flex flex-col md:flex-row items-start justify-between gap-4 mb-4">
+              <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                  {{ app.freelancerName[0] }}
                 </div>
+                <div>
+                  <div class="text-lg font-semibold text-white flex items-center gap-2">
+                    {{ app.freelancerName }}
+                    <Sparkles class="w-4 h-4 text-yellow-400" />
+                  </div>
+                  <div class="text-sm text-white/60">
+                    {{ formatDate(app.createdAt) }} 지원
+                  </div>
+                  <div class="text-sm text-white/70 mt-1">
+                    지원 공고: {{ getJobTitle(app.jobId) }}
+                  </div>
+                  <router-link
+                    :to="{ name: 'employer.freelancer.profile', params: { id: app.freelancerId } }"
+                    class="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-1 hover:underline"
+                  >
+                    프로필 및 포트폴리오 보기
+                  </router-link>
+                </div>
+              </div>
+
+              <div v-if="app.status === 'PENDING'" class="flex gap-2">
+                <button
+                  @click="handleAccept(app)"
+                  class="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full hover:shadow-lg transition-all flex items-center gap-2 font-medium"
+                >
+                  <Check class="w-4 h-4" />
+                  수락
+                </button>
+                <button
+                  @click="handleReject(app)"
+                  class="px-5 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full hover:shadow-lg transition-all flex items-center gap-2 font-medium"
+                >
+                  <X class="w-4 h-4" />
+                  거절
+                </button>
+              </div>
+              <div
+                v-else
+                class="px-5 py-2.5 rounded-full font-medium border"
+                :class="app.status === 'ACCEPTED' ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'"
+              >
+                {{ app.status === 'ACCEPTED' ? '수락됨' : '거절됨' }}
               </div>
             </div>
 
-            <div class="space-y-4">
-              <div
-                v-for="(app, appIndex) in group.applications"
-                :key="app.id"
-                class="bg-white/5 border border-white/10 rounded-2xl p-6"
-                v-motion
-                :initial="{ opacity: 0, x: -15 }"
-                :enter="{ opacity: 1, x: 0, transition: { delay: appIndex * 50 } }"
+            <div class="mb-4">
+              <div class="text-sm text-white/60 mb-2">지원 메시지</div>
+              <div class="text-sm bg-white/5 border border-white/10 p-4 rounded-2xl text-white/80">
+                {{ app.message }}
+              </div>
+            </div>
+
+            <div v-if="app.portfolioUrl || app.resumeUrl" class="flex gap-3 mb-4">
+              <a
+                v-if="app.portfolioUrl"
+                :href="app.portfolioUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium"
               >
-                <div class="flex flex-col md:flex-row items-start justify-between gap-4 mb-4">
-                  <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                      {{ app.freelancerName[0] }}
-                    </div>
-                    <div>
-                      <div class="text-lg font-semibold text-white flex items-center gap-2">
-                        {{ app.freelancerName }}
-                        <Sparkles class="w-4 h-4 text-yellow-400" />
-                      </div>
-                      <div class="text-sm text-white/60">
-                        {{ formatDate(app.createdAt) }} 지원
-                      </div>
-                      <router-link
-                        :to="{ name: 'employer.freelancer.profile', params: { id: app.freelancerId } }"
-                        class="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1 mt-1 hover:underline"
-                      >
-                        프로필 및 포트폴리오 보기
-                      </router-link>
-                    </div>
-                  </div>
+                <LinkIcon class="w-4 h-4" />
+                포트폴리오 보기
+              </a>
+              <a
+                v-if="app.resumeUrl"
+                :href="app.resumeUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium"
+              >
+                <FileText class="w-4 h-4" />
+                이력서 보기
+              </a>
+            </div>
 
-                  <div v-if="app.status === 'PENDING'" class="flex gap-2">
-                    <button
-                      @click="handleAccept(app)"
-                      class="px-5 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full hover:shadow-lg transition-all flex items-center gap-2 font-medium"
-                    >
-                      <Check class="w-4 h-4" />
-                      수락
-                    </button>
-                    <button
-                      @click="handleReject(app)"
-                      class="px-5 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full hover:shadow-lg transition-all flex items-center gap-2 font-medium"
-                    >
-                      <X class="w-4 h-4" />
-                      거절
-                    </button>
-                  </div>
-                  <div
-                    v-else
-                    class="px-5 py-2.5 rounded-full font-medium border"
-                    :class="app.status === 'ACCEPTED' ? 'bg-green-500/20 text-green-300 border-green-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30'"
-                  >
-                    {{ app.status === 'ACCEPTED' ? '수락됨' : '거절됨' }}
-                  </div>
-                </div>
-
-                <div class="mb-4">
-                  <div class="text-sm text-white/60 mb-2">지원 메시지</div>
-                  <div class="text-sm bg-white/5 border border-white/10 p-4 rounded-2xl text-white/80">
-                    {{ app.message }}
-                  </div>
-                </div>
-
-                <div v-if="app.portfolioUrl || app.resumeUrl" class="flex gap-3 mb-4">
-                  <a
-                    v-if="app.portfolioUrl"
-                    :href="app.portfolioUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium"
-                  >
-                    <LinkIcon class="w-4 h-4" />
-                    포트폴리오 보기
-                  </a>
-                  <a
-                    v-if="app.resumeUrl"
-                    :href="app.resumeUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1 font-medium"
-                  >
-                    <FileText class="w-4 h-4" />
-                    이력서 보기
-                  </a>
-                </div>
-
-                <div v-if="app.status === 'REJECTED' && app.rejectionReason" class="pt-4 border-t border-white/10">
-                  <div class="text-sm text-white/60 mb-2">거절 사유</div>
-                  <div class="text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-2xl">
-                    {{ app.rejectionReason }}
-                  </div>
-                </div>
+            <div v-if="app.status === 'REJECTED' && app.rejectionReason" class="pt-4 border-t border-white/10">
+              <div class="text-sm text-white/60 mb-2">거절 사유</div>
+              <div class="text-sm text-red-400 bg-red-500/10 border border-red-500/20 p-3 rounded-2xl">
+                {{ app.rejectionReason }}
               </div>
             </div>
           </div>
