@@ -78,8 +78,11 @@
                         <img v-if="getOtherParticipantImage(room)" :src="getOtherParticipantImage(room)" class="w-full h-full object-cover" />
                         <span v-else>{{ getOtherParticipantName(room).charAt(0) }}</span>
                     </div>
-                    <!-- Online Status Indicator (Mock) -->
-                    <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#020617] rounded-full"></span>
+                    <span
+                        v-if="hasPresenceSignal(room)"
+                        class="absolute bottom-0 right-0 w-3 h-3 border-2 border-[#020617] rounded-full"
+                        :class="isOtherParticipantOnline(room) ? 'bg-emerald-500' : 'bg-slate-600'"
+                    ></span>
                 </div>
 
                 <div class="flex-1 min-w-0">
@@ -169,6 +172,40 @@ const displayedRooms = computed(() => {
         return (roomOrderMap.get(firstRoom.id) ?? 0) - (roomOrderMap.get(secondRoom.id) ?? 0);
     });
 });
+
+type ChatRoomWithPresence = ChatRoom & {
+    presence?: Record<string, boolean>;
+    participantPresence?: Record<string, boolean>;
+    onlineParticipantIds?: string[];
+};
+
+function getRoomPresence(room: ChatRoom): ChatRoomWithPresence {
+    return room as ChatRoomWithPresence;
+}
+
+function hasPresenceSignal(room: ChatRoom) {
+    const roomWithPresence = getRoomPresence(room);
+    return (
+        Array.isArray(roomWithPresence.onlineParticipantIds) ||
+        typeof roomWithPresence.presence === 'object' ||
+        typeof roomWithPresence.participantPresence === 'object'
+    );
+}
+
+function isOtherParticipantOnline(room: ChatRoom) {
+    const otherId = chatStore.getOtherParticipantId(room);
+    if (!otherId) return false;
+
+    const roomWithPresence = getRoomPresence(room);
+    if (Array.isArray(roomWithPresence.onlineParticipantIds)) {
+        return roomWithPresence.onlineParticipantIds.includes(otherId);
+    }
+
+    return Boolean(
+        roomWithPresence.participantPresence?.[otherId] ??
+        roomWithPresence.presence?.[otherId]
+    );
+}
 
 function readStoredRoomIds(storageKey: string): string[] {
     const storedValue = localStorage.getItem(storageKey);
