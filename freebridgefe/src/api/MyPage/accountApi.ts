@@ -35,13 +35,13 @@ export interface FreelancerNotificationSettings {
 }
 
 export const getAccountInfo = async (): Promise<AccountInfo> => {
-    const response = await apiClient.get<ApiResponse<any>>('/api/users/me/test');
+    const response = await apiClient.get<ApiResponse<any>>('/api/users/getmyinfo');
     const data = response.data.data;
     return {
         id: data.id,
         email: data.email ?? '',
         name: data.name ?? '',
-        phone: '' // User API에 phone이 없어 빈 값 처리
+        phone: data.phone ?? ''
     };
 };
 

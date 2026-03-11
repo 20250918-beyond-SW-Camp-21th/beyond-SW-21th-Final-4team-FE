@@ -46,6 +46,7 @@ interface EmployerProfileDto {
     scale: string | null;
     location: string | null;
     websiteUrl: string | null;
+    phone: string | null;
     description: string | null;
     logoUrl: string | null;
     status: string | null;
@@ -64,7 +65,7 @@ const mapProfileDto = (dto: EmployerProfileDto): EmployerProfileData => ({
     location: dto.location ?? '',
     website: dto.websiteUrl ?? '',
     email: '',
-    phone: '',
+    phone: dto.phone ?? '',
     description: dto.description ?? '',
     plan: undefined,
     logoUrl: dto.logoUrl ?? undefined,
@@ -179,7 +180,8 @@ export const updateEmployerProfile = async (data: EmployerProfileData): Promise<
         scale: data.size,
         location: data.location,
         websiteUrl: data.website,
-        description: data.description
+        description: data.description,
+        phone: data.phone
     };
     await apiClient.put<ApiResponse<null>>('/api/employer/mypage/profile', payload);
 };
