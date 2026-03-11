@@ -206,38 +206,39 @@ const handleSave = async () => {
             />
           </div>
 
-          <!-- Email -->
-          <div>
-            <label class="text-xs text-white/50 mb-2 block flex items-center gap-2">
-              <Mail class="w-4 h-4" />
-              이메일
-            </label>
-            <input
-              type="email"
-              v-model="profileData.email"
-              class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
-            />
-          </div>
-        </div>
-
-        <!-- Phone -->
+        <!-- Email -->
         <div>
           <label class="text-xs text-white/50 mb-2 block flex items-center gap-2">
-            <Phone class="w-4 h-4" />
-            연락처
+            <Mail class="w-4 h-4" />
+            이메일
           </label>
           <input
-            type="tel"
-            v-model="profileData.phone"
+            type="email"
+            v-model="profileData.email"
             class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
           />
         </div>
+      </div>
 
-        <!-- Description -->
-        <div>
-          <label class="text-xs text-white/50 mb-2 block">고용주 소개</label>
-          <textarea
-            v-model="profileData.description"
+      <!-- Phone (read-only) -->
+      <div>
+        <label class="text-xs text-white/50 mb-2 block flex items-center gap-2">
+          <Phone class="w-4 h-4" />
+          연락처
+        </label>
+        <input
+          type="tel"
+          v-model="profileData.phone"
+          class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white/70 outline-none"
+          disabled
+        />
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label class="text-xs text-white/50 mb-2 block">고용주 소개</label>
+        <textarea
+          v-model="profileData.description"
             rows="4"
             class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors resize-none"
           ></textarea>
