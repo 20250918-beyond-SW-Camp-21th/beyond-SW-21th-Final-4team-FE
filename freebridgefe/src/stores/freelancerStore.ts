@@ -1,6 +1,9 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { getFreelancerRecommendations } from "@/api/recommendationApi";
+import {
+  getFreelancerRecommendations,
+  type AiRecommendationResponseDTO,
+} from "@/api/recommendationApi";
 import {
   acceptFreelancerProposal,
   createEmployerProposal,
@@ -40,9 +43,14 @@ const getProposalErrorMessage = (error: unknown): string => {
   return "제안 정보를 처리하지 못했습니다.";
 };
 
+export type RecommendedFreelancer = User & {
+  matchScore?: number;
+  jobTitle?: string;
+};
+
 export const useFreelancerStore = defineStore("freelancer", () => {
+  const freelancers = ref<RecommendedFreelancer[]>([]);
   const authStore = useAuthStore();
-  const freelancers = ref<(User & { matchScore?: number })[]>([]);
   const recommendedFetchError = ref<string | null>(null);
   const isFetchingRecommended = ref(false);
   const proposals = ref<Proposal[]>([]);
@@ -56,16 +64,20 @@ export const useFreelancerStore = defineStore("freelancer", () => {
 
     try {
       const recommendations = await getFreelancerRecommendations(jobId);
-      freelancers.value = recommendations.map((rec) => ({
-        id: rec.id.toString(),
-        role: "FREELANCER",
-        name: rec.nameOrTitle,
-        email: "hidden@example.com", // Hidden info for recommendation
-        skills: rec.skills,
-        experience: rec.experience,
-        bio: `AI 추천 점수: ${(rec.matchScore * 100).toFixed(0)}% 일치하는 프리랜서입니다.`,
-        matchScore: rec.matchScore,
-      })) as (User & { matchScore?: number })[];
+      freelancers.value = recommendations.map(
+        (rec: AiRecommendationResponseDTO) => ({
+          id: String(rec.id),
+          role: "FREELANCER",
+          name: rec.nameOrTitle,
+          email: "hidden@example.com", // Hidden info for recommendation
+          matchScore: rec.matchScore,
+          jobTitle: "프리랜서", // AI 추천에서 직무를 받아올 수 없으므로 기본값
+          skills: rec.skills && rec.skills.length > 0 ? rec.skills : ["전문가"],
+          bio:
+            rec.description ||
+            `AI 추천 점수: ${(rec.matchScore * 100).toFixed(0)}% 일치하는 프리랜서입니다.`,
+        }),
+      ) as RecommendedFreelancer[];
     } catch (error: any) {
       console.error("Failed to fetch recommended freelancers:", error);
       freelancers.value = [];
@@ -256,17 +268,20 @@ export const useFreelancerStore = defineStore("freelancer", () => {
         context.relatedJobId = jobId;
       }
 
-      const roomId = await chatStore.createRoom(
-        [employerId, freelancerId],
-        {
-          [employerId]: proposals.value[index].employerName || "Employer",
-          [freelancerId]: proposals.value[index].freelancerName || "Freelancer",
-        },
-        context,
-      ).catch((e) => {
-        console.error("Failed to create room:", e);
-        return null;
-      });
+      const roomId = await chatStore
+        .createRoom(
+          [employerId, freelancerId],
+          {
+            [employerId]: proposals.value[index].employerName || "Employer",
+            [freelancerId]:
+              proposals.value[index].freelancerName || "Freelancer",
+          },
+          context,
+        )
+        .catch((e) => {
+          console.error("Failed to create room:", e);
+          return null;
+        });
 
       if (roomId) {
         chatStore.selectRoom(roomId);
