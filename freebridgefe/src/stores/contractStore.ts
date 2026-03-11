@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { listContracts, type ContractListParams } from '@/api/contractApi';
+import { getUserById } from '@/api/authApi';
 import {
     getEmployerNextSettlement,
     getEmployerSettlementSummary,
@@ -149,7 +150,70 @@ export const useContractStore = defineStore('contract', () => {
 
     async function fetchContracts(params?: ContractListParams) {
         const data = await listContracts(params);
-        contracts.value = data.items || [];
+        const items = (data.items || []) as ContractWithDetails[];
+        contracts.value = items;
+
+        const placeholderPattern = /(user|사용자)\s*#\s*\d+/i;
+        const numericOnlyPattern = /^\s*#?\d+\s*$/;
+        const needsName = (name?: string | null) => {
+            if (!name) return true;
+            const trimmed = name.trim();
+            return (
+                trimmed.length === 0 ||
+                trimmed === 'Unknown' ||
+                placeholderPattern.test(trimmed) ||
+                numericOnlyPattern.test(trimmed)
+            );
+        };
+
+        const collectMissingIds = (getter: (c: ContractWithDetails) => number, nameGetter: (c: ContractWithDetails) => string | undefined | null) =>
+            Array.from(
+                new Set(
+                    items
+                        .filter((c) => needsName(nameGetter(c)))
+                        .map((c) => Number(getter(c)))
+                        .filter((id) => Number.isFinite(id) && id > 0)
+                )
+            );
+
+        const missingFreelancerIds = collectMissingIds((c) => c.freelancerId, (c) => c.freelancerName);
+        const missingEmployerIds = collectMissingIds((c) => c.employerId, (c) => c.employerName);
+        const missingIds = Array.from(new Set([...missingFreelancerIds, ...missingEmployerIds]));
+
+        if (missingIds.length === 0) return;
+
+        const results = await Promise.allSettled(missingIds.map((id) => getUserById(id)));
+        const idToName = new Map<number, string>();
+
+        results.forEach((result, index) => {
+            if (result.status !== 'fulfilled') return;
+            const user = result.value as Record<string, any>;
+            const payload = user?.data ?? user;
+            const name =
+                payload?.name ||
+                payload?.fullName ||
+                payload?.username ||
+                payload?.nickname ||
+                payload?.userName ||
+                payload?.memberName ||
+                payload?.realName;
+            if (name) {
+                idToName.set(missingIds[index], String(name));
+            }
+        });
+
+        if (idToName.size === 0) return;
+
+        contracts.value = items.map((contract) => {
+            const resolvedFreelancer = idToName.get(Number(contract.freelancerId));
+            const resolvedEmployer = idToName.get(Number(contract.employerId));
+            if (!resolvedFreelancer && !resolvedEmployer) return contract;
+            return {
+                ...contract,
+                freelancerName: resolvedFreelancer ?? contract.freelancerName,
+                employerName: resolvedEmployer ?? contract.employerName,
+            };
+        });
     }
 
     async function fetchEmployerSettlements(params?: {

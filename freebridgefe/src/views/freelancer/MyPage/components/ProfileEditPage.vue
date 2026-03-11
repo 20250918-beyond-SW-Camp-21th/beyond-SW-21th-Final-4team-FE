@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import type { FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi.ts';
-import { updateFreelancerProfile } from '@/api/MyPage/freelancerApi.ts';
+import { updateFreelancerProfile, uploadFreelancerAvatar } from '@/api/MyPage/freelancerApi.ts';
 import { ArrowLeft, Save, Upload, Plus, X } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -41,8 +41,8 @@ const removeSkill = (skillToRemove: string) => {
     formData.value.skills = formData.value.skills?.filter(skill => skill !== skillToRemove);
 };
 
-// Handle Avatar Upload (Mock)
-const handleAvatarUpload = (event: Event) => {
+// Handle Avatar Upload
+const handleAvatarUpload = async (event: Event) => {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) {
         if (formData.value.avatar?.startsWith('blob:')) {
@@ -54,6 +54,13 @@ const handleAvatarUpload = (event: Event) => {
         }
         const objectUrl = URL.createObjectURL(file);
         formData.value.avatar = objectUrl;
+        try {
+          const uploadedUrl = await uploadFreelancerAvatar(file);
+          formData.value.avatar = uploadedUrl;
+        } catch (error) {
+          console.error('Failed to upload avatar:', error);
+          alert('프로필 이미지 업로드에 실패했습니다.');
+        }
     }
 };
 
@@ -107,7 +114,7 @@ const saveProfile = async () => {
                         <input type="file" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer" @change="handleAvatarUpload" />
                     </div>
                     <p class="text-xs text-slate-400 text-center">
-                        클릭하여 프로필 이미지를 변경하세요.<br>
+                        이미지를 클릭해 프로필 이미지를 변경하세요.<br>
                         (JPG, PNG / Max 5MB)
                     </p>
                 </div>
@@ -169,7 +176,7 @@ const saveProfile = async () => {
                             </select>
                         </div>
                          <div class="space-y-1">
-                            <label class="text-xs text-slate-400 font-bold">희망 지역</label>
+                            <label class="text-xs text-slate-400 font-bold">근무 지역</label>
                             <input v-model="formData.workConditions.location" type="text" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
                         </div>
                     </div>

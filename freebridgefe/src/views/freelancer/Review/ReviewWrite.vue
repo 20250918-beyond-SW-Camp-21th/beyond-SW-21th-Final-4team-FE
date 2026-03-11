@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
-import { Star, ClipboardEdit, ArrowLeft } from 'lucide-vue-next';
-import { useAuthStore } from '@/stores/authStore';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { Star, ClipboardEdit, ArrowLeft, LoaderCircle } from 'lucide-vue-next';
 import { useReviewStore } from '@/stores/reviewStore';
 
 const evaluationItems = [
@@ -11,17 +10,12 @@ const evaluationItems = [
 ] as const;
 
 type ReviewRatingKey = typeof evaluationItems[number]['key'];
-
 type ReviewFormRatings = Record<ReviewRatingKey, number>;
 
-const employerProjects = [
-  { id: 'p1', title: '대시보드 고도화', companyName: '프리브릿지' },
-  { id: 'p2', title: '브랜딩 UI 리뉴얼', companyName: '브랜드랩' },
-  { id: 'p3', title: '데이터 파이프라인 개선', companyName: '데이터메이트' },
-];
+const reviewStore = useReviewStore();
 
 const form = reactive({
-  projectId: '',
+  targetKey: '',
   ratings: {
     atmosphere: 0,
     requirementDetail: 0,
@@ -32,15 +26,22 @@ const form = reactive({
 
 const formError = ref('');
 const formSuccess = ref('');
-const authStore = useAuthStore();
-const reviewStore = useReviewStore();
 
-const selectedProject = computed(() => employerProjects.find((p) => p.id === form.projectId));
+const reviewTargets = computed(() => reviewStore.freelancerReviewTargets);
+const isLoadingTargets = computed(() => reviewStore.isFetchingReviewTargets);
+const targetFetchError = computed(() => reviewStore.reviewTargetFetchError);
+const isSubmitting = computed(() => reviewStore.isSubmittingReview);
+const selectedTarget = computed(() =>
+  reviewTargets.value.find((target) => target.key === form.targetKey),
+);
 
 const overallRating = computed(() => {
   const values = Object.values(form.ratings);
-  if (values.some((v) => v === 0)) return 0;
-  const sum = values.reduce((acc, v) => acc + v, 0);
+  if (values.some((value) => value === 0)) {
+    return 0;
+  }
+
+  const sum = values.reduce((acc, value) => acc + value, 0);
   return sum / values.length;
 });
 
@@ -49,7 +50,7 @@ const setRating = (field: ReviewRatingKey, value: number) => {
 };
 
 const resetForm = () => {
-  form.projectId = '';
+  form.targetKey = '';
   form.ratings = {
     atmosphere: 0,
     requirementDetail: 0,
@@ -58,16 +59,24 @@ const resetForm = () => {
   form.comment = '';
 };
 
-const handleSubmit = () => {
+const loadReviewTargets = async () => {
+  try {
+    await reviewStore.fetchFreelancerReviewTargets();
+  } catch {
+    formError.value = reviewStore.reviewTargetFetchError || '후기 작성 대상을 불러오지 못했습니다.';
+  }
+};
+
+const handleSubmit = async () => {
   formError.value = '';
   formSuccess.value = '';
 
-  if (!form.projectId) {
+  if (!selectedTarget.value) {
     formError.value = '프로젝트를 선택해 주세요.';
     return;
   }
 
-  if (Object.values(form.ratings).some((v) => v === 0)) {
+  if (Object.values(form.ratings).some((value) => value === 0)) {
     formError.value = '모든 평가 항목을 입력해 주세요.';
     return;
   }
@@ -81,25 +90,30 @@ const handleSubmit = () => {
     return;
   }
 
-  if (!selectedProject.value) {
-    formError.value = '프로젝트 정보를 찾을 수 없습니다.';
-    return;
+  try {
+    await reviewStore.addFreelancerToEmployerReview({
+      projectId: selectedTarget.value.projectId,
+      employerId: selectedTarget.value.counterpartyId,
+      freelancerId: '',
+      companyName: selectedTarget.value.counterpartyName,
+      projectName: selectedTarget.value.projectName,
+      atmosphere: form.ratings.atmosphere,
+      requirementDetail: form.ratings.requirementDetail,
+      schedule: form.ratings.schedule,
+      comment: form.comment.trim(),
+    });
+
+    formSuccess.value = '후기가 등록되었습니다.';
+    resetForm();
+  } catch (error) {
+    formError.value =
+      error instanceof Error ? error.message : '후기를 등록하지 못했습니다.';
   }
-
-  reviewStore.addFreelancerToEmployerReview({
-    freelancerId: authStore.user?.id,
-    freelancerName: authStore.user?.name || '프리랜서',
-    companyName: selectedProject.value.companyName,
-    projectName: selectedProject.value.title,
-    atmosphere: form.ratings.atmosphere,
-    requirementDetail: form.ratings.requirementDetail,
-    schedule: form.ratings.schedule,
-    comment: form.comment.trim(),
-  });
-
-  formSuccess.value = '후기가 등록되었습니다.';
-  resetForm();
 };
+
+onMounted(() => {
+  void loadReviewTargets();
+});
 </script>
 
 <template>
@@ -135,12 +149,15 @@ const handleSubmit = () => {
         <label class="flex flex-col gap-2">
           <span class="text-sm text-white/60">프로젝트 선택</span>
           <select
-            v-model="form.projectId"
-            class="bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/30"
+            v-model="form.targetKey"
+            :disabled="isLoadingTargets || isSubmitting"
+            class="bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-white/30 disabled:opacity-50"
           >
-            <option value="" disabled>프로젝트를 선택하세요</option>
-            <option v-for="project in employerProjects" :key="project.id" :value="project.id">
-              {{ project.title }} · {{ project.companyName }}
+            <option value="" disabled>
+              {{ isLoadingTargets ? '프로젝트를 불러오는 중...' : '프로젝트를 선택하세요' }}
+            </option>
+            <option v-for="target in reviewTargets" :key="target.key" :value="target.key">
+              {{ target.projectName }} · {{ target.counterpartyName }}
             </option>
           </select>
         </label>
@@ -148,9 +165,20 @@ const handleSubmit = () => {
         <div class="flex flex-col gap-2">
           <span class="text-sm text-white/60">선택된 기업</span>
           <div class="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white/80">
-            {{ selectedProject?.companyName || '프로젝트를 선택해 주세요' }}
+            {{ selectedTarget?.counterpartyName || '프로젝트를 선택해 주세요' }}
           </div>
         </div>
+      </div>
+
+      <div v-if="isLoadingTargets" class="flex items-center gap-2 text-sm text-white/60 mb-6">
+        <LoaderCircle class="w-4 h-4 animate-spin" />
+        후기 작성 대상을 불러오는 중입니다.
+      </div>
+      <div v-else-if="targetFetchError" class="text-sm text-red-300 mb-6">
+        {{ targetFetchError }}
+      </div>
+      <div v-else-if="reviewTargets.length === 0" class="text-sm text-white/50 mb-6">
+        후기 작성 가능한 계약 프로젝트가 없습니다.
       </div>
 
       <div class="grid md:grid-cols-2 gap-6 mb-6">
@@ -168,7 +196,8 @@ const handleSubmit = () => {
               v-for="star in 5"
               :key="star"
               type="button"
-              class="transition-transform hover:scale-110"
+              class="transition-transform hover:scale-110 disabled:cursor-not-allowed"
+              :disabled="isSubmitting"
               @click="setRating(item.key, star)"
             >
               <Star
@@ -185,7 +214,8 @@ const handleSubmit = () => {
         <textarea
           v-model="form.comment"
           rows="4"
-          class="bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white/90 focus:outline-none focus:ring-2 focus:ring-white/30"
+          :disabled="isSubmitting"
+          class="bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white/90 focus:outline-none focus:ring-2 focus:ring-white/30 disabled:opacity-50"
           placeholder="프로젝트 진행 경험과 느낀 점을 작성해 주세요."
         ></textarea>
       </label>
@@ -196,15 +226,21 @@ const handleSubmit = () => {
         </div>
         <button
           type="button"
+          :disabled="isSubmitting || isLoadingTargets || reviewTargets.length === 0"
           @click="handleSubmit"
-          class="px-6 py-3 bg-white text-black rounded-full font-semibold hover:scale-105 transition-transform"
+          class="px-6 py-3 bg-white text-black rounded-full font-semibold hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
         >
-          후기 등록
+          <span v-if="!isSubmitting">후기 등록</span>
+          <span v-else class="inline-flex items-center gap-2">
+            <LoaderCircle class="w-4 h-4 animate-spin" />
+            등록 중
+          </span>
         </button>
         <button
           type="button"
+          :disabled="isSubmitting"
           @click="resetForm"
-          class="px-6 py-3 bg-white/10 text-white rounded-full font-semibold hover:bg-white/20 transition-colors"
+          class="px-6 py-3 bg-white/10 text-white rounded-full font-semibold hover:bg-white/20 transition-colors disabled:opacity-50"
         >
           초기화
         </button>

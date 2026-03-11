@@ -4,8 +4,10 @@ export interface AiRecommendationResponseDTO {
   id: number;
   nameOrTitle: string;
   matchScore: number;
-  skills: string[];
-  experience: number;
+  skills?: string[];
+  description?: string;
+  budget?: number;
+  duration?: number;
 }
 
 export interface ApiResponse<T> {
