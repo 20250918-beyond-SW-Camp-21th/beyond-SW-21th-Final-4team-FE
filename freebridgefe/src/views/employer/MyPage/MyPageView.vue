@@ -286,11 +286,11 @@ const safeWebsiteUrl = computed(() => {
 </script>
 
 <template>
-  <div class="h-[calc(100vh-80px)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans">
-    <div class="flex h-full overflow-hidden">
+  <div class="min-h-[calc(100vh-80px)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans">
+    <div class="flex flex-col lg:flex-row h-full overflow-hidden">
       <!-- Sidebar -->
       <div
-        class="w-72 bg-white/5 backdrop-blur-2xl border-r border-white/5 shadow-[inset_-1px_0_0_rgba(255,255,255,0.05)] flex flex-col"
+        class="w-full lg:w-72 bg-white/5 backdrop-blur-2xl border-b lg:border-b-0 lg:border-r border-white/5 shadow-[inset_-1px_0_0_rgba(255,255,255,0.05)] flex flex-col"
         v-motion
         :initial="{ x: -300 }"
         :enter="{ x: 0 }"
@@ -300,7 +300,7 @@ const safeWebsiteUrl = computed(() => {
           <p class="mt-2 text-xs text-white/40">Employer Console</p>
         </div>
 
-        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav class="flex-1 p-4 grid grid-cols-2 sm:grid-cols-3 gap-2 lg:flex lg:flex-col lg:space-y-2 overflow-y-auto">
           <button
             v-for="item in menuItems"
             :key="item.id"
@@ -339,7 +339,7 @@ const safeWebsiteUrl = computed(() => {
 
       <!-- Main Content -->
       <div class="flex-1 overflow-y-auto">
-        <div class="p-8 w-[70%] mx-auto">
+        <div class="p-6 md:p-8 w-full max-w-6xl mx-auto">
             <!-- Dynamic Content Rendering -->
             <EmployerProfileManagement v-if="activeTab === 'profile'" @back="activeTab = 'dashboard'" />
             <EmployerProjectManagement v-else-if="activeTab === 'projects'" @back="activeTab = 'dashboard'" />
@@ -446,7 +446,7 @@ const safeWebsiteUrl = computed(() => {
                               <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" @change="handleLogoUpdate" />
                           </div>
 
-                          <h2 class="text-2xl font-semibold tracking-tight mb-2">{{ employerProfile.companyName }}</h2>
+                          <h2 class="text-xl md:text-2xl font-semibold tracking-tight mb-2">{{ employerProfile.companyName }}</h2>
                           <div
                               class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-xl px-3 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
                               :class="subscriptionPlanTone.wrap"
@@ -480,7 +480,7 @@ const safeWebsiteUrl = computed(() => {
                       <!-- Right: Detailed Info -->
                       <div class="w-full md:w-2/3 space-y-6">
                           <div class="flex items-center justify-between mb-4">
-                              <h3 class="text-lg font-semibold flex items-center gap-2">
+                              <h3 class="text-base md:text-lg font-semibold flex items-center gap-2">
                                   <Building2 class="w-5 h-5 text-white/70" />
                                   기업 정보
                               </h3>
@@ -562,7 +562,7 @@ const safeWebsiteUrl = computed(() => {
                    :enter="{ opacity: 1, y: 0, transition: { delay: 0.2 } }"
                  >
                     <div class="flex items-center justify-between mb-6">
-                       <h3 class="text-lg font-semibold flex items-center gap-2">
+                       <h3 class="text-base md:text-lg font-semibold flex items-center gap-2">
                            <Star class="w-5 h-5 text-white/70" />
                            프리랜서 평점
                        </h3>
@@ -644,7 +644,7 @@ const safeWebsiteUrl = computed(() => {
                       :enter="{ opacity: 1, scale: 1, transition: { delay: 0.1 } }"
                     >
                         <div class="flex items-center justify-between mb-8">
-                            <h3 class="text-lg font-semibold flex items-center gap-2">
+                            <h3 class="text-base md:text-lg font-semibold flex items-center gap-2">
                                 <Briefcase class="w-5 h-5 text-white/70" />
                                 프로젝트 진행 현황
                             </h3>
