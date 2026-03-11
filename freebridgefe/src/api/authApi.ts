@@ -110,7 +110,7 @@ export const resendVerification = async (email: string) => {
  */
 export const getUserById = async (id: number) => {
     const response = await apiClient.get<ApiResponse<any>>(`/api/users/${id}`);
-    return response.data.data;
+    return response.data.data ?? response.data;
 };
 
 /**

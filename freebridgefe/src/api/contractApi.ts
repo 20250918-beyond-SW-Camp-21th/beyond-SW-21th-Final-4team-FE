@@ -1,133 +1,209 @@
 import apiClient from '@/api/axiosInstance';
 
-export interface CreateContractRequest {
-    projectName: string;
-    freelancerId: number;
-    freelancerName?: string;     // 계약서 PDF에 표시될 프리랜서 이름
-    startDate: string;
-    endDate: string;
-    budget: number;
-    paymentDay: number;
-    jobDescription: string;
-    workLocation: string;
-    workStartTime: string;
-    workEndTime: string;
-    breakStartTime: string;
-    breakEndTime: string;
-    workDaysPerWeek: number;
-    weeklyHoliday: string;
-    employerBusinessName: string;
-    employerAddress: string;
-    employerCEO: string;
-    freelancerAddress?: string;  // 프리랜서가 서명 시 직접 입력 (고용주 생성 시 불필요)
-    freelancerPhone?: string;    // 프리랜서가 서명 시 직접 입력 (고용주 생성 시 불필요)
-    employerSignature?: string;
+interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data: T;
 }
 
-export interface SignContractRequest {
-    signature: string;
-    freelancerAddress?: string;  // 프리랜서 서명 시에만 사용
-    freelancerPhone?: string;    // 프리랜서 서명 시에만 사용
+export interface ContractSummaryDto {
+  id: number;
+  contractId: number;
+  projectName: string;
+  freelancerId: number;
+  employerId: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+  budget: number;
+  employerSigned: boolean;
+  freelancerSigned: boolean;
+  freelancerName?: string | null;
+  employerName?: string | null;
+}
+
+export interface ContractResponseDto extends ContractSummaryDto {
+  commissionRate?: number | null;
+  paymentDay?: number | null;
+  contractPdfUrl?: string | null;
+  signedPdfUrl?: string | null;
+  signedDate?: string | null;
+  jobDescription?: string | null;
+  workLocation?: string | null;
+  workStartTime?: string | null;
+  workEndTime?: string | null;
+  breakStartTime?: string | null;
+  breakEndTime?: string | null;
+  workDaysPerWeek?: number | null;
+  weeklyHoliday?: string | null;
+  employerBusinessName?: string | null;
+  employerAddress?: string | null;
+  employerCEO?: string | null;
+  freelancerAddress?: string | null;
+  freelancerPhone?: string | null;
+  employerSignature?: string | null;
+  employerSignedDate?: string | null;
+  freelancerSignature?: string | null;
+  freelancerSignedDate?: string | null;
+}
+
+export interface ContractListResponseDto {
+  items: ContractSummaryDto[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 export interface ContractListParams {
-    status?: string | string[];
-    search?: string;
-    page?: number;
-    limit?: number;
+  status?: string | string[];
+  search?: string;
+  page?: number;
+  limit?: number;
 }
 
-// GET /api/employer/project — employer's job posting projects
-// Backend EmployerProjectSearchDTO: projectId, jobPostingId, freelancerId, projectName, headcount, startDate, endDate, status
+export interface CreateContractRequest {
+  projectName: string;
+  freelancerId: number;
+  freelancerName?: string;
+  startDate: string;
+  endDate: string;
+  budget: number;
+  paymentDay: number;
+  jobDescription: string;
+  workLocation: string;
+  workStartTime: string;
+  workEndTime: string;
+  breakStartTime: string;
+  breakEndTime: string;
+  workDaysPerWeek: number;
+  weeklyHoliday: string;
+  employerBusinessName: string;
+  employerAddress: string;
+  employerCEO: string;
+  freelancerAddress?: string;
+  freelancerPhone?: string;
+  employerSignature?: string;
+}
+
+export interface SignContractRequest {
+  signature: string;
+  freelancerAddress?: string;
+  freelancerPhone?: string;
+}
+
 export interface EmployerProject {
-    projectId: number;
-    jobPostingId: number;
-    freelancerId: number;
-    projectName: string;
-    headcount: number;
-    startDate: string;
-    endDate: string;
-    status: string;
+  projectId: number;
+  jobPostingId: number;
+  freelancerId: number;
+  projectName: string;
+  headcount: number;
+  startDate: string;
+  endDate: string;
+  status: string;
 }
 
 export interface EmployerProjectsResponse {
-    content: EmployerProject[];
-    page: number;
-    size: number;
-    totalElements: number;
-    totalPages: number;
+  content: EmployerProject[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
 }
 
-// GET /api/employer/projects/{projectId}/matched-freelancers
 export interface MatchedFreelancer {
-    projectId: number;
-    freelancerId: number;
-    freelancerName: string;
-    job: string;
-    grade: string;
-    avatarUrl: string;
-    status: string;
+  projectId: number;
+  freelancerId: number;
+  freelancerName: string;
+  job: string;
+  grade: string;
+  avatarUrl: string;
+  status: string;
 }
 
 export interface MatchedFreelancersResponse {
-    content: MatchedFreelancer[];
-    page: number;
-    size: number;
-    totalElements: number;
-    totalPages: number;
+  content: MatchedFreelancer[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
 }
 
-export async function listContracts(params?: ContractListParams) {
-    const response = await apiClient.get('/api/contracts', { params });
-    return response.data.data; // { items: ContractSummary[], pagination: {...} }
-}
+export const listContracts = async (
+  params: ContractListParams = {},
+): Promise<ContractListResponseDto> => {
+  const response = await apiClient.get<ApiResponse<ContractListResponseDto>>('/api/v1/contracts', {
+    params: {
+      status: params.status,
+      search: params.search,
+      page: params.page ?? 1,
+      limit: params.limit ?? 100,
+    },
+  });
 
-export async function getContract(contractId: number) {
-    const response = await apiClient.get(`/api/contracts/${contractId}`);
-    return response.data.data; // ContractResponse
+  return response.data.data;
+};
+
+export async function getContract(contractId: number): Promise<ContractResponseDto> {
+  const response = await apiClient.get<ApiResponse<ContractResponseDto>>(`/api/v1/contracts/${contractId}`);
+  return response.data.data;
 }
 
 export async function getContractPdfUrl(contractId: number): Promise<string> {
-    const response = await apiClient.get(`/api/contracts/${contractId}/pdf`);
-    return response.data.data; // string URL
+  const response = await apiClient.get<ApiResponse<string>>(`/api/v1/contracts/${contractId}/pdf`);
+  return response.data.data;
 }
 
-export async function createContract(data: CreateContractRequest) {
-    const response = await apiClient.post('/api/contracts', data);
-    return response.data.data; // ContractResponse
+export async function createContract(data: CreateContractRequest): Promise<ContractResponseDto> {
+  const response = await apiClient.post<ApiResponse<ContractResponseDto>>('/api/v1/contracts', data);
+  return response.data.data;
 }
 
-export async function signContract(contractId: number, data: SignContractRequest) {
-    const response = await apiClient.patch(`/api/contracts/${contractId}/sign`, data);
-    return response.data.data; // ContractResponse
+export async function signContract(
+  contractId: number,
+  data: SignContractRequest,
+): Promise<ContractResponseDto> {
+  const response = await apiClient.patch<ApiResponse<ContractResponseDto>>(
+    `/api/v1/contracts/${contractId}/sign`,
+    data,
+  );
+  return response.data.data;
 }
 
-export async function completeContract(contractId: number) {
-    const response = await apiClient.patch(`/api/contracts/${contractId}/complete`);
-    return response.data.data;
+export async function completeContract(contractId: number): Promise<ContractResponseDto> {
+  const response = await apiClient.patch<ApiResponse<ContractResponseDto>>(
+    `/api/v1/contracts/${contractId}/complete`,
+  );
+  return response.data.data;
 }
 
-export async function rejectContract(contractId: number) {
-    const response = await apiClient.patch(`/api/contracts/${contractId}/reject`);
-    return response.data.data;
+export async function rejectContract(contractId: number): Promise<ContractResponseDto> {
+  const response = await apiClient.patch<ApiResponse<ContractResponseDto>>(
+    `/api/v1/contracts/${contractId}/reject`,
+  );
+  return response.data.data;
 }
 
 export async function getEmployerRecruitmentProjects(
-    page = 0,
-    size = 100,
+  page = 0,
+  size = 100,
 ): Promise<EmployerProjectsResponse> {
-    const response = await apiClient.get('/api/employer/project', { params: { page, size } });
-    return response.data.data;
+  const response = await apiClient.get<ApiResponse<EmployerProjectsResponse>>('/api/employer/project', {
+    params: { page, size },
+  });
+  return response.data.data;
 }
 
 export async function getMatchedFreelancers(
-    projectId: number,
-    page = 0,
-    size = 10,
+  projectId: number,
+  page = 0,
+  size = 10,
 ): Promise<MatchedFreelancersResponse> {
-    const response = await apiClient.get(
-        `/api/employer/projects/${projectId}/matched-freelancers`,
-        { params: { page, size } },
-    );
-    return response.data.data;
+  const response = await apiClient.get<ApiResponse<MatchedFreelancersResponse>>(
+    `/api/employer/projects/${projectId}/matched-freelancers`,
+    { params: { page, size } },
+  );
+  return response.data.data;
 }
