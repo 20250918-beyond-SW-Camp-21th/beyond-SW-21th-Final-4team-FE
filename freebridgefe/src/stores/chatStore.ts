@@ -67,6 +67,7 @@ export const useChatStore = defineStore('chat', () => {
     const messageBuffer = ref<{ [roomId: string]: ChatMessage[] }>({});
     const hasLoadedHistory = ref<{ [roomId: string]: boolean }>({});
     const chatAlerts = ref<ChatAlert[]>([]);
+    const isMainChatVisible = ref(false);
 
     // ── STOMP WebSocket ────────────────────────────────────────────────────
     let stompClient: Client | null = null;
@@ -266,8 +267,10 @@ export const useChatStore = defineStore('chat', () => {
                     rooms.value[roomIndex].lastMessage = msg;
                     rooms.value[roomIndex].updatedAt = msg.createdAt;
 
-                    // 현재 방이 아닌 경우 unreadCount 증가
-                    if (currentRoomId.value !== roomId) {
+                    const roomIsVisible = isRoomVisible(roomId);
+
+                    // 실제로 보이지 않는 방인 경우 unreadCount 증가
+                    if (!roomIsVisible) {
                         const myIds = getMyParticipantIds();
                         rooms.value[roomIndex].participants.forEach((p) => {
                             if (!myIds.includes(p)) return;
@@ -277,7 +280,7 @@ export const useChatStore = defineStore('chat', () => {
                     }
 
                     const isMine = getMyParticipantIds().includes(msg.senderId);
-                    const shouldAlert = currentRoomId.value !== roomId && !isMine && !isRoomMuted(roomId);
+                    const shouldAlert = !roomIsVisible && !isMine && !isRoomMuted(roomId);
                     if (shouldAlert) {
                         triggerIncomingAlert(rooms.value[roomIndex], msg);
                     }
@@ -617,6 +620,19 @@ export const useChatStore = defineStore('chat', () => {
     const isRoomListOpen = ref(false);
     const openDockedRooms = ref<{ roomId: string; minimized: boolean }[]>([]);
 
+    function setMainChatVisible(isVisible: boolean) {
+        isMainChatVisible.value = isVisible;
+    }
+
+    function isRoomVisible(roomId: string) {
+        if (isMainChatVisible.value && currentRoomId.value === roomId) {
+            return true;
+        }
+
+        const dockedRoom = openDockedRooms.value.find((room) => room.roomId === roomId);
+        return Boolean(dockedRoom && !dockedRoom.minimized);
+    }
+
     function toggleRoomList() {
         isRoomListOpen.value = !isRoomListOpen.value;
     }
@@ -676,6 +692,7 @@ export const useChatStore = defineStore('chat', () => {
         getMyParticipantIds,
         getOtherParticipantId,
         isRoomListOpen,
+        setMainChatVisible,
         openDockedRooms,
         toggleRoomList,
         openDockedRoom,

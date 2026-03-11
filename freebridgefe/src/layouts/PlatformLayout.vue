@@ -109,10 +109,13 @@ watch(
     const wasChatRoute = oldPath?.startsWith('/chat');
     const isNowChatRoute = newPath.startsWith('/chat');
 
+    chatStore.setMainChatVisible(isNowChatRoute);
+
     if (wasChatRoute && !isNowChatRoute) {
       chatStore.resetDockedUIState();
     }
-  }
+  },
+  { immediate: true }
 );
 </script>
 
