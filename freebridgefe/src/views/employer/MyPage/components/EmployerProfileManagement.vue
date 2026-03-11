@@ -17,6 +17,7 @@ import {
 
 import { getEmployerProfile, updateEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
 import { PLAN_LABELS } from '@/constants/planLabels';
+import { useAlertStore } from '@/stores/alertStore';
 
 defineEmits<{
   (e: 'back'): void;
@@ -25,6 +26,7 @@ defineEmits<{
 const isLoading = ref(false);
 const isSaving = ref(false);
 const isEditing = ref(true);
+const alertStore = useAlertStore();
 
 const profileData = ref<EmployerProfileData>({
   companyName: '',
@@ -74,10 +76,10 @@ const handleSave = async () => {
   isSaving.value = true;
   try {
     await updateEmployerProfile(profileData.value);
-    alert('프로필이 성공적으로 저장되었습니다.');
+    alertStore.open({ message: '프로필이 성공적으로 저장되었습니다.', type: 'success' });
   } catch (error) {
     console.error('Failed to save profile:', error);
-    alert('저장에 실패했습니다.');
+    alertStore.open({ message: '저장에 실패했습니다.', type: 'error' });
   } finally {
     isSaving.value = false;
   }

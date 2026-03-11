@@ -27,6 +27,7 @@ import {
   Camera,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { useAlertStore } from '@/stores/alertStore';
 import { getEmployerProfile, uploadEmployerLogo, type EmployerProfileData } from '@/api/MyPage/employer';
 import { PLAN_LABELS } from '@/constants/planLabels';
 import { getEmployerReviewSummary } from '@/api/MyPage/evaluationApi';
@@ -40,6 +41,7 @@ import EmployerProjectManagement from './components/EmployerProjectManagement.vu
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const alertStore = useAlertStore();
 
 const activeTab = ref('dashboard');
 const hideUpsellAlert = ref(false);
@@ -114,7 +116,7 @@ const handleLogoUpdate = async (event: Event) => {
             employerProfile.value.logoUrl = logoUrl;
         } catch (error) {
             console.error('Failed to upload logo:', error);
-            alert('로고 업로드에 실패했습니다.');
+            alertStore.open({ message: '로고 업로드에 실패했습니다.', type: 'error' });
         } finally {
             input.value = '';
         }
@@ -130,10 +132,10 @@ const handleNoticeClick = () => {
     return;
   }
   if (plan === 'PRO' || plan === 'PRIME') {
-    alert('해당 기능이 구현중입니다');
+    alertStore.open({ message: '해당 기능이 구현중입니다', type: 'info' });
     return;
   }
-  alert('해당 기능이 구현중입니다');
+  alertStore.open({ message: '해당 기능이 구현중입니다', type: 'info' });
 };
 
 const handlePrimeUpsellClick = () => {

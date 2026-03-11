@@ -19,6 +19,7 @@ import {
   updateEmployerSubscription,
   changeEmployerPassword
 } from '@/api/MyPage/accountApi';
+import { useAlertStore } from '@/stores/alertStore';
 
 defineEmits<{
   (e: 'back'): void;
@@ -31,6 +32,7 @@ const activeSection = ref<AccountSection>('subscription');
 const isLoading = ref(false);
 const isSaving = ref(false);
 const authStore = useAuthStore();
+const alertStore = useAlertStore();
 
 const accountInfo = ref({
   name: '',
@@ -161,20 +163,20 @@ const resetProfileVerification = () => {
 
 const handleSaveAccountInfo = async () => {
   if (!isProfileVerified.value) {
-    alert('비밀번호 확인 후에만 정보를 수정할 수 있습니다.');
+    alertStore.open({ message: '비밀번호 확인 후에만 정보를 수정할 수 있습니다.', type: 'warning' });
     return;
   }
 
   try {
     isSaving.value = true;
     await updateAccountInfo(accountInfo.value);
-    alert('계정 정보가 수정되었습니다.');
+    alertStore.open({ message: '계정 정보가 수정되었습니다.', type: 'success' });
   } catch (error) {
     console.error('Failed to update account info:', error);
     if (error instanceof Error && error.message.includes('updateAccountInfo not implemented')) {
-      alert('현재 계정 정보 수정 기능은 준비 중입니다.');
+      alertStore.open({ message: '현재 계정 정보 수정 기능은 준비 중입니다.', type: 'info' });
     } else {
-      alert('수정에 실패했습니다.');
+      alertStore.open({ message: '수정에 실패했습니다.', type: 'error' });
     }
   } finally {
     isSaving.value = false;
@@ -212,7 +214,7 @@ const validatePasswordForm = () => {
 
 const handleChangePassword = async () => {
   if (!isProfileVerified.value) {
-    alert('비밀번호 확인 후에만 변경할 수 있습니다.');
+    alertStore.open({ message: '비밀번호 확인 후에만 변경할 수 있습니다.', type: 'warning' });
     return;
   }
   if (!validatePasswordForm()) return;
@@ -221,7 +223,7 @@ const handleChangePassword = async () => {
     isPasswordSaving.value = true;
     await changeEmployerPassword(passwordForm.value);
     resetProfileVerification();
-    alert('비밀번호가 변경되었습니다.');
+    alertStore.open({ message: '비밀번호가 변경되었습니다.', type: 'success' });
     passwordForm.value = { current: '', new: '', confirm: '' };
     passwordError.value = '';
   } catch (error) {
@@ -242,10 +244,10 @@ const handlePlanChange = async (plan: PlanType) => {
       isLoading.value = true;
       await updateEmployerSubscription(plan);
       currentPlan.value = plan;
-      alert(`${selectedPlan.name}로 변경되었습니다.`);
+      alertStore.open({ message: `${selectedPlan.name}로 변경되었습니다.`, type: 'success' });
     } catch (error) {
       console.error('Failed to change plan:', error);
-      alert('플랜 변경에 실패했습니다.');
+      alertStore.open({ message: '플랜 변경에 실패했습니다.', type: 'error' });
     } finally {
       isLoading.value = false;
     }
