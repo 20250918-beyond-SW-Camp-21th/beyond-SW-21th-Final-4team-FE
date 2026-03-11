@@ -91,7 +91,7 @@ pipeline {
 
                             export DOCKER_BUILDKIT=0
                             docker build \
-                              --build-arg VITE_API_BASE_URL="${FRONTEND_API_BASE_URL}" \
+                              --build-arg VITE_API_BASE_URL="${FRONTEND_API_BASE_URL:-}" \
                               -t ${IMAGE_NAME}:${IMAGE_TAG} .
 
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
