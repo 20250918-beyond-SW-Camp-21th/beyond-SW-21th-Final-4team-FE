@@ -92,6 +92,17 @@ const employerProfile = ref<EmployerProfileData>({
   }
 });
 
+const hasReviewData = computed(() => {
+  const avgRating = employerProfile.value.avgRating ?? 0;
+  const details = employerProfile.value.ratingDetails;
+  return (
+    avgRating > 0 ||
+    (details?.atmosphere ?? 0) > 0 ||
+    (details?.requirementsDetail ?? 0) > 0 ||
+    (details?.scheduleAdherence ?? 0) > 0
+  );
+});
+
 
 const handleLogoUpdate = async (event: Event) => {
     const input = event.target as HTMLInputElement;
@@ -483,8 +494,8 @@ const safeWebsiteUrl = computed(() => {
               <!-- 2. Detailed Ratings & Notice Grid -->
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Detailed Ratings -->
-                <div 
-                   class="lg:col-span-2 bg-[#1e293b]/50 rounded-2xl border border-white/10 p-6 backdrop-blur-sm flex flex-col justify-center h-full"
+                 <div 
+                   class="lg:col-span-2 bg-[#1e293b]/50 rounded-2xl border border-white/10 p-6 backdrop-blur-sm flex flex-col justify-center h-full relative"
                    v-motion
                    :initial="{ opacity: 0, y: 20 }"
                    :enter="{ opacity: 1, y: 0, transition: { delay: 0.2 } }"
@@ -532,6 +543,14 @@ const safeWebsiteUrl = computed(() => {
                                 <div class="h-full bg-green-500 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.scheduleAdherence || 0) * 20}%` }"></div>
                            </div>
                        </div>
+                    </div>
+                    <div
+                      v-if="!hasReviewData"
+                      class="absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-900/50 backdrop-blur-sm text-center px-6"
+                    >
+                      <p class="text-sm text-slate-200">
+                        프로젝트를 진행하시면 평점을 받아 확인할 수 있습니다
+                      </p>
                     </div>
                 </div>
 

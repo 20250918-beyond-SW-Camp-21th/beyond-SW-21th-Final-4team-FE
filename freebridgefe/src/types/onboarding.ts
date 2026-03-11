@@ -34,6 +34,7 @@ export interface EmployerProfile {
     email: string;
     phone: string;
     logo_url?: string;
+    logo_file?: File | null;
     description: string;
 
     // Step 2: Details

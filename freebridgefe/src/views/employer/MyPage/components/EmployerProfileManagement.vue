@@ -206,16 +206,18 @@ const handleSave = async () => {
             />
           </div>
 
-        <!-- Email -->
+        <!-- Email (read-only) -->
         <div>
           <label class="text-xs text-white/50 mb-2 block flex items-center gap-2">
             <Mail class="w-4 h-4" />
             이메일
+            <span class="text-[11px] text-slate-400">(계정 관리 페이지에서 수정해주세요)</span>
           </label>
           <input
             type="email"
             v-model="profileData.email"
-            class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
+            class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-3 text-white/70 outline-none"
+            disabled
           />
         </div>
       </div>
@@ -225,6 +227,7 @@ const handleSave = async () => {
         <label class="text-xs text-white/50 mb-2 block flex items-center gap-2">
           <Phone class="w-4 h-4" />
           연락처
+          <span class="text-[11px] text-slate-400">(계정 관리 페이지에서 수정해주세요)</span>
         </label>
         <input
           type="tel"

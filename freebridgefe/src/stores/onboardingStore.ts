@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import apiClient from '@/api/axiosInstance';
+import { uploadEmployerLogo } from '@/api/MyPage/employer';
 import type { EmployerProfile, FreelancerProfile } from '@/types/onboarding';
 
 export const useOnboardingStore = defineStore('onboarding', () => {
@@ -46,6 +47,10 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     async function submitEmployerOnboarding() {
         isLoading.value = true;
         try {
+            const logoFile = employerData.value.logo_file;
+            if (logoFile) {
+                await uploadEmployerLogo(logoFile);
+            }
             const payload = {
                 companyName: employerData.value.company_name ?? '',
                 industry: employerData.value.industry ?? '',
@@ -55,8 +60,12 @@ export const useOnboardingStore = defineStore('onboarding', () => {
                 description: employerData.value.description ?? ''
             };
 
-            await apiClient.put('/api/employer/mypage/profile', payload);
-            return true;
+            const res = await apiClient.put('/api/employer/mypage/profile', payload);
+            if (res.data?.success === true) {
+                return true;
+            }
+            console.error(res.data?.message ?? 'Failed to submit employer onboarding');
+            return false;
         } catch (e) {
             console.error(e);
             return false;

@@ -115,10 +115,14 @@ const validateForm = (isSubmitting = false) => {
       newErrors.email = '이미 사용 중이거나 확인되지 않은 이메일입니다';
     }
   }
-
-  // 휴대폰 번호 검증
-  if (!formData.value.phone.trim()) {
-    newErrors.phone = '휴대폰 번호를 입력해주세요';
+  // 휴대전화번호 검증
+  const normalizedPhone = formData.value.phone.replace(/\D/g, '');
+  if (!normalizedPhone) {
+    newErrors.phone = '휴대전화번호를 입력해주세요';
+  } else if (!/^01\d{8,9}$/.test(normalizedPhone)) {
+    newErrors.phone = '올바른 휴대전화번호 형식이 아닙니다';
+  } else {
+    formData.value.phone = normalizedPhone;
   }
 
   // 비밀번호 검증

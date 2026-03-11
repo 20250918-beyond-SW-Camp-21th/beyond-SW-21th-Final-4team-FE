@@ -4,7 +4,7 @@ export interface AccountInfo {
     id: number;
     email: string;
     name: string;
-    phone: string;
+    phone?: string | null;
 }
 
 export interface PasswordChange {
@@ -41,7 +41,7 @@ export const getAccountInfo = async (): Promise<AccountInfo> => {
         id: data.id,
         email: data.email ?? '',
         name: data.name ?? '',
-        phone: data.phone ?? ''
+        phone: data.phone
     };
 };
 

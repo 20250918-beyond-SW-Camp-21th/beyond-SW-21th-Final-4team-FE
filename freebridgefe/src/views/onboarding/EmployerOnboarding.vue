@@ -125,11 +125,10 @@ const nextStep = () => {
                         <Link class="h-5 w-5 text-white/40" />
                     </div>
                     <input 
-                        type="url" 
-                        :value="store.employerData.logo_url"
-                        @input="e => store.updateEmployerData({ logo_url: (e.target as HTMLInputElement).value })"
+                        type="file" 
+                        accept="image/*"
+                        @change="e => store.updateEmployerData({ logo_file: (e.target as HTMLInputElement).files?.[0] ?? null })"
                         class="pl-12 block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/50 focus:border-transparent sm:text-sm py-4 px-4 text-white placeholder:text-white/30 transition-all duration-300 hover:bg-white/10"
-                        placeholder="https://example.com/logo.png"
                     />
                 </div>
             </div>
