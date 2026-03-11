@@ -385,15 +385,23 @@ const safeWebsiteUrl = computed(() => {
                           </div>
 
                            <!-- Core Stats -->
-                          <div class="w-full grid grid-cols-2 gap-4">
-                              <div class="bg-white/5 rounded-xl p-3">
-                                  <div class="text-xs text-slate-400 mb-1">진행 프로젝트</div>
-                                  <div class="text-xl font-bold">{{ employerProfile.activeProjects }}</div>
-                              </div>
-                              <div class="bg-white/5 rounded-xl p-3">
-                                  <div class="text-xs text-slate-400 mb-1">평균 평점</div>
-                                  <div class="text-xl font-bold text-yellow-500">{{ employerProfile.avgRating }}</div>
-                              </div>
+                          <div class="w-full flex flex-wrap items-center justify-center gap-2 text-sm text-slate-300">
+                              <span class="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-400/30">
+                                  <span class="text-slate-500">·</span>
+                                  진행 프로젝트 <strong class="text-white">{{ employerProfile.activeProjects }}</strong>
+                              </span>
+                              <span class="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-400/30">
+                                  <span class="text-slate-500">·</span>
+                                  총 지원자 <strong class="text-white">{{ employerProfile.totalApplicants }}</strong>
+                              </span>
+                              <span class="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-400/30">
+                                  <span class="text-slate-500">·</span>
+                                  연락된 지원자 <strong class="text-white">{{ employerProfile.contractedFreelancers }}</strong>
+                              </span>
+                              <span class="px-2 py-0.5 rounded bg-purple-500/10 border border-purple-400/30">
+                                  <span class="text-slate-500">·</span>
+                                  평균 평점 <strong class="text-yellow-500">{{ employerProfile.avgRating }}</strong>
+                              </span>
                           </div>
                       </div>
 
