@@ -28,9 +28,10 @@ const freelancerStore = useFreelancerStore();
 const rejectingApp = ref<Application | null>(null);
 
 onMounted(async () => {
-  const [jobsResult, proposalsResult] = await Promise.allSettled([
+  const [jobsResult, proposalsResult, applicationsResult] = await Promise.allSettled([
     jobStore.fetchJobPostings(),
     freelancerStore.fetchEmployerProposals(),
+    jobStore.fetchEmployerApplications(),
   ]);
 
   if (jobsResult.status === 'rejected') {
@@ -41,6 +42,11 @@ onMounted(async () => {
   if (proposalsResult.status === 'rejected') {
     console.error('Failed to load employer proposals:', proposalsResult.reason);
     window.alert('보낸 제안 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+
+  if (applicationsResult.status === 'rejected') {
+    console.error('Failed to load employer applications:', applicationsResult.reason);
+    window.alert('지원 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
   }
 });
 
@@ -111,14 +117,19 @@ const getJobTitle = (jobId?: string) => {
 
 const handleAccept = async (app: Application) => {
   if (confirm(`${app.freelancerName}님의 지원을 수락하시겠습니까?`)) {
-    const roomId = await jobStore.updateApplicationStatus(app.id, 'ACCEPTED');
-    if (roomId) {
-      const shouldMove = confirm('채팅방이 생성되었습니다. 이동하겠습니까?');
-      if (shouldMove) {
-        router.push('/chat');
+    try {
+      const roomId = await jobStore.updateApplicationStatus(app.id, 'ACCEPTED');
+      if (roomId) {
+        const shouldMove = confirm('채팅방이 생성되었습니다. 이동하겠습니까?');
+        if (shouldMove) {
+          router.push('/chat');
+        }
       }
+      alert('지원이 수락되었습니다!');
+    } catch (error: any) {
+      console.error('Failed to accept application:', error);
+      alert(error?.response?.data?.message || error?.message || '지원 수락에 실패했습니다.');
     }
-    alert('지원이 수락되었습니다!');
   }
 };
 
@@ -306,7 +317,18 @@ const formatDate = (date: Date | string) => {
           <h2 class="text-2xl font-bold">내가 받은 지원서</h2>
         </div>
 
-        <div v-if="myReceivedApplications.length === 0" class="text-center py-10 text-white/40">
+        <div v-if="jobStore.isFetchingApplications" class="text-center py-10 text-white/40">
+          지원 목록을 불러오는 중입니다.
+        </div>
+
+        <div
+          v-else-if="jobStore.applicationFetchError"
+          class="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200"
+        >
+          {{ jobStore.applicationFetchError }}
+        </div>
+
+        <div v-else-if="myReceivedApplications.length === 0" class="text-center py-10 text-white/40">
           아직 받은 지원서가 없습니다.
         </div>
 

@@ -2,7 +2,16 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
+import { getUserById } from '@/api/authApi';
 import type { Application, JobPosting, JobStatus } from '@/types';
+import {
+    acceptEmployerApplication,
+    createFreelancerApplication,
+    getEmployerApplications,
+    getFreelancerApplications,
+    rejectEmployerApplication,
+    type ApplicationResponseDto
+} from '@/api/applicationApi';
 import {
     addFavoriteJobPosting,
     createEmployerJobPosting,
@@ -45,6 +54,13 @@ const toNumericJobPostingId = (jobId: string): number => {
         throw new Error('유효하지 않은 공고 ID입니다.');
     }
     return Number(jobId);
+};
+
+const toNumericApplicationId = (applicationId: string): number => {
+    if (!/^\d+$/.test(applicationId)) {
+        throw new Error('유효하지 않은 지원 ID입니다.');
+    }
+    return Number(applicationId);
 };
 
 const mapEmployerJobPosting = (
@@ -101,6 +117,15 @@ const mapFreelancerApiToUiJobPosting = (posting: FreelancerJobPostingResponse): 
 };
 
 const getErrorMessage = (error: unknown): string => {
+    if (
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as any).response?.data?.message === 'string'
+    ) {
+        return (error as any).response.data.message;
+    }
+
     if (error instanceof Error && error.message) {
         return error.message;
     }
@@ -113,9 +138,10 @@ export const useJobStore = defineStore('job', () => {
     const jobPostings = ref<JobPosting[]>([]);
     const isLoading = ref(false);
     const errorMessage = ref<string | null>(null);
-
-    // Applications are still local until backend endpoints are available.
     const applications = ref<Application[]>([]);
+    const isFetchingApplications = ref(false);
+    const applicationFetchError = ref<string | null>(null);
+    const userNameCache: Record<string, string> = {};
 
     const myJobs = computed(() => {
         if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
@@ -127,6 +153,54 @@ export const useJobStore = defineStore('job', () => {
     });
 
     const getJobById = (id: string) => jobPostings.value.find((job) => job.id === id);
+
+    const getCurrentFreelancerName = () => authStore.user?.name || '프리랜서';
+
+    async function resolveUserNames(userIds: Array<string | number>): Promise<Record<string, string>> {
+        const uniqueIds = Array.from(new Set(userIds.map((id) => String(id)).filter(Boolean)));
+        const missingIds = uniqueIds.filter((id) => !userNameCache[id]);
+
+        await Promise.all(
+            missingIds.map(async (id) => {
+                try {
+                    const user = await getUserById(Number(id));
+                    userNameCache[id] = user?.name || '';
+                } catch {
+                    userNameCache[id] = '';
+                }
+            })
+        );
+
+        return uniqueIds.reduce<Record<string, string>>((acc, id) => {
+            if (userNameCache[id]) {
+                acc[id] = userNameCache[id];
+            }
+            return acc;
+        }, {});
+    }
+
+    function mapApplication(dto: ApplicationResponseDto, names: Record<string, string>): Application {
+        const currentUserId = String(authStore.user?.id ?? '');
+        const freelancerName =
+            String(dto.freelancerId) === currentUserId && authStore.user?.role === 'FREELANCER'
+                ? getCurrentFreelancerName()
+                : names[String(dto.freelancerId)] || `프리랜서 #${dto.freelancerId}`;
+
+        return {
+            id: String(dto.applicationId),
+            jobId: String(dto.jobPostingId),
+            freelancerId: String(dto.freelancerId),
+            freelancerName,
+            message: dto.message,
+            status: dto.status,
+            createdAt: new Date(dto.createdAt)
+        };
+    }
+
+    async function hydrateApplications(items: ApplicationResponseDto[]): Promise<Application[]> {
+        const names = await resolveUserNames(items.map((item) => item.freelancerId));
+        return items.map((item) => mapApplication(item, names));
+    }
 
     const isFavorite = (id: string): boolean => {
         const target = getJobById(id);
@@ -163,6 +237,50 @@ export const useJobStore = defineStore('job', () => {
             throw error;
         } finally {
             isLoading.value = false;
+        }
+    }
+
+    async function fetchEmployerApplications(page = 0, size = 100) {
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
+            applications.value = [];
+            return;
+        }
+
+        isFetchingApplications.value = true;
+        applicationFetchError.value = null;
+
+        try {
+            const response = await getEmployerApplications(page, size);
+            applications.value = await hydrateApplications(response.content ?? []);
+            return response;
+        } catch (error) {
+            applications.value = [];
+            applicationFetchError.value = getErrorMessage(error);
+            throw error;
+        } finally {
+            isFetchingApplications.value = false;
+        }
+    }
+
+    async function fetchFreelancerApplications(page = 0, size = 100) {
+        if (!authStore.user || authStore.user.role !== 'FREELANCER') {
+            applications.value = [];
+            return;
+        }
+
+        isFetchingApplications.value = true;
+        applicationFetchError.value = null;
+
+        try {
+            const response = await getFreelancerApplications(page, size);
+            applications.value = await hydrateApplications(response.content ?? []);
+            return response;
+        } catch (error) {
+            applications.value = [];
+            applicationFetchError.value = getErrorMessage(error);
+            throw error;
+        } finally {
+            isFetchingApplications.value = false;
         }
     }
 
@@ -241,13 +359,24 @@ export const useJobStore = defineStore('job', () => {
         return applications.value.filter((app) => app.jobId === jobId);
     }
 
-    function addApplication(app: Omit<Application, 'id' | 'createdAt'>) {
+    async function addApplication(app: Omit<Application, 'id' | 'createdAt'>): Promise<Application> {
+        if (!authStore.user || authStore.user.role !== 'FREELANCER') {
+            throw new Error('프리랜서만 지원할 수 있습니다.');
+        }
+
+        applicationFetchError.value = null;
+        const result = await createFreelancerApplication({
+            jobPostingId: toNumericJobPostingId(app.jobId),
+            message: app.message
+        });
+
         const newApp: Application = {
             ...app,
-            id: `app-${Date.now()}`,
+            id: String(result.applicationId),
             createdAt: new Date()
         };
-        applications.value.push(newApp);
+        applications.value = [newApp, ...applications.value.filter((item) => item.id !== newApp.id)];
+        return newApp;
     }
 
     async function updateApplicationStatus(
@@ -255,14 +384,28 @@ export const useJobStore = defineStore('job', () => {
         status: Application['status'],
         rejectionReason?: string
     ): Promise<string | null> {
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
+            throw new Error('고용주만 지원 상태를 변경할 수 있습니다.');
+        }
+
         const index = applications.value.findIndex((app) => app.id === id);
         if (index === -1) return null;
+
+        if (status === 'ACCEPTED') {
+            await acceptEmployerApplication(toNumericApplicationId(id));
+        } else if (status === 'REJECTED') {
+            await rejectEmployerApplication(toNumericApplicationId(id));
+        }
 
         applications.value[index] = {
             ...applications.value[index],
             status,
             rejectionReason
         };
+
+        await fetchJobPostings().catch((error) => {
+            console.warn('Failed to refresh job postings after application status update:', error);
+        });
 
         if (status === 'ACCEPTED') {
             const chatStore = useChatStore();
@@ -302,10 +445,14 @@ export const useJobStore = defineStore('job', () => {
         jobPostings,
         myJobs,
         applications,
+        isFetchingApplications,
+        applicationFetchError,
         isLoading,
         errorMessage,
         getJobById,
         fetchJobPostings,
+        fetchEmployerApplications,
+        fetchFreelancerApplications,
         addJobPosting,
         updateJobPosting,
         deleteJobPosting,
