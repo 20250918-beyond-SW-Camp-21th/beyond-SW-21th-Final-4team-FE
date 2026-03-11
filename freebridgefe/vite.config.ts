@@ -9,6 +9,15 @@ export default defineConfig({
     // sockjs-client uses Node.js 'global' variable → polyfill for browser
     global: 'globalThis',
   },
+  server: {
+    // Route local dev API calls to the Spring backend when no absolute base URL is configured.
+    proxy: {
+      '/api': {
+        target: process.env.VITE_DEV_API_PROXY_TARGET || 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
