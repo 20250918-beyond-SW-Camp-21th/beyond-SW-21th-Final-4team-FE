@@ -222,53 +222,12 @@ const getFreelancerStatusColor = (status: string) => {
             </div>
         </div>
 
-        <div class="w-full h-px bg-white/10"></div>
-
-        <!-- 4. Freelancers & Contract Info -->
-        <div>
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="flex items-center gap-2 text-lg font-bold text-white">
-                    <Users class="w-5 h-5 text-purple-400" />
-                    참여 프리랜서 및 계약 정보
-                </h3>
-                <span class="px-3 py-1 text-xs font-bold text-purple-300 border bg-purple-500/10 border-purple-500/20 rounded-lg">
-                    총 {{ project.freelancers.length }}명 참여중
-                </span>
-            </div>
-
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <div
-                    v-for="freelancer in project.freelancers"
-                    :key="freelancer.id"
-                    class="flex items-center justify-between p-4 transition-all border group bg-white/5 hover:bg-white/10 rounded-xl border-white/5 hover:border-blue-500/30"
-                >
-                    <div class="flex items-center gap-4">
-                        <div class="flex items-center justify-center w-10 h-10 text-base font-bold text-white rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg ring-2 ring-white/10">
-                            {{ freelancer.name.charAt(0) }}
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">{{ freelancer.name }}</span>
-                                <span class="px-2 py-0.5 text-[10px] font-bold border rounded-md" :class="getFreelancerStatusColor(freelancer.status)">
-                                    {{ freelancer.status === 'ACTIVE' ? '계약중' : '종료' }}
-                                </span>
-                            </div>
-                            <div class="text-xs text-slate-400 mt-0.5">{{ freelancer.role }} | <span class="font-mono text-slate-500">{{ freelancer.contractPeriod }}</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
       </div>
 
       <!-- Footer Actions -->
-      <div class="sticky bottom-0 z-10 p-6 border-t bg-[#1e293b] border-white/10 flex justify-end gap-3">
+      <div class="sticky bottom-0 z-10 p-6 border-t bg-[#1e293b] border-white/10 flex justify-end">
           <button @click="$emit('close')" class="px-6 py-2.5 text-sm font-bold text-slate-300 hover:text-white bg-white/5 hover:bg-white/10 rounded-xl transition-colors">
               닫기
-          </button>
-          <button class="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition-colors shadow-lg shadow-blue-500/20">
-              프로젝트 수정
           </button>
       </div>
 

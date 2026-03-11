@@ -126,15 +126,30 @@ const formatDate = (value?: string | null) => {
   return value;
 };
 
+const calculateProgress = (start?: string | null, end?: string | null) => {
+  if (!start || !end) return 0;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return 0;
+  if (endDate <= startDate) return 0;
+  const now = new Date();
+  if (now <= startDate) return 0;
+  if (now >= endDate) return 100;
+  const total = endDate.getTime() - startDate.getTime();
+  const elapsed = now.getTime() - startDate.getTime();
+  const percent = Math.floor((elapsed / total) * 100);
+  return Math.min(100, Math.max(0, percent));
+};
+
 const mapProject = (item: EmployerProjectListItem): Project => ({
   id: String(item.projectId ?? ''),
   title: item.title ?? '',
   status: normalizeStatus(item.status),
   startDate: formatDate(item.createdAt),
   endDate: formatDate(item.deadline),
-  progress: 0,
-  description: '프로젝트 설명이 없습니다.',
-  budget: '-',
+  progress: calculateProgress(item.createdAt, item.deadline),
+  description: item.description ?? '프로젝트 설명이 없습니다.',
+  budget: item.monthlySalary != null ? item.monthlySalary.toString() : '-',
   freelancers: []
 });
 
@@ -222,48 +237,44 @@ onMounted(() => {
             v-for="(project, index) in filteredProjects"
             :key="project.id"
             @click="openModal(project)"
-            class="group bg-[#1e293b]/50 border border-white/10 rounded-2xl p-6 hover:border-blue-500/30 transition-all hover:bg-[#1e293b] flex flex-col aspect-[4/5] relative overflow-hidden shadow-lg cursor-pointer"
+            class="group rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md shadow-[0_12px_28px_rgba(0,0,0,0.3)] hover:border-white/20 hover:bg-white/10 transition-all duration-300 flex flex-col aspect-[4/5] relative overflow-hidden cursor-pointer"
             v-motion
             :initial="{ opacity: 0, scale: 0.95 }"
             :enter="{ opacity: 1, scale: 1, transition: { delay: index * 0.05 } }"
         >
              <!-- Header: Status & Title -->
-             <div class="mb-4">
-                 <div class="flex justify-between items-start mb-3">
-                     <span class="px-3 py-1 rounded-lg text-xs font-bold border flex items-center gap-1.5"
-                        :class="`${getStatusConfig(project.status).color} ${getStatusConfig(project.status).bg} ${getStatusConfig(project.status).border}`"
+             <div class="mb-5">
+                 <div class="flex justify-between items-start mb-2">
+                     <span class="px-3 py-1 rounded-full text-[11px] font-semibold border flex items-center gap-1.5 bg-white/10 border-white/15 text-white/80"
+                        :class="`${getStatusConfig(project.status).border}`"
                      >
                         <component :is="getStatusConfig(project.status).icon" class="w-3.5 h-3.5" />
                         {{ getStatusConfig(project.status).label }}
                      </span>
-                     <span class="text-xs text-slate-500 font-medium font-mono">
-                        {{ project.startDate }} ~
+                     <span class="text-[11px] text-slate-400 font-medium">
+                        {{ project.startDate }} ~ {{ project.endDate }}
                      </span>
                  </div>
-                 <h3 class="font-bold text-white text-xl leading-snug group-hover:text-blue-400 transition-colors">
+                 <h3 class="font-semibold text-white text-lg leading-snug tracking-tight">
                     {{ project.title }}
                 </h3>
              </div>
 
             <!-- Project Simple Info -->
-            <div class="flex-1 bg-white/5 rounded-xl p-5 border border-white/5 flex flex-col mb-4">
-                 <div class="text-xs font-bold text-slate-300 mb-2 flex items-center gap-2">
-                    <Briefcase class="w-4 h-4 text-blue-400" />
-                    프로젝트 설명
-                 </div>
-                 <p class="text-sm text-slate-400 leading-relaxed mb-4">
+            <div class="flex-1 flex flex-col gap-4 mb-4">
+                 <p class="text-sm text-slate-300 leading-relaxed line-clamp-3">
                     {{ project.description }}
                  </p>
 
-                 <div class="mt-auto pt-4 border-t border-white/5">
+                 <div class="mt-auto pt-4 border-t border-white/10">
                      <div class="grid grid-cols-2 gap-4">
                          <div>
-                             <div class="text-[10px] text-slate-500 mb-1">예산</div>
-                             <div class="text-sm font-bold text-white">{{ project.budget }}</div>
+                            <div class="text-[10px] text-slate-500 mb-1">월급</div>
+                             <div class="text-sm font-semibold text-white">{{ project.budget }}</div>
                          </div>
                          <div>
                              <div class="text-[10px] text-slate-500 mb-1">종료일</div>
-                             <div class="text-sm font-bold text-white">{{ project.endDate }}</div>
+                             <div class="text-sm font-semibold text-white">{{ project.endDate }}</div>
                          </div>
                      </div>
                  </div>
