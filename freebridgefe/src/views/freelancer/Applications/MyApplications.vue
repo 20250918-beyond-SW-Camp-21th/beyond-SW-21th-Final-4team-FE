@@ -24,9 +24,10 @@ const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
 
 onMounted(async () => {
-  const [jobsResult, proposalsResult] = await Promise.allSettled([
+  const [jobsResult, proposalsResult, applicationsResult] = await Promise.allSettled([
     jobStore.fetchJobPostings(),
     freelancerStore.fetchFreelancerProposals(),
+    jobStore.fetchFreelancerApplications(),
   ]);
 
   if (jobsResult.status === 'rejected') {
@@ -37,6 +38,11 @@ onMounted(async () => {
   if (proposalsResult.status === 'rejected') {
     console.error('Failed to load freelancer proposals:', proposalsResult.reason);
     window.alert('받은 제안 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  }
+
+  if (applicationsResult.status === 'rejected') {
+    console.error('Failed to load freelancer applications:', applicationsResult.reason);
+    window.alert('지원 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
   }
 });
 
@@ -414,7 +420,18 @@ const handleRejectProposal = async (proposalId: string) => {
           <h2 class="text-2xl font-bold">내가 보낸 지원서</h2>
         </div>
 
-        <div class="space-y-4">
+        <div v-if="jobStore.isFetchingApplications" class="text-center py-10 text-white/40">
+          지원 목록을 불러오는 중입니다.
+        </div>
+
+        <div
+          v-else-if="jobStore.applicationFetchError"
+          class="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200"
+        >
+          {{ jobStore.applicationFetchError }}
+        </div>
+
+        <div v-else class="space-y-4">
           <div v-if="myApplications.length === 0" class="text-center py-10 text-white/40">
             아직 보낸 지원서가 없습니다.
           </div>
