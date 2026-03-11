@@ -182,8 +182,8 @@ const topCrmBanner = computed(() => {
   if (alerts?.upsellTarget === 'PRO' || alerts?.isPremiumUpsellEligible) {
     return {
       label: 'PRO 업그레이드',
-      title: '추천 기능과 더 넓은 조회 범위를 경험하세요',
-      description: 'PRO 플랜으로 업그레이드하고 더 빠른 매칭과 수수료 할인 혜택을 받아보세요.'
+      title: '수수료 할인과 추천 프리랜서로 매칭 효율을 높이세요',
+      description: 'PRO 플랜으로 업그레이드하고 추천 프리랜서 우선 노출과 수수료 할인 혜택을 받아보세요.'
     };
   }
   if (alerts?.upsellTarget === 'PRIME' || alerts?.isPrimeUpsellEligible) {
@@ -287,10 +287,10 @@ const safeWebsiteUrl = computed(() => {
 
 <template>
   <div class="min-h-[calc(100vh-80px)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans">
-    <div class="flex flex-col lg:flex-row h-full overflow-hidden">
+    <div class="flex flex-col lg:flex-row h-full overflow-hidden lg:relative">
       <!-- Sidebar -->
       <div
-        class="w-full lg:w-72 bg-white/5 backdrop-blur-2xl border-b lg:border-b-0 lg:border-r border-white/5 shadow-[inset_-1px_0_0_rgba(255,255,255,0.05)] flex flex-col"
+        class="w-full lg:w-72 bg-white/5 backdrop-blur-2xl border-b lg:border-b-0 lg:border-r border-white/5 shadow-[inset_-1px_0_0_rgba(255,255,255,0.05)] flex flex-col lg:fixed lg:top-0 lg:left-0 lg:h-screen"
         v-motion
         :initial="{ x: -300 }"
         :enter="{ x: 0 }"
@@ -338,7 +338,7 @@ const safeWebsiteUrl = computed(() => {
       </div>
 
       <!-- Main Content -->
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto lg:pl-72">
         <div class="p-6 md:p-8 w-full max-w-6xl mx-auto">
             <!-- Dynamic Content Rendering -->
             <EmployerProfileManagement v-if="activeTab === 'profile'" @back="activeTab = 'dashboard'" />
@@ -375,7 +375,7 @@ const safeWebsiteUrl = computed(() => {
               <!-- CRM Upsell Banner (Option A) -->
               <div 
                   v-if="topCrmBanner && !hideUpsellAlert" 
-                  class="bg-gradient-to-r from-indigo-600/20 to-purple-600/20 border border-indigo-500/30 rounded-2xl p-6 relative overflow-hidden"
+                  class="relative overflow-hidden rounded-[28px] border border-white/20 bg-white/10 p-6 shadow-[0_20px_60px_-35px_rgba(255,255,255,0.25)]"
                   v-motion :initial="{ opacity: 0, y: -20 }" :enter="{ opacity: 1, y: 0 }"
               >
                   <div class="absolute top-0 right-0 p-4">
@@ -385,28 +385,28 @@ const safeWebsiteUrl = computed(() => {
                   </div>
                   
                   <!-- Glow effects -->
-                  <div class="absolute -top-12 -left-12 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
-                  <div class="absolute -bottom-12 right-12 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl"></div>
+                  <div class="absolute -top-16 -left-16 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
+                  <div class="absolute -bottom-16 right-12 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
                   
                   <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                       <div class="flex items-start gap-4">
-                          <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20">
-                              <TrendingUp class="w-6 h-6 text-white" />
+                          <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.35)]">
+                              <TrendingUp class="w-5 h-5 text-white/80" />
                           </div>
                           <div>
                               <div class="flex items-center gap-2 mb-1">
-                                  <h3 class="text-lg font-bold text-white">{{ topCrmBanner.title }}</h3>
-                                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-500 text-white uppercase tracking-wider">
+                                  <h3 class="text-lg font-semibold text-white">{{ topCrmBanner.title }}</h3>
+                                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-white/70 uppercase tracking-[0.2em] border border-white/10">
                                       {{ topCrmBanner.label }}
                                   </span>
                               </div>
-                              <p class="text-sm text-indigo-100/80 leading-relaxed">
+                              <p class="text-sm text-white/70 leading-relaxed">
                                   {{ topCrmBanner.description }}
                               </p>
                           </div>
                       </div>
-                      <button @click="activeTab = 'account'" class="shrink-0 w-full md:w-auto px-6 py-3 bg-white text-indigo-900 hover:bg-indigo-50 font-bold rounded-xl transition-colors shadow-lg shadow-white/10 flex items-center justify-center gap-2">
-                          <Crown class="w-5 h-5" />
+                      <button @click="activeTab = 'account'" class="shrink-0 w-full md:w-auto px-6 py-3 bg-white text-slate-900 hover:bg-white/90 font-semibold rounded-full transition-colors shadow-[0_18px_40px_-28px_rgba(255,255,255,0.45)] flex items-center justify-center gap-2">
+                          <Crown class="w-5 h-5 text-slate-900" />
                           요금제 업그레이드
                       </button>
                   </div>
