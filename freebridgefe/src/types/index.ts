@@ -126,6 +126,7 @@ export interface ChatRoom {
   participantNames: { [userId: string]: string }; // Cached names
   lastMessage?: ChatMessage;
   unreadCount: { [userId: string]: number };
+  participantPresence?: { [userId: string]: boolean };
   relatedJobId?: string;
   relatedApplicationId?: string;
   relatedProposalId?: string;
