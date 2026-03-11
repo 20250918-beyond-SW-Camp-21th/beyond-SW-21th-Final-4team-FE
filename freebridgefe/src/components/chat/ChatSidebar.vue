@@ -185,11 +185,11 @@ function getRoomPresence(room: ChatRoom): ChatRoomWithPresence {
 
 function hasPresenceSignal(room: ChatRoom) {
     const roomWithPresence = getRoomPresence(room);
-    return (
-        Array.isArray(roomWithPresence.onlineParticipantIds) ||
-        typeof roomWithPresence.presence === 'object' ||
-        typeof roomWithPresence.participantPresence === 'object'
-    );
+    const hasOnlineParticipantIds = Array.isArray(roomWithPresence.onlineParticipantIds) && roomWithPresence.onlineParticipantIds.length > 0;
+    const hasPresenceMap = roomWithPresence.presence != null && Object.keys(roomWithPresence.presence).length > 0;
+    const hasParticipantPresenceMap = roomWithPresence.participantPresence != null && Object.keys(roomWithPresence.participantPresence).length > 0;
+
+    return hasOnlineParticipantIds || hasPresenceMap || hasParticipantPresenceMap;
 }
 
 function isOtherParticipantOnline(room: ChatRoom) {
