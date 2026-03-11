@@ -19,6 +19,32 @@ export interface EmployerReputationAi {
     negativeKeywords: string[];
 }
 
+export interface FreelancerReviewSummary {
+    averageRate: number;
+    topPercentile: number;
+    expertiseRate: number;
+    communicationRate: number;
+    scheduleRate: number;
+}
+
+export interface FreelancerAiReputationReport {
+    summary: string;
+    strengths: string[];
+    weaknesses: string[];
+    technicalScores: { name: string; score: number }[];
+    softSkills: { name: string; score: number }[];
+}
+
+export interface FreelancerAiPositivityIndex {
+    positivityScore: number;
+    grade: string;
+}
+
+export interface FreelancerStrengthWeakness {
+    strengths: string[];
+    weaknesses: string[];
+}
+
 export interface DetailedScore {
     professionalism: {
         programming: number;
@@ -43,72 +69,6 @@ export interface Evaluation {
     detailedScores: DetailedScore;
 }
 
-export const MOCK_EVALUATIONS: Evaluation[] = [
-    {
-        id: 1,
-        companyName: '(주)테크인',
-        projectName: '사내 관리자 대시보드 구축',
-        score: 4.8,
-        comment: '전반적인 개발 실력이 매우 뛰어납니다. 특히 복잡한 요구사항을 기술적으로 잘 풀어내주셨습니다. 일정 관리도 완벽했습니다.',
-        tags: ['소통이 원활해요', '일정이 정확해요', '결과물이 훌륭해요'],
-        createdAt: '2025-11-20',
-        detailedScores: {
-            professionalism: {
-                programming: 5,
-                framework: 4.5,
-                problemSolving: 5
-            },
-            collaboration: {
-                communication: 5,
-                scheduleAdherence: 5,
-                dispute: 4.5
-            }
-        }
-    },
-    {
-        id: 2,
-        companyName: '스타트업 A',
-        projectName: '랜딩 페이지 리뉴얼',
-        score: 4.2,
-        comment: '디자인 감각이 좋으셔서 기획 의도보다 더 예쁜 결과물이 나왔습니다. 다만 초기 소통 과정에서 약간의 오해가 있었지만 잘 해결되었습니다.',
-        tags: ['감각적이에요', '피드백이 빨라요'],
-        createdAt: '2025-10-15',
-        detailedScores: {
-            professionalism: {
-                programming: 4,
-                framework: 4.5,
-                problemSolving: 4
-            },
-            collaboration: {
-                communication: 3.5,
-                scheduleAdherence: 4.5,
-                dispute: 4
-            }
-        }
-    },
-    {
-        id: 3,
-        companyName: '솔루션 B',
-        projectName: 'API 연동 모듈 개발',
-        score: 5.0,
-        comment: '기술적인 난이도가 높은 작업이었는데, 문제 해결 능력이 탁월하십니다. 코드 퀄리티도 매우 만족스러워 유지보수가 쉬울 것 같습니다.',
-        tags: ['기술력이 좋아요', '코드가 깔끔해요'],
-        createdAt: '2025-09-01',
-        detailedScores: {
-            professionalism: {
-                programming: 5,
-                framework: 5,
-                problemSolving: 5
-            },
-            collaboration: {
-                communication: 5,
-                scheduleAdherence: 5,
-                dispute: 5
-            }
-        }
-    }
-];
-
 export interface RejectionFeedback {
     id: number;
     companyName: string;
@@ -118,41 +78,14 @@ export interface RejectionFeedback {
     tags?: string[];
 }
 
-export const MOCK_REJECTION_FEEDBACKS: RejectionFeedback[] = [
-    {
-        id: 1,
-        companyName: '넥스트레벨',
-        projectName: '쇼핑몰 고도화 프로젝트',
-        reason: '포트폴리오는 훌륭했으나, 저희가 현재 도입하려는 Vue 3 Composition API 경험이 다소 부족해 보여 아쉽게도 함께하지 못하게 되었습니다.',
-        createdAt: '2025-12-05',
-        tags: ['기술 스택 불일치']
-    },
-    {
-        id: 2,
-        companyName: 'Global IT',
-        projectName: '사내 메신저 개발',
-        reason: '제시해주신 견적이 저희 내부 예산 범위를 초과하여 부득이하게 계약을 진행하기 어렵게 되었습니다.',
-        createdAt: '2025-11-10',
-        tags: ['예산 초과']
-    }
-];
-
-export const getRejectionFeedbacks = async (userId: number): Promise<RejectionFeedback[]> => {
-    console.log(`Fetching rejection feedbacks for user ${userId}`);
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(MOCK_REJECTION_FEEDBACKS);
-        }, 500);
-    });
+// NOTE: Backend endpoints are not available yet. Throw to let UI show "coming soon".
+export const getRejectionFeedbacks = async (_userId: number | 'guest'): Promise<RejectionFeedback[]> => {
+    throw new Error('API not implemented: rejection feedbacks unavailable');
 };
 
-export const getEvaluations = async (userId: number): Promise<Evaluation[]> => {
-    console.log(`Fetching evaluations for user ${userId}`);
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(MOCK_EVALUATIONS);
-        }, 500);
-    });
+// NOTE: Backend endpoints are not available yet. Throw to let UI show "coming soon".
+export const getEvaluations = async (_userId: number | 'guest'): Promise<Evaluation[]> => {
+    throw new Error('API not implemented: evaluations unavailable');
 };
 
 export const getEmployerReviewSummary = async (): Promise<EmployerReviewSummary> => {
@@ -166,5 +99,49 @@ export const getEmployerReputationAi = async (): Promise<EmployerReputationAi> =
     const response = await apiClient.get<ApiResponse<EmployerReputationAi>>(
         '/api/employer/mypage/reputation/ai'
     );
+    return response.data.data;
+};
+
+export const getFreelancerReviewSummary = async (): Promise<FreelancerReviewSummary> => {
+    const response = await apiClient.get<ApiResponse<FreelancerReviewSummary>>(
+        '/api/freelancer/mypage/reviews/summary'
+    );
+    if (!response.data.success || response.data.data == null) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`getFreelancerReviewSummary failed (/api/freelancer/mypage/reviews/summary): ${message}`);
+    }
+    return response.data.data;
+};
+
+export const getFreelancerAiReputationReport = async (): Promise<FreelancerAiReputationReport> => {
+    const response = await apiClient.get<ApiResponse<FreelancerAiReputationReport>>(
+        '/api/freelancer/mypage/reviews/ai/report'
+    );
+    if (!response.data.success || response.data.data == null) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`getFreelancerAiReputationReport failed (/api/freelancer/mypage/reviews/ai/report): ${message}`);
+    }
+    return response.data.data;
+};
+
+export const getFreelancerAiPositivityIndex = async (): Promise<FreelancerAiPositivityIndex> => {
+    const response = await apiClient.get<ApiResponse<FreelancerAiPositivityIndex>>(
+        '/api/freelancer/mypage/reviews/ai/positivity'
+    );
+    if (!response.data.success || response.data.data == null) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`getFreelancerAiPositivityIndex failed (/api/freelancer/mypage/reviews/ai/positivity): ${message}`);
+    }
+    return response.data.data;
+};
+
+export const getFreelancerStrengthWeakness = async (): Promise<FreelancerStrengthWeakness> => {
+    const response = await apiClient.get<ApiResponse<FreelancerStrengthWeakness>>(
+        '/api/freelancer/mypage/reviews/ai/strength-weakness'
+    );
+    if (!response.data.success || response.data.data == null) {
+        const message = response.data.message ?? 'Unknown error';
+        throw new Error(`getFreelancerStrengthWeakness failed (/api/freelancer/mypage/reviews/ai/strength-weakness): ${message}`);
+    }
     return response.data.data;
 };

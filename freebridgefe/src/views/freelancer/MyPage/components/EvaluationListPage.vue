@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted, computed } from "vue";
 import { useMotion } from "@vueuse/motion";
 import {
@@ -16,6 +16,8 @@ import {
 import {
   getEvaluations,
   getRejectionFeedbacks,
+  getFreelancerAiReputationReport,
+  type FreelancerAiReputationReport,
   type Evaluation,
   type RejectionFeedback,
 } from "@/api/MyPage/evaluationApi";
@@ -34,34 +36,50 @@ const authStore = useAuthStore();
 const evaluations = ref<Evaluation[]>([]);
 const rejectionFeedbacks = ref<RejectionFeedback[]>([]);
 const isLoading = ref(true);
+const evaluationsUnavailable = ref(false);
+const rejectionUnavailable = ref(false);
 
 const activeTab = ref<"evaluation" | "rejection">("evaluation");
 
 // 필터 상태 (Sort removed)
 const searchQuery = ref("");
 
+const isUnavailableError = (error: unknown) =>
+  error instanceof Error && error.message.includes("API not implemented");
+
 onMounted(async () => {
   try {
     isLoading.value = true;
+    evaluationsUnavailable.value = false;
+    rejectionUnavailable.value = false;
     const userId = authStore.user?.id || "guest";
-    // Mock API Calls
-    const [evalData, rejectionData] = await Promise.all([
+    const [evalResult, rejectionResult] = await Promise.allSettled([
       getEvaluations(userId),
       getRejectionFeedbacks(userId),
     ]);
-    evaluations.value = evalData || [];
-    rejectionFeedbacks.value = rejectionData || [];
-  } catch (e) {
-    console.error("Failed to fetch data", e);
-    // Explicitly set to empty array on error to break out of loading loops securely
-    evaluations.value = [];
-    rejectionFeedbacks.value = [];
+
+    if (evalResult.status === "fulfilled") {
+      evaluations.value = evalResult.value || [];
+    } else {
+      console.error("Failed to fetch evaluations", evalResult.reason);
+      evaluations.value = [];
+    }
+
+    if (rejectionResult.status === "fulfilled") {
+      rejectionFeedbacks.value = rejectionResult.value || [];
+    } else if (isUnavailableError(rejectionResult.reason)) {
+      rejectionUnavailable.value = true;
+      rejectionFeedbacks.value = [];
+    } else {
+      console.error("Failed to fetch rejection feedbacks", rejectionResult.reason);
+      rejectionFeedbacks.value = [];
+    }
   } finally {
     isLoading.value = false;
   }
 });
 
-// Computed: 검색 로직 (거절 사유용 - 정렬은 최신순 고정)
+// Computed: 검색 로직 (거절 사유 모아보기
 const filteredRejections = computed(() => {
   let result = [...rejectionFeedbacks.value];
 
@@ -82,7 +100,7 @@ const filteredRejections = computed(() => {
   return result;
 });
 
-// Computed: 평균 평점 (from props if available, else from list)
+// Computed: 평균 평점 (props 우선, 없으면 목록 기반)
 const averageScore = computed(() => {
   if (props.profile?.averageRating !== undefined) {
     return Number(props.profile.averageRating).toFixed(1);
@@ -102,38 +120,44 @@ const professionalismScore = computed(() => {
   return ((programming + framework + problemSolving) / 3).toFixed(1);
 });
 
-// Computed: 협업 능력 평균 점수
+// Computed: 협업 역량 평균 점수
 const collaborationScore = computed(() => {
   if (!props.profile?.collaboration) return "0.0";
   const { communication, scheduleAdherence, dispute } =
     props.profile.collaboration;
   return ((communication + scheduleAdherence + dispute) / 3).toFixed(1);
 });
-// 평가 항목 한글 매핑 및 설명
+// 평점 지표 설명
 const metricDefinitions: Record<string, { label: string; desc: string }> = {
   // 전문성
   programming: {
     label: "프로그래밍 구현",
-    desc: "코드 품질 및 구조 설계 역량",
+    desc: "코드 완성도 및 구현 속도",
   },
-  framework: { label: "프레임워크 활용", desc: "최신 기술 도구 활용 능력" },
+  framework: { label: "프레임워크 활용", desc: "최신 기술 적응 및 활용 능력" },
   problemSolving: { label: "문제 해결 능력", desc: "이슈 원인 분석 및 해결" },
   // 협업
-  communication: { label: "의사소통", desc: "명확하고 원활한 의견 교환" },
-  scheduleAdherence: { label: "일정 준수", desc: "마감 기한 및 마일스톤 엄수" },
-  dispute: { label: "유연성/대처", desc: "갈등 관리 및 상황 대처 능력" },
+  communication: { label: "의사소통", desc: "명확하고 효율적인 커뮤니케이션" },
+  scheduleAdherence: { label: "일정 준수", desc: "마감 기한 및 일정 준수" },
+  dispute: { label: "분쟁 관리", desc: "갈등 관리 및 상황 해결 능력" },
 };
 
 // AI 분석 상태
 const showAiAnalysis = ref(false);
 const isAiAnalyzing = ref(false);
+const aiReport = ref<FreelancerAiReputationReport | null>(null);
 
-const handleAiAnalysis = () => {
+const handleAiAnalysis = async () => {
   isAiAnalyzing.value = true;
-  setTimeout(() => {
-    isAiAnalyzing.value = false;
+  try {
+    aiReport.value = await getFreelancerAiReputationReport();
     showAiAnalysis.value = true;
-  }, 1500); // 1.5초 로딩 시뮬레이션
+  } catch (e) {
+    console.error("Failed to fetch AI report", e);
+    showAiAnalysis.value = true;
+  } finally {
+    isAiAnalyzing.value = false;
+  }
 };
 </script>
 
@@ -152,9 +176,12 @@ const handleAiAnalysis = () => {
           받은 평가 관리
         </h1>
         <p class="text-base text-slate-400 mt-1">
-          프로젝트 완료 후 받은 고용주의 평가를 확인하세요.
+          프로젝트 종료 후 받은 고용주 평가를 확인하세요.
         </p>
       </div>
+
+
+
     </div>
 
     <!-- Tabs -->
@@ -170,7 +197,7 @@ const handleAiAnalysis = () => {
             : 'text-slate-400 hover:text-white'
         "
       >
-        내 평가 분석
+        평가 분석
       </button>
       <button
         @click="activeTab = 'rejection'"
@@ -181,7 +208,7 @@ const handleAiAnalysis = () => {
             : 'text-slate-400 hover:text-white'
         "
       >
-        거절 사유
+        거절 사유 모아보기
       </button>
     </div>
 
@@ -192,6 +219,14 @@ const handleAiAnalysis = () => {
         <div
           class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"
         ></div>
+      </div>
+
+      <div
+        v-else-if="evaluationsUnavailable"
+        class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-3xl border border-white/10 border-dashed text-slate-400 animate-fade-in"
+      >
+        <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
+        <p>평가 기능이 준비 중입니다.</p>
       </div>
 
       <div v-else-if="props.profile">
@@ -215,16 +250,19 @@ const handleAiAnalysis = () => {
                 </div>
                 <div class="space-y-2">
                   <h2 class="text-2xl font-bold text-white leading-tight">
-                    AI 긍정 지수 분석 결과
+                    AI 평판 분석 결과
                   </h2>
                   <p class="text-slate-300 leading-relaxed max-w-3xl">
-                    AI가 고용주들의 평가 데이터를 바탕으로 현재 귀하의 평판
-                    등급과 강점/보완점을 도출했습니다. 현재 등급은
+                    AI가 고용주들의 평가 데이터를 바탕으로 현재 당신의 평판 등급과
+                    강점/보완점을 요약했습니다. 현재 등급은
                     <strong class="text-indigo-300">{{
                       props.profile.aiSummary?.grade || "미정"
-                    }}</strong
-                    >입니다.
+                    }}</strong>
+                    입니다.
                   </p>
+                <p v-if="aiReport?.summary" class="text-slate-300 text-sm mt-3">
+                  AI 요약: {{ aiReport.summary }}
+                </p>
                 </div>
               </div>
 
@@ -255,7 +293,7 @@ const handleAiAnalysis = () => {
                     <Activity class="w-4 h-4" />
                     평판 긍정 지수
                   </span>
-                  <span class="text-slate-400 text-xs">AI 종합 점수</span>
+                  <span class="text-slate-400 text-xs">AI 종합 지수</span>
                 </div>
               </div>
             </div>
@@ -295,7 +333,7 @@ const handleAiAnalysis = () => {
                     v-if="!props.profile.aiSummary.strengths?.length"
                     class="text-sm text-slate-500 italic"
                   >
-                    감지된 강점 데이터가 부족합니다.
+                    강점 데이터가 없습니다.
                   </li>
                 </ul>
               </div>
@@ -326,7 +364,7 @@ const handleAiAnalysis = () => {
                     v-if="!props.profile.aiSummary.weaknesses?.length"
                     class="text-sm text-slate-500 italic"
                   >
-                    감지된 보완점 데이터가 부족합니다.
+                    보완점 데이터가 없습니다.
                   </li>
                 </ul>
               </div>
@@ -356,10 +394,13 @@ const handleAiAnalysis = () => {
                 AI 평가 상세 분석
               </h2>
               <p class="text-slate-400 text-sm max-w-md">
-                프리브릿지 AI가 고용주들의 평가 데이터를 분석하여<br />
-                귀하의 강점과 보완점을 요약해드립니다.
+                프리브릿지 AI가 고용주 평가 데이터를 분석하여<br />
+                강점과 보완점을 요약해드립니다.
               </p>
             </div>
+
+
+
 
             <div class="relative z-10">
               <button
@@ -441,9 +482,9 @@ const handleAiAnalysis = () => {
                   <div class="p-2 bg-purple-500/10 rounded-lg">
                     <MessageSquare class="w-5 h-5 text-purple-400" />
                   </div>
-                  <span class="text-sm font-bold text-purple-400"
-                    >협업 능력</span
-                  >
+                  <span class="text-sm font-bold text-purple-400">협업 역량</span>
+
+
                 </div>
               </div>
               <div class="text-right">
@@ -505,17 +546,15 @@ const handleAiAnalysis = () => {
                     averageScore
                   }}</span>
                 </div>
-                <span class="block text-sm text-slate-400 font-medium"
-                  >/ 5.0 만점</span
-                >
+                <span class="block text-sm text-slate-400 font-medium">/ 5.0 만점</span>
               </div>
               <div class="mt-8 pt-6 border-t border-white/10 w-full">
                 <div class="text-sm text-slate-300">
                   상위
-                  <span class="font-bold text-yellow-400"
-                    >{{ props.profile?.topPercentile || 0 }}%</span
-                  >
-                  이내의<br />우수한 평가를 받고 있습니다.
+                  <span class="font-bold text-yellow-400">
+                    {{ props.profile?.topPercentile || 0 }}%
+                  </span>
+                  이내의 프리랜서 평가를 받고 있습니다.
                 </div>
               </div>
             </div>
@@ -530,13 +569,16 @@ const handleAiAnalysis = () => {
         <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
         <p>프로필 정보 또는 평가 데이터가 없습니다.</p>
       </div>
+
+
+
     </div>
 
     <template v-else-if="activeTab === 'rejection'">
       <!-- Section Title -->
       <div class="mb-6 border-b border-white/10 pb-4">
         <h3 class="text-lg font-bold text-white flex items-center gap-2">
-          거절 사유 후기
+          거절 사유 모아보기
           <span
             class="text-xs font-normal text-slate-400 px-2 py-0.5 bg-white/5 rounded-full"
             >{{ filteredRejections.length }}</span
@@ -566,14 +608,25 @@ const handleAiAnalysis = () => {
 
       <!-- Rejection List -->
       <template v-else>
-        <!-- Empty State -->
         <div
-          v-if="filteredRejections.length === 0"
+          v-if="rejectionUnavailable"
           class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-2xl border border-white/10 border-dashed text-slate-500"
         >
           <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
-          <p>거절 사유 후기가 없습니다.</p>
+          <p>거절 사유 기능이 준비 중입니다.</p>
         </div>
+
+        <!-- Empty State -->
+        <div
+          v-else-if="filteredRejections.length === 0"
+          class="flex flex-col items-center justify-center py-20 bg-white/5 rounded-2xl border border-white/10 border-dashed text-slate-500"
+        >
+          <MessageSquare class="w-12 h-12 mb-4 opacity-50" />
+          <p>거절 사유 데이터가 없습니다.</p>
+        </div>
+
+
+
 
         <!-- List -->
         <div v-else class="grid grid-cols-1 gap-4">
@@ -606,6 +659,9 @@ const handleAiAnalysis = () => {
                     {{ feedback.companyName }}
                   </p>
                 </div>
+
+
+
               </div>
               <div class="text-xs text-slate-500 flex items-center gap-1">
                 <Calendar class="w-3 h-3" />
@@ -634,3 +690,17 @@ const handleAiAnalysis = () => {
     </template>
   </div>
 </template>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

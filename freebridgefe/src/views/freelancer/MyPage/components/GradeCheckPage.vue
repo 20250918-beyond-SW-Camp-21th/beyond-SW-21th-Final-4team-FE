@@ -1,20 +1,20 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useMotion } from '@vueuse/motion';
-import { 
-    ArrowLeft, 
-    Award, 
-    GraduationCap, 
-    CheckCircle, 
-    Info, 
-    Save, 
+import {
+    ArrowLeft,
+    Award,
+    GraduationCap,
+    CheckCircle,
+    Info,
+    Save,
     Loader2,
     Briefcase
 } from 'lucide-vue-next';
-import { 
-    type GradeLevel, 
-    type EducationType, 
-    type CertificationType, 
+import {
+    type GradeLevel,
+    type EducationType,
+    type CertificationType,
     type EducationOption,
     type CertificationOption,
     type GradeCriteriaItem,
@@ -30,9 +30,9 @@ const emit = defineEmits<{
 }>();
 
 const selectedType = ref<'education' | 'certification'>('education');
-const education = ref<EducationType | ''>(''); 
+const education = ref<EducationType | ''>('');
 const yearsOfExperience = ref<number | ''>('');
-const certification = ref<CertificationType | ''>(''); 
+const certification = ref<CertificationType | ''>('');
 const certYears = ref<number | ''>('');
 const calculatedGrade = ref<GradeLevel>('');
 
@@ -53,8 +53,7 @@ onMounted(async () => {
         educationOptions.value = eduOpts;
         certificationOptions.value = certOpts;
         criteriaList.value = criteria;
-        
-        // Initialize defaults if available
+
         if (eduOpts.length > 0) education.value = eduOpts[0].value;
         if (certOpts.length > 0) certification.value = certOpts[0].value;
     } catch (error) {
@@ -67,12 +66,9 @@ const handleCalculate = async () => {
     if (selectedType.value === 'certification' && !certification.value) return;
 
     isLoading.value = true;
-    calculatedGrade.value = ''; // Reset result
-    
-    try {
-        // Simulate slight delay for effect
-        await new Promise(resolve => setTimeout(resolve, 600));
+    calculatedGrade.value = '';
 
+    try {
         const result = await calculateGrade({
             type: selectedType.value,
             education: selectedType.value === 'education' ? (education.value as EducationType) : undefined,
@@ -102,7 +98,11 @@ const handleSave = async () => {
         alert('등급 정보가 성공적으로 저장되었습니다.');
     } catch (error) {
         console.error('Save failed', error);
-        alert('저장에 실패했습니다.');
+        if (error instanceof Error && error.message.includes('saveGrade API not available')) {
+            alert('등급 저장 기능은 준비 중입니다.');
+        } else {
+            alert('저장에 실패했습니다.');
+        }
     } finally {
         isSaving.value = false;
     }
@@ -141,14 +141,14 @@ const getGradeBadgeColor = (grade: string) => {
         </button>
         <div>
             <h1 class="text-3xl font-bold text-white tracking-tight">회원 등급 조회</h1>
-            <p class="text-base text-slate-400 mt-1">학력, 경력, 자격증 정보를 바탕으로 나의 등급을 확인해보세요.</p>
+            <p class="text-base text-slate-400 mt-1">학력, 경력, 자격증 정보를 바탕으로 회원 등급을 확인하세요.</p>
         </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Left Column: Input Form -->
         <div class="lg:col-span-7 space-y-6 animate-fade-in-up">
-            
+
             <!-- Type Selection Cards -->
             <div class="grid grid-cols-2 gap-4">
                 <button
@@ -162,9 +162,9 @@ const getGradeBadgeColor = (grade: string) => {
                     <div class="p-3 bg-blue-500/20 rounded-2xl mb-3 group-hover:scale-110 transition-transform duration-300">
                         <GraduationCap class="w-8 h-8 text-blue-400" />
                     </div>
-                    <div class="font-bold text-lg text-white mb-1">학경력자</div>
-                    <div class="text-xs text-slate-400">학력 + 경력 기준 산정</div>
-                    
+                    <div class="font-bold text-lg text-white mb-1">학력 기준</div>
+                    <div class="text-xs text-slate-400">학력 + 경력 기준 결정</div>
+
                     <div v-if="selectedType === 'education'" class="absolute top-4 right-4">
                         <CheckCircle class="w-5 h-5 text-blue-400 fill-blue-400/20" />
                     </div>
@@ -181,8 +181,8 @@ const getGradeBadgeColor = (grade: string) => {
                      <div class="p-3 bg-emerald-500/20 rounded-2xl mb-3 group-hover:scale-110 transition-transform duration-300">
                         <Award class="w-8 h-8 text-emerald-400" />
                     </div>
-                    <div class="font-bold text-lg text-white mb-1">자격자</div>
-                    <div class="text-xs text-slate-400">자격증 + 경력 기준 산정</div>
+                    <div class="font-bold text-lg text-white mb-1">자격증 기준</div>
+                    <div class="text-xs text-slate-400">자격증 + 경력 기준 결정</div>
 
                     <div v-if="selectedType === 'certification'" class="absolute top-4 right-4">
                         <CheckCircle class="w-5 h-5 text-emerald-400 fill-emerald-400/20" />
@@ -207,9 +207,9 @@ const getGradeBadgeColor = (grade: string) => {
                                 class="w-full bg-[#1e293b]/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-blue-500/50 focus:bg-[#1e293b] transition-all appearance-none"
                             >
                                 <option value="" disabled selected>선택하세요</option>
-                                <option 
-                                    v-for="opt in educationOptions" 
-                                    :key="opt.value" 
+                                <option
+                                    v-for="opt in educationOptions"
+                                    :key="opt.value"
                                     :value="opt.value"
                                     class="bg-[#1e293b]"
                                 >
@@ -250,9 +250,9 @@ const getGradeBadgeColor = (grade: string) => {
                                 class="w-full bg-[#1e293b]/50 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 focus:bg-[#1e293b] transition-all appearance-none"
                             >
                                  <option value="" disabled selected>선택하세요</option>
-                                 <option 
-                                    v-for="opt in certificationOptions" 
-                                    :key="opt.value" 
+                                 <option
+                                    v-for="opt in certificationOptions"
+                                    :key="opt.value"
                                     :value="opt.value"
                                     class="bg-[#1e293b]"
                                 >
@@ -285,7 +285,7 @@ const getGradeBadgeColor = (grade: string) => {
                         class="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-slate-700 disabled:to-slate-800 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-blue-500/25 disabled:shadow-none flex items-center justify-center gap-2"
                     >
                         <Loader2 v-if="isLoading" class="w-5 h-5 animate-spin" />
-                        <span v-else>나의 등급 계산하기</span>
+                        <span v-else>회원 등급 계산하기</span>
                     </button>
                 </div>
             </div>
@@ -294,15 +294,15 @@ const getGradeBadgeColor = (grade: string) => {
              <div class="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
                 <h3 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
                     <Info class="w-5 h-5 text-slate-400" />
-                    등급 산정 기준표
+                    등급 산정 기준
                 </h3>
                  <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead>
                             <tr class="border-b border-white/10">
                                 <th class="py-3 px-4 text-slate-300 font-bold w-20">등급</th>
-                                <th class="py-3 px-4 text-slate-300 font-semibold">학경력자 기준</th>
-                                <th class="py-3 px-4 text-slate-300 font-semibold">자격자 기준</th>
+                                <th class="py-3 px-4 text-slate-300 font-semibold">학력 기준</th>
+                                <th class="py-3 px-4 text-slate-300 font-semibold">자격증 기준</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-white/5">
@@ -324,12 +324,11 @@ const getGradeBadgeColor = (grade: string) => {
             <!-- Result Card -->
             <div
                 class="relative rounded-3xl p-8 text-center min-h-[360px] flex flex-col items-center justify-center transition-all duration-500 shadow-xl overflow-hidden border border-white/10"
-                :class="calculatedGrade 
-                    ? `bg-gradient-to-br ${getGradeColor(calculatedGrade)}` 
+                :class="calculatedGrade
+                    ? `bg-gradient-to-br ${getGradeColor(calculatedGrade)}`
                     : 'bg-white/5 border-white/10'"
             >
                 <!-- Background Pattern -->
-
                 <div v-if="calculatedGrade" class="absolute -top-20 -right-20 w-64 h-64 bg-white/20 rounded-full blur-3xl"></div>
                 <div v-if="calculatedGrade" class="absolute -bottom-20 -left-20 w-64 h-64 bg-black/20 rounded-full blur-3xl"></div>
 
@@ -338,15 +337,16 @@ const getGradeBadgeColor = (grade: string) => {
                         <div class="mb-4 inline-flex p-4 bg-white/20 backdrop-blur-md rounded-full ring-4 ring-white/10 shadow-inner">
                             <CheckCircle class="w-10 h-10 text-white" />
                         </div>
-                        <div class="text-sm font-medium text-white/90 mb-1 tracking-wide uppercase">Calculated Grade</div>
+                        <div class="text-sm font-medium text-white/90 mb-1 tracking-wide uppercase">산정 결과</div>
                         <div class="text-6xl font-black text-white mb-2 drop-shadow-md">{{ calculatedGrade }}</div>
-                        <div class="text-base text-white/80 font-medium mb-8">등급에 해당합니다</div>
-                        
+                        <div class="text-base text-white/80 font-medium mb-8">등급이 산정되었습니다.</div>
+
                         <div class="bg-black/20 backdrop-blur-md rounded-xl p-4 text-left border border-white/10 mb-8 max-w-xs mx-auto">
                             <div class="flex items-start gap-3">
                                 <Info class="w-5 h-5 text-white/60 shrink-0 mt-0.5" />
                                 <p class="text-xs text-white/70 leading-relaxed">
-                                    이 결과는 입력하신 정보를 바탕으로 산출된 예상 등급입니다. 실제 증빙 서류에 따라 달라질 수 있습니다.
+                                    이 결과는 입력하신 정보를 바탕으로 계산한 예상 등급입니다.
+                                    실제 등급은 증빙 서류에 따라 달라질 수 있습니다.
                                 </p>
                             </div>
                         </div>
@@ -369,7 +369,7 @@ const getGradeBadgeColor = (grade: string) => {
                             <Award class="w-10 h-10 text-slate-600" />
                         </div>
                         <p class="text-lg font-bold text-slate-400">등급을 계산해보세요</p>
-                        <p class="text-sm text-slate-500 mt-2">왼쪽에서 정보를 입력하면<br>결과가 표시됩니다.</p>
+                        <p class="text-sm text-slate-500 mt-2">왼쪽에서 정보를 입력하면<br />결과가 표시됩니다.</p>
                     </div>
                 </template>
             </div>
@@ -379,10 +379,12 @@ const getGradeBadgeColor = (grade: string) => {
                 <div class="absolute -right-4 -top-4 w-24 h-24 bg-red-500/20 rounded-full blur-2xl"></div>
                 <h4 class="text-red-400 font-bold flex items-center gap-2 mb-3 relative z-10">
                     <Info class="w-5 h-5" />
-                    허위 정보 입력 시 주의사항
+                    유의 사항
                 </h4>
                 <p class="text-sm text-red-200/70 leading-relaxed relative z-10">
-                    입력하신 정보가 허위로 판명될 경우, 프리랜서 이용 약관에 따라 <span class="text-red-300 font-bold underline decoration-red-500/50 decoration-2 underline-offset-2">계정 정지 또는 법적 책임</span>을 물을 수 있습니다. 반드시 사실에 근거한 정보를 입력해 주세요.
+                    입력하신 정보가 허위로 판명될 경우, 회사 정책에 따라
+                    <span class="text-red-300 font-bold underline decoration-red-500/50 decoration-2 underline-offset-2">계정 정지 또는 법적 책임</span>이 발생할 수 있습니다.
+                    반드시 사실에 근거한 정보를 입력해 주세요.
                 </p>
             </div>
         </div>

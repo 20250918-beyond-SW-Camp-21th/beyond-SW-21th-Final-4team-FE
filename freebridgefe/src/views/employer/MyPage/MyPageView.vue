@@ -27,9 +27,10 @@ import {
   Camera,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
-import { getEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
+import { getEmployerProfile, uploadEmployerLogo, type EmployerProfileData } from '@/api/MyPage/employer';
 import { PLAN_LABELS } from '@/constants/planLabels';
 import { getEmployerReviewSummary } from '@/api/MyPage/evaluationApi';
+import { getEmployerProjectStats } from '@/api/MyPage/projectApi';
 
 import EmployerProfileManagement from './components/EmployerProfileManagement.vue';
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
@@ -92,28 +93,35 @@ const employerProfile = ref<EmployerProfileData>({
 });
 
 
-const handleLogoUpdate = (event: Event) => {
+const handleLogoUpdate = async (event: Event) => {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files[0]) {
         const file = input.files[0];
-        // Mock upload: Convert to Base64 (normally upload to server and get URL)
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            employerProfile.value.logoUrl = e.target?.result as string;
-            // TODO: Call API to update logo
-        };
-        reader.readAsDataURL(file);
+        try {
+            const logoUrl = await uploadEmployerLogo(file);
+            employerProfile.value.logoUrl = logoUrl;
+        } catch (error) {
+            console.error('Failed to upload logo:', error);
+            alert('로고 업로드에 실패했습니다.');
+        } finally {
+            input.value = '';
+        }
     }
 };
 
 const fetchProfile = async () => {
   try {
-    const [profile, reviewSummary] = await Promise.all([
+    const [profile, reviewSummary, projectStats] = await Promise.all([
       getEmployerProfile(),
-      getEmployerReviewSummary().catch(() => null)
+      getEmployerReviewSummary().catch(() => null),
+      getEmployerProjectStats().catch(() => null)
     ]);
     employerProfile.value = {
       ...profile,
+      activeProjects: projectStats?.totalProjects ?? profile.activeProjects ?? 0,
+      totalApplicants: projectStats?.activeApplicants ?? profile.totalApplicants ?? 0,
+      contractedFreelancers:
+        projectStats?.contractedFreelancers ?? profile.contractedFreelancers ?? 0,
       avgRating: reviewSummary?.averageRate ?? profile.avgRating,
       ratingDetails: {
         atmosphere: reviewSummary?.atmosphereRate ?? profile.ratingDetails?.atmosphere ?? 0,
