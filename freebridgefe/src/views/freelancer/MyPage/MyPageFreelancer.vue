@@ -288,16 +288,17 @@ const hideChurnAlert = ref(false);
     <main class="flex-1 overflow-y-auto bg-slate-900">
         <div v-if="activeTab === 'dashboard'" class="p-8 max-w-7xl mx-auto space-y-8" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1 }">
              <!-- Greeting Header -->
-             <div class="mb-2 flex items-center justify-between">
+             <div class="mb-2 flex items-center justify-between bg-white/5 border border-white/10 rounded-3xl px-6 py-5 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(255,255,255,0.4)]">
                 <div>
-                    <p class="text-sm text-slate-400 mb-1">안녕하세요</p>
+                    <p class="text-xs text-white/50 mb-1 tracking-widest uppercase">Welcome</p>
                     <h2 class="text-2xl font-bold text-white">
                         {{ profile.name }}님, 오늘도 프리브릿지가 응원합니다.
                     </h2>
+                    <p class="text-sm text-white/50 mt-1">프로필을 최신 상태로 유지하면 추천 정확도가 올라갑니다.</p>
                 </div>
                 <button 
                     @click="activeTab = 'edit'"
-                    class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-slate-300 hover:text-white transition-all"
+                    class="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-sm text-white/80 hover:text-white transition-all shadow-sm"
                 >
                     <Edit3 class="w-4 h-4" />
                     프로필 수정하기
@@ -360,11 +361,11 @@ const hideChurnAlert = ref(false);
 
             <!-- Profile Summary Card -->
             <div class="relative mt-8">
-                <div class="bg-[#1e293b]/50 rounded-2xl border border-white/10 backdrop-blur-sm shadow-sm overflow-visible relative group">
+                <div class="bg-white/5 rounded-3xl border border-white/10 backdrop-blur-xl shadow-[0_30px_90px_-60px_rgba(255,255,255,0.35)] overflow-visible relative group">
                     <div class="flex flex-col md:flex-row p-8 pb-6 gap-8 relative">
                         <!-- Left: Avatar & Basic Info -->
                         <div class="flex items-center gap-6 flex-1">
-                            <div class="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 bg-[#E2E8F0] border-2 border-white/10 relative group-avatar cursor-pointer">
+                            <div class="w-24 h-24 rounded-full overflow-hidden flex-shrink-0 bg-white/10 border-2 border-white/20 relative group-avatar cursor-pointer shadow-[0_10px_40px_-20px_rgba(0,0,0,0.6)]">
                                 <img v-if="profile.avatar" :src="profile.avatar" alt="Profile" class="w-full h-full object-cover" />
                                 <div v-else class="w-full h-full flex items-center justify-center bg-slate-800">
                                      <User class="w-10 h-10 text-slate-400" />
@@ -374,7 +375,7 @@ const hideChurnAlert = ref(false);
                                 <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                                     {{ profile.name }}
                                     <span
-                                        class="text-sm font-normal px-2 py-0.5 rounded border"
+                                        class="text-xs font-semibold px-2.5 py-1 rounded-full border border-white/10 bg-white/10 text-white/80"
                                         :class="getGradeColor(profile.grade)"
                                     >
                                         {{ profile.grade }} 등급
@@ -432,7 +433,7 @@ const hideChurnAlert = ref(false);
                              <div class="flex justify-between items-center text-sm">
                                 <span class="text-slate-500 font-medium w-24">희망 단가</span>
                                 <div class="flex-1 flex justify-end">
-                                    <span class="text-white font-bold">{{ profile.salary.toLocaleString() }}원/시간</span>
+                                    <span class="text-white font-bold">{{ profile.salary.toLocaleString() }}원/월</span>
                                 </div>
                             </div>
                         </div>
