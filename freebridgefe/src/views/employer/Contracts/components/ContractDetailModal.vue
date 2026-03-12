@@ -4,6 +4,7 @@ import { X, FileText, Calendar, DollarSign, CheckCircle, User, PenTool, Clock, M
 import type { ContractWithDetails } from '@/stores/contractStore';
 import ContractPreview from '@/components/contract/ContractPreview.vue';
 import { getContract } from '@/api/contractApi';
+import { getUserById } from '@/api/authApi';
 
 type ViewTab = 'details' | 'contract';
 
@@ -28,11 +29,54 @@ const statusLabels: Record<string, string> = {
 const fullContract = ref<ContractWithDetails>(props.contract);
 const isLoadingDetail = ref(false);
 
+const placeholderPattern = /(user|사용자)\s*#\s*\d+/i;
+const numericOnlyPattern = /^\s*#?\d+\s*$/;
+const needsName = (name?: string | null) => {
+    if (!name) return true;
+    const trimmed = name.trim();
+    return (
+        trimmed.length === 0 ||
+        trimmed === 'Unknown' ||
+        placeholderPattern.test(trimmed) ||
+        numericOnlyPattern.test(trimmed)
+    );
+};
+
+const resolveUserName = async (userId?: number, currentName?: string | null) => {
+    if (!userId || !needsName(currentName)) return currentName || '';
+    try {
+        const user = await getUserById(userId);
+        const payload = (user as any)?.data ?? user;
+        return (
+            payload?.name ||
+            payload?.fullName ||
+            payload?.username ||
+            payload?.nickname ||
+            payload?.userName ||
+            payload?.memberName ||
+            payload?.realName ||
+            currentName ||
+            ''
+        );
+    } catch {
+        return currentName || '';
+    }
+};
+
 onMounted(async () => {
     isLoadingDetail.value = true;
     try {
         const detail = await getContract(props.contract.contractId);
-        fullContract.value = { ...props.contract, ...detail };
+        const merged = { ...props.contract, ...detail };
+        const [freelancerName, employerName] = await Promise.all([
+            resolveUserName(merged.freelancerId, merged.freelancerName),
+            resolveUserName(merged.employerId, merged.employerName),
+        ]);
+        fullContract.value = {
+            ...merged,
+            freelancerName: freelancerName || merged.freelancerName,
+            employerName: employerName || merged.employerName,
+        };
     } catch {
         // keep prop data as fallback
     } finally {
