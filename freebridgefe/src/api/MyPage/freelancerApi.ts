@@ -104,6 +104,39 @@ export interface FreelancerProfileDashboard {
   topPercentile?: number;
 }
 
+const WORK_TYPE_LABELS: Record<string, string> = {
+  PERSONAL: "개인",
+  TEAM: "팀",
+};
+
+const WORK_STYLE_LABELS: Record<string, string> = {
+  REMOTE: "원격",
+  ONSITE: "상주",
+  HYBRID: "원격+상주 (하이브리드)",
+};
+
+const mapWorkTypeToLabel = (value?: string | null): string => {
+  if (!value) return "";
+  return WORK_TYPE_LABELS[value] ?? value;
+};
+
+const mapWorkStyleToLabel = (value?: string | null): string => {
+  if (!value) return "";
+  return WORK_STYLE_LABELS[value] ?? value;
+};
+
+const mapWorkTypeToCode = (value?: string | null): string | null => {
+  if (!value) return null;
+  const entry = Object.entries(WORK_TYPE_LABELS).find(([, label]) => label === value);
+  return entry ? entry[0] : value;
+};
+
+const mapWorkStyleToCode = (value?: string | null): string | null => {
+  if (!value) return null;
+  const entry = Object.entries(WORK_STYLE_LABELS).find(([, label]) => label === value);
+  return entry ? entry[0] : value;
+};
+
 const GUEST_FREELANCER_PROFILE: FreelancerProfileDashboard = {
   name: "Guest",
   grade: "basic",
@@ -175,9 +208,9 @@ export const getFreelancerProfile = async (
     careerYears: basic.careerYears ?? 0,
     salary: basic.wage ?? 0,
     workConditions: {
-      type: basic.workConditions?.workType ?? "",
+      type: mapWorkTypeToLabel(basic.workConditions?.workType),
       startDate: basic.workConditions?.availableStartDate ?? "",
-      workStyle: basic.workConditions?.workStyle ?? "",
+      workStyle: mapWorkStyleToLabel(basic.workConditions?.workStyle),
       location: basic.workConditions?.workLocation ?? "",
     },
     skills: basic.skills ?? [],
@@ -228,7 +261,7 @@ export const updateFreelancerProfile = async (
 
   if (updatedProfile.workConditions) {
     if (updatedProfile.workConditions.type !== undefined) {
-      const workType = updatedProfile.workConditions.type?.trim() || null;
+      const workType = mapWorkTypeToCode(updatedProfile.workConditions.type?.trim()) ?? null;
       payload.workType = workType;
     }
     if (updatedProfile.workConditions.startDate !== undefined) {
@@ -236,7 +269,7 @@ export const updateFreelancerProfile = async (
       payload.availableStartDate = availableStartDate;
     }
     if (updatedProfile.workConditions.workStyle !== undefined) {
-      const workStyle = updatedProfile.workConditions.workStyle?.trim() || null;
+      const workStyle = mapWorkStyleToCode(updatedProfile.workConditions.workStyle?.trim()) ?? null;
       payload.workStyle = workStyle;
     }
     if (updatedProfile.workConditions.location !== undefined) {
