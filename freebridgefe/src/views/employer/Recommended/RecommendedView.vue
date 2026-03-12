@@ -105,6 +105,13 @@ const loadRecommendedFreelancers = async () => {
 
 onMounted(async () => {
   await fetchCurrentPlan();
+  if (planFetchError.value) {
+    freelancerStore.freelancers = [];
+    freelancerStore.recommendedFetchError =
+      "구독 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
+    return;
+  }
+
   if (!hasAccess.value) {
     freelancerStore.recommendedFetchError = null;
     return;
