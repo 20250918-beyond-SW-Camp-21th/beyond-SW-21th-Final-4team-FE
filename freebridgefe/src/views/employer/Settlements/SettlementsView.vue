@@ -176,9 +176,35 @@ watch(selectedDateRange, () => {
     currentPage.value = 1;
 });
 
+const triggerPdfDownload = (url: string, filename: string) => {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 const handleDownload = (settlement: EmployerSettlementWithDetails) => {
-    // Mock download - in real app, this would download from invoicePdfUrl
-    alert(`청구서 다운로드: ${settlement.projectName} - ${settlement.installmentNumber}차`);
+    if (!settlement.invoicePdfUrl) {
+        alert('다운로드 가능한 청구서가 없습니다.');
+        return;
+    }
+    triggerPdfDownload(settlement.invoicePdfUrl, `invoice-${settlement.id}.pdf`);
+};
+
+const downloadSettlementList = () => {
+    const downloadable = filteredSettlements.value.filter((s) => !!s.invoicePdfUrl);
+    if (downloadable.length === 0) {
+        alert('다운로드 가능한 청구서가 없습니다.');
+        return;
+    }
+
+    downloadable.forEach((settlement) => {
+        if (!settlement.invoicePdfUrl) return;
+        triggerPdfDownload(settlement.invoicePdfUrl, `invoice-${settlement.id}.pdf`);
+    });
 };
 
 const goToPaymentPage = () => {
@@ -392,6 +418,15 @@ onMounted(async () => {
                     {{ filteredSettlements.length }}개의 정산 내역
                 </div>
 
+                <button
+                    type="button"
+                    @click="downloadSettlementList"
+                    class="px-4 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 transition-colors flex items-center gap-2"
+                >
+                    <Download class="w-4 h-4" />
+                    다운로드
+                </button>
+
                 <!-- Status Dropdown -->
                 <div class="relative z-30">
                     <button
@@ -527,14 +562,6 @@ onMounted(async () => {
                             title="상세보기"
                         >
                             <Eye class="w-5 h-5 text-white/60" />
-                        </button>
-
-                        <button
-                            @click="handleDownload(settlement)"
-                            class="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                            title="다운로드"
-                        >
-                            <Download class="w-5 h-5 text-white/60" />
                         </button>
                     </div>
                 </div>
