@@ -67,24 +67,39 @@ const hasAccess = computed(
   () => !planLoading.value && ["PRO", "PRIME"].includes(currentPlan.value),
 );
 
+const loadRecommendedFreelancers = async () => {
+  let jobs = jobStore.myJobs;
+
+  if (!jobs.length) {
+    await jobStore.fetchJobPostings();
+    jobs = jobStore.myJobs;
+  }
+
+  if (!jobs.length) {
+    freelancerStore.freelancers = [];
+    freelancerStore.recommendedFetchError =
+      "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
+    return;
+  }
+
+  const firstJobId = jobs[0].id;
+  if (typeof firstJobId === "number" || /^\d+$/.test(String(firstJobId))) {
+    await freelancerStore.fetchRecommendedFreelancers(Number(firstJobId));
+    return;
+  }
+
+  freelancerStore.freelancers = [];
+  freelancerStore.recommendedFetchError =
+    "유효하지 않은 프로젝트 공고 ID입니다.";
+};
+
 onMounted(async () => {
   await fetchCurrentPlan();
-  if (hasAccess.value) {
-    const jobs = jobStore.myJobs;
-    if (jobs && jobs.length > 0) {
-      const firstJobId = jobs[0].id;
-      // 엄격한 숫자 검증 (문자가 섞여있으면 중단)
-      if (typeof firstJobId === "number" || /^\d+$/.test(String(firstJobId))) {
-        await freelancerStore.fetchRecommendedFreelancers(Number(firstJobId));
-      } else {
-        freelancerStore.recommendedFetchError =
-          "유효하지 않은 프로젝트 공고 ID입니다.";
-      }
-    } else {
-      freelancerStore.recommendedFetchError =
-        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
-    }
+  if (!hasAccess.value) {
+    return;
   }
+
+  await loadRecommendedFreelancers();
 });
 
 const goToUpgrade = () => {
@@ -105,7 +120,7 @@ const goToUpgrade = () => {
     </div>
 
     <!-- Loading Skeleton -->
-    <div v-if="planLoading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div v-if="planLoading || jobStore.isLoading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="n in 6"
         :key="n"
