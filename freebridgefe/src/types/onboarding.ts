@@ -1,5 +1,4 @@
 // Enum Definitions
-export type FreelancerGrade = 'JUNIOR' | 'MID' | 'SENIOR' | 'MASTER';
 export type WorkType = 'PERSONAL' | 'TEAM';
 export type WorkStyle = 'REMOTE' | 'ONSITE' | 'HYBRID'; // Added HYBRID as common option
 export type EmployerSize =
@@ -14,9 +13,9 @@ export type EmployerSize =
 export interface FreelancerProfile {
     // Step 1: Basic Info
     name: string;
-    grade: FreelancerGrade;
     avatar_url?: string;
     introduction: string; // Bio
+    job: string;
     career_years: number;
     hope_salary: number; // Monthly
 
