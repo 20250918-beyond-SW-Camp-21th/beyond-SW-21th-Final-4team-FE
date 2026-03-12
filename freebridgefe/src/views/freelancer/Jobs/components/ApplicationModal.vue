@@ -20,22 +20,33 @@ const jobStore = useJobStore();
 const message = ref('');
 const portfolioUrl = ref('');
 const resumeUrl = ref('');
+const isSubmitting = ref(false);
+const submitError = ref('');
 
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!authStore.user) return;
 
-  jobStore.addApplication({
-    jobId: props.job.id,
-    freelancerId: authStore.user.id,
-    freelancerName: authStore.user.name,
-    message: message.value,
-    portfolioUrl: portfolioUrl.value || undefined,
-    resumeUrl: resumeUrl.value || undefined,
-    status: 'PENDING',
-  });
+  isSubmitting.value = true;
+  submitError.value = '';
 
-  alert(`${props.job.title} 프로젝트에 지원이 완료되었습니다!`);
-  emit('close');
+  try {
+    await jobStore.addApplication({
+      jobId: props.job.id,
+      freelancerId: authStore.user.id,
+      freelancerName: authStore.user.name,
+      message: message.value,
+      portfolioUrl: portfolioUrl.value || undefined,
+      resumeUrl: resumeUrl.value || undefined,
+      status: 'PENDING',
+    });
+
+    alert(`${props.job.title} 프로젝트에 지원이 완료되었습니다!`);
+    emit('close');
+  } catch (error: any) {
+    submitError.value = error?.response?.data?.message || error?.message || '지원 등록에 실패했습니다.';
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 </script>
 
@@ -62,6 +73,13 @@ const handleSubmit = () => {
       </div>
 
       <form @submit.prevent="handleSubmit" class="p-6">
+        <div
+          v-if="submitError"
+          class="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+        >
+          {{ submitError }}
+        </div>
+
         <!-- 프로젝트 정보 -->
         <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 mb-6 shadow-lg">
           <div class="text-sm text-white/60 mb-1">지원 프로젝트</div>
@@ -131,14 +149,14 @@ const handleSubmit = () => {
           </button>
           <button
             type="submit"
-            :disabled="!message.trim()"
+            :disabled="!message.trim() || isSubmitting"
             class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold"
             v-motion
             :hover="{ scale: 1.02 }"
             :tap="{ scale: 0.98 }"
           >
             <Send class="w-5 h-5" />
-            지원하기
+            {{ isSubmitting ? '지원 중...' : '지원하기' }}
           </button>
         </div>
       </form>

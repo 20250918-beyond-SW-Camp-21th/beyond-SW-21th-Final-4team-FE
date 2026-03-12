@@ -1,6 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import { Star, MessageSquareQuote, UserCheck, ClipboardEdit, Pencil, Trash2, X } from 'lucide-vue-next';
+import { computed, onMounted, ref } from 'vue';
+import {
+  Star,
+  MessageSquareQuote,
+  UserCheck,
+  ClipboardEdit,
+  Pencil,
+  Trash2,
+  X,
+  LoaderCircle,
+} from 'lucide-vue-next';
 import { useReviewStore, type EmployerToFreelancerReview } from '@/stores/reviewStore';
 
 const reviewStore = useReviewStore();
@@ -28,11 +37,15 @@ const freelancerToEmployerReviews = computed(() =>
   reviewStore.freelancerToEmployerReviews.map((review) => ({
     ...review,
     reviewerName: review.freelancerName,
-  }))
+  })),
 );
+const isLoading = computed(() => reviewStore.isFetchingReviews);
+const isSubmitting = computed(() => reviewStore.isSubmittingReview);
+const fetchError = computed(() => reviewStore.reviewFetchError);
 
 const editingReviewId = ref<string | null>(null);
 const editForm = ref<EmployerEditableReview | null>(null);
+const actionError = ref('');
 
 const toReviewForm = (review: EmployerToFreelancerReview) =>
   JSON.parse(JSON.stringify(review)) as EmployerEditableReview;
@@ -40,44 +53,79 @@ const toReviewForm = (review: EmployerToFreelancerReview) =>
 const startEdit = (review: EmployerToFreelancerReview) => {
   editingReviewId.value = review.id;
   editForm.value = toReviewForm(review);
+  actionError.value = '';
 };
 
 const cancelEdit = () => {
   editingReviewId.value = null;
   editForm.value = null;
+  actionError.value = '';
 };
 
-const saveEdit = () => {
-  if (!editForm.value) return;
-  if (!window.confirm('후기를 수정하시겠습니까?')) return;
+const loadReviews = async () => {
+  actionError.value = '';
 
-  reviewStore.updateEmployerToFreelancerReview(editForm.value.id, {
-    freelancerName: editForm.value.freelancerName,
-    projectName: editForm.value.projectName,
-    language: editForm.value.language,
-    framework: editForm.value.framework,
-    debugging: editForm.value.debugging,
-    communication: editForm.value.communication,
-    schedule: editForm.value.schedule,
-    dispute: editForm.value.dispute,
-    comment: editForm.value.comment,
-  });
-
-  cancelEdit();
-};
-
-const deleteReview = (id: string) => {
-  if (!window.confirm('후기를 삭제하시겠습니까?')) return;
-  reviewStore.deleteEmployerToFreelancerReview(id);
-  if (editingReviewId.value === id) {
-    cancelEdit();
+  try {
+    await reviewStore.fetchEmployerReviews();
+  } catch {
+    actionError.value = reviewStore.reviewFetchError || '후기 목록을 불러오지 못했습니다.';
   }
 };
+
+const saveEdit = async () => {
+  if (!editForm.value) {
+    return;
+  }
+
+  if (!window.confirm('후기를 수정하시겠습니까?')) {
+    return;
+  }
+
+  actionError.value = '';
+
+  try {
+    await reviewStore.updateEmployerToFreelancerReview(editForm.value.id, {
+      language: editForm.value.language,
+      framework: editForm.value.framework,
+      debugging: editForm.value.debugging,
+      communication: editForm.value.communication,
+      schedule: editForm.value.schedule,
+      dispute: editForm.value.dispute,
+      comment: editForm.value.comment,
+    });
+
+    cancelEdit();
+  } catch (error) {
+    actionError.value =
+      error instanceof Error ? error.message : '후기를 수정하지 못했습니다.';
+  }
+};
+
+const deleteReview = async (id: string) => {
+  if (!window.confirm('후기를 삭제하시겠습니까?')) {
+    return;
+  }
+
+  actionError.value = '';
+
+  try {
+    await reviewStore.deleteEmployerToFreelancerReview(id);
+    if (editingReviewId.value === id) {
+      cancelEdit();
+    }
+  } catch (error) {
+    actionError.value =
+      error instanceof Error ? error.message : '후기를 삭제하지 못했습니다.';
+  }
+};
+
+onMounted(() => {
+  void loadReviews();
+});
 </script>
 
 <template>
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-white">
-    <!-- Header -->
     <div
       class="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-4"
       v-motion
@@ -106,7 +154,13 @@ const deleteReview = (id: string) => {
       </RouterLink>
     </div>
 
-    <!-- Reviews -->
+    <div v-if="isLoading" class="flex items-center gap-2 text-white/60 mb-10">
+      <LoaderCircle class="w-5 h-5 animate-spin" />
+      후기 목록을 불러오는 중입니다.
+    </div>
+    <div v-else-if="fetchError" class="text-red-300 mb-10">{{ fetchError }}</div>
+    <div v-if="actionError" class="text-red-300 mb-10">{{ actionError }}</div>
+
     <div class="grid gap-8">
       <div
         class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8"
@@ -119,6 +173,9 @@ const deleteReview = (id: string) => {
           <h2 class="text-2xl font-bold">내가 남긴 후기</h2>
         </div>
         <div class="space-y-4">
+          <div v-if="!isLoading && employerToFreelancerReviews.length === 0" class="text-center py-12 text-white/40">
+            아직 작성한 후기가 없습니다.
+          </div>
           <div
             v-for="(review, index) in employerToFreelancerReviews"
             :key="review.id"
@@ -136,7 +193,8 @@ const deleteReview = (id: string) => {
                 {{ new Date(review.createdAt).toLocaleDateString('ko-KR') }}
                 <button
                   type="button"
-                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 text-white/80 hover:bg-white/20 transition-colors"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/10 text-white/80 hover:bg-white/20 transition-colors disabled:opacity-50"
+                  :disabled="isSubmitting"
                   @click="startEdit(review)"
                 >
                   <Pencil class="w-4 h-4" />
@@ -144,7 +202,8 @@ const deleteReview = (id: string) => {
                 </button>
                 <button
                   type="button"
-                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors"
+                  class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/10 text-red-300 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                  :disabled="isSubmitting"
                   @click="deleteReview(review.id)"
                 >
                   <Trash2 class="w-4 h-4" />
@@ -196,7 +255,8 @@ const deleteReview = (id: string) => {
                       v-for="star in 5"
                       :key="star"
                       type="button"
-                      class="transition-transform hover:scale-110"
+                      class="transition-transform hover:scale-110 disabled:cursor-not-allowed"
+                      :disabled="isSubmitting"
                       @click="editForm && (editForm[item.key] = star)"
                     >
                       <Star
@@ -213,7 +273,8 @@ const deleteReview = (id: string) => {
                 <textarea
                   v-model="editForm.comment"
                   rows="4"
-                  class="bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white/90 focus:outline-none focus:ring-2 focus:ring-white/30"
+                  :disabled="isSubmitting"
+                  class="bg-black/30 border border-white/10 rounded-2xl px-4 py-3 text-white/90 focus:outline-none focus:ring-2 focus:ring-white/30 disabled:opacity-50"
                   placeholder="후기 내용을 수정해 주세요."
                 ></textarea>
               </label>
@@ -221,15 +282,21 @@ const deleteReview = (id: string) => {
               <div class="flex flex-col md:flex-row md:items-center gap-3">
                 <button
                   type="button"
+                  :disabled="isSubmitting"
                   @click="saveEdit"
-                  class="px-6 py-3 bg-white text-black rounded-full font-semibold hover:scale-105 transition-transform"
+                  class="px-6 py-3 bg-white text-black rounded-full font-semibold hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
-                  수정 저장
+                  <span v-if="!isSubmitting">수정 저장</span>
+                  <span v-else class="inline-flex items-center gap-2">
+                    <LoaderCircle class="w-4 h-4 animate-spin" />
+                    저장 중
+                  </span>
                 </button>
                 <button
                   type="button"
+                  :disabled="isSubmitting"
                   @click="cancelEdit"
-                  class="px-6 py-3 bg-white/10 text-white rounded-full font-semibold hover:bg-white/20 transition-colors inline-flex items-center gap-2"
+                  class="px-6 py-3 bg-white/10 text-white rounded-full font-semibold hover:bg-white/20 transition-colors inline-flex items-center gap-2 disabled:opacity-50"
                 >
                   <X class="w-4 h-4" />
                   취소
@@ -251,6 +318,9 @@ const deleteReview = (id: string) => {
           <h2 class="text-2xl font-bold">프리랜서가 남긴 후기</h2>
         </div>
         <div class="space-y-4">
+          <div v-if="!isLoading && freelancerToEmployerReviews.length === 0" class="text-center py-12 text-white/40">
+            아직 프리랜서가 남긴 후기가 없습니다.
+          </div>
           <div
             v-for="(review, index) in freelancerToEmployerReviews"
             :key="review.id"

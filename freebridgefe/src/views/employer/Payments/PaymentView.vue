@@ -26,21 +26,6 @@ const paymentSuccess = ref<string | null>(null);
 
 const storeId = import.meta.env.VITE_PORTONE_STORE_ID as string | undefined;
 const channelKey = import.meta.env.VITE_PORTONE_CHANNEL_KEY as string | undefined;
-const isDev = import.meta.env.DEV;
-
-const maskValue = (value?: string) => {
-    if (!value) return '(empty)';
-    if (value.length <= 8) return `${value.slice(0, 2)}***`;
-    return `${value.slice(0, 6)}...${value.slice(-4)}`;
-};
-
-const debugPortOneInfo = computed(() => {
-    return {
-        storeId: maskValue(storeId),
-        channelKey: maskValue(channelKey),
-    };
-});
-
 const myContracts = computed(() => {
     if (!authStore.user) return [];
     return contractStore.contractsWithDetails.filter((contract) => {
@@ -161,14 +146,6 @@ const handlePayContract = async (contract: ContractWithDetails) => {
         paymentError.value = apiErrorCode
             ? `${apiErrorCode}: ${apiErrorMessage || '결제 검증에 실패했습니다.'}`
             : apiErrorMessage || error?.message || '결제 처리 중 오류가 발생했습니다.';
-        console.error('Payment verify failed:', {
-            status: error?.response?.status,
-            data: error?.response?.data,
-            contractId: contract.id,
-            paymentId,
-            requestedAmount: totalAmount,
-            budget: contract.budget,
-        });
     } finally {
         payingContractId.value = null;
     }
@@ -181,8 +158,8 @@ onMounted(async () => {
             contractStore.fetchEmployerSettlements(),
             contractStore.fetchEmployerSettlementSummary().catch(() => undefined),
         ]);
-    } catch (error) {
-        console.error('Failed to initialize payment page:', error);
+    } catch {
+        paymentError.value = '결제 페이지 초기화에 실패했습니다.';
     }
 });
 </script>
@@ -195,14 +172,6 @@ onMounted(async () => {
                 <h1 class="text-4xl font-bold">결제 관리</h1>
             </div>
             <p class="text-white/60">진행 중인 계약의 선결제를 진행하고 정산 생성을 시작하세요.</p>
-            <div
-                v-if="isDev"
-                class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs bg-yellow-500/10 border border-yellow-500/30 text-yellow-300"
-            >
-                <span>DEBUG</span>
-                <span>storeId={{ debugPortOneInfo.storeId }}</span>
-                <span>channelKey={{ debugPortOneInfo.channelKey }}</span>
-            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
