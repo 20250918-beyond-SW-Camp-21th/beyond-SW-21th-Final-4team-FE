@@ -72,8 +72,17 @@ const loadRecommendedFreelancers = async () => {
   let jobs = jobStore.myJobs;
 
   if (!jobs.length) {
-    await jobStore.fetchJobPostings();
-    jobs = jobStore.myJobs;
+    try {
+      await jobStore.fetchJobPostings();
+      jobs = jobStore.myJobs;
+    } catch (error) {
+      freelancerStore.freelancers = [];
+      freelancerStore.recommendedFetchError =
+        error instanceof Error && error.message
+          ? error.message
+          : "프로젝트 공고를 불러오지 못했습니다.";
+      return;
+    }
   }
 
   if (!jobs.length) {
@@ -97,6 +106,7 @@ const loadRecommendedFreelancers = async () => {
 onMounted(async () => {
   await fetchCurrentPlan();
   if (!hasAccess.value) {
+    freelancerStore.recommendedFetchError = null;
     return;
   }
 
