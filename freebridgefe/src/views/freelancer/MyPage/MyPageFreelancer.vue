@@ -686,6 +686,7 @@ const hideChurnAlert = ref(false);
 
         <GradeCheckPage
             v-else-if="activeTab === 'gradecheck'"
+            :existingGrade="profile.grade"
             @back="activeTab = 'dashboard'"
         />
 

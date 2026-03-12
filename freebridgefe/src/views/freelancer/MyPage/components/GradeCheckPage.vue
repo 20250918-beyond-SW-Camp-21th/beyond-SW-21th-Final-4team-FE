@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
     ArrowLeft,
@@ -24,10 +24,17 @@ import {
     calculateGrade,
     saveGrade
 } from '@/api/MyPage/gradeApi';
+import { useAlertStore } from '@/stores/alertStore';
 
 const emit = defineEmits<{
   (e: 'back'): void;
 }>();
+
+const props = defineProps<{
+  existingGrade?: string;
+}>();
+
+const savedGrade = computed(() => props.existingGrade?.trim() ?? '');
 
 const selectedType = ref<'education' | 'certification'>('education');
 const education = ref<EducationType | ''>('');
@@ -42,6 +49,7 @@ const criteriaList = ref<GradeCriteriaItem[]>([]);
 
 const isLoading = ref(false);
 const isSaving = ref(false);
+const alertStore = useAlertStore();
 
 onMounted(async () => {
     try {
@@ -78,6 +86,7 @@ const handleCalculate = async () => {
         calculatedGrade.value = result;
     } catch (error) {
         console.error('Calculation failed', error);
+        alertStore.open({ message: '등급 계산에 실패했습니다. 입력값을 확인해주세요.', type: 'error' });
     } finally {
         isLoading.value = false;
     }
@@ -95,13 +104,13 @@ const handleSave = async () => {
             yearsOfExperience: selectedType.value === 'education' ? Number(yearsOfExperience.value) : Number(certYears.value),
             grade: calculatedGrade.value
         });
-        alert('등급 정보가 성공적으로 저장되었습니다.');
+        alertStore.open({ message: '등급 정보가 성공적으로 저장되었습니다.', type: 'success' });
     } catch (error) {
         console.error('Save failed', error);
         if (error instanceof Error && error.message.includes('saveGrade API not available')) {
-            alert('등급 저장 기능은 준비 중입니다.');
+            alertStore.open({ message: '등급 저장 기능은 준비 중입니다.', type: 'info' });
         } else {
-            alert('저장에 실패했습니다.');
+            alertStore.open({ message: '저장에 실패했습니다.', type: 'error' });
         }
     } finally {
         isSaving.value = false;
@@ -360,6 +369,17 @@ const getGradeBadgeColor = (grade: string) => {
                             <Save v-else class="w-4 h-4 text-slate-900" />
                             등급 정보 저장하기
                         </button>
+                    </div>
+                </template>
+
+                 <template v-else-if="savedGrade">
+                    <div class="relative z-10 animate-fade-in-up">
+                        <div class="mb-4 inline-flex p-4 bg-white/20 backdrop-blur-md rounded-full ring-4 ring-white/10 shadow-inner">
+                            <Award class="w-10 h-10 text-white" />
+                        </div>
+                        <div class="text-sm font-medium text-white/90 mb-1 tracking-wide uppercase">현재 등급</div>
+                        <div class="text-5xl font-black text-white mb-2 drop-shadow-md">{{ savedGrade }}</div>
+                        <div class="text-base text-white/80 font-medium">당신의 등급은 {{ savedGrade }} 등급입니다.</div>
                     </div>
                 </template>
 
