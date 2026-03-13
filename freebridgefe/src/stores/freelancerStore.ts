@@ -30,10 +30,17 @@ const getProposalErrorMessage = (error: unknown): string => {
   if (
     typeof error === "object" &&
     error !== null &&
-    "response" in error &&
-    typeof (error as any).response?.data?.message === "string"
+    "response" in error
   ) {
-    return (error as any).response.data.message;
+    const responseErrorMessage = (error as any).response?.data?.error?.message;
+    if (typeof responseErrorMessage === "string" && responseErrorMessage.trim()) {
+      return responseErrorMessage;
+    }
+
+    const responseMessage = (error as any).response?.data?.message;
+    if (typeof responseMessage === "string" && responseMessage.trim()) {
+      return responseMessage;
+    }
   }
 
   if (error instanceof Error && error.message) {
