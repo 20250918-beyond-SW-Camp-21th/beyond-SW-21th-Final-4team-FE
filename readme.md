@@ -299,37 +299,3 @@ URL은 RESTful API 설계 가이드에 따라 작성합니다.
 
 </div>
 </details>
-
-## Local FE-BE Test Guide
-
-프론트는 배포 환경에서 same-origin(`VITE_API_BASE_URL=""`)을 기본값으로 사용합니다.  
-로컬에서 백엔드와 연결하려면 각자 로컬 전용 env 파일을 만들어야 합니다.
-
-### 1. 로컬 전용 env 파일 생성
-
-`freebridgefe/.env.local`
-
-```env
-VITE_API_BASE_URL=http://localhost:<backend-port>
-```
-
-필요하면 PortOne 값도 같이 넣습니다.
-
-```env
-VITE_PORTONE_STORE_ID=store-6744519b-003b-412d-803e-2762e616152e
-VITE_PORTONE_CHANNEL_KEY=channel-key-df065c76-31d3-4f99-823a-10d1e35f93dd
-```
-
-### 2. 백엔드 실행
-
-백엔드는 자신이 실제로 띄운 포트에서 떠 있어야 합니다. 스프링 기본 포트는 `8080` 이므로 별도 설정이 없으면 `http://localhost:8080` 을 사용하면 됩니다.
-
-### 3. 프론트 dev 서버 재시작
-
-`import.meta.env` 는 시작 시점에 읽히므로, `.env.local` 을 만들거나 수정한 뒤에는 프론트 dev 서버를 반드시 다시 실행해야 합니다.
-
-### 4. 배포에는 영향 없음
-
-`.gitignore` 에 `*.local` 이 포함되어 있으므로 `.env.local` 은 Git에 올라가지 않습니다.  
-따라서 Jenkins/EKS 배포에는 영향이 없고, 배포 시에는 기존처럼 빈 `VITE_API_BASE_URL` 로 same-origin 동작을 사용합니다.
-
