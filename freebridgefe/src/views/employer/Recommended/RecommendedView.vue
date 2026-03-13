@@ -6,20 +6,23 @@ import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useJobStore } from "@/stores/jobStore";
 import { getEmployerSubscription } from "@/api/MyPage/accountApi";
 import ProposalModal from "./components/ProposalModal.vue";
-import type { User } from "@/types";
+import type { JobPosting, User } from "@/types";
 
 const freelancerStore = useFreelancerStore();
 const favoritesStore = useFavoritesStore();
 const jobStore = useJobStore();
 const selectedFreelancer = ref<User | null>(null);
+const selectedJobId = ref("");
 
 const formatSkills = (skills?: string[]) => {
   return skills?.slice(0, 4) || [];
 };
 
-const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
+const isFavorite = (id: string | number) =>
+  favoritesStore.favoriteIds.includes(String(id));
 
-const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
+const toggleFavorite = (id: string | number) =>
+  favoritesStore.toggleFavorite(String(id));
 
 // --- Access Control ---
 import { useRouter } from "vue-router";
@@ -70,6 +73,29 @@ const hasAccess = computed(
   () => !planLoading.value && ["PRO", "PRIME"].includes(currentPlan.value),
 );
 
+const employerJobs = computed(() => jobStore.myJobs);
+
+const selectedJob = computed<JobPosting | null>(
+  () => employerJobs.value.find((job) => job.id === selectedJobId.value) ?? null,
+);
+
+const ensureSelectedJob = (jobs: JobPosting[]) => {
+  if (!jobs.some((job) => job.id === selectedJobId.value)) {
+    selectedJobId.value = jobs[0]?.id ?? "";
+  }
+};
+
+const loadRecommendationForSelectedJob = async () => {
+  if (!/^\d+$/.test(selectedJobId.value)) {
+    freelancerStore.freelancers = [];
+    freelancerStore.recommendedFetchError =
+      "유효한 프로젝트 공고를 선택해주세요.";
+    return;
+  }
+
+  await freelancerStore.fetchRecommendedFreelancers(Number(selectedJobId.value));
+};
+
 const loadRecommendedFreelancers = async () => {
   initLoading.value = true;
   let jobs = jobStore.myJobs;
@@ -91,12 +117,14 @@ const loadRecommendedFreelancers = async () => {
       freelancerStore.freelancers = [];
       freelancerStore.recommendedFetchError =
         "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
+      selectedJobId.value = "";
       return;
     }
 
-    const firstJobId = jobs[0].id;
-    if (typeof firstJobId === "number" || /^\d+$/.test(String(firstJobId))) {
-      await freelancerStore.fetchRecommendedFreelancers(Number(firstJobId));
+    ensureSelectedJob(jobs);
+
+    if (/^\d+$/.test(selectedJobId.value)) {
+      await loadRecommendationForSelectedJob();
       return;
     }
 
@@ -125,9 +153,12 @@ onMounted(async () => {
   await loadRecommendedFreelancers();
 });
 
+const handleJobChange = async (event: Event) => {
+  selectedJobId.value = (event.target as HTMLSelectElement).value;
+  await loadRecommendationForSelectedJob();
+};
+
 const goToUpgrade = () => {
-  // Navigate to MyPage where Account Management is located
-  // Ideally pass a query param to open Account tab directly: /employer/mypage?tab=account
   router.push({ name: "employer.mypage", query: { tab: "account" } });
 };
 </script>
@@ -142,7 +173,38 @@ const goToUpgrade = () => {
       <p class="text-white/60">AI가 선별한 최적의 프리랜서를 만나보세요</p>
     </div>
 
-    <!-- Loading Skeleton -->
+    <div
+      v-if="hasAccess && employerJobs.length"
+      class="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
+    >
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-sm font-semibold text-white">추천 기준 공고</p>
+          <p class="text-xs text-white/50">
+            공고를 바꾸면 해당 프로젝트 기준으로 추천 결과를 다시 불러옵니다.
+          </p>
+        </div>
+        <div class="w-full md:w-[360px]">
+          <select
+            :value="selectedJobId"
+            @change="handleJobChange"
+            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-[#2D5BFF]"
+          >
+            <option
+              v-for="job in employerJobs"
+              :key="job.id"
+              :value="job.id"
+            >
+              {{ job.title }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <p v-if="selectedJob" class="mt-3 text-sm text-white/60">
+        현재 선택: <span class="font-medium text-white">{{ selectedJob.title }}</span>
+      </p>
+    </div>
+
     <div v-if="planLoading || initLoading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="n in 6"
@@ -176,7 +238,6 @@ const goToUpgrade = () => {
       </div>
     </div>
 
-    <!-- Error State -->
     <div
       v-else-if="freelancerStore.recommendedFetchError"
       class="bg-red-500/5 backdrop-blur-sm rounded-xl border border-red-500/10 p-12 text-center"
@@ -192,7 +253,6 @@ const goToUpgrade = () => {
       <p class="text-red-300/60">{{ freelancerStore.recommendedFetchError }}</p>
     </div>
 
-    <!-- Fetching State -->
     <div
       v-else-if="freelancerStore.isFetchingRecommended"
       class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-12 flex flex-col items-center justify-center text-center"
