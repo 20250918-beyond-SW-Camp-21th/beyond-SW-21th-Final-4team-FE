@@ -84,14 +84,11 @@ export const useFreelancerStore = defineStore("freelancer", () => {
         (rec: AiRecommendationResponseDTO) => ({
           id: String(rec.id),
           role: "FREELANCER",
-          name: rec.nameOrTitle,
-          email: "hidden@example.com", // Hidden info for recommendation
+          name: rec.nameOrTitle?.trim() || `프리랜서 #${rec.id}`,
+          email: "hidden@example.com",
           matchScore: rec.matchScore,
-          jobTitle: "프리랜서", // AI 추천에서 직무를 받아올 수 없으므로 기본값
-          skills: rec.skills && rec.skills.length > 0 ? rec.skills : ["전문가"],
-          bio:
-            rec.description ||
-            `AI 추천 점수: ${(rec.matchScore * 100).toFixed(0)}% 일치하는 프리랜서입니다.`,
+          skills: rec.skills?.filter(Boolean) ?? [],
+          bio: rec.description?.trim() || undefined,
         }),
       ) as RecommendedFreelancer[];
     } catch (error: any) {
