@@ -481,8 +481,10 @@ export const useJobStore = defineStore('job', () => {
             const job = getJobById(app.jobId);
 
             if (job) {
-                const employerId = String(job.employerId);
-                const freelancerId = String(app.freelancerId);
+                const rawEmployerId = String(job.employerId);
+                const rawFreelancerId = String(app.freelancerId);
+                const employerId = rawEmployerId.startsWith('e') ? rawEmployerId : `e${rawEmployerId}`;
+                const freelancerId = rawFreelancerId.startsWith('f') ? rawFreelancerId : `f${rawFreelancerId}`;
 
                 const roomId = await chatStore.createRoom(
                     [employerId, freelancerId],
