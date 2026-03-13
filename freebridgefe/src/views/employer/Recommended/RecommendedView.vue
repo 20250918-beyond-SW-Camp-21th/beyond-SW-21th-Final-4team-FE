@@ -1,37 +1,40 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { TrendingUp, Send, Star } from "lucide-vue-next";
-import { useFreelancerStore } from "@/stores/freelancerStore";
-import { useFavoritesStore } from "@/stores/favoritesStore";
-import { useJobStore } from "@/stores/jobStore";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import { Crown, Lock, Send, Star, TrendingUp } from "lucide-vue-next";
 import { getEmployerSubscription } from "@/api/MyPage/accountApi";
-import ProposalModal from "./components/ProposalModal.vue";
+import { useFavoritesStore } from "@/stores/favoritesStore";
+import { useFreelancerStore } from "@/stores/freelancerStore";
+import { useJobStore } from "@/stores/jobStore";
 import type { JobPosting, User } from "@/types";
+import ProposalModal from "./components/ProposalModal.vue";
 
 const freelancerStore = useFreelancerStore();
 const favoritesStore = useFavoritesStore();
 const jobStore = useJobStore();
+const router = useRouter();
+
 const selectedFreelancer = ref<User | null>(null);
 const selectedJobId = ref("");
+const recommendationRequestId = ref(0);
+const planLoading = ref(true);
+const initLoading = ref(false);
+const isJobSelectionLoading = ref(false);
+const planFetchError = ref<string | null>(null);
 
-const formatSkills = (skills?: string[]) => {
-  return skills?.slice(0, 4) || [];
-};
+let activeRecommendationController: AbortController | null = null;
+
+type PlanType = "FREE" | "PRO" | "PRIME";
+
+const currentPlan = ref<PlanType>("FREE");
+
+const formatSkills = (skills?: string[]) => skills?.slice(0, 4) || [];
 
 const isFavorite = (id: string | number) =>
   favoritesStore.favoriteIds.includes(String(id));
 
 const toggleFavorite = (id: string | number) =>
   favoritesStore.toggleFavorite(String(id));
-
-// --- Access Control ---
-import { useRouter } from "vue-router";
-import { Lock, Crown } from "lucide-vue-next";
-
-const router = useRouter();
-
-type PlanType = "FREE" | "PRO" | "PRIME";
-const currentPlan = ref<PlanType>("FREE");
 
 const normalizePlan = (plan?: string): PlanType => {
   const normalizedPlan = (plan ?? "FREE").trim().toUpperCase();
@@ -51,13 +54,24 @@ const normalizePlan = (plan?: string): PlanType => {
   return "FREE";
 };
 
-const planLoading = ref(true);
-const initLoading = ref(false);
-const planFetchError = ref<string | null>(null);
+const hasAccess = computed(
+  () => !planLoading.value && ["PRO", "PRIME"].includes(currentPlan.value),
+);
+
+const employerJobs = computed(() => jobStore.myJobs);
+
+const selectedJob = computed<JobPosting | null>(
+  () => employerJobs.value.find((job) => job.id === selectedJobId.value) ?? null,
+);
+
+const isJobSelectDisabled = computed(
+  () => initLoading.value || isJobSelectionLoading.value,
+);
 
 const fetchCurrentPlan = async () => {
   planLoading.value = true;
   planFetchError.value = null;
+
   try {
     const subscription = await getEmployerSubscription();
     currentPlan.value = normalizePlan(subscription.currentPlan);
@@ -69,31 +83,65 @@ const fetchCurrentPlan = async () => {
   }
 };
 
-const hasAccess = computed(
-  () => !planLoading.value && ["PRO", "PRIME"].includes(currentPlan.value),
-);
-
-const employerJobs = computed(() => jobStore.myJobs);
-
-const selectedJob = computed<JobPosting | null>(
-  () => employerJobs.value.find((job) => job.id === selectedJobId.value) ?? null,
-);
-
 const ensureSelectedJob = (jobs: JobPosting[]) => {
   if (!jobs.some((job) => job.id === selectedJobId.value)) {
     selectedJobId.value = jobs[0]?.id ?? "";
   }
 };
 
-const loadRecommendationForSelectedJob = async () => {
-  if (!/^\d+$/.test(selectedJobId.value)) {
+const parseSelectedJobId = (): number | string | null => {
+  const rawJobId = selectedJobId.value.trim();
+  if (!/^\d+$/.test(rawJobId)) {
     freelancerStore.freelancers = [];
     freelancerStore.recommendedFetchError =
       "유효한 프로젝트 공고를 선택해주세요.";
+    return null;
+  }
+
+  const numericJobId = Number(rawJobId);
+  if (Number.isSafeInteger(numericJobId) && numericJobId > 0) {
+    return numericJobId;
+  }
+
+  try {
+    const bigIntJobId = BigInt(rawJobId);
+    if (bigIntJobId > 0n) {
+      return rawJobId;
+    }
+  } catch {
+    // Fall through to the shared validation error below.
+  }
+
+  freelancerStore.freelancers = [];
+  freelancerStore.recommendedFetchError =
+    "유효하지 않은 프로젝트 공고 ID입니다.";
+  return null;
+};
+
+const loadRecommendationForSelectedJob = async (requestId: number) => {
+  const parsedJobId = parseSelectedJobId();
+  if (parsedJobId === null) {
     return;
   }
 
-  await freelancerStore.fetchRecommendedFreelancers(Number(selectedJobId.value));
+  activeRecommendationController?.abort();
+  const controller = new AbortController();
+  activeRecommendationController = controller;
+  isJobSelectionLoading.value = true;
+
+  try {
+    await freelancerStore.fetchRecommendedFreelancers(
+      parsedJobId,
+      controller.signal,
+    );
+  } finally {
+    if (requestId === recommendationRequestId.value) {
+      isJobSelectionLoading.value = false;
+      if (activeRecommendationController === controller) {
+        activeRecommendationController = null;
+      }
+    }
+  }
 };
 
 const loadRecommendedFreelancers = async () => {
@@ -122,22 +170,26 @@ const loadRecommendedFreelancers = async () => {
     }
 
     ensureSelectedJob(jobs);
-
-    if (/^\d+$/.test(selectedJobId.value)) {
-      await loadRecommendationForSelectedJob();
-      return;
-    }
-
-    freelancerStore.freelancers = [];
-    freelancerStore.recommendedFetchError =
-      "유효하지 않은 프로젝트 공고 ID입니다.";
+    recommendationRequestId.value += 1;
+    await loadRecommendationForSelectedJob(recommendationRequestId.value);
   } finally {
     initLoading.value = false;
   }
 };
 
+const handleJobChange = async (event: Event) => {
+  selectedJobId.value = (event.target as HTMLSelectElement).value;
+  recommendationRequestId.value += 1;
+  await loadRecommendationForSelectedJob(recommendationRequestId.value);
+};
+
+const goToUpgrade = () => {
+  router.push({ name: "employer.mypage", query: { tab: "account" } });
+};
+
 onMounted(async () => {
   await fetchCurrentPlan();
+
   if (planFetchError.value) {
     freelancerStore.freelancers = [];
     freelancerStore.recommendedFetchError =
@@ -153,14 +205,9 @@ onMounted(async () => {
   await loadRecommendedFreelancers();
 });
 
-const handleJobChange = async (event: Event) => {
-  selectedJobId.value = (event.target as HTMLSelectElement).value;
-  await loadRecommendationForSelectedJob();
-};
-
-const goToUpgrade = () => {
-  router.push({ name: "employer.mypage", query: { tab: "account" } });
-};
+onBeforeUnmount(() => {
+  activeRecommendationController?.abort();
+});
 </script>
 
 <template>
@@ -187,8 +234,9 @@ const goToUpgrade = () => {
         <div class="w-full md:w-[360px]">
           <select
             :value="selectedJobId"
+            :disabled="isJobSelectDisabled"
             @change="handleJobChange"
-            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-[#2D5BFF]"
+            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-[#2D5BFF] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <option
               v-for="job in employerJobs"
@@ -226,9 +274,7 @@ const goToUpgrade = () => {
           <div class="h-6 w-16 bg-white/10 rounded-full"></div>
           <div class="h-6 w-16 bg-white/10 rounded-full"></div>
         </div>
-        <div
-          class="pt-4 border-t border-white/10 flex justify-between items-center"
-        >
+        <div class="pt-4 border-t border-white/10 flex justify-between items-center">
           <div class="h-4 w-24 bg-white/10 rounded"></div>
           <div class="flex gap-2">
             <div class="w-10 h-10 bg-white/10 rounded-lg"></div>
@@ -262,7 +308,7 @@ const goToUpgrade = () => {
       ></div>
       <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
       <p class="text-white/50">
-        등록하신 프로젝트에 딱 맞는 프리랜서를 찾고 있습니다
+        등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다
       </p>
     </div>
 
@@ -320,9 +366,7 @@ const goToUpgrade = () => {
           </span>
         </div>
 
-        <div
-          class="flex items-center justify-between pt-4 border-t border-white/10"
-        >
+        <div class="flex items-center justify-between pt-4 border-t border-white/10">
           <div class="text-sm">
             <span class="text-white/60">희망 급여 </span>
             <span
@@ -366,7 +410,6 @@ const goToUpgrade = () => {
       </div>
     </div>
 
-    <!-- Access Restricted UI -->
     <div
       v-else
       class="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm"
@@ -380,7 +423,7 @@ const goToUpgrade = () => {
         프로 플랜 이상 전용 서비스입니다
       </h2>
       <p class="text-slate-400 mb-8 max-w-md mx-auto">
-        AI 기반 맞춤형 프리랜서 추천 기능은 프로 플랜 이상 구독 시 이용하실 수
+        AI 기반 맞춤형 프리랜서 추천 기능은 프로 플랜 이상 구독자만 이용할 수
         있습니다. 지금 바로 업그레이드하고 최적의 인재를 만나보세요.
       </p>
       <button

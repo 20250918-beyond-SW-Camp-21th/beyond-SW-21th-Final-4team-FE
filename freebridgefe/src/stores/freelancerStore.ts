@@ -43,6 +43,19 @@ const getProposalErrorMessage = (error: unknown): string => {
   return "제안 정보를 처리하지 못했습니다.";
 };
 
+const isCanceledRecommendationError = (error: unknown): boolean => {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const maybeError = error as { name?: string; code?: string };
+  return (
+    maybeError.name === "CanceledError" ||
+    maybeError.name === "AbortError" ||
+    maybeError.code === "ERR_CANCELED"
+  );
+};
+
 export type RecommendedFreelancer = User & {
   matchScore?: number;
   jobTitle?: string;
@@ -58,12 +71,15 @@ export const useFreelancerStore = defineStore("freelancer", () => {
   const proposalFetchError = ref<string | null>(null);
   const userNameCache: Record<string, string> = {};
 
-  async function fetchRecommendedFreelancers(jobId: number) {
+  async function fetchRecommendedFreelancers(
+    jobId: number | string,
+    signal?: AbortSignal,
+  ) {
     isFetchingRecommended.value = true;
     recommendedFetchError.value = null;
 
     try {
-      const recommendations = await getFreelancerRecommendations(jobId);
+      const recommendations = await getFreelancerRecommendations(jobId, signal);
       freelancers.value = recommendations.map(
         (rec: AiRecommendationResponseDTO) => ({
           id: String(rec.id),
@@ -79,6 +95,10 @@ export const useFreelancerStore = defineStore("freelancer", () => {
         }),
       ) as RecommendedFreelancer[];
     } catch (error: any) {
+      if (isCanceledRecommendationError(error)) {
+        return;
+      }
+
       console.error("Failed to fetch recommended freelancers:", error);
       freelancers.value = [];
       recommendedFetchError.value =

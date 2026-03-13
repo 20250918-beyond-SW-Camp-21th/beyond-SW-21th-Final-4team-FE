@@ -20,11 +20,12 @@ export interface ApiResponse<T> {
  * Get freelancer recommendations for a specific job posting
  */
 export const getFreelancerRecommendations = async (
-  jobPostingId: number,
+  jobPostingId: number | string,
+  signal?: AbortSignal,
 ): Promise<AiRecommendationResponseDTO[]> => {
   const response = await apiClient.get<
     ApiResponse<AiRecommendationResponseDTO[]>
-  >(`/api/v1/employer/jobs/${jobPostingId}/recommendations`);
+  >(`/api/v1/employer/jobs/${jobPostingId}/recommendations`, { signal });
 
   if (!response.data.success) {
     throw new Error(
