@@ -166,14 +166,19 @@ export const useContractStore = defineStore('contract', () => {
             );
         };
 
-        const missingIds = Array.from(
-            new Set(
-                items
-                    .filter((c) => needsName(c.freelancerName))
-                    .map((c) => Number(c.freelancerId))
-                    .filter((id) => Number.isFinite(id) && id > 0)
-            )
-        );
+        const collectMissingIds = (getter: (c: ContractWithDetails) => number, nameGetter: (c: ContractWithDetails) => string | undefined | null) =>
+            Array.from(
+                new Set(
+                    items
+                        .filter((c) => needsName(nameGetter(c)))
+                        .map((c) => Number(getter(c)))
+                        .filter((id) => Number.isFinite(id) && id > 0)
+                )
+            );
+
+        const missingFreelancerIds = collectMissingIds((c) => c.freelancerId, (c) => c.freelancerName);
+        const missingEmployerIds = collectMissingIds((c) => c.employerId, (c) => c.employerName);
+        const missingIds = Array.from(new Set([...missingFreelancerIds, ...missingEmployerIds]));
 
         if (missingIds.length === 0) return;
 
@@ -200,9 +205,14 @@ export const useContractStore = defineStore('contract', () => {
         if (idToName.size === 0) return;
 
         contracts.value = items.map((contract) => {
-            const resolvedName = idToName.get(Number(contract.freelancerId));
-            if (!resolvedName) return contract;
-            return { ...contract, freelancerName: resolvedName };
+            const resolvedFreelancer = idToName.get(Number(contract.freelancerId));
+            const resolvedEmployer = idToName.get(Number(contract.employerId));
+            if (!resolvedFreelancer && !resolvedEmployer) return contract;
+            return {
+                ...contract,
+                freelancerName: resolvedFreelancer ?? contract.freelancerName,
+                employerName: resolvedEmployer ?? contract.employerName,
+            };
         });
     }
 

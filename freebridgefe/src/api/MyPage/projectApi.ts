@@ -19,6 +19,8 @@ export interface EmployerProjectListItem {
     applicantCount: number;
     createdAt: string | null;
     deadline: string | null;
+    description?: string | null;
+    monthlySalary?: string | number | null;
 }
 
 export interface EmployerApplicantStatus {
