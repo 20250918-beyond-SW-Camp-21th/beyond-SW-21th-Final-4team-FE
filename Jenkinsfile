@@ -170,6 +170,10 @@ pipeline {
 
                             kubectl apply -f kube-folder/frontend-deployment.yml
                             kubectl apply -f kube-folder/frontend-service.yml
+                            
+                            # 기존 frontend-ingress가 남아있다면 충돌 방지를 위해 삭제
+                            kubectl delete ingress frontend-ingress --ignore-not-found=true || true
+                            
                             kubectl apply -f kube-folder/ingress-set.yml
 
                             kubectl rollout restart deployment/frontend
