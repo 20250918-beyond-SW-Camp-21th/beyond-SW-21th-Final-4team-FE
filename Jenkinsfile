@@ -123,7 +123,7 @@ pipeline {
 
                             test -f kube-folder/frontend-deployment.yml
                             test -f kube-folder/frontend-service.yml
-                            test -f kube-folder/frontend-ingress.yml
+                            test -f kube-folder/ingress-set.yml
 
                             sed -i 's|image: ${env.IMAGE_NAME}:.*|image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}|g' kube-folder/frontend-deployment.yml
                             grep 'image:' kube-folder/frontend-deployment.yml
@@ -166,18 +166,18 @@ pipeline {
 
                             test -f kube-folder/frontend-deployment.yml
                             test -f kube-folder/frontend-service.yml
-                            test -f kube-folder/frontend-ingress.yml
+                            test -f kube-folder/ingress-set.yml
 
                             kubectl apply -f kube-folder/frontend-deployment.yml
                             kubectl apply -f kube-folder/frontend-service.yml
-                            kubectl apply -f kube-folder/frontend-ingress.yml
+                            kubectl apply -f kube-folder/ingress-set.yml
 
                             kubectl rollout restart deployment/frontend
                             kubectl rollout status deployment/frontend --timeout=180s
 
                             kubectl get svc frontend-service
-                            kubectl get ingress frontend-ingress
-                            kubectl describe ingress frontend-ingress || true
+                            kubectl get ingress ingress-set
+                            kubectl describe ingress ingress-set || true
                         """
                     }
                 }
