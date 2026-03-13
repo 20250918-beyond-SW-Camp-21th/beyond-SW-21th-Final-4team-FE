@@ -27,19 +27,13 @@ const toNumericId = (value: string | number, label: string): number => {
 };
 
 const getProposalErrorMessage = (error: unknown): string => {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error
-  ) {
-    const responseErrorMessage = (error as any).response?.data?.error?.message;
-    if (typeof responseErrorMessage === "string" && responseErrorMessage.trim()) {
-      return responseErrorMessage;
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const err = error as any;
+    if (typeof err.response?.data?.error?.message === "string") {
+      return err.response.data.error.message;
     }
-
-    const responseMessage = (error as any).response?.data?.message;
-    if (typeof responseMessage === "string" && responseMessage.trim()) {
-      return responseMessage;
+    if (typeof err.response?.data?.message === "string") {
+      return err.response.data.message;
     }
   }
 
