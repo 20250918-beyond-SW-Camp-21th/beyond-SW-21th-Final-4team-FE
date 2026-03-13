@@ -246,9 +246,7 @@ const handleAiAnalysis = async () => {
       </button>
     </div>
 
-    <!-- Content: Evaluation Summary (3-Column Layout) -->
     <div v-if="activeTab === 'evaluation'" class="space-y-8 animate-fade-in-up">
-      <!-- Loading State -->
       <div v-if="isLoading" class="flex justify-center py-20">
         <div
           class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"
@@ -264,17 +262,14 @@ const handleAiAnalysis = async () => {
       </div>
 
       <div v-else-if="props.profile">
-        <!-- Top: AI Insight Action / Banner -->
         <div class="min-h-[180px]">
           <div
             v-if="showAiAnalysis"
             class="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-white/10 rounded-3xl p-8 relative overflow-hidden animate-fade-in"
           >
-            <!-- AI Insight Header Layout -->
             <div
               class="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between mb-8"
             >
-              <!-- Left: Title & Description -->
               <div class="flex-1 flex flex-col gap-4">
                 <div class="flex items-center gap-2 text-indigo-300">
                   <Sparkles class="w-5 h-5" />
@@ -300,12 +295,8 @@ const handleAiAnalysis = async () => {
                 </div>
               </div>
 
-              <!-- Right: AI Reputation Index -->
               <div
-                v-if="
-                  props.profile.aiSummary &&
-                  'positivityScore' in props.profile.aiSummary
-                "
+                v-if="positivityScore !== null"
                 class="flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-6 shadow-xl shadow-black/20"
               >
                 <div
@@ -335,7 +326,7 @@ const handleAiAnalysis = async () => {
             <div
               class="mt-8 pt-4 flex items-center gap-2 text-xs text-slate-500 opacity-60 w-full justify-end"
             >
-              <span>Based on {{ evaluations.length }} verified reviews</span>
+              <span>검증된 리뷰 {{ evaluations.length }}건 기준</span>
             </div>
 
             <div class="mt-6 grid grid-cols-1 gap-4 border-t border-white/10 pt-6 md:grid-cols-2">
