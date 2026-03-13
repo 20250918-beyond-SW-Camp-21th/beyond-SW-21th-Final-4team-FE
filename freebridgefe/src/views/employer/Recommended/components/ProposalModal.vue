@@ -25,14 +25,39 @@ const isSubmitting = ref(false);
 
 onMounted(async () => {
   try {
-    await jobStore.fetchJobPostings();
+    await Promise.all([
+      jobStore.fetchJobPostings(),
+      freelancerStore.fetchEmployerProposals().catch((error) => {
+        console.warn('Failed to load existing employer proposals for proposal modal:', error);
+      }),
+    ]);
   } catch (error) {
     console.error('Failed to load employer jobs for proposal modal:', error);
     window.alert('공고 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
   }
 });
 
-const employerJobs = computed(() => jobStore.myJobs.filter((job) => job.status === 'OPEN'));
+const proposedJobIdsForFreelancer = computed(() => {
+  const freelancerId = String(props.freelancer.id);
+  const employerId = String(authStore.user?.id ?? '');
+
+  return new Set(
+    freelancerStore.proposals
+      .filter(
+        (proposal) =>
+          proposal.freelancerId === freelancerId &&
+          proposal.employerId === employerId &&
+          proposal.jobId,
+      )
+      .map((proposal) => proposal.jobId as string),
+  );
+});
+
+const openEmployerJobs = computed(() => jobStore.myJobs.filter((job) => job.status === 'OPEN'));
+
+const employerJobs = computed(() =>
+  openEmployerJobs.value.filter((job) => !proposedJobIdsForFreelancer.value.has(job.id))
+);
 
 watch(
   employerJobs,
@@ -84,7 +109,12 @@ const handleSubmit = async () => {
     emit('close');
   } catch (error: any) {
     console.error('Failed to send proposal:', error);
-    alert(error?.response?.data?.message || error?.message || '제안 전송에 실패했습니다.');
+    alert(
+      error?.response?.data?.error?.message ||
+      error?.response?.data?.message ||
+      error?.message ||
+      '제안 전송에 실패했습니다.'
+    );
   } finally {
     isSubmitting.value = false;
   }
@@ -149,7 +179,11 @@ const handleSubmit = async () => {
             </option>
           </select>
           <p v-if="employerJobs.length === 0" class="mt-2 text-sm text-amber-300">
-            제안 가능한 모집중 프로젝트가 없습니다. 먼저 공고를 등록하거나 상태를 확인해주세요.
+            {{
+              openEmployerJobs.length === 0
+                ? '제안 가능한 모집중 프로젝트가 없습니다. 먼저 공고를 등록하거나 상태를 확인해주세요.'
+                : '이 프리랜서에게 이미 제안한 공고만 남아 있습니다.'
+            }}
           </p>
         </div>
 

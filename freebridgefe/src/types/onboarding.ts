@@ -2,7 +2,14 @@
 export type FreelancerGrade = 'JUNIOR' | 'MID' | 'SENIOR' | 'MASTER';
 export type WorkType = 'PERSONAL' | 'TEAM';
 export type WorkStyle = 'REMOTE' | 'ONSITE' | 'HYBRID'; // Added HYBRID as common option
-export type EmployerSize = 'SIZE_1_TO_10' | 'SIZE_10_TO_50' | 'SIZE_50_TO_100' | 'SIZE_100_TO_500' | 'SIZE_500_PLUS';
+export type EmployerSize =
+    | 'S1_4'
+    | 'S5_9'
+    | 'S10_29'
+    | 'S30_99'
+    | 'S100_299'
+    | 'S300_999'
+    | 'S1000_PLUS';
 
 export interface FreelancerProfile {
     // Step 1: Basic Info
@@ -27,6 +34,7 @@ export interface EmployerProfile {
     email: string;
     phone: string;
     logo_url?: string;
+    logo_file?: File | null;
     description: string;
 
     // Step 2: Details

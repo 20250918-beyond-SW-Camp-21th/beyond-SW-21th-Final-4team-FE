@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import apiClient from '@/api/axiosInstance';
+import { uploadEmployerLogo } from '@/api/MyPage/employer';
 import type { EmployerProfile, FreelancerProfile } from '@/types/onboarding';
 
 export const useOnboardingStore = defineStore('onboarding', () => {
@@ -9,7 +11,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
 
     // Initial Data State
     const employerData = ref<Partial<EmployerProfile>>({
-        size: 'SIZE_1_TO_10' // Default enum value
+        size: 'S1_4' // Default enum value aligned with BE Scale
     });
 
     const freelancerData = ref<Partial<FreelancerProfile>>({
@@ -45,12 +47,25 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     async function submitEmployerOnboarding() {
         isLoading.value = true;
         try {
-            // TODO: API call to save profile
-            // await api.post('/employers/onboarding', employerData.value);
+            const logoFile = employerData.value.logo_file;
+            if (logoFile) {
+                await uploadEmployerLogo(logoFile);
+            }
+            const payload = {
+                companyName: employerData.value.company_name ?? '',
+                industry: employerData.value.industry ?? '',
+                scale: employerData.value.size ?? '',
+                location: employerData.value.location ?? '',
+                websiteUrl: employerData.value.website ?? '',
+                description: employerData.value.description ?? ''
+            };
 
-            // Mock delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            return true;
+            const res = await apiClient.put('/api/employer/mypage/profile', payload);
+            if (res.data?.success === true) {
+                return true;
+            }
+            console.error(res.data?.message ?? 'Failed to submit employer onboarding');
+            return false;
         } catch (e) {
             console.error(e);
             return false;
