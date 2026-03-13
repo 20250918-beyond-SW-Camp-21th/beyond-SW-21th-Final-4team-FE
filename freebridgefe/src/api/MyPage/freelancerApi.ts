@@ -80,6 +80,7 @@ export interface FreelancerProfileDashboard {
     dispute: number;
   };
   averageRating: number;
+  statPending: number;
   statContact: number;
   statChat: number;
   statContract: number;
@@ -163,6 +164,7 @@ const GUEST_FREELANCER_PROFILE: FreelancerProfileDashboard = {
     dispute: 0,
   },
   averageRating: 0,
+  statPending: 0,
   statContact: 0,
   statChat: 0,
   statContract: 0,
@@ -225,6 +227,7 @@ export const getFreelancerProfile = async (
       dispute: basic.collaboration?.dispute ?? 0,
     },
     averageRating: basic.averageRating ?? 0,
+    statPending: 0,
     statContact: stats.statContact ?? 0,
     statChat: stats.statChat ?? 0,
     statContract: stats.statContract ?? 0,

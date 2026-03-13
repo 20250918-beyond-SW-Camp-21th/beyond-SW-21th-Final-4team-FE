@@ -91,6 +91,7 @@ const profile = ref<FreelancerProfileDashboard>({
         dispute: 0
     },
     averageRating: 0,
+    statPending: 0,
     statContact: 0,
     statChat: 0,
     statContract: 0,
@@ -122,6 +123,7 @@ onMounted(async () => {
 
             try {
                 const stats = await getFreelancerProjectStats();
+                profile.value.statPending = stats.appliedProjects ?? 0;
                 profile.value.statInteresting = stats.inProgressProjects ?? 0;
                 profile.value.statCompleted = stats.completedProjects ?? 0;
             } catch (statsError) {
@@ -443,12 +445,12 @@ const hideChurnAlert = ref(false);
                 </div>
             </div>
 
-            <!-- My Status Section -->
+            <!-- My Project Status Section -->
             <div class="mb-8">
                 <div class="flex items-center justify-between mb-6">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
                         <div class="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
-                        나의 현황
+                        나의 프로젝트 현황
                     </h3>
                     <button
                         @click="router.push({ name: 'freelancer.applications' })"
@@ -459,39 +461,33 @@ const hideChurnAlert = ref(false);
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <!-- Application Stats -->
-                    <div class="bg-gradient-to-br from-[#1e293b]/80 to-[#0F172A]/80 rounded-2xl p-6 border border-white/10 backdrop-blur-sm shadow-lg">
+                    <!-- Applied / Proposed Projects -->
+                    <div
+                        @click="activeTab = 'projects'"
+                        class="bg-gradient-to-br from-[#1e293b]/80 to-[#0F172A]/80 rounded-2xl p-6 border border-white/10 backdrop-blur-sm shadow-lg cursor-pointer hover:border-white/20 transition-all"
+                    >
                         <h4 class="text-sm font-semibold text-slate-400 mb-4 flex items-center gap-2">
                             <Briefcase class="w-4 h-4" />
-                            지원 현황
+                            지원/제안 프로젝트
                         </h4>
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1 text-center">
-                                <div class="text-3xl font-bold text-white mb-1">{{ profile.statContact }}</div>
-                                <div class="text-xs text-slate-500">연락</div>
+                        <div class="flex items-end justify-between">
+                            <div>
+                                <div class="text-5xl font-bold text-white">{{ profile.statPending }}</div>
+                                <div class="text-xs text-slate-500 mt-1">건</div>
                             </div>
-                            <div class="w-px h-12 bg-white/10"></div>
-                            <div class="flex-1 text-center">
-                                <div class="text-3xl font-bold text-blue-400 mb-1">{{ profile.statChat }}</div>
-                                <div class="text-xs text-slate-500">채팅</div>
-                            </div>
-                            <div class="w-px h-12 bg-white/10"></div>
-                            <div class="flex-1 text-center">
-                                <div class="text-3xl font-bold text-green-400 mb-1">{{ profile.statContract }}</div>
-                                <div class="text-xs text-slate-500">계약 완료</div>
-                            </div>
+                            <ChevronRight class="text-white/30 w-5 h-5" />
                         </div>
                     </div>
 
                     <!-- Active Projects -->
                     <div
-                        @click="router.push({ name: 'freelancer.contracts' })"
+                        @click="activeTab = 'projects'"
                         class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 relative overflow-hidden group hover:shadow-xl hover:shadow-blue-500/20 transition-all cursor-pointer"
                     >
                         <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-500"></div>
                         <div class="relative z-10">
                             <div class="flex items-center justify-between mb-2">
-                                <span class="text-blue-100 font-semibold text-sm">진행중 프로젝트</span>
+                                <span class="text-blue-100 font-semibold text-sm">진행중인 프로젝트</span>
                                 <ChevronRight class="text-white/60 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </div>
                             <div class="text-5xl font-bold text-white">{{ profile.statInteresting }}</div>
@@ -501,7 +497,7 @@ const hideChurnAlert = ref(false);
 
                     <!-- Completed Projects -->
                     <div
-                         @click="router.push({ name: 'freelancer.contracts' })"
+                         @click="activeTab = 'projects'"
                         class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-white/10 relative overflow-hidden group hover:border-white/20 transition-all cursor-pointer"
                     >
                         <div class="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-16 translate-x-16 group-hover:scale-150 transition-transform duration-500"></div>
