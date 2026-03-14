@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
     FilePlus,
     Building2,
@@ -22,6 +22,7 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
+import { useFreelancerStore } from '@/stores/freelancerStore';
 import { createContract, getEmployerRecruitmentProjects, getMatchedFreelancers, type EmployerProject, type MatchedFreelancer } from '@/api/contractApi';
 import { getEmployerProfile } from '@/api/MyPage/employer';
 import SignaturePadModal from './components/SignaturePadModal.vue';
@@ -29,9 +30,11 @@ import ContractPreview from '@/components/contract/ContractPreview.vue';
 
 type CreateContractState = 'form' | 'preview' | 'signing' | 'success';
 
+const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const contractStore = useContractStore();
+const freelancerStore = useFreelancerStore();
 
 const state = ref<CreateContractState>('form');
 const currentStep = ref(1);
@@ -52,6 +55,37 @@ function extractArray<T>(data: any): T[] {
     if (Array.isArray(data)) return data;
     if (data && Array.isArray(data.content)) return data.content;
     return [];
+}
+
+function getNumericQueryValue(value: unknown) {
+    const rawValue = Array.isArray(value) ? value[0] : value;
+    const parsedValue = Number(rawValue);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+}
+
+function getStringQueryValue(value: unknown) {
+    const rawValue = Array.isArray(value) ? value[0] : value;
+    if (rawValue === undefined || rawValue === null) return null;
+    const normalizedValue = String(rawValue).trim();
+    return normalizedValue.length > 0 ? normalizedValue : null;
+}
+
+function formatDateInput(value?: Date | string | null) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function findMatchingProjectByJobId(jobId: number | null) {
+    if (!jobId) return null;
+    return projectOptions.value.find((project) =>
+        Number(project.projectId) === jobId || Number(project.jobPostingId) === jobId
+    ) || null;
 }
 
 async function loadMatchedFreelancers(id: number) {
@@ -115,6 +149,7 @@ onMounted(async () => {
     }
 
     isLoadingProjects.value = false;
+    await applyRouteContextToCreateForm();
 });
 
 // Step 1: Basic Info
@@ -295,9 +330,85 @@ const handleReset = () => {
     state.value = 'form';
 };
 
+async function applyRouteContextToCreateForm() {
+    const routeJobId = getNumericQueryValue(route.query.jobId);
+    const routeProposalId = getStringQueryValue(route.query.proposalId);
+    const routeContractId = getNumericQueryValue(route.query.contractId);
+
+    let sourceContract: ContractWithDetails | null = null;
+    if (routeContractId) {
+        await contractStore.ensureContractsLoaded().catch(() => undefined);
+        sourceContract = contractStore.findContractByAnyId(routeContractId);
+    }
+
+    let sourceProposal = null;
+    if (routeProposalId) {
+        if (!freelancerStore.proposals.some((proposal) => proposal.id === routeProposalId)) {
+            await freelancerStore.fetchEmployerProposals().catch(() => undefined);
+        }
+        sourceProposal = freelancerStore.proposals.find((proposal) => proposal.id === routeProposalId) || null;
+    }
+
+    const fallbackJobId =
+        routeJobId ??
+        (sourceProposal?.jobId ? Number(sourceProposal.jobId) : null) ??
+        (sourceContract?.projectId ? Number(sourceContract.projectId) : null);
+
+    const matchedProject = findMatchingProjectByJobId(fallbackJobId);
+    if (matchedProject && (selectedProjectId.value !== matchedProject.projectId || freelancerOptions.value.length === 0)) {
+        await onProjectSelect(matchedProject.projectId);
+    }
+
+    const routeFreelancerId =
+        sourceProposal?.freelancerId ? Number(sourceProposal.freelancerId) : sourceContract?.freelancerId ?? null;
+    if (routeFreelancerId && Number.isFinite(routeFreelancerId)) {
+        selectedFreelancerId.value = routeFreelancerId;
+    }
+
+    const fallbackProjectName =
+        sourceContract?.projectName ||
+        matchedProject?.projectName ||
+        (sourceProposal?.message ? sourceProposal.message.slice(0, 24) : '');
+    if (fallbackProjectName) {
+        projectName.value = fallbackProjectName;
+    }
+
+    const fallbackJobDescription =
+        sourceContract?.jobDescription ||
+        sourceProposal?.message ||
+        jobDescription.value;
+    if (fallbackJobDescription) {
+        jobDescription.value = fallbackJobDescription;
+    }
+
+    if (sourceContract) {
+        startDate.value = formatDateInput(sourceContract.startDate);
+        endDate.value = formatDateInput(sourceContract.endDate);
+        budget.value = String(sourceContract.budget ?? '');
+        paymentDay.value = sourceContract.paymentDay ?? 25;
+    }
+}
+
 const navigateToContracts = () => {
-    router.push('/employer/contracts');
+    const query: Record<string, string> = {};
+    const routeRoomId = getStringQueryValue(route.query.roomId);
+
+    if (routeRoomId) {
+        query.roomId = routeRoomId;
+    }
+    if (createdContract.value?.contractId) {
+        query.contractId = String(createdContract.value.contractId);
+    }
+
+    router.push({ name: 'employer.contracts', query });
 };
+
+watch(
+    () => [route.query.jobId, route.query.proposalId, route.query.contractId],
+    () => {
+        void applyRouteContextToCreateForm();
+    }
+);
 </script>
 
 <template>

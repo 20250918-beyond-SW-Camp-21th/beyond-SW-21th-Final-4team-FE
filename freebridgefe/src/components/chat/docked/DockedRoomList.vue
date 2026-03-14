@@ -109,9 +109,7 @@ function openRoom(roomId: string) {
 }
 
 function getOtherParticipantName(room: ChatRoom) {
-    if (!authStore.user) return 'Unknown';
-    const otherId = chatStore.getOtherParticipantId(room);
-    return otherId && room.participantNames[otherId] ? room.participantNames[otherId] : 'User';
+    return chatStore.getOtherParticipantName(room);
 }
 
 function formatDate(date: Date | undefined) {
@@ -138,6 +136,11 @@ const { x, y, isDragging } = useDraggable(windowRef, {
 });
 
 onMounted(() => {
+    if (authStore.isAuthenticated) {
+        chatStore.fetchRooms().catch((error) => {
+            console.error('Failed to refresh chat rooms on docked list mount:', error);
+        });
+    }
     if (windowRef.value) {
         const rect = windowRef.value.getBoundingClientRect();
         x.value = rect.left;

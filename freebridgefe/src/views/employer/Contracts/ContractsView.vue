@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
     FileText,
     Calendar,
@@ -18,6 +18,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import ContractDetailModal from './components/ContractDetailModal.vue';
 
+const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const contractStore = useContractStore();
@@ -141,9 +142,37 @@ const resetFilters = () => {
     isDropdownOpen.value = false;
 };
 
-onMounted(() => {
-    contractStore.fetchContracts();
+const getNumericQueryValue = (value: unknown) => {
+    const rawValue = Array.isArray(value) ? value[0] : value;
+    const parsedValue = Number(rawValue);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+};
+
+async function syncSelectedContractFromRoute() {
+    const routeContractId = getNumericQueryValue(route.query.contractId);
+    if (!routeContractId) return;
+
+    if (!contractStore.findContractByAnyId(routeContractId)) {
+        await contractStore.fetchContracts();
+    }
+
+    const matchedContract = contractStore.findContractByAnyId(routeContractId);
+    if (matchedContract) {
+        selectedContract.value = matchedContract;
+    }
+}
+
+onMounted(async () => {
+    await contractStore.fetchContracts();
+    await syncSelectedContractFromRoute();
 });
+
+watch(
+    () => route.query.contractId,
+    () => {
+        void syncSelectedContractFromRoute();
+    }
+);
 </script>
 
 <template>

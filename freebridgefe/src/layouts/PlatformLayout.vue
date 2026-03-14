@@ -88,11 +88,48 @@ const dismissAlert = (alertId: string) => {
   chatStore.dismissAlert(alertId);
 };
 
+let refreshChatRoomsPromise: Promise<void> | null = null;
+
+const refreshChatRooms = () => {
+  if (!authStore.isAuthenticated) {
+    return Promise.resolve();
+  }
+
+  if (refreshChatRoomsPromise) {
+    return refreshChatRoomsPromise;
+  }
+
+  refreshChatRoomsPromise = (async () => {
+    try {
+      await chatStore.fetchRooms();
+    } catch (e) {
+      console.error('Failed to refresh chat rooms:', e);
+    } finally {
+      refreshChatRoomsPromise = null;
+    }
+  })();
+
+  return refreshChatRoomsPromise;
+};
+
+const handleWindowFocus = async () => {
+  await refreshChatRooms();
+};
+
+const handleVisibilityChange = async () => {
+  if (document.visibilityState === 'visible') {
+    await refreshChatRooms();
+  }
+};
+
 onMounted(async () => {
+  window.addEventListener('focus', handleWindowFocus);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
   if (authStore.isAuthenticated) {
     try {
       await chatStore.connectWebSocket();
-      await chatStore.fetchRooms();
+      await refreshChatRooms();
     } catch (e) {
       console.error('Failed to initialize chat:', e);
     }
@@ -100,6 +137,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('focus', handleWindowFocus);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
   chatStore.disconnectWebSocket();
 });
 
@@ -110,6 +149,10 @@ watch(
     const isNowChatRoute = newPath.startsWith('/chat');
 
     chatStore.setMainChatVisible(isNowChatRoute);
+
+    if (isNowChatRoute && authStore.isAuthenticated) {
+      refreshChatRooms();
+    }
 
     if (wasChatRoute && !isNowChatRoute) {
       chatStore.resetDockedUIState();

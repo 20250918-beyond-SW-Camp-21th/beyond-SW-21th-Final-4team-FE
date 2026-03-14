@@ -27,13 +27,14 @@ const toNumericId = (value: string | number, label: string): number => {
 };
 
 const getProposalErrorMessage = (error: unknown): string => {
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "response" in error &&
-    typeof (error as any).response?.data?.message === "string"
-  ) {
-    return (error as any).response.data.message;
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const err = error as any;
+    if (typeof err.response?.data?.error?.message === "string") {
+      return err.response.data.error.message;
+    }
+    if (typeof err.response?.data?.message === "string") {
+      return err.response.data.message;
+    }
   }
 
   if (error instanceof Error && error.message) {
@@ -41,6 +42,19 @@ const getProposalErrorMessage = (error: unknown): string => {
   }
 
   return "제안 정보를 처리하지 못했습니다.";
+};
+
+const isCanceledRecommendationError = (error: unknown): boolean => {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  const maybeError = error as { name?: string; code?: string };
+  return (
+    maybeError.name === "CanceledError" ||
+    maybeError.name === "AbortError" ||
+    maybeError.code === "ERR_CANCELED"
+  );
 };
 
 export type RecommendedFreelancer = User & {
@@ -58,27 +72,31 @@ export const useFreelancerStore = defineStore("freelancer", () => {
   const proposalFetchError = ref<string | null>(null);
   const userNameCache: Record<string, string> = {};
 
-  async function fetchRecommendedFreelancers(jobId: number) {
+  async function fetchRecommendedFreelancers(
+    jobId: number | string,
+    signal?: AbortSignal,
+  ) {
     isFetchingRecommended.value = true;
     recommendedFetchError.value = null;
 
     try {
-      const recommendations = await getFreelancerRecommendations(jobId);
+      const recommendations = await getFreelancerRecommendations(jobId, signal);
       freelancers.value = recommendations.map(
         (rec: AiRecommendationResponseDTO) => ({
           id: String(rec.id),
           role: "FREELANCER",
-          name: rec.nameOrTitle,
-          email: "hidden@example.com", // Hidden info for recommendation
+          name: rec.nameOrTitle?.trim() || `프리랜서 #${rec.id}`,
+          email: "hidden@example.com",
           matchScore: rec.matchScore,
-          jobTitle: "프리랜서", // AI 추천에서 직무를 받아올 수 없으므로 기본값
-          skills: rec.skills && rec.skills.length > 0 ? rec.skills : ["전문가"],
-          bio:
-            rec.description ||
-            `AI 추천 점수: ${(rec.matchScore * 100).toFixed(0)}% 일치하는 프리랜서입니다.`,
+          skills: rec.skills?.filter(Boolean) ?? [],
+          bio: rec.description?.trim() || undefined,
         }),
       ) as RecommendedFreelancer[];
     } catch (error: any) {
+      if (isCanceledRecommendationError(error)) {
+        return;
+      }
+
       console.error("Failed to fetch recommended freelancers:", error);
       freelancers.value = [];
       recommendedFetchError.value =
@@ -257,8 +275,10 @@ export const useFreelancerStore = defineStore("freelancer", () => {
 
     if (status === "ACCEPTED") {
       const chatStore = useChatStore();
-      const employerId = proposals.value[index].employerId;
-      const freelancerId = proposals.value[index].freelancerId;
+      const rawEmployerId = String(proposals.value[index].employerId);
+      const rawFreelancerId = String(proposals.value[index].freelancerId);
+      const employerId = rawEmployerId.startsWith("e") ? rawEmployerId : `e${rawEmployerId}`;
+      const freelancerId = rawFreelancerId.startsWith("f") ? rawFreelancerId : `f${rawFreelancerId}`;
       const jobId = proposals.value[index].jobId; // Capture possibly undefined jobId
 
       const context: any = {
@@ -273,8 +293,7 @@ export const useFreelancerStore = defineStore("freelancer", () => {
           [employerId, freelancerId],
           {
             [employerId]: proposals.value[index].employerName || "Employer",
-            [freelancerId]:
-              proposals.value[index].freelancerName || "Freelancer",
+            [freelancerId]: proposals.value[index].freelancerName || "Freelancer",
           },
           context,
         )

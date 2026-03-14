@@ -126,10 +126,18 @@ const handleAcceptProposal = async (proposalId: string) => {
     }
     actionFeedback.value = { type: 'success', message: '제안을 수락했습니다. 상태가 수락됨으로 변경되었습니다.' };
     alert('제안을 수락했습니다.');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to accept proposal:', error);
-    actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
-    alert('제안 상태 변경에 실패했습니다.');
+    let errMsg = '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.';
+    if (error?.response?.data?.error?.message) {
+      errMsg = error.response.data.error.message;
+    } else if (error?.response?.data?.message) {
+      errMsg = error.response.data.message;
+    } else if (error instanceof Error && error.message) {
+      errMsg = error.message;
+    }
+    actionFeedback.value = { type: 'error', message: errMsg };
+    alert(errMsg);
   }
 };
 
@@ -152,10 +160,18 @@ const handleRejectProposal = async (proposalId: string) => {
 
     actionFeedback.value = { type: 'success', message: '제안을 거절했습니다. 상태가 거절됨으로 변경되었습니다.' };
     alert('제안을 거절했습니다.');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to reject proposal:', error);
-    actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
-    alert('제안 상태 변경에 실패했습니다.');
+    let errMsg = '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.';
+    if (error?.response?.data?.error?.message) {
+      errMsg = error.response.data.error.message;
+    } else if (error?.response?.data?.message) {
+      errMsg = error.response.data.message;
+    } else if (error instanceof Error && error.message) {
+      errMsg = error.message;
+    }
+    actionFeedback.value = { type: 'error', message: errMsg };
+    alert(errMsg);
   }
 };
 </script>
