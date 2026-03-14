@@ -96,8 +96,8 @@ const formatAppliedAt = (timestamp: number | null) => {
           <ArrowLeft class="w-5 h-5 text-white/60" />
         </button>
         <div>
-          <h2 class="text-2xl font-bold text-white mb-2">프로젝트 관리</h2>
-          <p class="text-slate-400 text-sm">지원한 프로젝트의 상태를 한눈에 확인하세요.</p>
+          <h2 class="text-2xl font-bold text-white mb-2">프로젝트 지원 현황</h2>
+          <p class="text-slate-400 text-sm">지원하거나 제안받은 프로젝트의 상태를 한눈에 확인하세요.</p>
         </div>
       </div>
 

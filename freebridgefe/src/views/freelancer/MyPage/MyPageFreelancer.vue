@@ -139,7 +139,6 @@ onMounted(async () => {
 
                 if (summaryResult.status === 'fulfilled') {
                     const summary = summaryResult.value;
-                    profile.value.averageRating = summary.averageRate ?? 0;
                     profile.value.topPercentile = summary.topPercentile ?? 0;
                 }
 
