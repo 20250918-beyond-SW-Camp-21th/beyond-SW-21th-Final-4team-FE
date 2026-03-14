@@ -52,11 +52,11 @@ export const useChatStore = defineStore('chat', () => {
         if (!raw) return [];
 
         const normalized = raw.toLowerCase();
-        const variants = new Set<string>([normalized]);
-
         if (/^[efa]\d+$/i.test(normalized)) {
-            variants.add(normalized.slice(1));
+            return [normalized];
         }
+
+        const variants = new Set<string>([normalized]);
 
         if (/^\d+$/.test(normalized)) {
             variants.add(`e${normalized}`);
