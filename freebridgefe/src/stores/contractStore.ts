@@ -111,6 +111,16 @@ const getPagedItems = <T>(payload: { content?: T[]; items?: T[] } | undefined | 
     return [];
 };
 
+const isDefaultContractListRequest = (params?: ContractListParams) => {
+    if (!params) return true;
+
+    return Object.values(params).every((value) => {
+        if (value === undefined || value === null || value === '') return true;
+        if (Array.isArray(value)) return value.length === 0;
+        return false;
+    });
+};
+
 export const useContractStore = defineStore('contract', () => {
     const contracts = ref<ContractWithDetails[]>([]);
     const employerSettlements = ref<EmployerSettlement[]>([]);
@@ -182,6 +192,7 @@ export const useContractStore = defineStore('contract', () => {
 
     async function fetchContracts(params?: ContractListParams) {
         const requestKey = JSON.stringify(params ?? {});
+        const isDefaultRequest = isDefaultContractListRequest(params);
         if (fetchContractsPromise && fetchContractsPromiseKey === requestKey) {
             return fetchContractsPromise;
         }
@@ -192,7 +203,9 @@ export const useContractStore = defineStore('contract', () => {
                 const data = await listContracts(params);
                 const items = (data.items || []) as ContractWithDetails[];
                 contracts.value = items;
-                hasFetchedContracts.value = true;
+                if (isDefaultRequest) {
+                    hasFetchedContracts.value = true;
+                }
 
                 const placeholderPattern = /(user|사용자)\s*#\s*\d+/i;
                 const numericOnlyPattern = /^\s*#?\d+\s*$/;

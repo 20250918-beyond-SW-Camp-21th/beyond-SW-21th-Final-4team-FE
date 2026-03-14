@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import {
     FileText,
     Calendar,
@@ -21,6 +22,7 @@ import { signContract } from '@/api/contractApi';
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
+const route = useRoute();
 
 const selectedContract = ref<ContractWithDetails | null>(null);
 const signingContract = ref<ContractWithDetails | null>(null);
@@ -167,9 +169,37 @@ const openSignModal = (contract: ContractWithDetails) => {
     signingContract.value = contract;
 };
 
-onMounted(() => {
-    contractStore.fetchContracts();
+const getNumericQueryValue = (value: unknown) => {
+    const rawValue = Array.isArray(value) ? value[0] : value;
+    const parsedValue = Number(rawValue);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+};
+
+async function syncSelectedContractFromRoute() {
+    const routeContractId = getNumericQueryValue(route.query.contractId);
+    if (!routeContractId) return;
+
+    if (!contractStore.findContractByAnyId(routeContractId)) {
+        await contractStore.fetchContracts();
+    }
+
+    const matchedContract = contractStore.findContractByAnyId(routeContractId);
+    if (matchedContract) {
+        selectedContract.value = matchedContract;
+    }
+}
+
+onMounted(async () => {
+    await contractStore.fetchContracts();
+    await syncSelectedContractFromRoute();
 });
+
+watch(
+    () => route.query.contractId,
+    () => {
+        void syncSelectedContractFromRoute();
+    }
+);
 </script>
 
 <template>

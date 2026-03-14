@@ -264,11 +264,19 @@ function scrollToBottom() {
     });
 }
 
+async function fetchContractsForChat() {
+    try {
+        await contractStore.fetchContracts();
+    } catch (error) {
+        console.error('Failed to refresh contracts for chat:', error);
+    }
+}
+
 async function ensureContractsLoadedForChat() {
     if (!shouldLoadContracts.value) return;
     try {
         if (shouldRefreshContracts.value) {
-            await contractStore.fetchContracts();
+            await fetchContractsForChat();
             return;
         }
         await contractStore.ensureContractsLoaded();
@@ -283,9 +291,9 @@ onMounted(() => {
     void ensureContractsLoadedForChat();
 });
 watch(messages, scrollToBottom, { deep: true });
-watch(shouldLoadContracts, (nextShouldLoadContracts) => {
-    if (!nextShouldLoadContracts) return;
-    void ensureContractsLoadedForChat();
+watch(shouldRefreshContracts, (nextShouldRefreshContracts) => {
+    if (!nextShouldRefreshContracts) return;
+    void fetchContractsForChat();
 }, { immediate: true });
 
 watch(
