@@ -362,11 +362,11 @@ const saveEditCertification = async () => {
 <template>
     <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 font-sans text-white">
         <!-- Header -->
-        <div class="flex items-center justify-between mb-10">
+        <div class="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div class="flex items-center gap-4">
                 <button
                     @click="$emit('back')"
-                    class="p-2 hover:bg-white/5 rounded-full transition-colors"
+                    class="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-xl transition-all hover:bg-white/10 hover:border-white/20"
                 >
                     <ArrowLeft class="w-6 h-6 text-white/80" />
                 </button>
@@ -378,7 +378,7 @@ const saveEditCertification = async () => {
             <button
                 @click="handleSave"
                 :disabled="isSaving"
-                class="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-600/50 text-white rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200/20 bg-gradient-to-r from-sky-400/80 via-sky-300/75 to-cyan-200/80 px-6 py-3 font-bold text-slate-950 shadow-[0_16px_40px_-20px_rgba(125,211,252,0.95)] transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60"
             >
                 <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
                 <Save v-else class="w-4 h-4" />
@@ -392,8 +392,21 @@ const saveEditCertification = async () => {
         </div>
 
         <div v-else class="space-y-8 animate-fade-in-up">
+            <div class="rounded-[28px] border border-white/12 bg-gradient-to-r from-white/10 via-sky-200/10 to-cyan-200/10 p-5 shadow-[0_20px_60px_-36px_rgba(255,255,255,0.55)] backdrop-blur-2xl">
+                <div class="flex items-start gap-3">
+                    <div class="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-sky-200/20 text-sky-100">
+                        <Check class="w-4 h-4" />
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold tracking-wide text-sky-100/90">저장 안내</p>
+                        <p class="mt-1 text-sm leading-relaxed text-slate-200/90">
+                            항목을 추가하거나 삭제한 뒤에는 반드시 우측 상단의 저장하기 버튼을 눌러 최종 반영해 주세요.
+                        </p>
+                    </div>
+                </div>
+            </div>
             <!-- 1. 기본 정보 (Basic Info) -->
-            <section class="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+            <section class="rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04))] p-8 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.95)] backdrop-blur-2xl">
                 <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     <div class="p-2 bg-blue-500/10 rounded-lg">
                         <User class="w-5 h-5 text-blue-400" />
@@ -458,7 +471,7 @@ const saveEditCertification = async () => {
             </section>
 
             <!-- 2. 학력 사항 (Education) -->
-            <section class="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+            <section class="rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04))] p-8 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.95)] backdrop-blur-2xl">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
                          <div class="p-2 bg-green-500/10 rounded-lg">
@@ -615,7 +628,7 @@ const saveEditCertification = async () => {
             </section>
 
             <!-- 3. 경력 사항 (Career) -->
-            <section class="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+            <section class="rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04))] p-8 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.95)] backdrop-blur-2xl">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
                         <div class="p-2 bg-orange-500/10 rounded-lg">
@@ -787,7 +800,7 @@ const saveEditCertification = async () => {
             </section>
 
             <!-- 4. 자격증(Certifications) -->
-            <section class="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm">
+            <section class="rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04))] p-8 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.95)] backdrop-blur-2xl">
                <div class="flex items-center justify-between mb-6">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
                         <div class="p-2 bg-yellow-500/10 rounded-lg">
