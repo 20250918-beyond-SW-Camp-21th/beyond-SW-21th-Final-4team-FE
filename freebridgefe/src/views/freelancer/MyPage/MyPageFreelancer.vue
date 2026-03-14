@@ -305,7 +305,7 @@ const hideChurnAlert = ref(false);
     <main class="flex-1 overflow-y-auto lg:pl-[17.5rem]">
         <div v-if="activeTab === 'dashboard'" class="p-8 max-w-7xl mx-auto space-y-8" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1 }">
              <!-- Greeting Header -->
-             <div class="relative overflow-hidden mb-2 flex items-center justify-between rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(191,219,254,0.08),rgba(255,255,255,0.04))] px-7 py-6 backdrop-blur-2xl shadow-[0_30px_80px_-52px_rgba(15,23,42,0.85)]">
+             <div class="pointer-events-none relative mb-2 flex select-none items-center justify-between overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(191,219,254,0.08),rgba(255,255,255,0.04))] px-7 py-6 shadow-[0_30px_80px_-52px_rgba(15,23,42,0.85)] backdrop-blur-2xl transition-none">
                 <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(191,219,254,0.16),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(244,114,182,0.08),transparent_32%)]"></div>
                 <div class="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
                 <div>
