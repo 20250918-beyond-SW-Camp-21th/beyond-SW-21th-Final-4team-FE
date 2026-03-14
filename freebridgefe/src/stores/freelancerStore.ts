@@ -275,10 +275,10 @@ export const useFreelancerStore = defineStore("freelancer", () => {
 
     if (status === "ACCEPTED") {
       const chatStore = useChatStore();
-      const rawEmployerId = proposals.value[index].employerId;
-      const rawFreelancerId = proposals.value[index].freelancerId;
-      const employerId = `e${rawEmployerId}`;
-      const freelancerId = `f${rawFreelancerId}`;
+      const rawEmployerId = String(proposals.value[index].employerId);
+      const rawFreelancerId = String(proposals.value[index].freelancerId);
+      const employerId = rawEmployerId.startsWith("e") ? rawEmployerId : `e${rawEmployerId}`;
+      const freelancerId = rawFreelancerId.startsWith("f") ? rawFreelancerId : `f${rawFreelancerId}`;
       const jobId = proposals.value[index].jobId; // Capture possibly undefined jobId
 
       const context: any = {

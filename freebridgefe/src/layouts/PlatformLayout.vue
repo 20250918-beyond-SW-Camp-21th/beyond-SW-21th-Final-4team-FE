@@ -88,7 +88,32 @@ const dismissAlert = (alertId: string) => {
   chatStore.dismissAlert(alertId);
 };
 
+const refreshChatRooms = async () => {
+  if (!authStore.isAuthenticated) {
+    return;
+  }
+
+  try {
+    await chatStore.fetchRooms();
+  } catch (e) {
+    console.error('Failed to refresh chat rooms:', e);
+  }
+};
+
+const handleWindowFocus = () => {
+  refreshChatRooms();
+};
+
+const handleVisibilityChange = () => {
+  if (document.visibilityState === 'visible') {
+    refreshChatRooms();
+  }
+};
+
 onMounted(async () => {
+  window.addEventListener('focus', handleWindowFocus);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
   if (authStore.isAuthenticated) {
     try {
       await chatStore.connectWebSocket();
@@ -100,6 +125,8 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('focus', handleWindowFocus);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
   chatStore.disconnectWebSocket();
 });
 
@@ -110,6 +137,10 @@ watch(
     const isNowChatRoute = newPath.startsWith('/chat');
 
     chatStore.setMainChatVisible(isNowChatRoute);
+
+    if (isNowChatRoute && authStore.isAuthenticated) {
+      refreshChatRooms();
+    }
 
     if (wasChatRoute && !isNowChatRoute) {
       chatStore.resetDockedUIState();

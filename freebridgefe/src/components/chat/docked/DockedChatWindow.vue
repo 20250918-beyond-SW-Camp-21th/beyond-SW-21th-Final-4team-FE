@@ -138,9 +138,8 @@ const nonSystemMessages = computed(() => messages.value.filter((msg) => msg.type
 const isReadOnly = computed(() => chatStore.isRoomReadOnly(props.roomId));
 
 const otherParticipantName = computed(() => {
-    if (!room.value || !authStore.user) return 'Unknown';
-    const otherId = chatStore.getOtherParticipantId(room.value);
-    return otherId && room.value.participantNames[otherId] ? room.value.participantNames[otherId] : 'User';
+    if (!room.value) return '알 수 없음';
+    return chatStore.getOtherParticipantName(room.value);
 });
 
 function isMyMessage(msg: ChatMessage) {

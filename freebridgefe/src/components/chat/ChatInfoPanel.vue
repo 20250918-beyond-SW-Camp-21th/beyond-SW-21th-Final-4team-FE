@@ -9,7 +9,7 @@
             </div>
             
             <h2 class="text-xl font-bold text-white mb-1">{{ otherParticipantName }}</h2>
-            <p class="text-sm text-slate-400 mb-4">시니어 프론트엔드 개발자</p>
+            <p class="text-sm text-slate-400 mb-4">{{ otherParticipantSummary }}</p>
             
             <div class="flex gap-2 w-full">
                 <button
@@ -172,8 +172,7 @@ import { useFreelancerStore } from '@/stores/freelancerStore';
 import { getEmployerProfile } from '@/api/MyPage/employer';
 import { 
     Code as CodeIcon,
-    FileText as FileTextIcon,
-    Image as ImageIcon
+    FileText as FileTextIcon
 } from 'lucide-vue-next';
 
 const props = defineProps<{
@@ -216,9 +215,51 @@ const sharedFiles = computed(() => {
 const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
 
 const otherParticipantName = computed(() => {
-    if (!currentRoom.value || !authStore.user) return 'Unknown';
-    const otherId = chatStore.getOtherParticipantId(currentRoom.value);
-    return otherId ? (currentRoom.value.participantNames[otherId] || '알 수 없음') : '알 수 없음';
+    if (!currentRoom.value) return '알 수 없음';
+    return chatStore.getOtherParticipantName(currentRoom.value);
+});
+
+const otherParticipantSummary = computed(() => {
+    const room = currentRoom.value;
+    if (!room || !authStore.user) {
+        return '상대 정보를 불러오는 중입니다.';
+    }
+
+    const otherId = chatStore.getOtherParticipantId(room);
+    const otherUserId = otherId?.replace(/^[a-z]/i, '') ?? '';
+    const proposal = room.relatedProposalId
+        ? freelancerStore.proposals.find((item) => item.id === room.relatedProposalId)
+        : null;
+    const job = room.relatedJobId ? jobStore.getJobById(room.relatedJobId) : null;
+
+    if (authStore.user.role === 'EMPLOYER') {
+        const freelancer = freelancerStore.freelancers.find(
+            (item) => String(item.id) === otherUserId
+        );
+        const introduction = freelancer?.bio?.trim();
+        if (introduction) {
+            return introduction;
+        }
+
+        const skills = freelancer?.skills?.filter(Boolean).slice(0, 3) ?? [];
+        if (skills.length > 0) {
+            return `주요 기술: ${skills.join(', ')}`;
+        }
+
+        return '프리랜서 소개 정보가 아직 없습니다.';
+    }
+
+    const companyDescription = job?.description?.trim();
+    if (companyDescription) {
+        return companyDescription;
+    }
+
+    const proposalMessage = proposal?.message?.trim();
+    if (proposalMessage) {
+        return proposalMessage;
+    }
+
+    return '기업 소개 정보가 아직 없습니다.';
 });
 
 const proposedProject = computed(() => {
@@ -253,9 +294,10 @@ const handleProfileClick = () => {
 
     const otherId = chatStore.getOtherParticipantId(room);
     if (!otherId) return;
+    const otherUserId = otherId.replace(/^[a-z]/i, '');
 
     if (authStore.user.role === 'EMPLOYER') {
-        router.push({ name: 'employer.freelancer.profile', params: { id: otherId } });
+        router.push({ name: 'employer.freelancer.profile', params: { id: otherUserId } });
         return;
     }
 
@@ -265,7 +307,7 @@ const handleProfileClick = () => {
         : null;
 
     employerProfile.value = {
-        companyName: job?.employerName || proposal?.employerName || room.participantNames[otherId] || '알 수 없음',
+        companyName: job?.employerName || proposal?.employerName || chatStore.getParticipantName(room, otherId) || '알 수 없음',
         phone: job ? '02-0000-0000' : '02-0000-0000',
         location: job ? '서울' : '서울'
     };
@@ -275,7 +317,7 @@ const handleProfileClick = () => {
         return;
     }
 
-    getEmployerProfile(otherId)
+    getEmployerProfile(otherUserId)
         .then((profile) => {
             employerProfile.value = {
                 companyName: profile.companyName || employerProfile.value.companyName,

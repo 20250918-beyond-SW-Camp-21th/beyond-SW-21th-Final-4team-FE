@@ -156,9 +156,8 @@ const nonSystemMessages = computed(() => messages.value.filter((msg) => msg.type
 const isReadOnly = computed(() => chatStore.isRoomReadOnly(props.roomId));
 
 const otherParticipantName = computed(() => {
-    if (!currentRoom.value || !authStore.user) return 'Unknown';
-    const otherId = chatStore.getOtherParticipantId(currentRoom.value);
-    return otherId ? (currentRoom.value.participantNames[otherId] || '알 수 없음') : '알 수 없음';
+    if (!currentRoom.value) return '알 수 없음';
+    return chatStore.getOtherParticipantName(currentRoom.value);
 });
 
 const contractNeedsAttention = computed(() => {
@@ -182,7 +181,8 @@ function handleLeaveRoom() {
 
 function getSenderName(senderId: string) {
     if (senderId === 'SYSTEM') return 'System';
-    return currentRoom.value?.participantNames[senderId] || 'Unknown';
+    if (!currentRoom.value) return '알 수 없음';
+    return chatStore.getParticipantName(currentRoom.value, senderId) || '알 수 없음';
 }
 
 function sendMessage() {

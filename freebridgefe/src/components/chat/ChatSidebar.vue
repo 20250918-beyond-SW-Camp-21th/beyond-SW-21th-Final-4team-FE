@@ -289,6 +289,11 @@ function handleGlobalKeydown(event: KeyboardEvent) {
 }
 
 onMounted(() => {
+    if (authStore.isAuthenticated) {
+        chatStore.fetchRooms().catch((error) => {
+            console.error('Failed to refresh chat rooms on sidebar mount:', error);
+        });
+    }
     pinnedRoomIds.value = readStoredRoomIds(CHAT_PINNED_ROOMS_KEY);
     mutedRoomIds.value = readStoredRoomIds(CHAT_MUTED_ROOMS_KEY);
     hiddenRoomIds.value = readStoredRoomIds(CHAT_HIDDEN_ROOMS_KEY);
@@ -307,9 +312,7 @@ function getOtherParticipantImage(room: ChatRoom) {
 }
 
 function getOtherParticipantName(room: ChatRoom) {
-    if (!authStore.user) return 'Unknown';
-    const otherId = chatStore.getOtherParticipantId(room);
-    return otherId && room.participantNames[otherId] ? room.participantNames[otherId] : '알 수 없음';
+    return chatStore.getOtherParticipantName(room);
 }
 
 function getMyUnreadCount(room: ChatRoom) {
