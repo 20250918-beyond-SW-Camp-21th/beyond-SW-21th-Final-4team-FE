@@ -57,11 +57,24 @@ const getStatusBadgeClass = (status: string) => {
     case '심사중':
       return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20';
     case '합격':
-      return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
     case '거절':
       return 'bg-slate-500/10 text-slate-400 border-white/10';
     default:
       return 'bg-white/5 text-slate-400 border-white/10';
+  }
+};
+
+const getCardClass = (status: string) => {
+  switch (status) {
+    case '심사중':
+      return 'bg-yellow-500/10 border-yellow-400/20 hover:border-yellow-300/30 hover:bg-yellow-500/15';
+    case '합격':
+      return 'bg-emerald-500/10 border-emerald-400/20 hover:border-emerald-300/30 hover:bg-emerald-500/15';
+    case '거절':
+      return 'bg-[#1e293b]/50 border-white/5 hover:border-blue-500/30 hover:bg-[#1e293b]';
+    default:
+      return 'bg-[#1e293b]/50 border-white/5 hover:border-blue-500/30 hover:bg-[#1e293b]';
   }
 };
 
@@ -134,8 +147,8 @@ const formatAppliedAt = (timestamp: number | null) => {
       <div
         v-for="project in filteredProjects"
         :key="project.projectId"
-        class="bg-[#1e293b]/50 border border-white/5 rounded-2xl p-6 hover:border-blue-500/30 hover:bg-[#1e293b] transition-all cursor-pointer group flex flex-col h-64"
-        @click="$emit('openDetail', project.projectId)"
+        class="border rounded-2xl p-6 transition-all group flex flex-col h-64"
+        :class="getCardClass(project.applyStatus || '')"
       >
         <!-- Card Header -->
         <div class="flex justify-between items-start mb-4">
@@ -147,7 +160,7 @@ const formatAppliedAt = (timestamp: number | null) => {
 
         <!-- Card Content -->
         <div class="flex-1">
-          <h3 class="text-lg font-bold text-white mb-2 line-clamp-2 group-hover:text-blue-400 transition-colors">
+          <h3 class="text-lg font-bold text-white mb-2 line-clamp-2 transition-colors">
             {{ project.title }}
           </h3>
           <div class="flex items-center gap-2 text-sm text-slate-400 mb-4">
