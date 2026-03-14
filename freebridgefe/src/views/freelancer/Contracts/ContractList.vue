@@ -180,7 +180,11 @@ async function syncSelectedContractFromRoute() {
     if (!routeContractId) return;
 
     if (!contractStore.findContractByAnyId(routeContractId)) {
-        await contractStore.fetchContracts();
+        try {
+            await contractStore.fetchContracts();
+        } catch (error) {
+            console.error('계약 목록 재조회 중 오류가 발생했습니다:', error);
+        }
     }
 
     const matchedContract = contractStore.findContractByAnyId(routeContractId);
