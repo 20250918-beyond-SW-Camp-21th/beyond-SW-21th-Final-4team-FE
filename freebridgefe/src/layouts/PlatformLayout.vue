@@ -88,25 +88,37 @@ const dismissAlert = (alertId: string) => {
   chatStore.dismissAlert(alertId);
 };
 
-const refreshChatRooms = async () => {
+let refreshChatRoomsPromise: Promise<void> | null = null;
+
+const refreshChatRooms = () => {
   if (!authStore.isAuthenticated) {
-    return;
+    return Promise.resolve();
   }
 
-  try {
-    await chatStore.fetchRooms();
-  } catch (e) {
-    console.error('Failed to refresh chat rooms:', e);
+  if (refreshChatRoomsPromise) {
+    return refreshChatRoomsPromise;
   }
+
+  refreshChatRoomsPromise = (async () => {
+    try {
+      await chatStore.fetchRooms();
+    } catch (e) {
+      console.error('Failed to refresh chat rooms:', e);
+    } finally {
+      refreshChatRoomsPromise = null;
+    }
+  })();
+
+  return refreshChatRoomsPromise;
 };
 
-const handleWindowFocus = () => {
-  refreshChatRooms();
+const handleWindowFocus = async () => {
+  await refreshChatRooms();
 };
 
-const handleVisibilityChange = () => {
+const handleVisibilityChange = async () => {
   if (document.visibilityState === 'visible') {
-    refreshChatRooms();
+    await refreshChatRooms();
   }
 };
 
@@ -117,7 +129,7 @@ onMounted(async () => {
   if (authStore.isAuthenticated) {
     try {
       await chatStore.connectWebSocket();
-      await chatStore.fetchRooms();
+      await refreshChatRooms();
     } catch (e) {
       console.error('Failed to initialize chat:', e);
     }

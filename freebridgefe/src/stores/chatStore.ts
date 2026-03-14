@@ -144,6 +144,40 @@ export const useChatStore = defineStore('chat', () => {
         return getParticipantName(room, otherId) || '알 수 없음';
     }
 
+    function normalizeParticipantListForCurrentUser(participants: Array<string | number>): string[] {
+        const myNormalizedId = getCurrentChatParticipantId();
+        const myIds = getMyParticipantIds();
+        const counterpartRole = getCounterpartRole();
+        const myIdVariants = new Set(myIds.flatMap((id) => buildParticipantIdVariants(id, authStore.user?.role)));
+
+        return Array.from(
+            new Set(
+                participants
+                    .map((id) => {
+                        const sid = String(id).trim();
+                        if (!sid) return sid;
+
+                        const isMine = buildParticipantIdVariants(sid).some((candidate) => myIdVariants.has(candidate));
+                        if (isMine) {
+                            return myNormalizedId ?? normalizeParticipantId(sid, authStore.user?.role);
+                        }
+
+                        return normalizeParticipantId(sid, counterpartRole);
+                    })
+                    .filter(Boolean)
+            )
+        );
+    }
+
+    function participantsMatch(leftParticipants: Array<string | number>, rightParticipants: Array<string | number>): boolean {
+        const normalizedLeft = normalizeParticipantListForCurrentUser(leftParticipants);
+        const normalizedRight = normalizeParticipantListForCurrentUser(rightParticipants);
+
+        return normalizedLeft.length === normalizedRight.length &&
+            normalizedLeft.every((participantId) => normalizedRight.includes(participantId)) &&
+            normalizedRight.every((participantId) => normalizedLeft.includes(participantId));
+    }
+
     // ── 상태 ───────────────────────────────────────────────────────────────
     const rooms = ref<ChatRoom[]>([]);
     const messages = ref<{ [roomId: string]: ChatMessage[] }>({});
@@ -614,22 +648,7 @@ export const useChatStore = defineStore('chat', () => {
         context: any
     ) {
         const myNormalizedId = getCurrentChatParticipantId();
-        const myIds = getMyParticipantIds();
-        const counterpartRole = getCounterpartRole();
-        const myIdVariants = new Set(myIds.flatMap((id) => buildParticipantIdVariants(id, authStore.user?.role)));
-        const normalizedParticipants = Array.from(
-            new Set(
-                participants.map((id) => {
-                    const sid = String(id);
-                    if (!sid) return sid;
-                    const isMine = buildParticipantIdVariants(sid).some((candidate) => myIdVariants.has(candidate));
-                    if (isMine) {
-                        return myNormalizedId ?? normalizeParticipantId(sid, authStore.user?.role);
-                    }
-                    return normalizeParticipantId(sid, counterpartRole);
-                })
-            )
-        );
+        const normalizedParticipants = normalizeParticipantListForCurrentUser(participants);
 
         const normalizedNames = normalizedParticipants.reduce<Record<string, string>>((acc, participantId) => {
             const resolvedName = resolveParticipantNameFromMap(names, participantId);
@@ -648,8 +667,7 @@ export const useChatStore = defineStore('chat', () => {
 
         const existingRoom = rooms.value.find(
             (r) =>
-                r.participants.every((p) => normalizedParticipants.includes(p)) &&
-                normalizedParticipants.every((p) => r.participants.includes(p)) &&
+                participantsMatch(r.participants, normalizedParticipants) &&
                 (
                     (r.relatedApplicationId && context.relatedApplicationId && r.relatedApplicationId === context.relatedApplicationId) ||
                     (r.relatedProposalId && context.relatedProposalId && r.relatedProposalId === context.relatedProposalId) ||
