@@ -115,10 +115,14 @@ export const useContractStore = defineStore('contract', () => {
     const contracts = ref<ContractWithDetails[]>([]);
     const employerSettlements = ref<EmployerSettlement[]>([]);
     const freelancerSettlements = ref<FreelancerSettlement[]>([]);
+    const isContractsLoading = ref(false);
+    const hasFetchedContracts = ref(false);
     const isSettlementLoading = ref(false);
     const employerSettlementSummary = ref<EmployerSettlementSummary | null>(null);
     const freelancerSettlementSummary = ref<FreelancerSettlementSummary | null>(null);
     const employerNextSettlement = ref<EmployerSettlementItem | null>(null);
+    let fetchContractsPromise: Promise<void> | null = null;
+    let fetchContractsPromiseKey = '';
 
     const contractsWithDetails = computed<ContractWithDetails[]>(() => contracts.value);
 
@@ -148,72 +152,130 @@ export const useContractStore = defineStore('contract', () => {
         });
     });
 
+    function findContractByAnyId(contractId: number | string | null | undefined) {
+        const parsedContractId = Number(contractId);
+        if (!Number.isFinite(parsedContractId) || parsedContractId <= 0) return null;
+        return (
+            contracts.value.find(
+                (contract) => contract.id === parsedContractId || contract.contractId === parsedContractId
+            ) || null
+        );
+    }
+
+    function findContractByParticipants(employerId: number, freelancerId: number) {
+        if (!Number.isFinite(employerId) || !Number.isFinite(freelancerId)) return null;
+
+        const matches = contracts.value.filter(
+            (contract) =>
+                Number(contract.employerId) === employerId && Number(contract.freelancerId) === freelancerId
+        );
+
+        if (matches.length === 1) return matches[0];
+
+        const activeMatches = matches.filter((contract) =>
+            ['WAITING_SIGNATURE', 'IN_PROGRESS'].includes(contract.status)
+        );
+
+        if (activeMatches.length === 1) return activeMatches[0];
+        return null;
+    }
+
     async function fetchContracts(params?: ContractListParams) {
-        const data = await listContracts(params);
-        const items = (data.items || []) as ContractWithDetails[];
-        contracts.value = items;
+        const requestKey = JSON.stringify(params ?? {});
+        if (fetchContractsPromise && fetchContractsPromiseKey === requestKey) {
+            return fetchContractsPromise;
+        }
 
-        const placeholderPattern = /(user|사용자)\s*#\s*\d+/i;
-        const numericOnlyPattern = /^\s*#?\d+\s*$/;
-        const needsName = (name?: string | null) => {
-            if (!name) return true;
-            const trimmed = name.trim();
-            return (
-                trimmed.length === 0 ||
-                trimmed === 'Unknown' ||
-                placeholderPattern.test(trimmed) ||
-                numericOnlyPattern.test(trimmed)
-            );
-        };
+        const request = (async () => {
+            isContractsLoading.value = true;
+            try {
+                const data = await listContracts(params);
+                const items = (data.items || []) as ContractWithDetails[];
+                contracts.value = items;
+                hasFetchedContracts.value = true;
 
-        const collectMissingIds = (getter: (c: ContractWithDetails) => number, nameGetter: (c: ContractWithDetails) => string | undefined | null) =>
-            Array.from(
-                new Set(
-                    items
-                        .filter((c) => needsName(nameGetter(c)))
-                        .map((c) => Number(getter(c)))
-                        .filter((id) => Number.isFinite(id) && id > 0)
-                )
-            );
+                const placeholderPattern = /(user|사용자)\s*#\s*\d+/i;
+                const numericOnlyPattern = /^\s*#?\d+\s*$/;
+                const needsName = (name?: string | null) => {
+                    if (!name) return true;
+                    const trimmed = name.trim();
+                    return (
+                        trimmed.length === 0 ||
+                        trimmed === 'Unknown' ||
+                        placeholderPattern.test(trimmed) ||
+                        numericOnlyPattern.test(trimmed)
+                    );
+                };
 
-        const missingFreelancerIds = collectMissingIds((c) => c.freelancerId, (c) => c.freelancerName);
-        const missingEmployerIds = collectMissingIds((c) => c.employerId, (c) => c.employerName);
-        const missingIds = Array.from(new Set([...missingFreelancerIds, ...missingEmployerIds]));
+                const collectMissingIds = (
+                    getter: (c: ContractWithDetails) => number,
+                    nameGetter: (c: ContractWithDetails) => string | undefined | null
+                ) =>
+                    Array.from(
+                        new Set(
+                            items
+                                .filter((c) => needsName(nameGetter(c)))
+                                .map((c) => Number(getter(c)))
+                                .filter((id) => Number.isFinite(id) && id > 0)
+                        )
+                    );
 
-        if (missingIds.length === 0) return;
+                const missingFreelancerIds = collectMissingIds((c) => c.freelancerId, (c) => c.freelancerName);
+                const missingEmployerIds = collectMissingIds((c) => c.employerId, (c) => c.employerName);
+                const missingIds = Array.from(new Set([...missingFreelancerIds, ...missingEmployerIds]));
 
-        const results = await Promise.allSettled(missingIds.map((id) => getUserById(id)));
-        const idToName = new Map<number, string>();
+                if (missingIds.length === 0) return;
 
-        results.forEach((result, index) => {
-            if (result.status !== 'fulfilled') return;
-            const user = result.value as Record<string, any>;
-            const payload = user?.data ?? user;
-            const name =
-                payload?.name ||
-                payload?.fullName ||
-                payload?.username ||
-                payload?.nickname ||
-                payload?.userName ||
-                payload?.memberName ||
-                payload?.realName;
-            if (name) {
-                idToName.set(missingIds[index], String(name));
+                const results = await Promise.allSettled(missingIds.map((id) => getUserById(id)));
+                const idToName = new Map<number, string>();
+
+                results.forEach((result, index) => {
+                    if (result.status !== 'fulfilled') return;
+                    const user = result.value as Record<string, any>;
+                    const payload = user?.data ?? user;
+                    const name =
+                        payload?.name ||
+                        payload?.fullName ||
+                        payload?.username ||
+                        payload?.nickname ||
+                        payload?.userName ||
+                        payload?.memberName ||
+                        payload?.realName;
+                    if (name) {
+                        idToName.set(missingIds[index], String(name));
+                    }
+                });
+
+                if (idToName.size === 0) return;
+
+                contracts.value = items.map((contract) => {
+                    const resolvedFreelancer = idToName.get(Number(contract.freelancerId));
+                    const resolvedEmployer = idToName.get(Number(contract.employerId));
+                    if (!resolvedFreelancer && !resolvedEmployer) return contract;
+                    return {
+                        ...contract,
+                        freelancerName: resolvedFreelancer ?? contract.freelancerName,
+                        employerName: resolvedEmployer ?? contract.employerName,
+                    };
+                });
+            } finally {
+                isContractsLoading.value = false;
+                if (fetchContractsPromise === request) {
+                    fetchContractsPromise = null;
+                    fetchContractsPromiseKey = '';
+                }
             }
-        });
+        })();
 
-        if (idToName.size === 0) return;
+        fetchContractsPromise = request;
+        fetchContractsPromiseKey = requestKey;
+        return request;
+    }
 
-        contracts.value = items.map((contract) => {
-            const resolvedFreelancer = idToName.get(Number(contract.freelancerId));
-            const resolvedEmployer = idToName.get(Number(contract.employerId));
-            if (!resolvedFreelancer && !resolvedEmployer) return contract;
-            return {
-                ...contract,
-                freelancerName: resolvedFreelancer ?? contract.freelancerName,
-                employerName: resolvedEmployer ?? contract.employerName,
-            };
-        });
+    async function ensureContractsLoaded() {
+        if (hasFetchedContracts.value && contracts.value.length > 0) return;
+        if (hasFetchedContracts.value && !isContractsLoading.value) return;
+        await fetchContracts();
     }
 
     async function fetchEmployerSettlements(params?: {
@@ -310,6 +372,8 @@ export const useContractStore = defineStore('contract', () => {
         contracts,
         employerSettlements,
         freelancerSettlements,
+        isContractsLoading,
+        hasFetchedContracts,
         isSettlementLoading,
         employerSettlementSummary,
         freelancerSettlementSummary,
@@ -317,7 +381,10 @@ export const useContractStore = defineStore('contract', () => {
         contractsWithDetails,
         employerSettlementsWithDetails,
         freelancerSettlementsWithDetails,
+        findContractByAnyId,
+        findContractByParticipants,
         fetchContracts,
+        ensureContractsLoaded,
         fetchEmployerSettlements,
         fetchFreelancerSettlements,
         fetchEmployerSettlementSummary,

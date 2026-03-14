@@ -132,7 +132,6 @@ import ContractTab from './ContractTab.vue';
 import { 
     FileText as FileTextIcon,
     LogOut as LogOutIcon,
-    Paperclip as PaperclipIcon,
     Send as SendIcon,
     Plus as PlusIcon
 } from 'lucide-vue-next';
@@ -154,22 +153,70 @@ const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.room
 const messages = computed(() => chatStore.messages[props.roomId] || []);
 const nonSystemMessages = computed(() => messages.value.filter((msg) => msg.type !== 'SYSTEM'));
 const isReadOnly = computed(() => chatStore.isRoomReadOnly(props.roomId));
+const otherParticipantId = computed(() => {
+    if (!currentRoom.value) return null;
+    return chatStore.getOtherParticipantId(currentRoom.value) || null;
+});
 
 const otherParticipantName = computed(() => {
     if (!currentRoom.value) return '알 수 없음';
     return chatStore.getOtherParticipantName(currentRoom.value);
 });
 
+function parseParticipantNumericId(participantId: string | null) {
+    if (!participantId) return null;
+    const matchedParticipant = String(participantId).match(/^[efa](\d+)$/i);
+    if (matchedParticipant) {
+        return Number(matchedParticipant[1]);
+    }
+    const numericId = Number(participantId);
+    return Number.isFinite(numericId) ? numericId : null;
+}
+
+const roomContract = computed(() => {
+    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
+    if (linkedContract) return linkedContract;
+    if (!authStore.user || !otherParticipantId.value) return null;
+
+    const myUserId = Number(authStore.user.id);
+    const counterpartId = parseParticipantNumericId(otherParticipantId.value);
+    if (!Number.isFinite(myUserId) || !Number.isFinite(counterpartId)) return null;
+
+    const employerId = authStore.user.role === 'EMPLOYER' ? myUserId : counterpartId;
+    const freelancerId = authStore.user.role === 'FREELANCER' ? myUserId : counterpartId;
+
+    return contractStore.findContractByParticipants(employerId, freelancerId);
+});
+
 const contractNeedsAttention = computed(() => {
-    if (!currentRoom.value || !authStore.user) return false;
-    const contractId = currentRoom.value.contractId;
-    if (!contractId) return false;
-    const contract = contractStore.contracts.find((c) => c.id === contractId);
+    if (!authStore.user) return false;
+    const contract = roomContract.value;
     if (!contract || contract.status !== 'WAITING_SIGNATURE') return false;
     if (authStore.user.role === 'EMPLOYER') {
         return !contract.employerSignedDate;
     }
     return !contract.freelancerSignedDate;
+});
+
+const shouldLoadContracts = computed(() => {
+    if (!currentRoom.value) return false;
+    if (activeTab.value === 'CONTRACT') return true;
+    if (currentRoom.value.contractId) return true;
+    return messages.value.some((message) => message.type === 'CONTRACT_ALERT');
+});
+
+const shouldRefreshContracts = computed(() => {
+    if (!shouldLoadContracts.value) return false;
+    if (!contractStore.hasFetchedContracts) return true;
+    if (currentRoom.value?.contractId && !contractStore.findContractByAnyId(currentRoom.value.contractId)) {
+        return true;
+    }
+
+    return messages.value.some((message) => {
+        if (message.type !== 'CONTRACT_ALERT') return false;
+        const contractId = message.metadata?.contractId;
+        return !!contractId && !contractStore.findContractByAnyId(contractId);
+    });
 });
 
 function handleLeaveRoom() {
@@ -217,9 +264,29 @@ function scrollToBottom() {
     });
 }
 
+async function ensureContractsLoadedForChat() {
+    if (!shouldLoadContracts.value) return;
+    try {
+        if (shouldRefreshContracts.value) {
+            await contractStore.fetchContracts();
+            return;
+        }
+        await contractStore.ensureContractsLoaded();
+    } catch (error) {
+        console.error('Failed to load contracts for chat:', error);
+    }
+}
+
 // Scroll to bottom on mount and when messages change
-onMounted(scrollToBottom);
+onMounted(() => {
+    scrollToBottom();
+    void ensureContractsLoadedForChat();
+});
 watch(messages, scrollToBottom, { deep: true });
+watch(shouldLoadContracts, (nextShouldLoadContracts) => {
+    if (!nextShouldLoadContracts) return;
+    void ensureContractsLoadedForChat();
+}, { immediate: true });
 
 watch(
     () => props.roomId,
