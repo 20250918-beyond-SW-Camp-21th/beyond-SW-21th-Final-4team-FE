@@ -16,6 +16,8 @@ const newSkillName = ref('');
 const showGradeGuide = ref(false);
 
 onMounted(() => {
+    store.ensureDraftForUser(authStore.user?.id, 'FREELANCER');
+
     // Reset step to 1
     store.setStep(1);
 
@@ -51,6 +53,7 @@ const handleFinish = async () => {
 
     const success = await store.submitFreelancerOnboarding();
     if (success) {
+        store.resetOnboardingState();
         alert('온보딩이 완료되었습니다. Freebridge 이용 가이드로 이동합니다.');
         router.push('/guide'); 
     }

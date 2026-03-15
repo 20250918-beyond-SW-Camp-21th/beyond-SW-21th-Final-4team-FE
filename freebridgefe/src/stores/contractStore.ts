@@ -180,14 +180,8 @@ export const useContractStore = defineStore('contract', () => {
                 Number(contract.employerId) === employerId && Number(contract.freelancerId) === freelancerId
         );
 
-        if (matches.length === 1) return matches[0];
-
-        const activeMatches = matches.filter((contract) =>
-            ['WAITING_SIGNATURE', 'IN_PROGRESS'].includes(contract.status)
-        );
-
-        if (activeMatches.length === 1) return activeMatches[0];
-        return null;
+        if (matches.length !== 1) return null;
+        return matches[0];
     }
 
     async function fetchContracts(params?: ContractListParams) {

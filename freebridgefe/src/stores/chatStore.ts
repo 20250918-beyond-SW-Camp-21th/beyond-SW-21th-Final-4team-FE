@@ -8,7 +8,8 @@ import {
     getMyChatRooms,
     getChatMessages,
     createChatRoom as apiCreateRoom,
-    leaveChatRoom as apiLeaveRoom
+    leaveChatRoom as apiLeaveRoom,
+    updateChatRoomContract as apiUpdateChatRoomContract
 } from '@/api/chatApi';
 import { API_BASE_URL, getAccessToken } from '@/api/axiosInstance';
 import { CHAT_MUTED_ROOMS_KEY } from '@/constants/chatUi';
@@ -767,6 +768,30 @@ export const useChatStore = defineStore('chat', () => {
         };
     }
 
+    async function persistRoomContract(roomId: string, contractId: number | null) {
+        const previousRoom = rooms.value.find((r) => r.id === roomId);
+        const previousContractId = previousRoom?.contractId ?? null;
+
+        try {
+            const updatedRoom = await apiUpdateChatRoomContract(roomId, contractId);
+            const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
+            if (roomIndex === -1) {
+                rooms.value = [updatedRoom, ...rooms.value];
+                return true;
+            }
+
+            rooms.value[roomIndex] = {
+                ...rooms.value[roomIndex],
+                ...updatedRoom
+            };
+            return true;
+        } catch (error) {
+            console.error('[Chat] Failed to persist room contract:', error);
+            updateRoomContract(roomId, previousContractId);
+            return false;
+        }
+    }
+
     // ── Docking Chat State ─────────────────────────────────────────────────
     const isRoomListOpen = ref(false);
     const openDockedRooms = ref<{ roomId: string; minimized: boolean }[]>([]);
@@ -854,6 +879,7 @@ export const useChatStore = defineStore('chat', () => {
         leaveRoom,
         isRoomReadOnly,
         updateRoomContract,
+        persistRoomContract,
         chatAlerts,
         dismissAlert,
         getParticipantName,

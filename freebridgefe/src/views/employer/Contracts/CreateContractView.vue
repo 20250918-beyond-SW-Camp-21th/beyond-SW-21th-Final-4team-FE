@@ -21,6 +21,7 @@ import {
     Loader2,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import { createContract, getEmployerRecruitmentProjects, getMatchedFreelancers, type EmployerProject, type MatchedFreelancer } from '@/api/contractApi';
@@ -33,6 +34,7 @@ type CreateContractState = 'form' | 'preview' | 'signing' | 'success';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const chatStore = useChatStore();
 const contractStore = useContractStore();
 const freelancerStore = useFreelancerStore();
 
@@ -296,6 +298,10 @@ const handleSign = async (data: { signature: string }) => {
         });
 
         contractStore.addContract(response);
+        const routeRoomId = getStringQueryValue(route.query.roomId);
+        if (routeRoomId) {
+            await chatStore.persistRoomContract(routeRoomId, response.contractId ?? response.id);
+        }
         createdContract.value = response;
         state.value = 'success';
     } catch (err: any) {

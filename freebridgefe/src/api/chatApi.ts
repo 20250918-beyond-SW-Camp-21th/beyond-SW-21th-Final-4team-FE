@@ -130,3 +130,14 @@ export async function leaveChatRoom(roomId: string): Promise<ChatRoom> {
     return mapToChatRoom(res.data);
 }
 
+/**
+ * 채팅방 계약 연결 업데이트
+ * PATCH /api/chat/rooms/{roomId}/contract
+ */
+export async function updateChatRoomContract(roomId: string, contractId: number | null): Promise<ChatRoom> {
+    const res = await apiClient.patch<BackendChatRoomResponse>(`/api/chat/rooms/${roomId}/contract`, {
+        contractId
+    });
+    return mapToChatRoom(res.data);
+}
+

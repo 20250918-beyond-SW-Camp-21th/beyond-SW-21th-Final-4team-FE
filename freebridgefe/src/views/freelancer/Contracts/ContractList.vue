@@ -15,12 +15,14 @@ import {
     PenTool,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import ContractDetailModal from '@/views/employer/Contracts/components/ContractDetailModal.vue';
 import SignaturePadModal from '@/views/employer/Contracts/components/SignaturePadModal.vue';
 import { signContract } from '@/api/contractApi';
 
 const authStore = useAuthStore();
+const chatStore = useChatStore();
 const contractStore = useContractStore();
 const route = useRoute();
 
@@ -175,6 +177,24 @@ const getNumericQueryValue = (value: unknown) => {
     return Number.isFinite(parsedValue) ? parsedValue : null;
 };
 
+const getStringQueryValue = (value: unknown) => {
+    const rawValue = Array.isArray(value) ? value[0] : value;
+    if (rawValue === undefined || rawValue === null) return null;
+    const normalizedValue = String(rawValue).trim();
+    return normalizedValue.length > 0 ? normalizedValue : null;
+};
+
+async function syncRoomContract(contract: ContractWithDetails) {
+    const routeRoomId = getStringQueryValue(route.query.roomId);
+    if (!routeRoomId) return;
+    await chatStore.persistRoomContract(routeRoomId, contract.contractId ?? contract.id);
+}
+
+async function openContractDetail(contract: ContractWithDetails) {
+    selectedContract.value = contract;
+    await syncRoomContract(contract);
+}
+
 async function syncSelectedContractFromRoute() {
     const routeContractId = getNumericQueryValue(route.query.contractId);
     if (!routeContractId) return;
@@ -189,7 +209,7 @@ async function syncSelectedContractFromRoute() {
 
     const matchedContract = contractStore.findContractByAnyId(routeContractId);
     if (matchedContract) {
-        selectedContract.value = matchedContract;
+        await openContractDetail(matchedContract);
     }
 }
 
@@ -391,10 +411,10 @@ watch(
                             <PenTool class="w-4 h-4" />
                             서명하기
                         </button>
-                        <button
-                            @click="selectedContract = contract"
-                            class="px-6 py-3 bg-white text-black rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
-                        >
+                    <button
+                      @click="openContractDetail(contract)"
+                      class="px-6 py-3 bg-white text-black rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
+                    >
                             <Eye class="w-4 h-4" />
                             상세보기
                         </button>
