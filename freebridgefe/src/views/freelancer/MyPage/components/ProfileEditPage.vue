@@ -99,10 +99,9 @@ const saveProfile = async () => {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Left Column: Avatar & Basic Info -->
+            <!-- Left Column: Avatar -->
             <div class="col-span-1 space-y-6">
-                <!-- Avatar Upload -->
-                <div class="bg-[#1e293b]/50 p-6 rounded-2xl border border-white/5 flex flex-col items-center">
+                <div class="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(15,23,42,0.6)] flex flex-col items-center">
                     <div class="relative group cursor-pointer w-32 h-32 mb-4">
                          <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-white/10 bg-slate-800">
                             <img v-if="formData.avatar" :src="formData.avatar" class="w-full h-full object-cover" />
@@ -115,109 +114,113 @@ const saveProfile = async () => {
                     </div>
                     <p class="text-xs text-slate-400 text-center">
                         이미지를 클릭해 프로필 이미지를 변경하세요.<br>
-                        (JPG, PNG / Max 5MB)
+                        (JPG, PNG / Max 5MB).
                     </p>
                 </div>
             </div>
 
-            <!-- Right Column: Form Inputs -->
+            <!-- Right Column: Basic Info -->
             <div class="col-span-2 space-y-6">
-                <div class="bg-[#1e293b]/50 p-6 rounded-2xl border border-white/5 space-y-4">
-                    <h3 class="text-lg font-bold text-white border-b border-white/5 pb-2">기본 정보</h3>
+                <div class="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(15,23,42,0.6)] space-y-4">
+                    <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">기본 정보</h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1">
                             <label class="text-xs text-slate-400 font-bold">이름</label>
-                            <input v-model="formData.name" type="text" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
+                            <input v-model="formData.name" type="text" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors" />
                         </div>
                          <div class="space-y-1">
                             <label class="text-xs text-slate-400 font-bold">직무 (Job Title)</label>
-                            <input v-model="formData.job" type="text" placeholder="ex) 프론트엔드 개발자" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
+                            <input v-model="formData.job" type="text" placeholder="ex) 프론트엔드 개발자" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors" />
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                          <div class="space-y-1">
                             <label class="text-xs text-slate-400 font-bold">총 경력 (년)</label>
-                            <input v-model.number="formData.careerYears" type="number" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
+                            <input v-model.number="formData.careerYears" type="number" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors" />
                         </div>
                          <div class="space-y-1">
                             <label class="text-xs text-slate-400 font-bold">희망 시급 (시간당)</label>
-                            <input v-model.number="formData.salary" type="number" placeholder="ex) 50000" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
+                            <input v-model.number="formData.salary" type="number" placeholder="ex) 50000" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors" />
                         </div>
                     </div>
 
                     <div class="space-y-1">
                         <label class="text-xs text-slate-400 font-bold">자기소개 (한 줄 소개)</label>
-                        <textarea v-model="formData.introduction" rows="3" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none resize-none"></textarea>
+                        <textarea v-model="formData.introduction" rows="3" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors resize-none"></textarea>
                     </div>
-                </div>
-
-                <div class="bg-[#1e293b]/50 p-6 rounded-2xl border border-white/5 space-y-4">
-                    <h3 class="text-lg font-bold text-white border-b border-white/5 pb-2">근무 조건 (희망)</h3>
-                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4" v-if="formData.workConditions">
-                        <div class="space-y-1">
-                            <label class="text-xs text-slate-400 font-bold">프리랜서 유형</label>
-                            <select v-model="formData.workConditions.type" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none">
-                                <option>개인</option>
-                                <option>팀</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1">
-                            <label class="text-xs text-slate-400 font-bold">업무 시작 가능일</label>
-                            <input v-model="formData.workConditions.startDate" type="date" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
-                        </div>
-                         <div class="space-y-1">
-                            <label class="text-xs text-slate-400 font-bold">희망 근무 방식</label>
-                            <select v-model="formData.workConditions.workStyle" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none">
-                                <option>원격</option>
-                                <option>상주</option>
-                                <option>원격+상주 (하이브리드)</option>
-                            </select>
-                        </div>
-                         <div class="space-y-1">
-                            <label class="text-xs text-slate-400 font-bold">근무 지역</label>
-                            <input v-model="formData.workConditions.location" type="text" class="w-full bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none" />
-                        </div>
-                    </div>
-                </div>
-
-                 <div class="bg-[#1e293b]/50 p-6 rounded-2xl border border-white/5 space-y-4">
-                    <h3 class="text-lg font-bold text-white border-b border-white/5 pb-2">기술 스택 (Skills)</h3>
-                    <div class="flex gap-2">
-                        <input
-                            v-model="newSkill"
-                            @keyup.enter="addSkill"
-                            type="text"
-                            placeholder="기술 스택 입력 후 Enter"
-                            class="flex-1 bg-slate-900 border border-white/10 rounded-lg px-4 py-2 text-white text-sm focus:border-blue-500 focus:outline-none"
-                        />
-                        <button @click="addSkill" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">
-                            <Plus class="w-4 h-4" />
-                        </button>
-                    </div>
-                    <div class="flex flex-wrap gap-2 mt-2">
-                        <span v-for="skill in formData.skills" :key="skill" class="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-bold flex items-center gap-2 border border-blue-500/30">
-                            {{ skill }}
-                            <button @click="removeSkill(skill)" class="hover:text-white"><X class="w-3 h-3" /></button>
-                        </span>
-                    </div>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-4">
-                    <button @click="$emit('back')" class="px-6 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all font-bold">
-                        취소
-                    </button>
-                    <button
-                        @click="saveProfile"
-                        :disabled="isLoading"
-                        class="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
-                    >
-                        <Save class="w-4 h-4" />
-                        {{ isLoading ? '저장 중...' : '저장하기' }}
-                    </button>
                 </div>
             </div>
         </div>
+
+        <div class="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(15,23,42,0.6)] space-y-4">
+            <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">근무 조건 (희망)</h3>
+             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" v-if="formData.workConditions">
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-400 font-bold">프리랜서 유형</label>
+                    <select v-model="formData.workConditions.type" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors">
+                        <option>개인</option>
+                        <option>팀</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-xs text-slate-400 font-bold">업무 시작 가능일</label>
+                    <input v-model="formData.workConditions.startDate" type="date" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors" />
+                </div>
+                 <div class="space-y-1">
+                    <label class="text-xs text-slate-400 font-bold">희망 근무 방식</label>
+                    <select v-model="formData.workConditions.workStyle" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors">
+                        <option>원격</option>
+                        <option>상주</option>
+                        <option>원격+상주 (하이브리드)</option>
+                    </select>
+                </div>
+                 <div class="space-y-1">
+                    <label class="text-xs text-slate-400 font-bold">근무 지역</label>
+                    <input v-model="formData.workConditions.location" type="text" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors" />
+                </div>
+            </div>
+        </div>
+
+         <div class="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(15,23,42,0.6)] space-y-4">
+            <h3 class="text-lg font-bold text-white border-b border-white/10 pb-2">기술 스택 (Skills)</h3>
+            <div class="flex gap-2">
+                <input
+                    v-model="newSkill"
+                    @keyup.enter="addSkill"
+                    type="text"
+                    placeholder="기술 스택 입력 후 Enter"
+                    class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors"
+                />
+                <button @click="addSkill" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors">
+                    <Plus class="w-4 h-4" />
+                </button>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-2">
+                <span v-for="skill in formData.skills" :key="skill" class="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-bold flex items-center gap-2 border border-blue-500/30">
+                    {{ skill }}
+                    <button @click="removeSkill(skill)" class="hover:text-white"><X class="w-3 h-3" /></button>
+                </span>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4">
+            <button @click="$emit('back')" class="px-6 py-2.5 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 border border-transparent hover:border-white/10 transition-all font-bold">
+                        취소
+            </button>
+            <button
+                @click="saveProfile"
+                :disabled="isLoading"
+                class="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white rounded-xl font-bold shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
+            >
+                <Save class="w-4 h-4" />
+                {{ isLoading ? '저장 중...' : '저장하기' }}
+            </button>
+        </div>
+
     </div>
+
+
+  
 </template>

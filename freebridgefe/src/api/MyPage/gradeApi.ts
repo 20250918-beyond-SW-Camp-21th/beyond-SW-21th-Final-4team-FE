@@ -6,9 +6,9 @@ interface ApiResponse<T> {
     data: T;
 }
 
-export type GradeLevel = '특급' | '고급' | '중급' | '초급' | '';
-export type EducationType = '전문학사' | '학사' | '석사' | '박사';
-export type CertificationType = '산업기사' | '기사';
+export type GradeLevel = string | '';
+export type EducationType = 'ASSOCIATE' | 'BACHELOR' | 'MASTER' | 'DOCTOR';
+export type CertificationType = 'INDUSTRIAL_ENGINEER' | 'ENGINEER';
 
 export interface EducationOption {
     value: EducationType;
@@ -36,6 +36,15 @@ export interface GradeCalculationRequest {
 
 export interface GradeCalculationResponse {
     grade: GradeLevel;
+    gradeDescription?: string;
+    basis?: string;
+    careerYears?: number;
+    qualificationType?: string;
+}
+
+export interface CalculatedGradeResult {
+    grade: GradeLevel;
+    gradeDescription?: string;
 }
 
 export interface GradeSaveRequest {
@@ -47,15 +56,15 @@ export interface GradeSaveRequest {
 }
 
 const MOCK_EDUCATION_OPTIONS: EducationOption[] = [
-    { value: '전문학사', label: '전문학사' },
-    { value: '학사', label: '학사' },
-    { value: '석사', label: '석사' },
-    { value: '박사', label: '박사' }
+    { value: 'ASSOCIATE', label: '전문학사' },
+    { value: 'BACHELOR', label: '학사' },
+    { value: 'MASTER', label: '석사' },
+    { value: 'DOCTOR', label: '박사' }
 ];
 
 const MOCK_CERTIFICATION_OPTIONS: CertificationOption[] = [
-    { value: '산업기사', label: '산업기사' },
-    { value: '기사', label: '기사' }
+    { value: 'INDUSTRIAL_ENGINEER', label: '산업기사' },
+    { value: 'ENGINEER', label: '기사' }
 ];
 
 const MOCK_CRITERIA_ITEMS: GradeCriteriaItem[] = [
@@ -77,10 +86,17 @@ export const getGradeCriteria = async (): Promise<GradeCriteriaItem[]> => {
     return new Promise(resolve => setTimeout(() => resolve(MOCK_CRITERIA_ITEMS), 300));
 };
 
-export const calculateGrade = async (req: GradeCalculationRequest): Promise<GradeLevel> => {
+export const calculateGrade = async (req: GradeCalculationRequest): Promise<CalculatedGradeResult> => {
+    const payload = {
+        qualificationType: req.type === 'education' ? 'ACADEMIC_CAREER' : 'LICENSED',
+        degree: req.type === 'education' ? req.education : undefined,
+        licenseGrade: req.type === 'certification' ? req.certification : undefined,
+        careerYears: req.yearsOfExperience
+    };
+
     const response = await apiClient.post<ApiResponse<GradeCalculationResponse>>(
         '/api/freelancer/mypage/grade-calculator/calculate',
-        req
+        payload
     );
     if (!response.data.success) {
         const message = response.data.message ?? 'Unknown error';
@@ -89,7 +105,10 @@ export const calculateGrade = async (req: GradeCalculationRequest): Promise<Grad
     if (!response.data.data) {
         throw new Error('calculateGrade failed: empty response data');
     }
-    return response.data.data.grade;
+    return {
+        grade: response.data.data.grade,
+        gradeDescription: response.data.data.gradeDescription,
+    };
 };
 
 export const saveGrade = async (req: GradeSaveRequest): Promise<boolean> => {
