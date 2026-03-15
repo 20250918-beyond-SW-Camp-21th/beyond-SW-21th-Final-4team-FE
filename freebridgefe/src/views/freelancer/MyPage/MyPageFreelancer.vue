@@ -108,9 +108,17 @@ const handleProfileUpdate = (updatedData: FreelancerProfileDashboard) => {
     activeTab.value = 'dashboard';
 };
 
+const latestDashboardRequestId = ref(0);
+
 const loadFreelancerDashboard = async (userId?: string | number) => {
+    const requestId = ++latestDashboardRequestId.value;
+    const isLatestRequest = () => requestId === latestDashboardRequestId.value;
+
     if (!userId) {
         const data = await getFreelancerProfile('guest');
+        if (!isLatestRequest()) {
+            return;
+        }
         profile.value = data;
         return;
     }
@@ -121,6 +129,9 @@ const loadFreelancerDashboard = async (userId?: string | number) => {
     ]);
 
     if (profileResult.status === 'fulfilled') {
+        if (!isLatestRequest()) {
+            return;
+        }
         profile.value = profileResult.value;
 
         if (currentUser.value?.name) profile.value.name = currentUser.value.name;
@@ -132,6 +143,9 @@ const loadFreelancerDashboard = async (userId?: string | number) => {
     }
 
     if (statsResult.status === 'fulfilled') {
+        if (!isLatestRequest()) {
+            return;
+        }
         profile.value.statInteresting = statsResult.value.inProgressProjects ?? 0;
         profile.value.statCompleted = statsResult.value.completedProjects ?? 0;
     } else {
@@ -140,9 +154,15 @@ const loadFreelancerDashboard = async (userId?: string | number) => {
 
     try {
         const summary = await getFreelancerReviewSummary();
+        if (!isLatestRequest()) {
+            return;
+        }
         profile.value.averageRating = summary.averageRate ?? 0;
         profile.value.topPercentile = summary.topPercentile ?? 0;
     } catch (error) {
+        if (!isLatestRequest()) {
+            return;
+        }
         console.error('Failed to load review summary:', error);
     }
 
@@ -152,6 +172,9 @@ const loadFreelancerDashboard = async (userId?: string | number) => {
     ]);
 
     if (positivityResult.status === 'fulfilled' || strengthWeaknessResult.status === 'fulfilled') {
+        if (!isLatestRequest()) {
+            return;
+        }
         profile.value.aiSummary = {
             positivityScore:
                 positivityResult.status === 'fulfilled'
@@ -175,8 +198,8 @@ const loadFreelancerDashboard = async (userId?: string | number) => {
 
 watch(
     () => currentUser.value?.id,
-    async (userId) => {
-        await loadFreelancerDashboard(userId);
+    (userId) => {
+        void loadFreelancerDashboard(userId);
     },
     { immediate: true }
 );
