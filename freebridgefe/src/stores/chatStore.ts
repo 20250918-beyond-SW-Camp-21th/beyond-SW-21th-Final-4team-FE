@@ -4,7 +4,12 @@ import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuthStore } from '@/stores/authStore';
 import type { ChatRoom, ChatMessage, UserRole } from '@/types';
-import { getMyChatRooms, getChatMessages, createChatRoom as apiCreateRoom } from '@/api/chatApi';
+import {
+    getMyChatRooms,
+    getChatMessages,
+    createChatRoom as apiCreateRoom,
+    leaveChatRoom as apiLeaveRoom
+} from '@/api/chatApi';
 import { API_BASE_URL, getAccessToken } from '@/api/axiosInstance';
 import { CHAT_MUTED_ROOMS_KEY } from '@/constants/chatUi';
 
@@ -273,6 +278,25 @@ export const useChatStore = defineStore('chat', () => {
         };
     }
 
+    function applyRoomEventFromMessage(roomId: string, message: ChatMessage) {
+        if (message.type !== 'SYSTEM') return;
+        if (message.metadata?.eventType !== 'ROOM_LEFT') return;
+
+        const participantId =
+            typeof message.metadata?.participantId === 'string' ? message.metadata.participantId : null;
+        if (!participantId) return;
+
+        const roomIndex = rooms.value.findIndex((room) => room.id === roomId);
+        if (roomIndex === -1) return;
+
+        const room = rooms.value[roomIndex];
+        const normalizedParticipantId = normalizeIdForRoom(room, participantId);
+        const leftBy = room.leftBy || [];
+        if (!leftBy.some((leftParticipantId) => idsMatch(leftParticipantId, normalizedParticipantId))) {
+            room.leftBy = [...leftBy, normalizedParticipantId];
+        }
+    }
+
     function connectWebSocket(): Promise<void> {
         return new Promise((resolve, reject) => {
             const token = getAccessToken(); // axiosInstance의 토큰 키 사용
@@ -341,6 +365,8 @@ export const useChatStore = defineStore('chat', () => {
                 if (!messages.value[roomId]) {
                     messages.value[roomId] = [];
                 }
+
+                applyRoomEventFromMessage(roomId, msg);
 
                 // Remove from pending queue if present
                 pendingMessages.value = pendingMessages.value.filter(
@@ -708,42 +734,28 @@ export const useChatStore = defineStore('chat', () => {
         return leftBy.some((id) => !myIds.includes(id));
     }
 
-    function leaveRoom(roomId: string) {
+    async function leaveRoom(roomId: string) {
         const roomIndex = rooms.value.findIndex((room) => room.id === roomId);
-        if (roomIndex === -1) return;
+        if (roomIndex === -1) return false;
 
-        const room = rooms.value[roomIndex];
-        const myIds = getMyParticipantIds();
-        const leaverName = authStore.user?.name || '상대방';
-
-        sendSystemMessage(roomId, `${leaverName}님이 채팅방을 나갔습니다.`, 'SYSTEM');
-
-        const currentLeftBy = room.leftBy || [];
-        const primaryId = getCurrentChatParticipantId();
-        const leftBy = Array.from(
-            new Set([
-                ...currentLeftBy.map((id) => normalizeIdForRoom(room, String(id))),
-                ...(primaryId ? [normalizeIdForRoom(room, primaryId)] : []),
-                ...myIds.map((id) => normalizeIdForRoom(room, String(id)))
-            ])
-        );
-
-        const participantIds = Array.from(
-            new Set(room.participants.map((id) => normalizeIdForRoom(room, String(id))))
-        );
-        const hasEveryoneLeft = participantIds.every((id) => leftBy.includes(id));
-
-        if (hasEveryoneLeft) {
-            rooms.value = rooms.value.filter((r) => r.id !== roomId);
-            if (messages.value[roomId]) delete messages.value[roomId];
-        } else {
-            rooms.value[roomIndex] = { ...room, leftBy, updatedAt: new Date() };
+        try {
+            await apiLeaveRoom(roomId);
+        } catch (error) {
+            console.error('[Chat] Failed to leave room:', error);
+            return false;
         }
+
+        rooms.value = rooms.value.filter((r) => r.id !== roomId);
+        if (messages.value[roomId]) delete messages.value[roomId];
+        if (hasLoadedHistory.value[roomId]) delete hasLoadedHistory.value[roomId];
+        if (isLoadingMessages.value[roomId]) delete isLoadingMessages.value[roomId];
+        if (messageBuffer.value[roomId]) delete messageBuffer.value[roomId];
 
         unsubscribeFromRoom(roomId);
 
         if (currentRoomId.value === roomId) currentRoomId.value = null;
         openDockedRooms.value = openDockedRooms.value.filter((r) => r.roomId !== roomId);
+        return true;
     }
 
     function updateRoomContract(roomId: string, contractId: number | null) {

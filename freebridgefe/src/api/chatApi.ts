@@ -121,3 +121,12 @@ export async function createChatRoom(body: {
     return mapToChatRoom(res.data);
 }
 
+/**
+ * 채팅방 나가기
+ * POST /api/chat/rooms/{roomId}/leave
+ */
+export async function leaveChatRoom(roomId: string): Promise<ChatRoom> {
+    const res = await apiClient.post<BackendChatRoomResponse>(`/api/chat/rooms/${roomId}/leave`);
+    return mapToChatRoom(res.data);
+}
+

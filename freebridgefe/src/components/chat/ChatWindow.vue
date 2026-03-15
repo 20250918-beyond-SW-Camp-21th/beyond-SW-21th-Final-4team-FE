@@ -33,7 +33,9 @@
             <div class="flex gap-2">
                  <button
                     @click="handleLeaveRoom"
+                    :disabled="isLeavingRoom"
                     class="w-10 h-10 rounded-full bg-[#111827] text-slate-300 hover:text-white hover:bg-[#0f172a] transition-colors border border-white/5 flex items-center justify-center"
+                    :class="isLeavingRoom ? 'opacity-50 cursor-not-allowed' : ''"
                     title="대화 나가기"
                  >
                     <LogOutIcon class="w-5 h-5" />
@@ -147,6 +149,7 @@ const router = useRouter();
 
 const activeTab = ref<'CHAT' | 'CONTRACT'>('CHAT');
 const newMessage = ref('');
+const isLeavingRoom = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
 
 const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
@@ -219,11 +222,21 @@ const shouldRefreshContracts = computed(() => {
     });
 });
 
-function handleLeaveRoom() {
+async function handleLeaveRoom() {
     if (!props.roomId) return;
+    if (isLeavingRoom.value) return;
     if (!confirm('이 채팅방에서 나가시겠습니까?')) return;
-    chatStore.leaveRoom(props.roomId);
-    router.push('/chat');
+    isLeavingRoom.value = true;
+    try {
+        const hasLeftRoom = await chatStore.leaveRoom(props.roomId);
+        if (!hasLeftRoom) {
+            alert('채팅방 나가기에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+        await router.push('/chat');
+    } finally {
+        isLeavingRoom.value = false;
+    }
 }
 
 function getSenderName(senderId: string) {
