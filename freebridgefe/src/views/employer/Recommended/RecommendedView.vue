@@ -59,9 +59,29 @@ const hasAccess = computed(
 );
 
 const employerJobs = computed(() => jobStore.myJobs);
+const recommendableEmployerJobs = computed(() =>
+  employerJobs.value.filter((job) => {
+    if (job.status === "CLOSED" || job.status === "CONTRACTED") {
+      return false;
+    }
+
+    if (
+      typeof job.headcount === "number" &&
+      typeof job.matchedHeadcount === "number" &&
+      job.headcount > 0 &&
+      job.matchedHeadcount >= job.headcount
+    ) {
+      return false;
+    }
+
+    return true;
+  }),
+);
 
 const selectedJob = computed<JobPosting | null>(
-  () => employerJobs.value.find((job) => job.id === selectedJobId.value) ?? null,
+  () =>
+    recommendableEmployerJobs.value.find((job) => job.id === selectedJobId.value) ??
+    null,
 );
 
 const isJobSelectDisabled = computed(
@@ -156,13 +176,13 @@ const loadRecommendationForSelectedJob = async (requestId: number) => {
 
 const loadRecommendedFreelancers = async () => {
   initLoading.value = true;
-  let jobs = jobStore.myJobs;
+  let jobs = recommendableEmployerJobs.value;
 
   try {
-    if (!jobs.length) {
+    if (!employerJobs.value.length) {
       try {
         await jobStore.fetchJobPostings();
-        jobs = jobStore.myJobs;
+        jobs = recommendableEmployerJobs.value;
       } catch {
         freelancerStore.freelancers = [];
         freelancerStore.recommendedFetchError =
@@ -176,6 +196,7 @@ const loadRecommendedFreelancers = async () => {
       freelancerStore.recommendedFetchError =
         "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
       selectedJobId.value = "";
+      freelancerStore.recommendedFetchError = null;
       return;
     }
 
@@ -231,7 +252,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div
-      v-if="hasAccess && employerJobs.length"
+      v-if="hasAccess && recommendableEmployerJobs.length"
       class="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
     >
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -249,7 +270,7 @@ onBeforeUnmount(() => {
             class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-[#2D5BFF] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <option
-              v-for="job in employerJobs"
+              v-for="job in recommendableEmployerJobs"
               :key="job.id"
               :value="job.id"
             >
