@@ -68,6 +68,16 @@ const isJobSelectDisabled = computed(
   () => initLoading.value || isJobSelectionLoading.value,
 );
 
+const showEmptyRecommendations = computed(
+  () =>
+    hasAccess.value &&
+    !planLoading.value &&
+    !initLoading.value &&
+    !freelancerStore.isFetchingRecommended &&
+    !freelancerStore.recommendedFetchError &&
+    freelancerStore.freelancers.length === 0,
+);
+
 const fetchCurrentPlan = async () => {
   planLoading.value = true;
   planFetchError.value = null;
@@ -309,6 +319,23 @@ onBeforeUnmount(() => {
       <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
       <p class="text-white/50">
         등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다
+      </p>
+    </div>
+
+    <div
+      v-else-if="showEmptyRecommendations"
+      class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-12 text-center"
+    >
+      <div
+        class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4"
+      >
+        <TrendingUp class="w-8 h-8 text-white/70" />
+      </div>
+      <h3 class="text-xl font-semibold mb-2 text-white">
+        현재 조건에 맞는 추천 프리랜서가 없습니다
+      </h3>
+      <p class="text-white/60">
+        공고 설명을 조금 더 구체적으로 작성하거나 기술 스택을 조정한 뒤 다시 확인해보세요.
       </p>
     </div>
 
