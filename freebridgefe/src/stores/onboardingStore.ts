@@ -5,20 +5,47 @@ import { uploadEmployerLogo } from '@/api/MyPage/employer';
 import type { EmployerProfile, FreelancerProfile } from '@/types/onboarding';
 
 export const useOnboardingStore = defineStore('onboarding', () => {
-    const currentStep = ref(1);
-    const totalSteps = ref(2); // Fixed 2-step flow
-    const isLoading = ref(false);
+    type OnboardingRole = 'EMPLOYER' | 'FREELANCER';
 
-    // Initial Data State
-    const employerData = ref<Partial<EmployerProfile>>({
-        size: 'S1_4' // Default enum value aligned with BE Scale
+    const createInitialEmployerData = (): Partial<EmployerProfile> => ({
+        size: 'S1_4'
     });
 
-    const freelancerData = ref<Partial<FreelancerProfile>>({
-        grade: 'JUNIOR', // Default enum value
+    const createInitialFreelancerData = (): Partial<FreelancerProfile> => ({
+        grade: 'JUNIOR',
         work_type: 'PERSONAL',
         work_style: 'REMOTE'
     });
+
+    const currentStep = ref(1);
+    const totalSteps = ref(2); // Fixed 2-step flow
+    const isLoading = ref(false);
+    const draftOwnerKey = ref<string | null>(null);
+
+    // Initial Data State
+    const employerData = ref<Partial<EmployerProfile>>(createInitialEmployerData());
+
+    const freelancerData = ref<Partial<FreelancerProfile>>(createInitialFreelancerData());
+
+    function resetOnboardingState() {
+        currentStep.value = 1;
+        employerData.value = createInitialEmployerData();
+        freelancerData.value = createInitialFreelancerData();
+        draftOwnerKey.value = null;
+    }
+
+    function ensureDraftForUser(userId: string | number | null | undefined, role: OnboardingRole) {
+        const normalizedUserId =
+            userId === null || userId === undefined || String(userId).trim() === ''
+                ? 'anonymous'
+                : String(userId).trim();
+        const nextOwnerKey = `${role}:${normalizedUserId}`;
+
+        if (draftOwnerKey.value !== nextOwnerKey) {
+            resetOnboardingState();
+            draftOwnerKey.value = nextOwnerKey;
+        }
+    }
 
     function setStep(step: number) {
         currentStep.value = step;
@@ -101,6 +128,8 @@ export const useOnboardingStore = defineStore('onboarding', () => {
         prevStep,
         updateEmployerData,
         updateFreelancerData,
+        resetOnboardingState,
+        ensureDraftForUser,
         submitEmployerOnboarding,
         submitFreelancerOnboarding
     };
