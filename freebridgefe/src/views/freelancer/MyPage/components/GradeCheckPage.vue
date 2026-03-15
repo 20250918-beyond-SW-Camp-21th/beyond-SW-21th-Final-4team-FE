@@ -42,6 +42,7 @@ const yearsOfExperience = ref<number | ''>('');
 const certification = ref<CertificationType | ''>('');
 const certYears = ref<number | ''>('');
 const calculatedGrade = ref<GradeLevel>('');
+const calculatedGradeDescription = ref('');
 
 const educationOptions = ref<EducationOption[]>([]);
 const certificationOptions = ref<CertificationOption[]>([]);
@@ -75,6 +76,7 @@ const handleCalculate = async () => {
 
     isLoading.value = true;
     calculatedGrade.value = '';
+    calculatedGradeDescription.value = '';
 
     try {
         const result = await calculateGrade({
@@ -83,7 +85,8 @@ const handleCalculate = async () => {
             certification: selectedType.value === 'certification' ? (certification.value as CertificationType) : undefined,
             yearsOfExperience: selectedType.value === 'education' ? Number(yearsOfExperience.value) : Number(certYears.value)
         });
-        calculatedGrade.value = result;
+        calculatedGrade.value = result.grade;
+        calculatedGradeDescription.value = result.gradeDescription ?? '';
     } catch (error) {
         console.error('Calculation failed', error);
         alertStore.open({ message: '등급 계산에 실패했습니다. 입력값을 확인해주세요.', type: 'error' });

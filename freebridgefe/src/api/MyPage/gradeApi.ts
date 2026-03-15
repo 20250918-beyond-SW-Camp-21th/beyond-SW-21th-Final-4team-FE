@@ -42,6 +42,11 @@ export interface GradeCalculationResponse {
     qualificationType?: string;
 }
 
+export interface CalculatedGradeResult {
+    grade: GradeLevel;
+    gradeDescription?: string;
+}
+
 export interface GradeSaveRequest {
     type: 'education' | 'certification';
     education?: EducationType;
@@ -81,7 +86,7 @@ export const getGradeCriteria = async (): Promise<GradeCriteriaItem[]> => {
     return new Promise(resolve => setTimeout(() => resolve(MOCK_CRITERIA_ITEMS), 300));
 };
 
-export const calculateGrade = async (req: GradeCalculationRequest): Promise<GradeLevel> => {
+export const calculateGrade = async (req: GradeCalculationRequest): Promise<CalculatedGradeResult> => {
     const payload = {
         qualificationType: req.type === 'education' ? 'ACADEMIC_CAREER' : 'LICENSED',
         degree: req.type === 'education' ? req.education : undefined,
@@ -100,7 +105,10 @@ export const calculateGrade = async (req: GradeCalculationRequest): Promise<Grad
     if (!response.data.data) {
         throw new Error('calculateGrade failed: empty response data');
     }
-    return response.data.data.gradeDescription ?? response.data.data.grade;
+    return {
+        grade: response.data.data.grade,
+        gradeDescription: response.data.data.gradeDescription,
+    };
 };
 
 export const saveGrade = async (req: GradeSaveRequest): Promise<boolean> => {
