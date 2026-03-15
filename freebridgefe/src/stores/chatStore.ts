@@ -278,6 +278,25 @@ export const useChatStore = defineStore('chat', () => {
         };
     }
 
+    function applyRoomEventFromMessage(roomId: string, message: ChatMessage) {
+        if (message.type !== 'SYSTEM') return;
+        if (message.metadata?.eventType !== 'ROOM_LEFT') return;
+
+        const participantId =
+            typeof message.metadata?.participantId === 'string' ? message.metadata.participantId : null;
+        if (!participantId) return;
+
+        const roomIndex = rooms.value.findIndex((room) => room.id === roomId);
+        if (roomIndex === -1) return;
+
+        const room = rooms.value[roomIndex];
+        const normalizedParticipantId = normalizeIdForRoom(room, participantId);
+        const leftBy = room.leftBy || [];
+        if (!leftBy.some((leftParticipantId) => idsMatch(leftParticipantId, normalizedParticipantId))) {
+            room.leftBy = [...leftBy, normalizedParticipantId];
+        }
+    }
+
     function connectWebSocket(): Promise<void> {
         return new Promise((resolve, reject) => {
             const token = getAccessToken(); // axiosInstance의 토큰 키 사용
@@ -346,6 +365,8 @@ export const useChatStore = defineStore('chat', () => {
                 if (!messages.value[roomId]) {
                     messages.value[roomId] = [];
                 }
+
+                applyRoomEventFromMessage(roomId, msg);
 
                 // Remove from pending queue if present
                 pendingMessages.value = pendingMessages.value.filter(
@@ -717,16 +738,12 @@ export const useChatStore = defineStore('chat', () => {
         const roomIndex = rooms.value.findIndex((room) => room.id === roomId);
         if (roomIndex === -1) return false;
 
-        const leaverName = authStore.user?.name || '상대방';
-
         try {
             await apiLeaveRoom(roomId);
         } catch (error) {
             console.error('[Chat] Failed to leave room:', error);
             return false;
         }
-
-        sendSystemMessage(roomId, `${leaverName}님이 채팅방을 나갔습니다.`, 'SYSTEM');
 
         rooms.value = rooms.value.filter((r) => r.id !== roomId);
         if (messages.value[roomId]) delete messages.value[roomId];
