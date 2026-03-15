@@ -1,7 +1,8 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+﻿import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import { getEmployerProfile } from '@/api/MyPage/employer'
 import { getEmployerSubscription } from '@/api/MyPage/accountApi'
+import { normalizeEmployerPlan } from '@/utils/employerSubscription'
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -191,20 +192,6 @@ const router = createRouter({
     routes
 })
 
-const normalizeEmployerPlan = (plan?: string): 'FREE' | 'PRO' | 'PRIME' => {
-    const normalizedPlan = (plan ?? 'FREE').trim().toUpperCase()
-
-    if (['PRO', 'PARTNER', '프로 플랜'.toUpperCase()].includes(normalizedPlan)) {
-        return 'PRO'
-    }
-
-    if (['PRIME', 'ENTERPRISE', '프라임 플랜'.toUpperCase()].includes(normalizedPlan)) {
-        return 'PRIME'
-    }
-
-    return 'FREE'
-}
-
 // Navigation Guard
 router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore()
@@ -231,13 +218,13 @@ router.beforeEach(async (to, _from, next) => {
             const normalizedPlan = normalizeEmployerPlan(subscription.currentPlan)
 
             if (!['PRO', 'PRIME'].includes(normalizedPlan)) {
-                alert('추천 프리랜서 기능은 프로 플랜 이상에서만 사용할 수 있습니다. 구독 레벨을 높여주세요.')
+                alert('異붿쿇 ?꾨━?쒖꽌 湲곕뒫? ?꾨줈 ?뚮옖 ?댁긽?먯꽌留??ъ슜?????덉뒿?덈떎. 援щ룆 ?덈꺼???믪뿬二쇱꽭??')
                 next({ name: 'employer.mypage', query: { tab: 'account' } })
                 return
             }
         } catch (error) {
             console.error('Failed to validate subscription plan for recommended page:', error)
-            alert('구독 정보를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.')
+            alert('援щ룆 ?뺣낫瑜??뺤씤?????놁뒿?덈떎. ?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂.')
             next('/employer/dashboard')
             return
         }
@@ -247,3 +234,4 @@ router.beforeEach(async (to, _from, next) => {
 })
 
 export default router
+

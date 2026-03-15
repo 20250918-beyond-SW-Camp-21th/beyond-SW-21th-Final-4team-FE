@@ -29,6 +29,7 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { getEmployerProfile, uploadEmployerLogo, type EmployerProfileData } from '@/api/MyPage/employer';
 import { PLAN_LABELS } from '@/constants/planLabels';
+import { normalizeEmployerPlan } from '@/utils/employerSubscription';
 import { getEmployerReviewSummary } from '@/api/MyPage/evaluationApi';
 import { getEmployerProjectStats } from '@/api/MyPage/projectApi';
 
@@ -135,7 +136,7 @@ const fetchProfile = async () => {
 };
 
 const subscriptionPlanText = computed(() => {
-  const normalizedPlan = (employerProfile.value.plan ?? 'FREE').toUpperCase();
+  const normalizedPlan = normalizeEmployerPlan(employerProfile.value.plan);
   return PLAN_LABELS[normalizedPlan] ?? normalizedPlan;
 });
 
@@ -163,13 +164,7 @@ const topCrmBanner = computed(() => {
   return null;
 });
 
-const normalizedPlanKey = computed<'FREE' | 'PRO' | 'PRIME'>(() => {
-  const normalizedPlan = (employerProfile.value.plan ?? 'FREE').toUpperCase();
-  if (normalizedPlan === 'PARTNER') return 'PRO';
-  if (normalizedPlan === 'ENTERPRISE') return 'PRIME';
-  if (normalizedPlan === 'PRO' || normalizedPlan === 'PRIME') return normalizedPlan;
-  return 'FREE';
-});
+const normalizedPlanKey = computed<'FREE' | 'PRO' | 'PRIME'>(() => normalizeEmployerPlan(employerProfile.value.plan));
 
 const subscriptionPlanTone = computed(() => {
   if (normalizedPlanKey.value === 'PRO') {
@@ -630,4 +625,5 @@ const safeWebsiteUrl = computed(() => {
 
   </div>
 </template>
+
 

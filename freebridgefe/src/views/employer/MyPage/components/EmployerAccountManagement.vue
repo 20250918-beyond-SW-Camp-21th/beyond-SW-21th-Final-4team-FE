@@ -19,6 +19,7 @@ import {
   updateEmployerSubscription,
   changeEmployerPassword
 } from '@/api/MyPage/accountApi';
+import { normalizeEmployerPlan } from '@/utils/employerSubscription';
 
 defineEmits<{
   (e: 'back'): void;
@@ -38,15 +39,8 @@ const accountInfo = ref({
   phone: '',
 });
 
-const currentPlan = ref<PlanType>('PRO');
+const currentPlan = ref<PlanType>('FREE');
 
-const normalizePlan = (plan?: string): PlanType => {
-  const normalizedPlan = (plan ?? 'FREE').trim().toUpperCase();
-  if (normalizedPlan === 'PARTNER') return 'PRO';
-  if (normalizedPlan === 'ENTERPRISE') return 'PRIME';
-  if (normalizedPlan === 'PRO' || normalizedPlan === 'PRIME') return normalizedPlan;
-  return 'FREE';
-};
 
 interface SubscriptionPlan {
   name: string;
@@ -117,10 +111,9 @@ const fetchSubscriptionPlans = async () => {
 const fetchCurrentPlan = async () => {
   try {
     const subscription = await getEmployerSubscription();
-    currentPlan.value = normalizePlan(subscription.currentPlan);
+    currentPlan.value = normalizeEmployerPlan(subscription.currentPlan);
   } catch (error) {
     console.error('Failed to fetch current subscription plan:', error);
-    currentPlan.value = 'FREE';
   }
 };
 
@@ -483,3 +476,4 @@ onMounted(() => {
     </div>
   </div>
 </template>
+

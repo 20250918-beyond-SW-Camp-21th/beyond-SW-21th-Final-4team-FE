@@ -1,10 +1,11 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { TrendingUp, Send, Star } from "lucide-vue-next";
 import { useFreelancerStore } from "@/stores/freelancerStore";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useJobStore } from "@/stores/jobStore";
 import { getEmployerSubscription } from "@/api/MyPage/accountApi";
+import { normalizeEmployerPlan } from "@/utils/employerSubscription";
 import ProposalModal from "./components/ProposalModal.vue";
 import type { User } from "@/types";
 
@@ -30,24 +31,6 @@ const router = useRouter();
 type PlanType = "FREE" | "PRO" | "PRIME";
 const currentPlan = ref<PlanType>("FREE");
 
-const normalizePlan = (plan?: string): PlanType => {
-  const normalizedPlan = (plan ?? "FREE").trim().toUpperCase();
-
-  if (["PRO", "PARTNER", "프로 플랜".toUpperCase()].includes(normalizedPlan)) {
-    return "PRO";
-  }
-
-  if (
-    ["PRIME", "ENTERPRISE", "프라임 플랜".toUpperCase()].includes(
-      normalizedPlan,
-    )
-  ) {
-    return "PRIME";
-  }
-
-  return "FREE";
-};
-
 const planLoading = ref(true);
 const planFetchError = ref<string | null>(null);
 
@@ -55,7 +38,7 @@ const fetchCurrentPlan = async () => {
   planLoading.value = true;
   try {
     const subscription = await getEmployerSubscription();
-    currentPlan.value = normalizePlan(subscription.currentPlan);
+    currentPlan.value = normalizeEmployerPlan(subscription.currentPlan);
   } catch (error) {
     console.error("Failed to fetch employer plan:", error);
     planFetchError.value = "subscription_fetch_failed";
@@ -74,16 +57,16 @@ onMounted(async () => {
     const jobs = jobStore.myJobs;
     if (jobs && jobs.length > 0) {
       const firstJobId = jobs[0].id;
-      // 엄격한 숫자 검증 (문자가 섞여있으면 중단)
+      // ?꾧꺽???レ옄 寃利?(臾몄옄媛 ?욎뿬?덉쑝硫?以묐떒)
       if (typeof firstJobId === "number" || /^\d+$/.test(String(firstJobId))) {
         await freelancerStore.fetchRecommendedFreelancers(Number(firstJobId));
       } else {
         freelancerStore.recommendedFetchError =
-          "유효하지 않은 프로젝트 공고 ID입니다.";
+          "?좏슚?섏? ?딆? ?꾨줈?앺듃 怨듦퀬 ID?낅땲??";
       }
     } else {
       freelancerStore.recommendedFetchError =
-        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
+        "?깅줉???꾨줈?앺듃 怨듦퀬媛 ?놁뒿?덈떎. 怨듦퀬瑜?癒쇱? ?깅줉?댁＜?몄슂.";
     }
   }
 });
@@ -100,9 +83,9 @@ const goToUpgrade = () => {
     <div class="mb-8">
       <div class="flex items-center gap-2 mb-2">
         <TrendingUp class="w-6 h-6 text-[#2D5BFF]" />
-        <h1 class="text-3xl font-bold">추천 프리랜서</h1>
+        <h1 class="text-3xl font-bold">異붿쿇 ?꾨━?쒖꽌</h1>
       </div>
-      <p class="text-white/60">AI가 선별한 최적의 프리랜서를 만나보세요</p>
+      <p class="text-white/60">AI媛 ?좊퀎??理쒖쟻???꾨━?쒖꽌瑜?留뚮굹蹂댁꽭??/p>
     </div>
 
     <!-- Loading Skeleton -->
@@ -150,7 +133,7 @@ const goToUpgrade = () => {
         <TrendingUp class="w-8 h-8 text-red-400" />
       </div>
       <h3 class="text-xl font-semibold mb-2 text-red-200">
-        추천을 불러오지 못했습니다
+        異붿쿇??遺덈윭?ㅼ? 紐삵뻽?듬땲??
       </h3>
       <p class="text-red-300/60">{{ freelancerStore.recommendedFetchError }}</p>
     </div>
@@ -163,9 +146,9 @@ const goToUpgrade = () => {
       <div
         class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-4 opacity-70"
       ></div>
-      <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
+      <h3 class="text-xl font-semibold mb-2 text-white/80">AI 遺꾩꽍 以?..</h3>
       <p class="text-white/50">
-        등록하신 프로젝트에 딱 맞는 프리랜서를 찾고 있습니다
+        ?깅줉?섏떊 ?꾨줈?앺듃????留욌뒗 ?꾨━?쒖꽌瑜?李얘퀬 ?덉뒿?덈떎
       </p>
     </div>
 
@@ -195,7 +178,7 @@ const goToUpgrade = () => {
               {{ freelancer.name }}
             </router-link>
             <p class="text-sm text-white/60">
-              {{ freelancer.experience }}년 경력
+              {{ freelancer.experience }}??寃쎈젰
             </p>
           </div>
         </div>
@@ -206,7 +189,7 @@ const goToUpgrade = () => {
             class="px-2 py-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-500/30 text-blue-300 text-xs font-bold flex items-center gap-1"
           >
             <TrendingUp class="w-3 h-3" />
-            AI 적합도 {{ (freelancer.matchScore * 100).toFixed(0) }}%
+            AI ?곹빀??{{ (freelancer.matchScore * 100).toFixed(0) }}%
           </div>
         </div>
         <p class="text-white/60 text-sm mb-4 line-clamp-2 h-10">
@@ -227,14 +210,14 @@ const goToUpgrade = () => {
           class="flex items-center justify-between pt-4 border-t border-white/10"
         >
           <div class="text-sm">
-            <span class="text-white/60">희망 급여 </span>
+            <span class="text-white/60">?щ쭩 湲됱뿬 </span>
             <span
               class="font-medium text-white"
               v-if="freelancer.monthlySalary"
             >
-              {{ freelancer.monthlySalary?.toLocaleString() }}원
+              {{ freelancer.monthlySalary?.toLocaleString() }}??
             </span>
-            <span class="font-medium text-white/50" v-else> 협의 필요 </span>
+            <span class="font-medium text-white/50" v-else> ?묒쓽 ?꾩슂 </span>
           </div>
           <div class="flex items-center gap-2">
             <button
@@ -262,7 +245,7 @@ const goToUpgrade = () => {
               class="px-4 py-2 bg-[#2D5BFF] text-white rounded-lg hover:bg-[#2D5BFF]/90 hover:shadow-lg transition-all flex items-center gap-2"
             >
               <Send class="w-4 h-4" />
-              제안하기
+              ?쒖븞?섍린
             </button>
           </div>
         </div>
@@ -280,18 +263,18 @@ const goToUpgrade = () => {
         <Lock class="w-10 h-10 text-slate-400" />
       </div>
       <h2 class="text-2xl font-bold mb-2 text-white">
-        프로 플랜 이상 전용 서비스입니다
+        ?꾨줈 ?뚮옖 ?댁긽 ?꾩슜 ?쒕퉬?ㅼ엯?덈떎
       </h2>
       <p class="text-slate-400 mb-8 max-w-md mx-auto">
-        AI 기반 맞춤형 프리랜서 추천 기능은 프로 플랜 이상 구독 시 이용하실 수
-        있습니다. 지금 바로 업그레이드하고 최적의 인재를 만나보세요.
+        AI 湲곕컲 留욎땄???꾨━?쒖꽌 異붿쿇 湲곕뒫? ?꾨줈 ?뚮옖 ?댁긽 援щ룆 ???댁슜?섏떎 ??
+        ?덉뒿?덈떎. 吏湲?諛붾줈 ?낃렇?덉씠?쒗븯怨?理쒖쟻???몄옱瑜?留뚮굹蹂댁꽭??
       </p>
       <button
         @click="goToUpgrade"
         class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2 group"
       >
         <Crown class="w-5 h-5 group-hover:text-yellow-300 transition-colors" />
-        구독 플랜 업그레이드하기
+        援щ룆 ?뚮옖 ?낃렇?덉씠?쒗븯湲?
       </button>
     </div>
 
@@ -302,3 +285,5 @@ const goToUpgrade = () => {
     />
   </div>
 </template>
+
+
