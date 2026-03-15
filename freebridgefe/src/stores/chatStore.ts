@@ -769,10 +769,16 @@ export const useChatStore = defineStore('chat', () => {
     }
 
     async function persistRoomContract(roomId: string, contractId: number | null) {
+        const previousRoom = rooms.value.find((r) => r.id === roomId);
+        const previousContractId = previousRoom?.contractId ?? null;
+
         try {
             const updatedRoom = await apiUpdateChatRoomContract(roomId, contractId);
             const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
-            if (roomIndex === -1) return false;
+            if (roomIndex === -1) {
+                rooms.value = [updatedRoom, ...rooms.value];
+                return true;
+            }
 
             rooms.value[roomIndex] = {
                 ...rooms.value[roomIndex],
@@ -781,7 +787,7 @@ export const useChatStore = defineStore('chat', () => {
             return true;
         } catch (error) {
             console.error('[Chat] Failed to persist room contract:', error);
-            updateRoomContract(roomId, contractId);
+            updateRoomContract(roomId, previousContractId);
             return false;
         }
     }
