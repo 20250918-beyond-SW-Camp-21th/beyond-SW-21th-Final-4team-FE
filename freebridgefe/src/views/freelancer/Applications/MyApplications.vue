@@ -337,7 +337,7 @@ const handleRejectProposal = async (proposalId: string) => {
           </div>
 
           <div
-            v-for="(proposal, index) in receivedProposals"
+            v-for="proposal in receivedProposals"
             :key="proposal.id"
             class="bg-white/5 border rounded-2xl p-6"
             :class="
@@ -347,9 +347,6 @@ const handleRejectProposal = async (proposalId: string) => {
                   ? 'border-red-500/30'
                   : 'border-white/10'
             "
-            v-motion
-            :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
           >
             <div class="flex flex-col lg:flex-row items-start justify-between gap-6 mb-5">
               <div class="flex-1">
@@ -453,12 +450,9 @@ const handleRejectProposal = async (proposalId: string) => {
           </div>
 
           <div
-            v-for="(app, index) in myApplications"
+            v-for="app in myApplications"
             :key="app.id"
             class="bg-white/5 border border-white/10 rounded-2xl p-6"
-            v-motion
-            :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
           >
             <div class="flex flex-col lg:flex-row items-start justify-between gap-6 mb-6">
               <div class="flex-1">

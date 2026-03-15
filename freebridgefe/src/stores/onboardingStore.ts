@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import apiClient from '@/api/axiosInstance';
 import { uploadEmployerLogo } from '@/api/MyPage/employer';
