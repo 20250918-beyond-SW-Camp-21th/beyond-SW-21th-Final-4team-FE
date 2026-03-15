@@ -216,6 +216,8 @@ const resetProfileVerification = () => {
     <div class="mb-10 flex items-center gap-4">
         <button
             @click="$emit('back')"
+            aria-label="뒤로가기"
+            title="뒤로가기"
             class="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 backdrop-blur-xl transition-all hover:bg-white/10"
         >
             <ArrowLeft class="w-6 h-6 text-white/80" />
