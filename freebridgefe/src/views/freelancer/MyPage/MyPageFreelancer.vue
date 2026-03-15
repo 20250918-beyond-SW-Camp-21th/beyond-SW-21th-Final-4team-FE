@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
@@ -108,74 +108,101 @@ const handleProfileUpdate = (updatedData: FreelancerProfileDashboard) => {
     activeTab.value = 'dashboard';
 };
 
-onMounted(async () => {
-    if (currentUser.value?.id) {
-        try {
-            const data = await getFreelancerProfile(currentUser.value.id);
-            profile.value = data;
+const latestDashboardRequestId = ref(0);
 
-            // authStore 이름/스킬 우선 반영
-            if (currentUser.value.name) profile.value.name = currentUser.value.name;
-            if (currentUser.value.skills && currentUser.value.skills.length > 0) {
-                profile.value.skills = currentUser.value.skills;
-            }
+const loadFreelancerDashboard = async (userId?: string | number) => {
+    const requestId = ++latestDashboardRequestId.value;
+    const isLatestRequest = () => requestId === latestDashboardRequestId.value;
 
-            try {
-                const stats = await getFreelancerProjectStats();
-                profile.value.statInteresting = stats.inProgressProjects ?? 0;
-                profile.value.statCompleted = stats.completedProjects ?? 0;
-            } catch (statsError) {
-                console.error('Failed to load project stats:', statsError);
-            }
+    if (!userId) {
+        const data = await getFreelancerProfile('guest');
+        if (!isLatestRequest()) {
+            return;
+        }
+        profile.value = data;
+        return;
+    }
 
-            try {
-                const [summaryResult, positivityResult, strengthWeaknessResult] = await Promise.allSettled([
-                    getFreelancerReviewSummary(),
-                    getFreelancerAiPositivityIndex(),
-                    getFreelancerStrengthWeakness(),
-                ]);
+    const [profileResult, statsResult] = await Promise.allSettled([
+        getFreelancerProfile(String(userId)),
+        getFreelancerProjectStats(),
+    ]);
 
-                if (summaryResult.status === 'fulfilled') {
-                    const summary = summaryResult.value;
-                    profile.value.averageRating = summary.averageRate ?? 0;
-                    profile.value.topPercentile = summary.topPercentile ?? 0;
-                }
+    if (profileResult.status === 'fulfilled') {
+        if (!isLatestRequest()) {
+            return;
+        }
+        profile.value = profileResult.value;
 
-                if (
-                    positivityResult.status === 'fulfilled' ||
-                    strengthWeaknessResult.status === 'fulfilled'
-                ) {
-                    profile.value.aiSummary = {
-                        positivityScore:
-                            positivityResult.status === 'fulfilled'
-                                ? positivityResult.value.positivityScore ?? 0
-                                : 0,
-                        grade:
-                            positivityResult.status === 'fulfilled'
-                                ? positivityResult.value.grade ?? ''
-                                : '',
-                        strengths:
-                            strengthWeaknessResult.status === 'fulfilled'
-                                ? strengthWeaknessResult.value.strengths ?? []
-                                : [],
-                        weaknesses:
-                            strengthWeaknessResult.status === 'fulfilled'
-                                ? strengthWeaknessResult.value.weaknesses ?? []
-                                : [],
-                    };
-                }
-            } catch (reviewError) {
-                console.error('Failed to load review summary/ai data:', reviewError);
-            }
-        } catch (error) {
-            console.error('Failed to load profile:', error);
+        if (currentUser.value?.name) profile.value.name = currentUser.value.name;
+        if (currentUser.value?.skills && currentUser.value.skills.length > 0) {
+            profile.value.skills = currentUser.value.skills;
         }
     } else {
-        // 로그인 정보가 없을 때의 폴백 처리
-        const data = await getFreelancerProfile('guest');
-        profile.value = data;
+        console.error('Failed to load profile:', profileResult.reason);
     }
-});
+
+    if (statsResult.status === 'fulfilled') {
+        if (!isLatestRequest()) {
+            return;
+        }
+        profile.value.statInteresting = statsResult.value.inProgressProjects ?? 0;
+        profile.value.statCompleted = statsResult.value.completedProjects ?? 0;
+    } else {
+        console.error('Failed to load project stats:', statsResult.reason);
+    }
+
+    try {
+        const summary = await getFreelancerReviewSummary();
+        if (!isLatestRequest()) {
+            return;
+        }
+        profile.value.averageRating = summary.averageRate ?? 0;
+        profile.value.topPercentile = summary.topPercentile ?? 0;
+    } catch (error) {
+        if (!isLatestRequest()) {
+            return;
+        }
+        console.error('Failed to load review summary:', error);
+    }
+
+    const [positivityResult, strengthWeaknessResult] = await Promise.allSettled([
+        getFreelancerAiPositivityIndex(),
+        getFreelancerStrengthWeakness(),
+    ]);
+
+    if (positivityResult.status === 'fulfilled' || strengthWeaknessResult.status === 'fulfilled') {
+        if (!isLatestRequest()) {
+            return;
+        }
+        profile.value.aiSummary = {
+            positivityScore:
+                positivityResult.status === 'fulfilled'
+                    ? positivityResult.value.positivityScore ?? 0
+                    : 0,
+            grade:
+                positivityResult.status === 'fulfilled'
+                    ? positivityResult.value.grade ?? ''
+                    : '',
+            strengths:
+                strengthWeaknessResult.status === 'fulfilled'
+                    ? strengthWeaknessResult.value.strengths ?? []
+                    : [],
+            weaknesses:
+                strengthWeaknessResult.status === 'fulfilled'
+                    ? strengthWeaknessResult.value.weaknesses ?? []
+                    : [],
+        };
+    }
+};
+
+watch(
+    () => currentUser.value?.id,
+    (userId) => {
+        void loadFreelancerDashboard(userId);
+    },
+    { immediate: true }
+);
 
 const menuItems = [
     { id: 'dashboard', label: '프로필 관리', icon: User, action: () => activeTab.value = 'dashboard' },

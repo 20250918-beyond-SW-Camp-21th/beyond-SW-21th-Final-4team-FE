@@ -177,12 +177,9 @@ onMounted(() => {
             아직 작성한 후기가 없습니다.
           </div>
           <div
-            v-for="(review, index) in employerToFreelancerReviews"
+            v-for="review in employerToFreelancerReviews"
             :key="review.id"
             class="bg-white/5 border border-white/10 rounded-2xl p-6"
-            v-motion
-            :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
           >
             <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
               <div>
@@ -322,12 +319,9 @@ onMounted(() => {
             아직 프리랜서가 남긴 후기가 없습니다.
           </div>
           <div
-            v-for="(review, index) in freelancerToEmployerReviews"
+            v-for="review in freelancerToEmployerReviews"
             :key="review.id"
             class="bg-white/5 border border-white/10 rounded-2xl p-6"
-            v-motion
-            :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
           >
             <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
               <div>
