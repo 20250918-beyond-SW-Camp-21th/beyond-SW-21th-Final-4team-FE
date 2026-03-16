@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { requestIssueBillingKey, requestPayment, PaymentPayMethod, BillingKeyMethod } from '@portone/browser-sdk/v2';
 import {
@@ -31,6 +31,10 @@ const paymentSuccess = ref<string | null>(null);
 const subscriptionError = ref<string | null>(null);
 const subscriptionSuccess = ref<string | null>(null);
 const isSubscriptionProcessing = ref(false);
+const hasHandledSubscriptionRedirect = ref(false);
+const subscriptionRedirectCountdown = ref<number | null>(null);
+let subscriptionRedirectTimer: ReturnType<typeof setTimeout> | null = null;
+let subscriptionRedirectInterval: ReturnType<typeof setInterval> | null = null;
 
 const storeId = import.meta.env.VITE_PORTONE_STORE_ID as string | undefined;
 const channelKey = import.meta.env.VITE_PORTONE_CHANNEL_KEY as string | undefined;
@@ -60,15 +64,25 @@ const requestedSubscriptionPlan = computed<SubscriptionPlanType | null>(() => {
 const subscriptionPlanMeta: Record<SubscriptionPlanType, { label: string; price: number; description: string }> = {
     PRO: {
         label: 'PRO PLAN',
-        price: 9000,
+        price: 9900,
         description: '추천 기능과 수수료 할인 혜택이 포함된 고용주 구독 플랜',
     },
     PRIME: {
         label: 'PRIME PLAN',
-        price: 19000,
+        price: 19900,
         description: '추천 기능, 더 큰 수수료 할인, AI 컨설팅 혜택이 포함된 최상위 플랜',
     },
 };
+
+const redirectedBillingKey = computed(() =>
+    typeof route.query.billingKey === 'string' ? route.query.billingKey : null
+);
+const redirectedErrorCode = computed(() =>
+    typeof route.query.code === 'string' ? route.query.code : null
+);
+const redirectedErrorMessage = computed(() =>
+    typeof route.query.message === 'string' ? route.query.message : null
+);
 
 const myContracts = computed(() => {
     if (!authStore.user) return [];
@@ -147,6 +161,54 @@ const goBackFromSubscriptionPayment = async () => {
     });
 };
 
+const clearSubscriptionRedirectParams = async () => {
+    if (!subscriptionMode.value || !requestedSubscriptionPlan.value) {
+        return;
+    }
+
+    await router.replace({
+        name: 'employer.payments',
+        query: {
+            mode: 'subscription',
+            plan: requestedSubscriptionPlan.value,
+        },
+    });
+};
+
+const scheduleSubscriptionSuccessRedirect = () => {
+    if (subscriptionRedirectTimer) {
+        clearTimeout(subscriptionRedirectTimer);
+    }
+    if (subscriptionRedirectInterval) {
+        clearInterval(subscriptionRedirectInterval);
+    }
+
+    subscriptionRedirectCountdown.value = 3;
+    subscriptionRedirectInterval = setInterval(() => {
+        if (subscriptionRedirectCountdown.value == null) {
+            return;
+        }
+        if (subscriptionRedirectCountdown.value <= 1) {
+            clearInterval(subscriptionRedirectInterval!);
+            subscriptionRedirectInterval = null;
+            subscriptionRedirectCountdown.value = null;
+            return;
+        }
+        subscriptionRedirectCountdown.value -= 1;
+    }, 1000);
+
+    subscriptionRedirectTimer = setTimeout(async () => {
+        await goBackFromSubscriptionPayment();
+    }, 3000);
+};
+
+const finalizeSubscriptionUpgrade = async (plan: SubscriptionPlanType, billingKey: string) => {
+    const result = await updateEmployerSubscription(plan, billingKey);
+    subscriptionSuccess.value = result.message || `${subscriptionPlanMeta[plan].label} 결제가 완료되었습니다.`;
+    await clearSubscriptionRedirectParams();
+    scheduleSubscriptionSuccessRedirect();
+};
+
 const handleSubscriptionPayment = async () => {
     subscriptionError.value = null;
     subscriptionSuccess.value = null;
@@ -192,8 +254,7 @@ const handleSubscriptionPayment = async () => {
             return;
         }
 
-        const result = await updateEmployerSubscription(plan, billingResponse.billingKey);
-        subscriptionSuccess.value = result.message || `${subscriptionPlanMeta[plan].label} 결제가 완료되었습니다.`;
+        await finalizeSubscriptionUpgrade(plan, billingResponse.billingKey);
     } catch (error: any) {
         const apiErrorMessage = error?.response?.data?.error?.message
             || error?.response?.data?.message
@@ -277,6 +338,39 @@ const handlePayContract = async (contract: ContractWithDetails) => {
 
 onMounted(async () => {
     if (subscriptionMode.value) {
+        if (!hasHandledSubscriptionRedirect.value) {
+            const plan = requestedSubscriptionPlan.value;
+            const billingKey = redirectedBillingKey.value;
+            const errorCode = redirectedErrorCode.value;
+            const errorMessage = redirectedErrorMessage.value;
+
+            if (!plan) {
+                subscriptionError.value = '구독 결제 플랜 정보가 누락되었습니다.';
+                hasHandledSubscriptionRedirect.value = true;
+                return;
+            }
+
+            if (billingKey) {
+                try {
+                    isSubscriptionProcessing.value = true;
+                    hasHandledSubscriptionRedirect.value = true;
+                    await finalizeSubscriptionUpgrade(plan, billingKey);
+                } catch (error: any) {
+                    const apiErrorMessage = error?.response?.data?.error?.message
+                        || error?.response?.data?.message
+                        || error?.message;
+                    subscriptionError.value = apiErrorMessage || '리디렉션 복귀 후 구독 변경 처리에 실패했습니다.';
+                } finally {
+                    isSubscriptionProcessing.value = false;
+                }
+                return;
+            }
+
+            if (errorCode || errorMessage) {
+                subscriptionError.value = errorMessage || `빌링키 발급 실패 (${errorCode})`;
+                hasHandledSubscriptionRedirect.value = true;
+            }
+        }
         return;
     }
 
@@ -288,6 +382,15 @@ onMounted(async () => {
         ]);
     } catch (error) {
         console.error('Failed to initialize payment page:', error);
+    }
+});
+
+onBeforeUnmount(() => {
+    if (subscriptionRedirectTimer) {
+        clearTimeout(subscriptionRedirectTimer);
+    }
+    if (subscriptionRedirectInterval) {
+        clearInterval(subscriptionRedirectInterval);
     }
 });
 </script>
@@ -349,7 +452,12 @@ onMounted(async () => {
                         class="mb-4 p-4 rounded-xl border border-green-500/40 bg-green-500/10 text-green-200 flex items-start gap-2"
                     >
                         <CheckCircle2 class="w-5 h-5 mt-0.5" />
-                        <span>{{ subscriptionSuccess }}</span>
+                        <div>
+                            <div>{{ subscriptionSuccess }}</div>
+                            <div v-if="subscriptionRedirectCountdown !== null" class="text-xs text-green-100/80 mt-1">
+                                {{ subscriptionRedirectCountdown }}초 후 내 계정 관리로 이동합니다.
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
@@ -360,6 +468,7 @@ onMounted(async () => {
                             취소
                         </button>
                         <button
+                            v-if="!subscriptionSuccess"
                             @click="handleSubscriptionPayment"
                             :disabled="isSubscriptionProcessing || !requestedSubscriptionPlan"
                             class="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 min-w-[180px]"
@@ -367,6 +476,13 @@ onMounted(async () => {
                             <Loader2 v-if="isSubscriptionProcessing" class="w-4 h-4 animate-spin" />
                             <CreditCard v-else class="w-4 h-4" />
                             {{ isSubscriptionProcessing ? '결제 처리 중' : '카드 등록 후 결제하기' }}
+                        </button>
+                        <button
+                            v-else
+                            @click="goBackFromSubscriptionPayment"
+                            class="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 font-semibold flex items-center justify-center gap-2 min-w-[180px]"
+                        >
+                            내 계정 관리로 돌아가기
                         </button>
                     </div>
                 </div>

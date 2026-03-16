@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
@@ -48,15 +48,7 @@ const accountInfo = ref({
   phone: '',
 });
 
-const currentPlan = ref<PlanType>('PRO');
-
-const normalizePlan = (plan?: string): PlanType => {
-  const normalizedPlan = (plan ?? 'FREE').trim().toUpperCase();
-  if (normalizedPlan === 'PARTNER') return 'PRO';
-  if (normalizedPlan === 'ENTERPRISE') return 'PRIME';
-  if (normalizedPlan === 'PRO' || normalizedPlan === 'PRIME') return normalizedPlan;
-  return 'FREE';
-};
+const currentPlan = ref<PlanType>('FREE');
 
 interface SubscriptionPlan {
   name: string;
@@ -97,26 +89,26 @@ const fetchSubscriptionPlans = async () => {
         price: '무료',
         period: '',
         fee: '12%',
-        icon: '🧊',
-        features: ['최신순 조회만 가능', '기본 지원'],
+        icon: '🧾',
+        features: ['최신순 조회 가능', '기본 지원'],
       },
       PRO: {
         name: 'PRO PLAN',
         description: '채용 효율을 높이는 구독',
-        price: '월 9,000',
+        price: '월 9,900',
         period: '월',
         fee: '10%',
-        icon: '💎',
+        icon: '💼',
         features: ['추천 기능 제공', '수수료 할인 (10%)'],
       },
       PRIME: {
         name: 'PRIME PLAN',
         description: '빠른 매칭을 위한 최상위 구독',
-        price: '월 19,000',
+        price: '월 19,900',
         period: '월',
         fee: '7%',
         icon: '👑',
-        features: ['다양한 조회 가능', '추천 기능 제공', '대폭 수수료 할인 (7%)', '전담 AI 컨설팅 배정'],
+        features: ['다양한 조회 가능', '추천 기능 제공', '최대 수수료 할인 (7%)', '전담 AI 컨설턴트 배정'],
       },
     };
   } catch (error) {
@@ -127,10 +119,9 @@ const fetchSubscriptionPlans = async () => {
 const fetchCurrentPlan = async () => {
   try {
     const subscription = await getEmployerSubscription();
-    currentPlan.value = normalizePlan(subscription.currentPlan);
+    currentPlan.value = normalizeEmployerPlan(subscription.currentPlan);
   } catch (error) {
     console.error('Failed to fetch current subscription plan:', error);
-    currentPlan.value = 'FREE';
   }
 };
 
@@ -305,12 +296,12 @@ onMounted(() => {
 <template>
   <div class="max-w-6xl mx-auto px-4 md:px-10 py-10 text-white">
     <div class="flex items-center gap-4 mb-10">
-      <button @click="$emit('back')" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+      <button @click="$emit('back')" class="p-2 hover:bg-white/10 rounded-full transition-colors" aria-label="뒤로가기" title="뒤로가기">
         <ArrowLeft class="w-5 h-5 text-white/60" />
       </button>
       <div>
         <h1 class="text-2xl font-semibold tracking-tight">고용주 계정 관리</h1>
-        <p class="text-sm text-white/40 mt-1">구독과 계정 정보를 관리하세요</p>
+        <p class="text-sm text-white/40 mt-1">구독과 계정 정보를 관리해보세요</p>
       </div>
     </div>
 
@@ -414,7 +405,7 @@ onMounted(() => {
             type="password"
             v-model="verificationPassword"
             class="bg-transparent border-none outline-none w-full text-white text-sm"
-            placeholder="비밀번호를 입력하세요"
+            placeholder="비밀번호를 입력해 주세요"
             @keyup.enter="handleVerifyIdentity"
           />
         </div>

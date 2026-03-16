@@ -97,10 +97,11 @@ export const updateEmployerSubscription = async (
     targetPlan: string,
     billingKey?: string | null
 ): Promise<EmployerSubscriptionChangeResult> => {
+    const normalizedTargetPlan = targetPlan.toUpperCase() === 'FREE' ? 'BASIC' : targetPlan;
     const response = await apiClient.put<ApiResponse<EmployerSubscriptionChangeResult>>(
         '/api/employer/mypage/account/subscription',
         {
-            targetPlan,
+            targetPlan: normalizedTargetPlan,
             billingKey: billingKey ?? null,
         }
     );
