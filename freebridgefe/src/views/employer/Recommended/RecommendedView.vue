@@ -151,6 +151,10 @@ const parseSelectedJobId = (): number | string | null => {
 const loadRecommendationForSelectedJob = async (requestId: number) => {
   const parsedJobId = parseSelectedJobId();
   if (parsedJobId === null) {
+    console.warn("[employer-reco-view] invalid selected job id", {
+      requestId,
+      rawSelectedJobId: selectedJobId.value,
+    });
     return;
   }
 
@@ -158,12 +162,22 @@ const loadRecommendationForSelectedJob = async (requestId: number) => {
   const controller = new AbortController();
   activeRecommendationController = controller;
   isJobSelectionLoading.value = true;
+  console.info("[employer-reco-view] load recommendation", {
+    requestId,
+    jobId: String(parsedJobId),
+  });
 
   try {
     await freelancerStore.fetchRecommendedFreelancers(
       parsedJobId,
       controller.signal,
     );
+    console.info("[employer-reco-view] load completed", {
+      requestId,
+      jobId: String(parsedJobId),
+      count: freelancerStore.freelancers.length,
+      hasError: Boolean(freelancerStore.recommendedFetchError),
+    });
   } finally {
     if (requestId === recommendationRequestId.value) {
       isJobSelectionLoading.value = false;
@@ -177,13 +191,24 @@ const loadRecommendationForSelectedJob = async (requestId: number) => {
 const loadRecommendedFreelancers = async () => {
   initLoading.value = true;
   let jobs = recommendableEmployerJobs.value;
+  console.info("[employer-reco-view] init load start", {
+    currentJobCount: employerJobs.value.length,
+    recommendableJobCount: jobs.length,
+  });
 
   try {
     if (!employerJobs.value.length) {
       try {
         await jobStore.fetchJobPostings();
         jobs = recommendableEmployerJobs.value;
+        console.info("[employer-reco-view] jobs fetched", {
+          totalJobs: employerJobs.value.length,
+          recommendableJobs: jobs.length,
+        });
       } catch {
+        console.error("[employer-reco-view] failed to fetch jobs", {
+          message: jobStore.errorMessage,
+        });
         freelancerStore.freelancers = [];
         freelancerStore.recommendedFetchError =
           jobStore.errorMessage || "프로젝트 공고를 불러오지 못했습니다.";
@@ -192,6 +217,7 @@ const loadRecommendedFreelancers = async () => {
     }
 
     if (!jobs.length) {
+      console.warn("[employer-reco-view] no recommendable jobs");
       freelancerStore.freelancers = [];
       freelancerStore.recommendedFetchError =
         "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
@@ -201,6 +227,10 @@ const loadRecommendedFreelancers = async () => {
     }
 
     ensureSelectedJob(jobs);
+    console.info("[employer-reco-view] selected job", {
+      selectedJobId: selectedJobId.value,
+      selectedJobTitle: selectedJob.value?.title,
+    });
     recommendationRequestId.value += 1;
     await loadRecommendationForSelectedJob(recommendationRequestId.value);
   } finally {
@@ -210,6 +240,9 @@ const loadRecommendedFreelancers = async () => {
 
 const handleJobChange = async (event: Event) => {
   selectedJobId.value = (event.target as HTMLSelectElement).value;
+  console.info("[employer-reco-view] job changed", {
+    selectedJobId: selectedJobId.value,
+  });
   recommendationRequestId.value += 1;
   await loadRecommendationForSelectedJob(recommendationRequestId.value);
 };
@@ -220,6 +253,11 @@ const goToUpgrade = () => {
 
 onMounted(async () => {
   await fetchCurrentPlan();
+  console.info("[employer-reco-view] plan loaded", {
+    plan: currentPlan.value,
+    hasAccess: hasAccess.value,
+    planFetchError: planFetchError.value,
+  });
 
   if (planFetchError.value) {
     freelancerStore.freelancers = [];
