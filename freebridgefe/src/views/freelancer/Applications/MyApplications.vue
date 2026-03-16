@@ -143,15 +143,9 @@ const handleAcceptProposal = async (proposalId: string) => {
 
 const handleRejectProposal = async (proposalId: string) => {
   if (!window.confirm('이 제안을 거절하시겠습니까?')) return;
-  const reason = window.prompt('거절 사유를 입력해 주세요. (선택)');
-  if (reason === null) return;
 
   try {
-    const updated = await freelancerStore.updateProposalStatus(
-      proposalId,
-      'REJECTED',
-      reason.trim() || undefined
-    );
+    const updated = await freelancerStore.updateProposalStatus(proposalId, 'REJECTED');
     if (!updated) {
       actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
       alert('제안 상태 변경에 실패했습니다.');
