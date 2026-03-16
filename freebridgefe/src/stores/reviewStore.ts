@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { getUserById } from '@/api/authApi';
-import { listContracts, type ContractSummaryDto } from '@/api/contractApi';
+import { getContract, listContracts, type ContractSummaryDto } from '@/api/contractApi';
 import { getEmployerProjects as getEmployerMypageProjects } from '@/api/MyPage/projectApi';
 import {
   createEmployerReview,
@@ -548,6 +548,24 @@ export const useReviewStore = defineStore('review', () => {
         listContracts({ status: ['IN_PROGRESS', 'COMPLETED'], page: 1, limit: 100 }),
         getFreelancerWrittenReviews(0, 100),
       ]);
+      const contractDetails = await Promise.allSettled(
+        (contracts.items ?? []).map(async (item) => {
+          const detail = await getContract(item.contractId || item.id);
+          return [String(item.id), detail.employerBusinessName || detail.employerName || ''] as const;
+        }),
+      );
+      const employerNames = await resolveUserDisplayNames(
+        (contracts.items ?? []).map((item) => item.employerId),
+      );
+      const employerBusinessNames = contractDetails.reduce<Record<string, string>>((acc, result) => {
+        if (result.status === 'fulfilled') {
+          const [projectId, employerBusinessName] = result.value;
+          if (employerBusinessName) {
+            acc[projectId] = employerBusinessName;
+          }
+        }
+        return acc;
+      }, {});
 
       const writtenKeys = new Set(
         (writtenResponse.content ?? []).map(
@@ -563,7 +581,11 @@ export const useReviewStore = defineStore('review', () => {
           projectId: String(item.id),
           counterpartyId: String(item.employerId),
           projectName: item.projectName || getProjectFallbackLabel(item.id),
-          counterpartyName: item.employerName || `기업 #${item.employerId}`,
+          counterpartyName:
+            employerBusinessNames[String(item.id)] ||
+            item.employerName ||
+            employerNames[String(item.employerId)] ||
+            `기업 #${item.employerId}`,
         }));
 
       return freelancerReviewTargets.value;
