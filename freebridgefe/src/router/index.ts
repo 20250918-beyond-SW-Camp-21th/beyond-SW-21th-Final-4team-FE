@@ -1,5 +1,7 @@
 ﻿import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { useAlertStore } from '@/stores/alertStore'
+import { pinia } from '@/stores/pinia'
 import { getEmployerProfile } from '@/api/MyPage/employer'
 import { getEmployerSubscription } from '@/api/MyPage/accountApi'
 import { normalizeEmployerPlan } from '@/utils/employerSubscription'
@@ -200,6 +202,7 @@ const router = createRouter({
 // Navigation Guard
 router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore()
+    const alertStore = useAlertStore(pinia)
 
     // Check auth requirement
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -223,13 +226,23 @@ router.beforeEach(async (to, _from, next) => {
             const normalizedPlan = normalizeEmployerPlan(subscription.currentPlan)
 
             if (!['PRO', 'PRIME'].includes(normalizedPlan)) {
-                alert('異붿쿇 ?꾨━?쒖꽌 湲곕뒫? ?꾨줈 ?뚮옖 ?댁긽?먯꽌留??ъ슜?????덉뒿?덈떎. 援щ룆 ?덈꺼???믪뿬二쇱꽭??')
+                alertStore.open({
+                    title: '알림',
+                    message: '추천 프리랜서 기능은 프로 플랜 이상에서만 사용할 수 있습니다. 구독 플랜을 업그레이드해 주세요.',
+                    type: 'info',
+                    confirmText: '확인',
+                })
                 next({ name: 'employer.mypage', query: { tab: 'account' } })
                 return
             }
         } catch (error) {
             console.error('Failed to validate subscription plan for recommended page:', error)
-            alert('援щ룆 ?뺣낫瑜??뺤씤?????놁뒿?덈떎. ?좎떆 ???ㅼ떆 ?쒕룄?댁＜?몄슂.')
+            alertStore.open({
+                title: '오류',
+                message: '구독 정보를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+                type: 'error',
+                confirmText: '확인',
+            })
             next('/employer/dashboard')
             return
         }
