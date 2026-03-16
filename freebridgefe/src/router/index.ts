@@ -1,7 +1,10 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+﻿import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
+import { useAlertStore } from '@/stores/alertStore'
+import { pinia } from '@/stores/pinia'
 import { getEmployerProfile } from '@/api/MyPage/employer'
 import { getEmployerSubscription } from '@/api/MyPage/accountApi'
+import { normalizeEmployerPlan } from '@/utils/employerSubscription'
 
 const routes: Array<RouteRecordRaw> = [
     {
@@ -196,23 +199,10 @@ const router = createRouter({
     routes
 })
 
-const normalizeEmployerPlan = (plan?: string): 'FREE' | 'PRO' | 'PRIME' => {
-    const normalizedPlan = (plan ?? 'FREE').trim().toUpperCase()
-
-    if (['PRO', 'PARTNER', '프로 플랜'.toUpperCase()].includes(normalizedPlan)) {
-        return 'PRO'
-    }
-
-    if (['PRIME', 'ENTERPRISE', '프라임 플랜'.toUpperCase()].includes(normalizedPlan)) {
-        return 'PRIME'
-    }
-
-    return 'FREE'
-}
-
 // Navigation Guard
 router.beforeEach(async (to, _from, next) => {
     const authStore = useAuthStore()
+    const alertStore = useAlertStore(pinia)
 
     // Check auth requirement
     if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -236,13 +226,23 @@ router.beforeEach(async (to, _from, next) => {
             const normalizedPlan = normalizeEmployerPlan(subscription.currentPlan)
 
             if (!['PRO', 'PRIME'].includes(normalizedPlan)) {
-                alert('추천 프리랜서 기능은 프로 플랜 이상에서만 사용할 수 있습니다. 구독 레벨을 높여주세요.')
+                alertStore.open({
+                    title: '알림',
+                    message: '추천 프리랜서 기능은 프로 플랜 이상에서만 사용할 수 있습니다. 구독 플랜을 업그레이드해 주세요.',
+                    type: 'info',
+                    confirmText: '확인',
+                })
                 next({ name: 'employer.mypage', query: { tab: 'account' } })
                 return
             }
         } catch (error) {
             console.error('Failed to validate subscription plan for recommended page:', error)
-            alert('구독 정보를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.')
+            alertStore.open({
+                title: '오류',
+                message: '구독 정보를 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+                type: 'error',
+                confirmText: '확인',
+            })
             next('/employer/dashboard')
             return
         }
@@ -252,3 +252,4 @@ router.beforeEach(async (to, _from, next) => {
 })
 
 export default router
+

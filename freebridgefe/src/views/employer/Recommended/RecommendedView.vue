@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Crown, Lock, Send, Star, TrendingUp } from "lucide-vue-next";
@@ -6,6 +6,7 @@ import { getEmployerSubscription } from "@/api/MyPage/accountApi";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useFreelancerStore } from "@/stores/freelancerStore";
 import { useJobStore } from "@/stores/jobStore";
+import { normalizeEmployerPlan } from "@/utils/employerSubscription";
 import type { JobPosting, User } from "@/types";
 import ProposalModal from "./components/ProposalModal.vue";
 
@@ -35,24 +36,6 @@ const isFavorite = (id: string | number) =>
 
 const toggleFavorite = (id: string | number) =>
   favoritesStore.toggleFavorite(String(id));
-
-const normalizePlan = (plan?: string): PlanType => {
-  const normalizedPlan = (plan ?? "FREE").trim().toUpperCase();
-
-  if (["PRO", "PARTNER", "프로 플랜".toUpperCase()].includes(normalizedPlan)) {
-    return "PRO";
-  }
-
-  if (
-    ["PRIME", "ENTERPRISE", "프라임 플랜".toUpperCase()].includes(
-      normalizedPlan,
-    )
-  ) {
-    return "PRIME";
-  }
-
-  return "FREE";
-};
 
 const hasAccess = computed(
   () => !planLoading.value && ["PRO", "PRIME"].includes(currentPlan.value),
@@ -104,7 +87,7 @@ const fetchCurrentPlan = async () => {
 
   try {
     const subscription = await getEmployerSubscription();
-    currentPlan.value = normalizePlan(subscription.currentPlan);
+    currentPlan.value = normalizeEmployerPlan(subscription.currentPlan);
   } catch (error) {
     console.error("Failed to fetch employer plan:", error);
     planFetchError.value = "subscription_fetch_failed";
@@ -124,7 +107,7 @@ const parseSelectedJobId = (): number | string | null => {
   if (!/^\d+$/.test(rawJobId)) {
     freelancerStore.freelancers = [];
     freelancerStore.recommendedFetchError =
-      "유효한 프로젝트 공고를 선택해주세요.";
+      "유효한 프로젝트 공고를 선택해 주세요.";
     return null;
   }
 
@@ -220,7 +203,7 @@ const loadRecommendedFreelancers = async () => {
       console.warn("[employer-reco-view] no recommendable jobs");
       freelancerStore.freelancers = [];
       freelancerStore.recommendedFetchError =
-        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
+        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해 주세요.";
       selectedJobId.value = "";
       freelancerStore.recommendedFetchError = null;
       return;
@@ -262,7 +245,7 @@ onMounted(async () => {
   if (planFetchError.value) {
     freelancerStore.freelancers = [];
     freelancerStore.recommendedFetchError =
-      "구독 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
+      "구독 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
     return;
   }
 
@@ -286,7 +269,7 @@ onBeforeUnmount(() => {
         <TrendingUp class="w-6 h-6 text-[#2D5BFF]" />
         <h1 class="text-3xl font-bold">추천 프리랜서</h1>
       </div>
-      <p class="text-white/60">AI가 선별한 최적의 프리랜서를 만나보세요</p>
+      <p class="text-white/60">AI가 분석한 최적의 프리랜서를 만나보세요.</p>
     </div>
 
     <div
@@ -363,7 +346,7 @@ onBeforeUnmount(() => {
         <TrendingUp class="w-8 h-8 text-red-400" />
       </div>
       <h3 class="text-xl font-semibold mb-2 text-red-200">
-        추천을 불러오지 못했습니다
+        추천을 불러오지 못했습니다.
       </h3>
       <p class="text-red-300/60">{{ freelancerStore.recommendedFetchError }}</p>
     </div>
@@ -377,7 +360,7 @@ onBeforeUnmount(() => {
       ></div>
       <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
       <p class="text-white/50">
-        등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다
+        등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다.
       </p>
     </div>
 
@@ -391,10 +374,10 @@ onBeforeUnmount(() => {
         <TrendingUp class="w-8 h-8 text-white/70" />
       </div>
       <h3 class="text-xl font-semibold mb-2 text-white">
-        현재 조건에 맞는 추천 프리랜서가 없습니다
+        현재 조건에 맞는 추천 프리랜서가 없습니다.
       </h3>
       <p class="text-white/60">
-        공고 설명을 조금 더 구체적으로 작성하거나 기술 스택을 조정한 뒤 다시 확인해보세요.
+        공고 설명을 조금 더 구체적으로 작성하거나 기술 스택을 조정한 뒤 다시 확인해 보세요.
       </p>
     </div>
 
