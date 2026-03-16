@@ -78,9 +78,17 @@ export const useFreelancerStore = defineStore("freelancer", () => {
   ) {
     isFetchingRecommended.value = true;
     recommendedFetchError.value = null;
+    console.info("[employer-reco] request", {
+      jobId: String(jobId),
+    });
 
     try {
       const recommendations = await getFreelancerRecommendations(jobId, signal);
+      console.info("[employer-reco] response", {
+        jobId: String(jobId),
+        count: recommendations.length,
+        ids: recommendations.map((rec) => rec.id),
+      });
       freelancers.value = recommendations.map(
         (rec: AiRecommendationResponseDTO) => ({
           id: String(rec.id),
@@ -94,10 +102,17 @@ export const useFreelancerStore = defineStore("freelancer", () => {
       ) as RecommendedFreelancer[];
     } catch (error: any) {
       if (isCanceledRecommendationError(error)) {
+        console.debug("[employer-reco] canceled", {
+          jobId: String(jobId),
+        });
         return;
       }
 
       console.error("Failed to fetch recommended freelancers:", error);
+      console.error("[employer-reco] failed", {
+        jobId: String(jobId),
+        message: error?.message,
+      });
       freelancers.value = [];
       recommendedFetchError.value =
         error.message || "프리랜서 추천 목록을 불러오는데 실패했습니다.";
