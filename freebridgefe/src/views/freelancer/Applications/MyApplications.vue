@@ -48,23 +48,14 @@ onMounted(async () => {
 
 const currentUser = computed(() => authStore.user);
 
-const isSameFreelancer = (freelancerId: string | number, freelancerName: string) => {
-  if (!currentUser.value) return false;
-  const idMatched = String(freelancerId) === String(currentUser.value.id);
-  const nameMatched = freelancerName === currentUser.value.name;
-  return idMatched || nameMatched;
-};
-
 const myApplications = computed(() => {
   if (!currentUser.value) return [];
-  return jobStore.applications.filter((app) => isSameFreelancer(app.freelancerId, app.freelancerName));
+  return jobStore.applications;
 });
 
 const receivedProposals = computed(() => {
   if (!currentUser.value) return [];
-  return freelancerStore.proposals.filter((proposal) =>
-    isSameFreelancer(proposal.freelancerId, proposal.freelancerName)
-  );
+  return freelancerStore.proposals;
 });
 
 const getJobTitle = (jobId: string) => {

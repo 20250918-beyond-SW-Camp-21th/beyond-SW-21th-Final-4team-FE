@@ -177,9 +177,6 @@ onMounted(() => {
             v-for="(review, index) in freelancerToEmployerReviews"
             :key="review.id"
             class="bg-white/5 border border-white/10 rounded-2xl p-6"
-            v-motion
-            :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
           >
             <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
               <div>
@@ -322,9 +319,6 @@ onMounted(() => {
             v-for="(review, index) in employerToFreelancerReviews"
             :key="review.id"
             class="bg-white/5 border border-white/10 rounded-2xl p-6"
-            v-motion
-            :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
           >
             <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
               <div>
