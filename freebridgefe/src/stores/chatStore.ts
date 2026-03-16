@@ -768,12 +768,16 @@ export const useChatStore = defineStore('chat', () => {
         };
     }
 
-    async function persistRoomContract(roomId: string, contractId: number | null) {
+    async function persistRoomContract(
+        roomId: string,
+        contractId: number | null,
+        options?: { overrideExisting?: boolean }
+    ) {
         const previousRoom = rooms.value.find((r) => r.id === roomId);
         const previousContractId = previousRoom?.contractId ?? null;
 
         try {
-            const updatedRoom = await apiUpdateChatRoomContract(roomId, contractId);
+            const updatedRoom = await apiUpdateChatRoomContract(roomId, contractId, options);
             const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
             if (roomIndex === -1) {
                 rooms.value = [updatedRoom, ...rooms.value];

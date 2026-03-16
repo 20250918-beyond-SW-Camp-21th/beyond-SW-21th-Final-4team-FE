@@ -300,7 +300,9 @@ const handleSign = async (data: { signature: string }) => {
         contractStore.addContract(response);
         const routeRoomId = getStringQueryValue(route.query.roomId);
         if (routeRoomId) {
-            await chatStore.persistRoomContract(routeRoomId, response.contractId ?? response.id);
+            await chatStore.persistRoomContract(routeRoomId, response.contractId ?? response.id, {
+                overrideExisting: true
+            });
         }
         createdContract.value = response;
         state.value = 'success';
