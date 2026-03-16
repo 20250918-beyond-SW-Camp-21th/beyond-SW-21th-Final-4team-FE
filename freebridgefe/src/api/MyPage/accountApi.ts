@@ -4,7 +4,7 @@ export interface AccountInfo {
     id: number;
     email: string;
     name: string;
-    phone: string;
+    phone?: string | null;
 }
 
 export interface PasswordChange {
@@ -43,19 +43,25 @@ export interface FreelancerNotificationSettings {
 }
 
 export const getAccountInfo = async (): Promise<AccountInfo> => {
-    const response = await apiClient.get<ApiResponse<any>>('/api/users/me/test');
+    const response = await apiClient.get<ApiResponse<any>>('/api/users/getmyinfo');
     const data = response.data.data;
     return {
         id: data.id,
         email: data.email ?? '',
         name: data.name ?? '',
-        phone: '' // User API에 phone이 없어 빈 값 처리
+        phone: data.phone
     };
 };
 
 export const updateAccountInfo = async (_data: Partial<AccountInfo>): Promise<boolean> => {
-    // TODO: User API에 계정 수정 엔드포인트 추가 필요
-    throw new Error('updateAccountInfo not implemented: backend endpoint missing');
+    const response = await apiClient.put<ApiResponse<AccountInfo>>('/api/users/me/info', {
+        name: _data.name,
+        phone: _data.phone
+    });
+    if (response.data.success !== true) {
+        throw new Error(response.data.message ?? 'Failed to update account info');
+    }
+    return true;
 };
 
 export const changeEmployerPassword = async (data: PasswordChange): Promise<boolean> => {

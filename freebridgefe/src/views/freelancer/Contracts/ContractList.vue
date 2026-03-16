@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import {
     FileText,
     Calendar,
@@ -14,13 +15,16 @@ import {
     PenTool,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import ContractDetailModal from '@/views/employer/Contracts/components/ContractDetailModal.vue';
 import SignaturePadModal from '@/views/employer/Contracts/components/SignaturePadModal.vue';
 import { signContract } from '@/api/contractApi';
 
 const authStore = useAuthStore();
+const chatStore = useChatStore();
 const contractStore = useContractStore();
+const route = useRoute();
 
 const selectedContract = ref<ContractWithDetails | null>(null);
 const signingContract = ref<ContractWithDetails | null>(null);
@@ -167,9 +171,59 @@ const openSignModal = (contract: ContractWithDetails) => {
     signingContract.value = contract;
 };
 
-onMounted(() => {
-    contractStore.fetchContracts();
+const getNumericQueryValue = (value: unknown) => {
+    const rawValue = Array.isArray(value) ? value[0] : value;
+    const parsedValue = Number(rawValue);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+};
+
+const getStringQueryValue = (value: unknown) => {
+    const rawValue = Array.isArray(value) ? value[0] : value;
+    if (rawValue === undefined || rawValue === null) return null;
+    const normalizedValue = String(rawValue).trim();
+    return normalizedValue.length > 0 ? normalizedValue : null;
+};
+
+async function syncRoomContract(contract: ContractWithDetails) {
+    const routeRoomId = getStringQueryValue(route.query.roomId);
+    if (!routeRoomId) return;
+    await chatStore.persistRoomContract(routeRoomId, contract.contractId ?? contract.id);
+}
+
+async function openContractDetail(contract: ContractWithDetails) {
+    selectedContract.value = contract;
+    await syncRoomContract(contract);
+}
+
+async function syncSelectedContractFromRoute() {
+    const routeContractId = getNumericQueryValue(route.query.contractId);
+    if (!routeContractId) return;
+
+    if (!contractStore.findContractByAnyId(routeContractId)) {
+        try {
+            await contractStore.fetchContracts();
+        } catch (error) {
+            console.error('계약 목록 재조회 중 오류가 발생했습니다:', error);
+        }
+    }
+
+    const matchedContract = contractStore.findContractByAnyId(routeContractId);
+    if (matchedContract) {
+        await openContractDetail(matchedContract);
+    }
+}
+
+onMounted(async () => {
+    await contractStore.fetchContracts();
+    await syncSelectedContractFromRoute();
 });
+
+watch(
+    () => route.query.contractId,
+    () => {
+        void syncSelectedContractFromRoute();
+    }
+);
 </script>
 
 <template>
@@ -357,10 +411,10 @@ onMounted(() => {
                             <PenTool class="w-4 h-4" />
                             서명하기
                         </button>
-                        <button
-                            @click="selectedContract = contract"
-                            class="px-6 py-3 bg-white text-black rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
-                        >
+                    <button
+                      @click="openContractDetail(contract)"
+                      class="px-6 py-3 bg-white text-black rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
+                    >
                             <Eye class="w-4 h-4" />
                             상세보기
                         </button>

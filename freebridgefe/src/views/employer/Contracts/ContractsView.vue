@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import {
     FileText,
     Calendar,
@@ -15,11 +15,14 @@ import {
     ChevronDown,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import ContractDetailModal from './components/ContractDetailModal.vue';
 
+const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const chatStore = useChatStore();
 const contractStore = useContractStore();
 
 const selectedContract = ref<ContractWithDetails | null>(null);
@@ -141,9 +144,55 @@ const resetFilters = () => {
     isDropdownOpen.value = false;
 };
 
-onMounted(() => {
-    contractStore.fetchContracts();
+const getNumericQueryValue = (value: unknown) => {
+    const rawValue = Array.isArray(value) ? value[0] : value;
+    const parsedValue = Number(rawValue);
+    return Number.isFinite(parsedValue) ? parsedValue : null;
+};
+
+const getStringQueryValue = (value: unknown) => {
+    const rawValue = Array.isArray(value) ? value[0] : value;
+    if (rawValue === undefined || rawValue === null) return null;
+    const normalizedValue = String(rawValue).trim();
+    return normalizedValue.length > 0 ? normalizedValue : null;
+};
+
+async function syncRoomContract(contract: ContractWithDetails) {
+    const routeRoomId = getStringQueryValue(route.query.roomId);
+    if (!routeRoomId) return;
+    await chatStore.persistRoomContract(routeRoomId, contract.contractId ?? contract.id);
+}
+
+async function openContractDetail(contract: ContractWithDetails) {
+    selectedContract.value = contract;
+    await syncRoomContract(contract);
+}
+
+async function syncSelectedContractFromRoute() {
+    const routeContractId = getNumericQueryValue(route.query.contractId);
+    if (!routeContractId) return;
+
+    if (!contractStore.findContractByAnyId(routeContractId)) {
+        await contractStore.fetchContracts();
+    }
+
+    const matchedContract = contractStore.findContractByAnyId(routeContractId);
+    if (matchedContract) {
+        await openContractDetail(matchedContract);
+    }
+}
+
+onMounted(async () => {
+    await contractStore.fetchContracts();
+    await syncSelectedContractFromRoute();
 });
+
+watch(
+    () => route.query.contractId,
+    () => {
+        void syncSelectedContractFromRoute();
+    }
+);
 </script>
 
 <template>
@@ -327,7 +376,7 @@ onMounted(() => {
                     </div>
 
                     <button
-                        @click="selectedContract = contract"
+                        @click="openContractDetail(contract)"
                         class="px-6 py-3 bg-white text-black rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
                     >
                         <Eye class="w-4 h-4" />

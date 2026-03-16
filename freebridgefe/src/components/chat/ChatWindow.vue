@@ -33,7 +33,9 @@
             <div class="flex gap-2">
                  <button
                     @click="handleLeaveRoom"
+                    :disabled="isLeavingRoom"
                     class="w-10 h-10 rounded-full bg-[#111827] text-slate-300 hover:text-white hover:bg-[#0f172a] transition-colors border border-white/5 flex items-center justify-center"
+                    :class="isLeavingRoom ? 'opacity-50 cursor-not-allowed' : ''"
                     title="대화 나가기"
                  >
                     <LogOutIcon class="w-5 h-5" />
@@ -132,7 +134,6 @@ import ContractTab from './ContractTab.vue';
 import { 
     FileText as FileTextIcon,
     LogOut as LogOutIcon,
-    Paperclip as PaperclipIcon,
     Send as SendIcon,
     Plus as PlusIcon
 } from 'lucide-vue-next';
@@ -148,24 +149,51 @@ const router = useRouter();
 
 const activeTab = ref<'CHAT' | 'CONTRACT'>('CHAT');
 const newMessage = ref('');
+const isLeavingRoom = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
 
 const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
 const messages = computed(() => chatStore.messages[props.roomId] || []);
 const nonSystemMessages = computed(() => messages.value.filter((msg) => msg.type !== 'SYSTEM'));
 const isReadOnly = computed(() => chatStore.isRoomReadOnly(props.roomId));
+const otherParticipantId = computed(() => {
+    if (!currentRoom.value) return null;
+    return chatStore.getOtherParticipantId(currentRoom.value) || null;
+});
 
 const otherParticipantName = computed(() => {
-    if (!currentRoom.value || !authStore.user) return 'Unknown';
-    const otherId = chatStore.getOtherParticipantId(currentRoom.value);
-    return otherId ? (currentRoom.value.participantNames[otherId] || '알 수 없음') : '알 수 없음';
+    if (!currentRoom.value) return '알 수 없음';
+    return chatStore.getOtherParticipantName(currentRoom.value);
+});
+
+function parseParticipantNumericId(participantId: string | null) {
+    if (!participantId) return null;
+    const matchedParticipant = String(participantId).match(/^[efa](\d+)$/i);
+    if (matchedParticipant) {
+        return Number(matchedParticipant[1]);
+    }
+    const numericId = Number(participantId);
+    return Number.isFinite(numericId) ? numericId : null;
+}
+
+const roomContract = computed(() => {
+    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
+    if (linkedContract) return linkedContract;
+    if (!authStore.user || !otherParticipantId.value) return null;
+
+    const myUserId = Number(authStore.user.id);
+    const counterpartId = parseParticipantNumericId(otherParticipantId.value);
+    if (!Number.isFinite(myUserId) || !Number.isFinite(counterpartId)) return null;
+
+    const employerId = authStore.user.role === 'EMPLOYER' ? myUserId : counterpartId;
+    const freelancerId = authStore.user.role === 'FREELANCER' ? myUserId : counterpartId;
+
+    return contractStore.findContractByParticipants(employerId, freelancerId);
 });
 
 const contractNeedsAttention = computed(() => {
-    if (!currentRoom.value || !authStore.user) return false;
-    const contractId = currentRoom.value.contractId;
-    if (!contractId) return false;
-    const contract = contractStore.contracts.find((c) => c.id === contractId);
+    if (!authStore.user) return false;
+    const contract = roomContract.value;
     if (!contract || contract.status !== 'WAITING_SIGNATURE') return false;
     if (authStore.user.role === 'EMPLOYER') {
         return !contract.employerSignedDate;
@@ -173,16 +201,48 @@ const contractNeedsAttention = computed(() => {
     return !contract.freelancerSignedDate;
 });
 
-function handleLeaveRoom() {
+const shouldLoadContracts = computed(() => {
+    if (!currentRoom.value) return false;
+    if (activeTab.value === 'CONTRACT') return true;
+    if (currentRoom.value.contractId) return true;
+    return messages.value.some((message) => message.type === 'CONTRACT_ALERT');
+});
+
+const shouldRefreshContracts = computed(() => {
+    if (!shouldLoadContracts.value) return false;
+    if (!contractStore.hasFetchedContracts) return true;
+    if (currentRoom.value?.contractId && !contractStore.findContractByAnyId(currentRoom.value.contractId)) {
+        return true;
+    }
+
+    return messages.value.some((message) => {
+        if (message.type !== 'CONTRACT_ALERT') return false;
+        const contractId = message.metadata?.contractId;
+        return !!contractId && !contractStore.findContractByAnyId(contractId);
+    });
+});
+
+async function handleLeaveRoom() {
     if (!props.roomId) return;
+    if (isLeavingRoom.value) return;
     if (!confirm('이 채팅방에서 나가시겠습니까?')) return;
-    chatStore.leaveRoom(props.roomId);
-    router.push('/chat');
+    isLeavingRoom.value = true;
+    try {
+        const hasLeftRoom = await chatStore.leaveRoom(props.roomId);
+        if (!hasLeftRoom) {
+            alert('채팅방 나가기에 실패했습니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+        await router.push('/chat');
+    } finally {
+        isLeavingRoom.value = false;
+    }
 }
 
 function getSenderName(senderId: string) {
     if (senderId === 'SYSTEM') return 'System';
-    return currentRoom.value?.participantNames[senderId] || 'Unknown';
+    if (!currentRoom.value) return '알 수 없음';
+    return chatStore.getParticipantName(currentRoom.value, senderId) || '알 수 없음';
 }
 
 function sendMessage() {
@@ -217,9 +277,37 @@ function scrollToBottom() {
     });
 }
 
+async function fetchContractsForChat() {
+    try {
+        await contractStore.fetchContracts();
+    } catch (error) {
+        console.error('Failed to refresh contracts for chat:', error);
+    }
+}
+
+async function ensureContractsLoadedForChat() {
+    if (!shouldLoadContracts.value) return;
+    try {
+        if (shouldRefreshContracts.value) {
+            await fetchContractsForChat();
+            return;
+        }
+        await contractStore.ensureContractsLoaded();
+    } catch (error) {
+        console.error('Failed to load contracts for chat:', error);
+    }
+}
+
 // Scroll to bottom on mount and when messages change
-onMounted(scrollToBottom);
+onMounted(() => {
+    scrollToBottom();
+    void ensureContractsLoadedForChat();
+});
 watch(messages, scrollToBottom, { deep: true });
+watch(shouldRefreshContracts, (nextShouldRefreshContracts) => {
+    if (!nextShouldRefreshContracts) return;
+    void fetchContractsForChat();
+}, { immediate: true });
 
 watch(
     () => props.roomId,

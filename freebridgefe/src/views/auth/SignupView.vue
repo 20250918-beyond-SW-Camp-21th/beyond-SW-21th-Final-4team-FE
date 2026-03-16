@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 // ...
 import { useAuthStore } from '@/stores/authStore';
-import { Mail, Lock, User as UserIcon, Building2, ArrowLeft, Eye, EyeOff, Check } from 'lucide-vue-next';
+import { Mail, Lock, User as UserIcon, Building2, ArrowLeft, Eye, EyeOff, Check, Phone } from 'lucide-vue-next';
 import AnimatedBackground from './components/AnimatedBackground.vue';
 import VerificationModal from './components/VerificationModal.vue';
 import TermsModal from './components/TermsModal.vue';
@@ -23,6 +23,7 @@ const authStore = useAuthStore();
 // Input Refs for Navigation
 const emailInput = ref<HTMLInputElement | null>(null);
 const passwordInput = ref<HTMLInputElement | null>(null);
+const phoneInput = ref<HTMLInputElement | null>(null);
 const confirmPasswordInput = ref<HTMLInputElement | null>(null);
 
 // State
@@ -33,6 +34,7 @@ const formData = ref({
   password: '',
   confirmPassword: '',
   company: '',
+  phone: '',
 
   agreeService: false,
   agreePrivacy: false,
@@ -113,6 +115,15 @@ const validateForm = (isSubmitting = false) => {
       newErrors.email = '이미 사용 중이거나 확인되지 않은 이메일입니다';
     }
   }
+  // 휴대전화번호 검증
+  const normalizedPhone = formData.value.phone.replace(/\D/g, '');
+  if (!normalizedPhone) {
+    newErrors.phone = '휴대전화번호를 입력해주세요';
+  } else if (!/^01\d{8,9}$/.test(normalizedPhone)) {
+    newErrors.phone = '올바른 휴대전화번호 형식이 아닙니다';
+  } else {
+    formData.value.phone = normalizedPhone;
+  }
 
   // 비밀번호 검증
   if (!formData.value.password) {
@@ -163,7 +174,7 @@ const handleSubmit = async () => {
       role: role.value,
       termsAgreed: formData.value.agreeService,
       privacyAgreed: formData.value.agreePrivacy,
-      phone: '' // Added as empty string for now
+      phone: formData.value.phone
     };
 
     // Start 2FA Signup Process
@@ -360,7 +371,7 @@ const focusNext = (e: KeyboardEvent, nextRef: HTMLInputElement | null) => {
                   type="email"
                   v-model="formData.email"
                   @blur="() => { handleBlur('email'); checkEmail(); }"
-                  @keydown.enter="focusNext($event, passwordInput)"
+                  @keydown.enter="focusNext($event, phoneInput)"
                   spellcheck="false"
                   autocapitalize="none"
                   autocomplete="email"
@@ -377,6 +388,32 @@ const focusNext = (e: KeyboardEvent, nextRef: HTMLInputElement | null) => {
           </div>
 
 
+
+          <!-- Phone -->
+          <div
+            v-motion
+            :initial="{ opacity: 0, y: 10 }"
+            :enter="{ opacity: 1, y: 0, transition: { delay: 800 } }"
+          >
+            <label class="block text-sm font-medium mb-2 text-white/80">
+              휴대폰 번호 <span class="text-red-400">*</span>
+            </label>
+            <div class="relative">
+              <Phone class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+              <input
+                ref="phoneInput"
+                type="tel"
+                v-model="formData.phone"
+                @blur="handleBlur('phone')"
+                @keydown.enter="focusNext($event, passwordInput)"
+                autocomplete="tel"
+                placeholder="010-1234-5678"
+                class="w-full pl-12 pr-4 py-4 bg-white/5 border rounded-2xl focus:outline-none transition-colors text-white placeholder:text-white/30"
+                :class="errors.phone ? 'border-red-500/50' : 'border-white/10 focus:border-white/30'"
+              />
+            </div>
+            <p v-if="errors.phone" class="text-red-400 text-sm mt-2">{{ errors.phone }}</p>
+          </div>
 
           <!-- Password -->
           <div

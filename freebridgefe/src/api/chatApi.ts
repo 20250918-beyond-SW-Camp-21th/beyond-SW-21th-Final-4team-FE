@@ -9,6 +9,7 @@ export interface BackendChatRoomResponse {
     participantNames: Record<string, string>;
     lastMessage?: BackendChatMessageResponse;
     unreadCount: Record<string, number>;
+    participantPresence?: Record<string, boolean>;
     relatedJobId?: string;
     relatedApplicationId?: string;
     relatedProposalId?: string;
@@ -45,6 +46,7 @@ function mapToChatRoom(r: BackendChatRoomResponse): ChatRoom {
         participantNames: r.participantNames,
         lastMessage: r.lastMessage ? mapToChatMessage(r.lastMessage) : undefined,
         unreadCount: r.unreadCount ?? {},
+        participantPresence: r.participantPresence ?? {},
         relatedJobId: r.relatedJobId,
         relatedApplicationId: r.relatedApplicationId,
         relatedProposalId: r.relatedProposalId,
@@ -116,6 +118,26 @@ export async function createChatRoom(body: {
     relatedProposalId?: string;
 }): Promise<ChatRoom> {
     const res = await apiClient.post<BackendChatRoomResponse>('/api/chat/rooms', body);
+    return mapToChatRoom(res.data);
+}
+
+/**
+ * 채팅방 나가기
+ * POST /api/chat/rooms/{roomId}/leave
+ */
+export async function leaveChatRoom(roomId: string): Promise<ChatRoom> {
+    const res = await apiClient.post<BackendChatRoomResponse>(`/api/chat/rooms/${roomId}/leave`);
+    return mapToChatRoom(res.data);
+}
+
+/**
+ * 채팅방 계약 연결 업데이트
+ * PATCH /api/chat/rooms/{roomId}/contract
+ */
+export async function updateChatRoomContract(roomId: string, contractId: number | null): Promise<ChatRoom> {
+    const res = await apiClient.patch<BackendChatRoomResponse>(`/api/chat/rooms/${roomId}/contract`, {
+        contractId
+    });
     return mapToChatRoom(res.data);
 }
 

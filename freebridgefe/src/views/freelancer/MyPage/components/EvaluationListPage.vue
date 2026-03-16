@@ -9,8 +9,8 @@ import {
   Calendar,
   Briefcase,
   Sparkles,
-  TrendingUp,
   TrendingDown,
+  TrendingUp,
   Activity,
 } from "lucide-vue-next";
 import {
@@ -52,7 +52,10 @@ onMounted(async () => {
     isLoading.value = true;
     evaluationsUnavailable.value = false;
     rejectionUnavailable.value = false;
-    const userId = authStore.user?.id || "guest";
+    const userId =
+      authStore.user?.id !== undefined
+        ? Number(authStore.user.id)
+        : "guest";
     const [evalResult, rejectionResult] = await Promise.allSettled([
       getEvaluations(userId),
       getRejectionFeedbacks(userId),
@@ -127,6 +130,37 @@ const collaborationScore = computed(() => {
     props.profile.collaboration;
   return ((communication + scheduleAdherence + dispute) / 3).toFixed(1);
 });
+
+const positivityScore = computed(() => {
+  const rawScore = props.profile?.aiSummary?.positivityScore;
+  if (rawScore === undefined || rawScore === null) {
+    return null;
+  }
+
+  return Math.round(Number(rawScore));
+});
+
+const normalizeInsightItems = (items?: string[]) => {
+  if (!items?.length) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      items
+        .map((item) => item?.trim())
+        .filter((item): item is string => Boolean(item)),
+    ),
+  ).slice(0, 3);
+};
+
+const strengthItems = computed(() =>
+  normalizeInsightItems(props.profile?.aiSummary?.strengths),
+);
+
+const weaknessItems = computed(() =>
+  normalizeInsightItems(props.profile?.aiSummary?.weaknesses),
+);
 // 평점 지표 설명
 const metricDefinitions: Record<string, { label: string; desc: string }> = {
   // 전문성
@@ -212,9 +246,7 @@ const handleAiAnalysis = async () => {
       </button>
     </div>
 
-    <!-- Content: Evaluation Summary (3-Column Layout) -->
     <div v-if="activeTab === 'evaluation'" class="space-y-8 animate-fade-in-up">
-      <!-- Loading State -->
       <div v-if="isLoading" class="flex justify-center py-20">
         <div
           class="animate-spin rounded-full h-8 w-8 border-b-2 border-white"
@@ -230,17 +262,14 @@ const handleAiAnalysis = async () => {
       </div>
 
       <div v-else-if="props.profile">
-        <!-- Top: AI Insight Action / Banner -->
         <div class="min-h-[180px]">
           <div
             v-if="showAiAnalysis"
             class="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-white/10 rounded-3xl p-8 relative overflow-hidden animate-fade-in"
           >
-            <!-- AI Insight Header Layout -->
             <div
               class="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between mb-8"
             >
-              <!-- Left: Title & Description -->
               <div class="flex-1 flex flex-col gap-4">
                 <div class="flex items-center gap-2 text-indigo-300">
                   <Sparkles class="w-5 h-5" />
@@ -266,12 +295,8 @@ const handleAiAnalysis = async () => {
                 </div>
               </div>
 
-              <!-- Right: AI Reputation Index -->
               <div
-                v-if="
-                  props.profile.aiSummary &&
-                  'positivityScore' in props.profile.aiSummary
-                "
+                v-if="positivityScore !== null"
                 class="flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-6 shadow-xl shadow-black/20"
               >
                 <div
@@ -282,7 +307,7 @@ const handleAiAnalysis = async () => {
                   >
                     <span
                       class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300"
-                      >{{ props.profile.aiSummary.positivityScore }}</span
+                      >{{ positivityScore }}</span
                     >
                   </div>
                 </div>
@@ -293,87 +318,55 @@ const handleAiAnalysis = async () => {
                     <Activity class="w-4 h-4" />
                     평판 긍정 지수
                   </span>
-                  <span class="text-slate-400 text-xs">AI 종합 지수</span>
+                  <span class="text-slate-400 text-xs">100점 만점 기준</span>
                 </div>
-              </div>
-            </div>
-
-            <!-- Strengths & Weaknesses Grid -->
-            <div
-              v-if="
-                props.profile.aiSummary &&
-                ('strengths' in props.profile.aiSummary ||
-                  'weaknesses' in props.profile.aiSummary)
-              "
-              class="grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-white/10 pt-8"
-            >
-              <!-- Strengths -->
-              <div class="space-y-4">
-                <div class="flex items-center gap-2">
-                  <div class="p-1.5 bg-green-500/20 rounded-md">
-                    <TrendingUp class="w-4 h-4 text-green-400" />
-                  </div>
-                  <span class="font-bold text-white">AI 강점 분석</span>
-                </div>
-                <ul class="space-y-2">
-                  <li
-                    v-for="(strength, idx) in props.profile.aiSummary
-                      .strengths || []"
-                    :key="idx"
-                    class="flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5 shadow-sm transition-all hover:bg-white/10"
-                  >
-                    <div
-                      class="w-1.5 h-1.5 rounded-full bg-green-400 mt-2 shrink-0"
-                    ></div>
-                    <span class="text-slate-300 text-sm leading-relaxed">{{
-                      strength
-                    }}</span>
-                  </li>
-                  <li
-                    v-if="!props.profile.aiSummary.strengths?.length"
-                    class="text-sm text-slate-500 italic"
-                  >
-                    강점 데이터가 없습니다.
-                  </li>
-                </ul>
-              </div>
-
-              <!-- Weaknesses -->
-              <div class="space-y-4">
-                <div class="flex items-center gap-2">
-                  <div class="p-1.5 bg-red-500/20 rounded-md">
-                    <TrendingDown class="w-4 h-4 text-red-400" />
-                  </div>
-                  <span class="font-bold text-white">AI 보완점 분석</span>
-                </div>
-                <ul class="space-y-2">
-                  <li
-                    v-for="(weakness, idx) in props.profile.aiSummary
-                      .weaknesses || []"
-                    :key="idx"
-                    class="flex items-start gap-3 bg-white/5 p-3 rounded-xl border border-white/5 shadow-sm transition-all hover:bg-white/10"
-                  >
-                    <div
-                      class="w-1.5 h-1.5 rounded-full bg-red-400 mt-2 shrink-0"
-                    ></div>
-                    <span class="text-slate-300 text-sm leading-relaxed">{{
-                      weakness
-                    }}</span>
-                  </li>
-                  <li
-                    v-if="!props.profile.aiSummary.weaknesses?.length"
-                    class="text-sm text-slate-500 italic"
-                  >
-                    보완점 데이터가 없습니다.
-                  </li>
-                </ul>
               </div>
             </div>
 
             <div
               class="mt-8 pt-4 flex items-center gap-2 text-xs text-slate-500 opacity-60 w-full justify-end"
             >
-              <span>Based on {{ evaluations.length }} verified reviews</span>
+              <span>검증된 리뷰 {{ evaluations.length }}건 기준</span>
+            </div>
+
+            <div class="mt-6 grid grid-cols-1 gap-4 border-t border-white/10 pt-6 md:grid-cols-2">
+              <div class="rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-5">
+                <div class="mb-3 flex items-center gap-2 text-emerald-300">
+                  <TrendingUp class="h-4 w-4" />
+                  <span class="text-sm font-bold">AI 강점 분석</span>
+                </div>
+                <div v-if="strengthItems.length" class="flex flex-wrap gap-2">
+                  <span
+                    v-for="(strength, idx) in strengthItems"
+                    :key="`${strength}-${idx}`"
+                    class="rounded-full border border-emerald-300/20 bg-white/5 px-3 py-1.5 text-sm text-slate-200"
+                  >
+                    {{ strength }}
+                  </span>
+                </div>
+                <p v-else class="text-sm text-slate-400">
+                  아직 강조할 강점 키워드가 충분히 쌓이지 않았습니다.
+                </p>
+              </div>
+
+              <div class="rounded-2xl border border-rose-400/15 bg-rose-400/5 p-5">
+                <div class="mb-3 flex items-center gap-2 text-rose-300">
+                  <TrendingDown class="h-4 w-4" />
+                  <span class="text-sm font-bold">AI 보완점 분석</span>
+                </div>
+                <div v-if="weaknessItems.length" class="flex flex-wrap gap-2">
+                  <span
+                    v-for="(weakness, idx) in weaknessItems"
+                    :key="`${weakness}-${idx}`"
+                    class="rounded-full border border-rose-300/20 bg-white/5 px-3 py-1.5 text-sm text-slate-200"
+                  >
+                    {{ weakness }}
+                  </span>
+                </div>
+                <p v-else class="text-sm text-slate-400">
+                  현재는 뚜렷한 보완점 키워드가 감지되지 않았습니다.
+                </p>
+              </div>
             </div>
           </div>
 

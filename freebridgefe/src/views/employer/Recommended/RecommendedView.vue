@@ -1,44 +1,110 @@
-﻿<script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { TrendingUp, Send, Star } from "lucide-vue-next";
-import { useFreelancerStore } from "@/stores/freelancerStore";
-import { useFavoritesStore } from "@/stores/favoritesStore";
-import { useJobStore } from "@/stores/jobStore";
+<script setup lang="ts">
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import { Crown, Lock, Send, Star, TrendingUp } from "lucide-vue-next";
 import { getEmployerSubscription } from "@/api/MyPage/accountApi";
-import { normalizeEmployerPlan } from "@/utils/employerSubscription";
+import { useFavoritesStore } from "@/stores/favoritesStore";
+import { useFreelancerStore } from "@/stores/freelancerStore";
+import { useJobStore } from "@/stores/jobStore";
+import type { JobPosting, User } from "@/types";
 import ProposalModal from "./components/ProposalModal.vue";
-import type { User } from "@/types";
 
 const freelancerStore = useFreelancerStore();
 const favoritesStore = useFavoritesStore();
 const jobStore = useJobStore();
-const selectedFreelancer = ref<User | null>(null);
-
-const formatSkills = (skills?: string[]) => {
-  return skills?.slice(0, 4) || [];
-};
-
-const isFavorite = (id: string) => favoritesStore.favoriteIds.includes(id);
-
-const toggleFavorite = (id: string) => favoritesStore.toggleFavorite(id);
-
-// --- Access Control ---
-import { useRouter } from "vue-router";
-import { Lock, Crown } from "lucide-vue-next";
-
 const router = useRouter();
 
+const selectedFreelancer = ref<User | null>(null);
+const selectedJobId = ref("");
+const recommendationRequestId = ref(0);
+const planLoading = ref(true);
+const initLoading = ref(false);
+const isJobSelectionLoading = ref(false);
+const planFetchError = ref<string | null>(null);
+
+let activeRecommendationController: AbortController | null = null;
+
 type PlanType = "FREE" | "PRO" | "PRIME";
+
 const currentPlan = ref<PlanType>("FREE");
 
-const planLoading = ref(true);
-const planFetchError = ref<string | null>(null);
+const formatSkills = (skills?: string[]) => skills?.slice(0, 4) || [];
+
+const isFavorite = (id: string | number) =>
+  favoritesStore.favoriteIds.includes(String(id));
+
+const toggleFavorite = (id: string | number) =>
+  favoritesStore.toggleFavorite(String(id));
+
+const normalizePlan = (plan?: string): PlanType => {
+  const normalizedPlan = (plan ?? "FREE").trim().toUpperCase();
+
+  if (["PRO", "PARTNER", "프로 플랜".toUpperCase()].includes(normalizedPlan)) {
+    return "PRO";
+  }
+
+  if (
+    ["PRIME", "ENTERPRISE", "프라임 플랜".toUpperCase()].includes(
+      normalizedPlan,
+    )
+  ) {
+    return "PRIME";
+  }
+
+  return "FREE";
+};
+
+const hasAccess = computed(
+  () => !planLoading.value && ["PRO", "PRIME"].includes(currentPlan.value),
+);
+
+const employerJobs = computed(() => jobStore.myJobs);
+const recommendableEmployerJobs = computed(() =>
+  employerJobs.value.filter((job) => {
+    if (job.status === "CLOSED" || job.status === "CONTRACTED") {
+      return false;
+    }
+
+    if (
+      typeof job.headcount === "number" &&
+      typeof job.matchedHeadcount === "number" &&
+      job.headcount > 0 &&
+      job.matchedHeadcount >= job.headcount
+    ) {
+      return false;
+    }
+
+    return true;
+  }),
+);
+
+const selectedJob = computed<JobPosting | null>(
+  () =>
+    recommendableEmployerJobs.value.find((job) => job.id === selectedJobId.value) ??
+    null,
+);
+
+const isJobSelectDisabled = computed(
+  () => initLoading.value || isJobSelectionLoading.value,
+);
+
+const showEmptyRecommendations = computed(
+  () =>
+    hasAccess.value &&
+    !planLoading.value &&
+    !initLoading.value &&
+    !freelancerStore.isFetchingRecommended &&
+    !freelancerStore.recommendedFetchError &&
+    freelancerStore.freelancers.length === 0,
+);
 
 const fetchCurrentPlan = async () => {
   planLoading.value = true;
+  planFetchError.value = null;
+
   try {
     const subscription = await getEmployerSubscription();
-    currentPlan.value = normalizeEmployerPlan(subscription.currentPlan);
+    currentPlan.value = normalizePlan(subscription.currentPlan);
   } catch (error) {
     console.error("Failed to fetch employer plan:", error);
     planFetchError.value = "subscription_fetch_failed";
@@ -47,35 +113,132 @@ const fetchCurrentPlan = async () => {
   }
 };
 
-const hasAccess = computed(
-  () => !planLoading.value && ["PRO", "PRIME"].includes(currentPlan.value),
-);
+const ensureSelectedJob = (jobs: JobPosting[]) => {
+  if (!jobs.some((job) => job.id === selectedJobId.value)) {
+    selectedJobId.value = jobs[0]?.id ?? "";
+  }
+};
+
+const parseSelectedJobId = (): number | string | null => {
+  const rawJobId = selectedJobId.value.trim();
+  if (!/^\d+$/.test(rawJobId)) {
+    freelancerStore.freelancers = [];
+    freelancerStore.recommendedFetchError =
+      "유효한 프로젝트 공고를 선택해주세요.";
+    return null;
+  }
+
+  const numericJobId = Number(rawJobId);
+  if (Number.isSafeInteger(numericJobId) && numericJobId > 0) {
+    return numericJobId;
+  }
+
+  try {
+    const bigIntJobId = BigInt(rawJobId);
+    if (bigIntJobId > 0n) {
+      return rawJobId;
+    }
+  } catch {
+    // Fall through to the shared validation error below.
+  }
+
+  freelancerStore.freelancers = [];
+  freelancerStore.recommendedFetchError =
+    "유효하지 않은 프로젝트 공고 ID입니다.";
+  return null;
+};
+
+const loadRecommendationForSelectedJob = async (requestId: number) => {
+  const parsedJobId = parseSelectedJobId();
+  if (parsedJobId === null) {
+    return;
+  }
+
+  activeRecommendationController?.abort();
+  const controller = new AbortController();
+  activeRecommendationController = controller;
+  isJobSelectionLoading.value = true;
+
+  try {
+    await freelancerStore.fetchRecommendedFreelancers(
+      parsedJobId,
+      controller.signal,
+    );
+  } finally {
+    if (requestId === recommendationRequestId.value) {
+      isJobSelectionLoading.value = false;
+      if (activeRecommendationController === controller) {
+        activeRecommendationController = null;
+      }
+    }
+  }
+};
+
+const loadRecommendedFreelancers = async () => {
+  initLoading.value = true;
+  let jobs = recommendableEmployerJobs.value;
+
+  try {
+    if (!employerJobs.value.length) {
+      try {
+        await jobStore.fetchJobPostings();
+        jobs = recommendableEmployerJobs.value;
+      } catch {
+        freelancerStore.freelancers = [];
+        freelancerStore.recommendedFetchError =
+          jobStore.errorMessage || "프로젝트 공고를 불러오지 못했습니다.";
+        return;
+      }
+    }
+
+    if (!jobs.length) {
+      freelancerStore.freelancers = [];
+      freelancerStore.recommendedFetchError =
+        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
+      selectedJobId.value = "";
+      freelancerStore.recommendedFetchError = null;
+      return;
+    }
+
+    ensureSelectedJob(jobs);
+    recommendationRequestId.value += 1;
+    await loadRecommendationForSelectedJob(recommendationRequestId.value);
+  } finally {
+    initLoading.value = false;
+  }
+};
+
+const handleJobChange = async (event: Event) => {
+  selectedJobId.value = (event.target as HTMLSelectElement).value;
+  recommendationRequestId.value += 1;
+  await loadRecommendationForSelectedJob(recommendationRequestId.value);
+};
+
+const goToUpgrade = () => {
+  router.push({ name: "employer.mypage", query: { tab: "account" } });
+};
 
 onMounted(async () => {
   await fetchCurrentPlan();
-  if (hasAccess.value) {
-    const jobs = jobStore.myJobs;
-    if (jobs && jobs.length > 0) {
-      const firstJobId = jobs[0].id;
-      // ?꾧꺽???レ옄 寃利?(臾몄옄媛 ?욎뿬?덉쑝硫?以묐떒)
-      if (typeof firstJobId === "number" || /^\d+$/.test(String(firstJobId))) {
-        await freelancerStore.fetchRecommendedFreelancers(Number(firstJobId));
-      } else {
-        freelancerStore.recommendedFetchError =
-          "?좏슚?섏? ?딆? ?꾨줈?앺듃 怨듦퀬 ID?낅땲??";
-      }
-    } else {
-      freelancerStore.recommendedFetchError =
-        "?깅줉???꾨줈?앺듃 怨듦퀬媛 ?놁뒿?덈떎. 怨듦퀬瑜?癒쇱? ?깅줉?댁＜?몄슂.";
-    }
+
+  if (planFetchError.value) {
+    freelancerStore.freelancers = [];
+    freelancerStore.recommendedFetchError =
+      "구독 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
+    return;
   }
+
+  if (!hasAccess.value) {
+    freelancerStore.recommendedFetchError = null;
+    return;
+  }
+
+  await loadRecommendedFreelancers();
 });
 
-const goToUpgrade = () => {
-  // Navigate to MyPage where Account Management is located
-  // Ideally pass a query param to open Account tab directly: /employer/mypage?tab=account
-  router.push({ name: "employer.mypage", query: { tab: "account" } });
-};
+onBeforeUnmount(() => {
+  activeRecommendationController?.abort();
+});
 </script>
 
 <template>
@@ -83,13 +246,45 @@ const goToUpgrade = () => {
     <div class="mb-8">
       <div class="flex items-center gap-2 mb-2">
         <TrendingUp class="w-6 h-6 text-[#2D5BFF]" />
-        <h1 class="text-3xl font-bold">異붿쿇 ?꾨━?쒖꽌</h1>
+        <h1 class="text-3xl font-bold">추천 프리랜서</h1>
       </div>
-      <p class="text-white/60">AI媛 ?좊퀎??理쒖쟻???꾨━?쒖꽌瑜?留뚮굹蹂댁꽭??/p>
+      <p class="text-white/60">AI가 선별한 최적의 프리랜서를 만나보세요</p>
     </div>
 
-    <!-- Loading Skeleton -->
-    <div v-if="planLoading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div
+      v-if="hasAccess && recommendableEmployerJobs.length"
+      class="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
+    >
+      <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <p class="text-sm font-semibold text-white">추천 기준 공고</p>
+          <p class="text-xs text-white/50">
+            공고를 바꾸면 해당 프로젝트 기준으로 추천 결과를 다시 불러옵니다.
+          </p>
+        </div>
+        <div class="w-full md:w-[360px]">
+          <select
+            :value="selectedJobId"
+            :disabled="isJobSelectDisabled"
+            @change="handleJobChange"
+            class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-[#2D5BFF] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <option
+              v-for="job in recommendableEmployerJobs"
+              :key="job.id"
+              :value="job.id"
+            >
+              {{ job.title }}
+            </option>
+          </select>
+        </div>
+      </div>
+      <p v-if="selectedJob" class="mt-3 text-sm text-white/60">
+        현재 선택: <span class="font-medium text-white">{{ selectedJob.title }}</span>
+      </p>
+    </div>
+
+    <div v-if="planLoading || initLoading" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       <div
         v-for="n in 6"
         :key="n"
@@ -110,9 +305,7 @@ const goToUpgrade = () => {
           <div class="h-6 w-16 bg-white/10 rounded-full"></div>
           <div class="h-6 w-16 bg-white/10 rounded-full"></div>
         </div>
-        <div
-          class="pt-4 border-t border-white/10 flex justify-between items-center"
-        >
+        <div class="pt-4 border-t border-white/10 flex justify-between items-center">
           <div class="h-4 w-24 bg-white/10 rounded"></div>
           <div class="flex gap-2">
             <div class="w-10 h-10 bg-white/10 rounded-lg"></div>
@@ -122,7 +315,6 @@ const goToUpgrade = () => {
       </div>
     </div>
 
-    <!-- Error State -->
     <div
       v-else-if="freelancerStore.recommendedFetchError"
       class="bg-red-500/5 backdrop-blur-sm rounded-xl border border-red-500/10 p-12 text-center"
@@ -133,12 +325,11 @@ const goToUpgrade = () => {
         <TrendingUp class="w-8 h-8 text-red-400" />
       </div>
       <h3 class="text-xl font-semibold mb-2 text-red-200">
-        異붿쿇??遺덈윭?ㅼ? 紐삵뻽?듬땲??
+        추천을 불러오지 못했습니다
       </h3>
       <p class="text-red-300/60">{{ freelancerStore.recommendedFetchError }}</p>
     </div>
 
-    <!-- Fetching State -->
     <div
       v-else-if="freelancerStore.isFetchingRecommended"
       class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-12 flex flex-col items-center justify-center text-center"
@@ -146,9 +337,26 @@ const goToUpgrade = () => {
       <div
         class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-4 opacity-70"
       ></div>
-      <h3 class="text-xl font-semibold mb-2 text-white/80">AI 遺꾩꽍 以?..</h3>
+      <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
       <p class="text-white/50">
-        ?깅줉?섏떊 ?꾨줈?앺듃????留욌뒗 ?꾨━?쒖꽌瑜?李얘퀬 ?덉뒿?덈떎
+        등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다
+      </p>
+    </div>
+
+    <div
+      v-else-if="showEmptyRecommendations"
+      class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-12 text-center"
+    >
+      <div
+        class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4"
+      >
+        <TrendingUp class="w-8 h-8 text-white/70" />
+      </div>
+      <h3 class="text-xl font-semibold mb-2 text-white">
+        현재 조건에 맞는 추천 프리랜서가 없습니다
+      </h3>
+      <p class="text-white/60">
+        공고 설명을 조금 더 구체적으로 작성하거나 기술 스택을 조정한 뒤 다시 확인해보세요.
       </p>
     </div>
 
@@ -178,7 +386,7 @@ const goToUpgrade = () => {
               {{ freelancer.name }}
             </router-link>
             <p class="text-sm text-white/60">
-              {{ freelancer.experience }}??寃쎈젰
+              {{ freelancer.experience }}년 경력
             </p>
           </div>
         </div>
@@ -189,7 +397,7 @@ const goToUpgrade = () => {
             class="px-2 py-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-500/30 text-blue-300 text-xs font-bold flex items-center gap-1"
           >
             <TrendingUp class="w-3 h-3" />
-            AI ?곹빀??{{ (freelancer.matchScore * 100).toFixed(0) }}%
+            AI 적합도 {{ (freelancer.matchScore * 100).toFixed(0) }}%
           </div>
         </div>
         <p class="text-white/60 text-sm mb-4 line-clamp-2 h-10">
@@ -206,18 +414,16 @@ const goToUpgrade = () => {
           </span>
         </div>
 
-        <div
-          class="flex items-center justify-between pt-4 border-t border-white/10"
-        >
+        <div class="flex items-center justify-between pt-4 border-t border-white/10">
           <div class="text-sm">
-            <span class="text-white/60">?щ쭩 湲됱뿬 </span>
+            <span class="text-white/60">희망 급여 </span>
             <span
               class="font-medium text-white"
               v-if="freelancer.monthlySalary"
             >
-              {{ freelancer.monthlySalary?.toLocaleString() }}??
+              {{ freelancer.monthlySalary?.toLocaleString() }}원
             </span>
-            <span class="font-medium text-white/50" v-else> ?묒쓽 ?꾩슂 </span>
+            <span class="font-medium text-white/50" v-else> 협의 필요 </span>
           </div>
           <div class="flex items-center gap-2">
             <button
@@ -245,14 +451,13 @@ const goToUpgrade = () => {
               class="px-4 py-2 bg-[#2D5BFF] text-white rounded-lg hover:bg-[#2D5BFF]/90 hover:shadow-lg transition-all flex items-center gap-2"
             >
               <Send class="w-4 h-4" />
-              ?쒖븞?섍린
+              제안하기
             </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Access Restricted UI -->
     <div
       v-else
       class="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm"
@@ -263,18 +468,18 @@ const goToUpgrade = () => {
         <Lock class="w-10 h-10 text-slate-400" />
       </div>
       <h2 class="text-2xl font-bold mb-2 text-white">
-        ?꾨줈 ?뚮옖 ?댁긽 ?꾩슜 ?쒕퉬?ㅼ엯?덈떎
+        프로 플랜 이상 전용 서비스입니다
       </h2>
       <p class="text-slate-400 mb-8 max-w-md mx-auto">
-        AI 湲곕컲 留욎땄???꾨━?쒖꽌 異붿쿇 湲곕뒫? ?꾨줈 ?뚮옖 ?댁긽 援щ룆 ???댁슜?섏떎 ??
-        ?덉뒿?덈떎. 吏湲?諛붾줈 ?낃렇?덉씠?쒗븯怨?理쒖쟻???몄옱瑜?留뚮굹蹂댁꽭??
+        AI 기반 맞춤형 프리랜서 추천 기능은 프로 플랜 이상 구독자만 이용할 수
+        있습니다. 지금 바로 업그레이드하고 최적의 인재를 만나보세요.
       </p>
       <button
         @click="goToUpgrade"
         class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2 group"
       >
         <Crown class="w-5 h-5 group-hover:text-yellow-300 transition-colors" />
-        援щ룆 ?뚮옖 ?낃렇?덉씠?쒗븯湲?
+        구독 플랜 업그레이드하기
       </button>
     </div>
 
@@ -285,5 +490,3 @@ const goToUpgrade = () => {
     />
   </div>
 </template>
-
-

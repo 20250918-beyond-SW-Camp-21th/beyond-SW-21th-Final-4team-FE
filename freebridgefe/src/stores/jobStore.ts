@@ -2,7 +2,17 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
+import { getUserById } from '@/api/authApi';
+import { getEmployerRejectionReasons, getFreelancerRejectionReasons } from '@/api/reviewApi';
 import type { Application, JobPosting, JobStatus } from '@/types';
+import {
+    acceptEmployerApplication,
+    createFreelancerApplication,
+    getEmployerApplications,
+    getFreelancerApplications,
+    rejectEmployerApplication,
+    type ApplicationResponseDto
+} from '@/api/applicationApi';
 import {
     addFavoriteJobPosting,
     createEmployerJobPosting,
@@ -45,6 +55,13 @@ const toNumericJobPostingId = (jobId: string): number => {
         throw new Error('유효하지 않은 공고 ID입니다.');
     }
     return Number(jobId);
+};
+
+const toNumericApplicationId = (applicationId: string): number => {
+    if (!/^\d+$/.test(applicationId)) {
+        throw new Error('유효하지 않은 지원 ID입니다.');
+    }
+    return Number(applicationId);
 };
 
 const mapEmployerJobPosting = (
@@ -101,6 +118,15 @@ const mapFreelancerApiToUiJobPosting = (posting: FreelancerJobPostingResponse): 
 };
 
 const getErrorMessage = (error: unknown): string => {
+    if (
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof (error as any).response?.data?.message === 'string'
+    ) {
+        return (error as any).response.data.message;
+    }
+
     if (error instanceof Error && error.message) {
         return error.message;
     }
@@ -113,9 +139,10 @@ export const useJobStore = defineStore('job', () => {
     const jobPostings = ref<JobPosting[]>([]);
     const isLoading = ref(false);
     const errorMessage = ref<string | null>(null);
-
-    // Applications are still local until backend endpoints are available.
     const applications = ref<Application[]>([]);
+    const isFetchingApplications = ref(false);
+    const applicationFetchError = ref<string | null>(null);
+    const userNameCache: Record<string, string> = {};
 
     const myJobs = computed(() => {
         if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
@@ -127,6 +154,108 @@ export const useJobStore = defineStore('job', () => {
     });
 
     const getJobById = (id: string) => jobPostings.value.find((job) => job.id === id);
+
+    const getCurrentFreelancerName = () => authStore.user?.name || '프리랜서';
+
+    async function resolveUserNames(userIds: Array<string | number>): Promise<Record<string, string>> {
+        const uniqueIds = Array.from(new Set(userIds.map((id) => String(id)).filter(Boolean)));
+        const missingIds = uniqueIds.filter((id) => !userNameCache[id]);
+
+        await Promise.all(
+            missingIds.map(async (id) => {
+                try {
+                    const user = await getUserById(Number(id));
+                    userNameCache[id] = user?.name || '';
+                } catch {
+                    userNameCache[id] = '';
+                }
+            })
+        );
+
+        return uniqueIds.reduce<Record<string, string>>((acc, id) => {
+            if (userNameCache[id]) {
+                acc[id] = userNameCache[id];
+            }
+            return acc;
+        }, {});
+    }
+
+    function mapApplication(dto: ApplicationResponseDto, names: Record<string, string>): Application {
+        const currentUserId = String(authStore.user?.id ?? '');
+        const freelancerName =
+            String(dto.freelancerId) === currentUserId && authStore.user?.role === 'FREELANCER'
+                ? getCurrentFreelancerName()
+                : names[String(dto.freelancerId)] || `프리랜서 #${dto.freelancerId}`;
+
+        return {
+            id: String(dto.applicationId),
+            jobId: String(dto.jobPostingId),
+            freelancerId: String(dto.freelancerId),
+            freelancerName,
+            message: dto.message,
+            status: dto.status,
+            createdAt: new Date(dto.createdAt)
+        };
+    }
+
+    async function hydrateApplications(items: ApplicationResponseDto[]): Promise<Application[]> {
+        const names = await resolveUserNames(items.map((item) => item.freelancerId));
+        return items.map((item) => mapApplication(item, names));
+    }
+
+    async function attachEmployerRejectionReasons(items: Application[]): Promise<Application[]> {
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER' || items.length === 0) {
+            return items;
+        }
+
+        try {
+            const response = await getEmployerRejectionReasons(0, 200);
+            const reasonsByKey = new Map(
+                (response.content ?? []).map((reason) => [
+                    `${reason.projectId}:${reason.freelancerId}`,
+                    reason.reason
+                ])
+            );
+
+            return items.map((item) => ({
+                ...item,
+                rejectionReason:
+                    item.status === 'REJECTED'
+                        ? reasonsByKey.get(`${item.jobId}:${item.freelancerId}`) || item.rejectionReason
+                        : undefined
+            }));
+        } catch (error) {
+            console.warn('Failed to fetch employer rejection reasons:', error);
+            return items;
+        }
+    }
+
+    async function attachFreelancerRejectionReasons(items: Application[]): Promise<Application[]> {
+        if (!authStore.user || authStore.user.role !== 'FREELANCER' || items.length === 0) {
+            return items;
+        }
+
+        try {
+            const response = await getFreelancerRejectionReasons(0, 200);
+            const reasonsByKey = new Map(
+                (response.content ?? []).map((reason) => [
+                    `${reason.projectId}:${reason.freelancerId}`,
+                    reason.reason
+                ])
+            );
+
+            return items.map((item) => ({
+                ...item,
+                rejectionReason:
+                    item.status === 'REJECTED'
+                        ? reasonsByKey.get(`${item.jobId}:${item.freelancerId}`) || item.rejectionReason
+                        : undefined
+            }));
+        } catch (error) {
+            console.warn('Failed to fetch freelancer rejection reasons:', error);
+            return items;
+        }
+    }
 
     const isFavorite = (id: string): boolean => {
         const target = getJobById(id);
@@ -163,6 +292,52 @@ export const useJobStore = defineStore('job', () => {
             throw error;
         } finally {
             isLoading.value = false;
+        }
+    }
+
+    async function fetchEmployerApplications(page = 0, size = 100) {
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
+            applications.value = [];
+            return;
+        }
+
+        isFetchingApplications.value = true;
+        applicationFetchError.value = null;
+
+        try {
+            const response = await getEmployerApplications(page, size);
+            const hydrated = await hydrateApplications(response.content ?? []);
+            applications.value = await attachEmployerRejectionReasons(hydrated);
+            return response;
+        } catch (error) {
+            applications.value = [];
+            applicationFetchError.value = getErrorMessage(error);
+            throw error;
+        } finally {
+            isFetchingApplications.value = false;
+        }
+    }
+
+    async function fetchFreelancerApplications(page = 0, size = 100) {
+        if (!authStore.user || authStore.user.role !== 'FREELANCER') {
+            applications.value = [];
+            return;
+        }
+
+        isFetchingApplications.value = true;
+        applicationFetchError.value = null;
+
+        try {
+            const response = await getFreelancerApplications(page, size);
+            const hydrated = await hydrateApplications(response.content ?? []);
+            applications.value = await attachFreelancerRejectionReasons(hydrated);
+            return response;
+        } catch (error) {
+            applications.value = [];
+            applicationFetchError.value = getErrorMessage(error);
+            throw error;
+        } finally {
+            isFetchingApplications.value = false;
         }
     }
 
@@ -241,13 +416,32 @@ export const useJobStore = defineStore('job', () => {
         return applications.value.filter((app) => app.jobId === jobId);
     }
 
-    function addApplication(app: Omit<Application, 'id' | 'createdAt'>) {
-        const newApp: Application = {
-            ...app,
-            id: `app-${Date.now()}`,
-            createdAt: new Date()
-        };
-        applications.value.push(newApp);
+    function getApplicationById(applicationId: string) {
+        return applications.value.find((app) => app.id === applicationId);
+    }
+
+    async function addApplication(app: Omit<Application, 'id' | 'createdAt'>): Promise<Application> {
+        if (!authStore.user || authStore.user.role !== 'FREELANCER') {
+            throw new Error('프리랜서만 지원할 수 있습니다.');
+        }
+
+        applicationFetchError.value = null;
+        const result = await createFreelancerApplication({
+            jobPostingId: toNumericJobPostingId(app.jobId),
+            message: app.message
+        });
+
+        await fetchFreelancerApplications();
+
+        const persistedApplication = applications.value.find(
+            (item) => item.id === String(result.applicationId)
+        );
+
+        if (!persistedApplication) {
+            throw new Error('지원 등록 응답은 성공했지만 새 지원 내역이 조회되지 않았습니다.');
+        }
+
+        return persistedApplication;
     }
 
     async function updateApplicationStatus(
@@ -255,8 +449,18 @@ export const useJobStore = defineStore('job', () => {
         status: Application['status'],
         rejectionReason?: string
     ): Promise<string | null> {
+        if (!authStore.user || authStore.user.role !== 'EMPLOYER') {
+            throw new Error('고용주만 지원 상태를 변경할 수 있습니다.');
+        }
+
         const index = applications.value.findIndex((app) => app.id === id);
         if (index === -1) return null;
+
+        if (status === 'ACCEPTED') {
+            await acceptEmployerApplication(toNumericApplicationId(id));
+        } else if (status === 'REJECTED') {
+            await rejectEmployerApplication(toNumericApplicationId(id));
+        }
 
         applications.value[index] = {
             ...applications.value[index],
@@ -264,14 +468,23 @@ export const useJobStore = defineStore('job', () => {
             rejectionReason
         };
 
+        await fetchJobPostings().catch((error) => {
+            console.warn('Failed to refresh job postings after application status update:', error);
+        });
+        await fetchEmployerApplications().catch((error) => {
+            console.warn('Failed to refresh applications after application status update:', error);
+        });
+
         if (status === 'ACCEPTED') {
             const chatStore = useChatStore();
-            const app = applications.value[index];
+            const app = applications.value.find((application) => application.id === id) ?? applications.value[index];
             const job = getJobById(app.jobId);
 
             if (job) {
-                const employerId = String(job.employerId);
-                const freelancerId = String(app.freelancerId);
+                const rawEmployerId = String(job.employerId);
+                const rawFreelancerId = String(app.freelancerId);
+                const employerId = rawEmployerId.startsWith('e') ? rawEmployerId : `e${rawEmployerId}`;
+                const freelancerId = rawFreelancerId.startsWith('f') ? rawFreelancerId : `f${rawFreelancerId}`;
 
                 const roomId = await chatStore.createRoom(
                     [employerId, freelancerId],
@@ -302,16 +515,21 @@ export const useJobStore = defineStore('job', () => {
         jobPostings,
         myJobs,
         applications,
+        isFetchingApplications,
+        applicationFetchError,
         isLoading,
         errorMessage,
         getJobById,
         fetchJobPostings,
+        fetchEmployerApplications,
+        fetchFreelancerApplications,
         addJobPosting,
         updateJobPosting,
         deleteJobPosting,
         isFavorite,
         toggleFavorite,
         getApplicationsByJob,
+        getApplicationById,
         addApplication,
         updateApplicationStatus
     };

@@ -6,42 +6,74 @@ pipeline {
     }
 
     environment {
-        // [Code Repo]
-        CRED_ID_FE = 'github-fe-key' 
+        AWS_REGION = 'ap-northeast-2'
+        EKS_CLUSTER_NAME = 'freebridge-eks'
+        AWS_CREDENTIALS_ID = 'aws-eks-jenkins'
+        EKS_TOOL_IMAGE = 'dtzar/helm-kubectl:latest'
 
-        // [Manifest Repo] - New Repository (Separate Credential)
-        CRED_ID_MANIFEST = 'github-manifest-key' 
+        CRED_ID_FE = 'github-fe-key'
+        CRED_ID_MANIFEST = 'github-manifest-key'
         MANIFEST_REPO_URL = 'git@github.com:20250918-beyond-SW-Camp-21th/beyond-SW-21th-Final-4team-Manifest-file.git'
         MANIFEST_BRANCH = 'main'
 
-        // Docker
         IMAGE_NAME = 'o2ppo/freebrfront001'
         DOCKER_CRED_ID = 'dockerhub-credentials'
-
-        // Git Config
         GIT_EMAIL = 'lmjayoul@gmail.com'
+        FRONTEND_API_BASE_URL = ''
     }
 
     stages {
+        stage('EKS Preflight') {
+
+            steps {
+                script {
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: "${env.AWS_CREDENTIALS_ID}",
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh """
+                            set -euxo pipefail
+                            export AWS_DEFAULT_REGION=${env.AWS_REGION}
+
+                            if ! command -v aws > /dev/null 2>&1; then
+                                echo 'aws CLI is not installed.'
+                                exit 1
+                            fi
+
+                            aws --version
+                            kubectl version --client=true
+                            aws sts get-caller-identity
+                            aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${env.EKS_CLUSTER_NAME}
+                            kubectl cluster-info
+                            kubectl get nodes
+                            kubectl get ns
+                        """
+                    }
+                }
+            }
+        }
+
         stage('Checkout Code') {
             steps {
-                cleanWs() 
+                cleanWs()
                 checkout scm
-                echo "Source Code Checkout Complete"
+                echo 'Source Code Checkout Complete'
             }
         }
 
         stage('Setup & Check') {
             steps {
                 script {
-                    env.GIT_COMMIT_HASH = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+                    env.GIT_COMMIT_HASH = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                     env.IMAGE_TAG = "${currentBuild.number}-${env.GIT_COMMIT_HASH}"
 
                     def rawBranch = env.BRANCH_NAME ?: (env.GIT_BRANCH ?: 'main')
                     env.TARGET_BRANCH = rawBranch.replace('origin/', '')
 
-                    echo " Build Tag: ${env.IMAGE_TAG}"
-                    echo " Target Branch: ${env.TARGET_BRANCH}"
+                    echo "Build Tag: ${env.IMAGE_TAG}"
+                    echo "Target Branch: ${env.TARGET_BRANCH}"
                 }
             }
         }
@@ -51,16 +83,16 @@ pipeline {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${env.DOCKER_CRED_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh '''
-                            set -e
+                            set -eux
 
-                            # (선택) 원인 확인용 로그
                             which docker || true
                             docker version
                             docker buildx version || true
 
-                            # 핵심: BuildKit 끄기 (legacy builder로 빌드)
                             export DOCKER_BUILDKIT=0
-                            docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                            docker build \
+                              --build-arg VITE_API_BASE_URL="${FRONTEND_API_BASE_URL:-}" \
+                              -t ${IMAGE_NAME}:${IMAGE_TAG} .
 
                             echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                             docker push ${IMAGE_NAME}:${IMAGE_TAG}
@@ -78,43 +110,31 @@ pipeline {
                 script {
                     sshagent(credentials: ["${env.CRED_ID_MANIFEST}"]) {
                         sh """
-                            # 1. Setup SSH
-                            mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+                            set -eux
+                            mkdir -p ~/.ssh
+                            ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-                            # 2. Clone Manifest Repository
-                            # Removing existing dir if any
                             rm -rf manifest-repo
                             git clone ${env.MANIFEST_REPO_URL} manifest-repo
-                            
-                            cd manifest-repo
 
-                            # Configure Git
+                            cd manifest-repo
                             git config user.name "Jenkins Frontend Bot"
                             git config user.email "${env.GIT_EMAIL}"
-                            
-                            # 3. Check for Manifest Files
-                            if [ ! -f kube-folder/frontend-deployment.yml ]; then
-                                echo "Error: kube-folder/frontend-deployment.yml not found in manifest repo!"
-                                echo "Current directory structure:"
-                                ls -R
-                                exit 1
-                            fi
 
-                            # 4. Update Image Tag
-                            echo "Updating kube-folder/frontend-deployment.yml..."
+                            test -f kube-folder/frontend-deployment.yml
+                            test -f kube-folder/frontend-service.yml
+                            test -f kube-folder/ingress-set.yml
+
                             sed -i 's|image: ${env.IMAGE_NAME}:.*|image: ${env.IMAGE_NAME}:${env.IMAGE_TAG}|g' kube-folder/frontend-deployment.yml
-                            
-                            # Verify change
-                            cat kube-folder/frontend-deployment.yml | grep "image:"
-                                
-                            # 5. Commit & Push
+                            grep 'image:' kube-folder/frontend-deployment.yml
+
                             git add .
                             if ! git diff --cached --quiet; then
                                 git commit -m "[Jenkins] Update image to ${env.IMAGE_TAG}"
                                 git push origin ${env.MANIFEST_BRANCH}
-                                echo "Manifest Repo Updated!"
+                                echo 'Manifest Repo Updated!'
                             else
-                                echo "No changes to push."
+                                echo 'No changes to push.'
                             fi
                         """
                     }
@@ -122,47 +142,47 @@ pipeline {
             }
         }
 
-        stage('Deploy to Server Eric pc') {
+        stage('Deploy Frontend and Ingress') {
+
             steps {
                 script {
-                    withCredentials([file(credentialsId: 'k8s-kubeconfig', variable: 'KUBECONFIG')]) {
-                        sh '''
-                            export KUBECONFIG=$KUBECONFIG
-                            chmod 600 $KUBECONFIG
-                            
-                            # Ensure kubectl is installed (Simplified check)
-                            if ! command -v kubectl > /dev/null 2>&1; then
-                                echo "kubectl not found. Installing..."
-                                curl -LO "https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl"
-                                chmod +x kubectl
-                                
-                                # Try installing to global path, fall back to user local bin
-                                if mv kubectl /usr/local/bin/ > /dev/null 2>&1; then
-                                    echo "Installed kubectl to /usr/local/bin"
-                                else
-                                    echo "Cannot install to /usr/local/bin. Installing to $HOME/bin"
-                                    mkdir -p $HOME/bin
-                                    mv kubectl $HOME/bin/ || exit 1
-                                    export PATH=$HOME/bin:$PATH
-                                fi
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: "${env.AWS_CREDENTIALS_ID}",
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh """
+                            set -euxo pipefail
+                            export AWS_DEFAULT_REGION=${env.AWS_REGION}
+
+                            if ! command -v aws > /dev/null 2>&1; then
+                                echo 'aws CLI is not installed.'
+                                exit 1
                             fi
-                            
-                            echo "Deploying to Server B..."
-                            kubectl cluster-info
-                            
-                            # Apply from the CLONED manifest-repo directory
+
+                            aws eks update-kubeconfig --region ${env.AWS_REGION} --name ${env.EKS_CLUSTER_NAME}
                             cd manifest-repo
-                            
-                            # Apply all manifests
+
+                            test -f kube-folder/frontend-deployment.yml
+                            test -f kube-folder/frontend-service.yml
+                            test -f kube-folder/ingress-set.yml
+
                             kubectl apply -f kube-folder/frontend-deployment.yml
                             kubectl apply -f kube-folder/frontend-service.yml
-                            # kubectl apply -f kube-folder/frontend-ingress.yml || true
                             
-                            # Restart rollout to ensure image pull
+                            # 기존 frontend-ingress가 남아있다면 충돌 방지를 위해 삭제
+                            kubectl delete ingress frontend-ingress --ignore-not-found=true || true
+                            
+                            kubectl apply -f kube-folder/ingress-set.yml
+
                             kubectl rollout restart deployment/frontend
-                            
-                            echo "Deployment Command Sent!"
-                        '''
+                            kubectl rollout status deployment/frontend --timeout=180s
+
+                            kubectl get svc frontend-service
+                            kubectl get ingress ingress-set
+                            kubectl describe ingress ingress-set || true
+                        """
                     }
                 }
             }
@@ -182,13 +202,13 @@ pipeline {
                 discordSend(
                     description: """
                         **배포 성공!** :tada:
-                        
+
                         **Tag**: ${env.IMAGE_TAG}
                         **Repo**: [Manifest Repo Link](${env.MANIFEST_REPO_URL})
                         **Result**: SUCCESS
                     """.stripIndent(),
                     result: 'SUCCESS',
-                    title: "${env.JOB_NAME} Build Success", 
+                    title: "${env.JOB_NAME} Build Success",
                     webhookURL: "$DISCORD"
                 )
             }
@@ -196,9 +216,9 @@ pipeline {
         failure {
             withCredentials([string(credentialsId: 'discord', variable: 'DISCORD')]) {
                 discordSend(
-                    description: "**배포 실패** :x: Check Console Output",
+                    description: '**배포 실패** :x: Check Console Output',
                     result: 'FAILURE',
-                    title: "${env.JOB_NAME} Build Failed", 
+                    title: "${env.JOB_NAME} Build Failed",
                     webhookURL: "$DISCORD"
                 )
             }

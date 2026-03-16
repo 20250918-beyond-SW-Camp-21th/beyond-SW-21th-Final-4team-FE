@@ -4,8 +4,10 @@ export interface AiRecommendationResponseDTO {
   id: number;
   nameOrTitle: string;
   matchScore: number;
-  skills: string[];
-  experience: number;
+  skills?: string[];
+  description?: string;
+  budget?: number;
+  duration?: number;
 }
 
 export interface ApiResponse<T> {
@@ -18,11 +20,13 @@ export interface ApiResponse<T> {
  * Get freelancer recommendations for a specific job posting
  */
 export const getFreelancerRecommendations = async (
-  jobPostingId: number,
+  jobPostingId: number | string,
+  signal?: AbortSignal,
 ): Promise<AiRecommendationResponseDTO[]> => {
+  const encodedJobPostingId = encodeURIComponent(String(jobPostingId));
   const response = await apiClient.get<
     ApiResponse<AiRecommendationResponseDTO[]>
-  >(`/api/v1/employer/jobs/${jobPostingId}/recommendations`);
+  >(`/api/v1/employer/jobs/${encodedJobPostingId}/recommendations`, { signal });
 
   if (!response.data.success) {
     throw new Error(

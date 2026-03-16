@@ -3,9 +3,16 @@ import { ref, computed } from 'vue';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuthStore } from '@/stores/authStore';
-import type { ChatRoom, ChatMessage } from '@/types';
-import { getMyChatRooms, getChatMessages, createChatRoom as apiCreateRoom } from '@/api/chatApi';
-import { getAccessToken } from '@/api/axiosInstance';
+import type { ChatRoom, ChatMessage, UserRole } from '@/types';
+import {
+    getMyChatRooms,
+    getChatMessages,
+    createChatRoom as apiCreateRoom,
+    leaveChatRoom as apiLeaveRoom,
+    updateChatRoomContract as apiUpdateChatRoomContract
+} from '@/api/chatApi';
+import { API_BASE_URL, getAccessToken } from '@/api/axiosInstance';
+import { CHAT_MUTED_ROOMS_KEY } from '@/constants/chatUi';
 
 export const useChatStore = defineStore('chat', () => {
     const authStore = useAuthStore();
@@ -21,18 +28,84 @@ export const useChatStore = defineStore('chat', () => {
         payload: OutboundChatMessagePayload;
         senderId: string;
     };
+    type ChatAlert = {
+        id: string;
+        roomId: string;
+        senderName: string;
+        content: string;
+        createdAt: Date;
+    };
+
+    function normalizeParticipantId(id: string | number, role?: UserRole): string {
+        const raw = String(id).trim();
+        if (!raw) return raw;
+
+        const normalized = raw.toLowerCase();
+        if (/^[efa]\d+$/i.test(normalized)) {
+            return normalized;
+        }
+
+        if (/^\d+$/.test(normalized) && role) {
+            const prefix = role === 'EMPLOYER' ? 'e' : 'f';
+            return `${prefix}${normalized}`;
+        }
+
+        return raw;
+    }
+
+    function buildParticipantIdVariants(id: string | number, role?: UserRole): string[] {
+        const raw = String(id).trim();
+        if (!raw) return [];
+
+        const normalized = raw.toLowerCase();
+        if (/^[efa]\d+$/i.test(normalized)) {
+            return [normalized];
+        }
+
+        const variants = new Set<string>([normalized]);
+
+        if (/^\d+$/.test(normalized)) {
+            variants.add(`e${normalized}`);
+            variants.add(`f${normalized}`);
+            variants.add(`a${normalized}`);
+        }
+
+        const roleBasedId = normalizeParticipantId(normalized, role);
+        if (roleBasedId) {
+            variants.add(roleBasedId.toLowerCase());
+        }
+
+        return Array.from(variants);
+    }
+
+    function idsMatch(leftId: string | number, rightId: string | number, rightRole?: UserRole): boolean {
+        const leftVariants = new Set(buildParticipantIdVariants(leftId));
+        return buildParticipantIdVariants(rightId, rightRole).some((candidate) => leftVariants.has(candidate));
+    }
+
+    function resolveParticipantNameFromMap(
+        participantNames: Record<string, string> | undefined,
+        participantId: string | number
+    ): string | undefined {
+        if (!participantNames) return undefined;
+
+        const matchedEntry = Object.entries(participantNames).find(
+            ([candidateId, candidateName]) => Boolean(candidateName?.trim()) && idsMatch(candidateId, participantId)
+        );
+
+        return matchedEntry?.[1]?.trim() || undefined;
+    }
+
+    function getCounterpartRole(): UserRole | undefined {
+        if (!authStore.user) return undefined;
+        return authStore.user.role === 'EMPLOYER' ? 'FREELANCER' : 'EMPLOYER';
+    }
 
     // ── 참가자 ID 유틸 ─────────────────────────────────────────────────────
     function getCurrentChatParticipantId(): string | null {
         if (!authStore.user) return null;
 
-        const rawId = String(authStore.user.id);
-        if (/^[ef]\d+$/i.test(rawId)) {
-            return rawId;
-        }
-
-        const prefix = authStore.user.role === 'EMPLOYER' ? 'e' : 'f';
-        return `${prefix}${rawId}`;
+        return normalizeParticipantId(authStore.user.id, authStore.user.role) || null;
     }
 
     function getMyParticipantIds(): string[] {
@@ -46,7 +119,69 @@ export const useChatStore = defineStore('chat', () => {
 
     function getOtherParticipantId(room: ChatRoom): string | undefined {
         const myIds = getMyParticipantIds();
-        return room.participants.find((id) => !myIds.includes(String(id)));
+        return room.participants.find(
+            (participantId) => !myIds.some((myId) => idsMatch(participantId, myId, authStore.user?.role))
+        );
+    }
+
+    function getParticipantName(room: ChatRoom, participantId: string): string | undefined {
+        const normalizedParticipantId = normalizeIdForRoom(room, participantId);
+        const resolvedName =
+            resolveParticipantNameFromMap(room.participantNames, normalizedParticipantId) ??
+            resolveParticipantNameFromMap(room.participantNames, participantId);
+
+        if (resolvedName) {
+            return resolvedName;
+        }
+
+        const currentParticipantId = getCurrentChatParticipantId();
+        if (currentParticipantId && idsMatch(normalizedParticipantId, currentParticipantId, authStore.user?.role)) {
+            return authStore.user?.role === 'EMPLOYER'
+                ? authStore.user.companyName || authStore.user.name
+                : authStore.user?.name;
+        }
+
+        return undefined;
+    }
+
+    function getOtherParticipantName(room: ChatRoom): string {
+        const otherId = getOtherParticipantId(room);
+        if (!otherId) return '알 수 없음';
+        return getParticipantName(room, otherId) || '알 수 없음';
+    }
+
+    function normalizeParticipantListForCurrentUser(participants: Array<string | number>): string[] {
+        const myNormalizedId = getCurrentChatParticipantId();
+        const myIds = getMyParticipantIds();
+        const counterpartRole = getCounterpartRole();
+        const myIdVariants = new Set(myIds.flatMap((id) => buildParticipantIdVariants(id, authStore.user?.role)));
+
+        return Array.from(
+            new Set(
+                participants
+                    .map((id) => {
+                        const sid = String(id).trim();
+                        if (!sid) return sid;
+
+                        const isMine = buildParticipantIdVariants(sid).some((candidate) => myIdVariants.has(candidate));
+                        if (isMine) {
+                            return myNormalizedId ?? normalizeParticipantId(sid, authStore.user?.role);
+                        }
+
+                        return normalizeParticipantId(sid, counterpartRole);
+                    })
+                    .filter(Boolean)
+            )
+        );
+    }
+
+    function participantsMatch(leftParticipants: Array<string | number>, rightParticipants: Array<string | number>): boolean {
+        const normalizedLeft = normalizeParticipantListForCurrentUser(leftParticipants);
+        const normalizedRight = normalizeParticipantListForCurrentUser(rightParticipants);
+
+        return normalizedLeft.length === normalizedRight.length &&
+            normalizedLeft.every((participantId) => normalizedRight.includes(participantId)) &&
+            normalizedRight.every((participantId) => normalizedLeft.includes(participantId));
     }
 
     // ── 상태 ───────────────────────────────────────────────────────────────
@@ -58,10 +193,110 @@ export const useChatStore = defineStore('chat', () => {
     const pendingMessages = ref<PendingChatMessage[]>([]);
     const messageBuffer = ref<{ [roomId: string]: ChatMessage[] }>({});
     const hasLoadedHistory = ref<{ [roomId: string]: boolean }>({});
+    const chatAlerts = ref<ChatAlert[]>([]);
+    const isMainChatVisible = ref(false);
 
     // ── STOMP WebSocket ────────────────────────────────────────────────────
     let stompClient: Client | null = null;
     const subscriptions: Record<string, { unsubscribe: () => void }> = {};
+
+    function isRoomMuted(roomId: string): boolean {
+        if (typeof window === 'undefined') return false;
+
+        const stored = localStorage.getItem(CHAT_MUTED_ROOMS_KEY);
+        if (!stored) return false;
+
+        try {
+            const parsed = JSON.parse(stored);
+            if (!Array.isArray(parsed)) return false;
+            return parsed.includes(roomId);
+        } catch {
+            return false;
+        }
+    }
+
+    function dismissAlert(alertId: string) {
+        chatAlerts.value = chatAlerts.value.filter((alert) => alert.id !== alertId);
+    }
+
+    function playIncomingAlertSound() {
+        if (typeof window === 'undefined') return;
+
+        const audioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!audioContextClass) return;
+
+        const context = new audioContextClass();
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(880, context.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(660, context.currentTime + 0.14);
+
+        gainNode.gain.setValueAtTime(0.001, context.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.02);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.2);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+
+        oscillator.start(context.currentTime);
+        oscillator.stop(context.currentTime + 0.2);
+
+        window.setTimeout(() => {
+            context.close().catch(() => undefined);
+        }, 250);
+    }
+
+    function triggerIncomingAlert(room: ChatRoom, message: ChatMessage) {
+        const senderName = getParticipantName(room, message.senderId) || '새 메시지';
+        const nextAlert: ChatAlert = {
+            id: `alert-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            roomId: room.id,
+            senderName,
+            content: message.content || '(내용 없음)',
+            createdAt: new Date()
+        };
+
+        chatAlerts.value = [nextAlert, ...chatAlerts.value].slice(0, 5);
+        window.setTimeout(() => {
+            dismissAlert(nextAlert.id);
+        }, 4000);
+
+        playIncomingAlertSound();
+
+        if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
+        if (document.visibilityState === 'visible') return;
+        if (Notification.permission !== 'granted') return;
+
+        const browserNotification = new Notification(senderName, {
+            body: message.content || '새 메시지가 도착했습니다.'
+        });
+        browserNotification.onclick = () => {
+            window.focus();
+            selectRoom(room.id);
+            browserNotification.close();
+        };
+    }
+
+    function applyRoomEventFromMessage(roomId: string, message: ChatMessage) {
+        if (message.type !== 'SYSTEM') return;
+        if (message.metadata?.eventType !== 'ROOM_LEFT') return;
+
+        const participantId =
+            typeof message.metadata?.participantId === 'string' ? message.metadata.participantId : null;
+        if (!participantId) return;
+
+        const roomIndex = rooms.value.findIndex((room) => room.id === roomId);
+        if (roomIndex === -1) return;
+
+        const room = rooms.value[roomIndex];
+        const normalizedParticipantId = normalizeIdForRoom(room, participantId);
+        const leftBy = room.leftBy || [];
+        if (!leftBy.some((leftParticipantId) => idsMatch(leftParticipantId, normalizedParticipantId))) {
+            room.leftBy = [...leftBy, normalizedParticipantId];
+        }
+    }
 
     function connectWebSocket(): Promise<void> {
         return new Promise((resolve, reject) => {
@@ -74,7 +309,7 @@ export const useChatStore = defineStore('chat', () => {
             stompClient = new Client({
                 webSocketFactory: () =>
                     new SockJS(
-                        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/ws/chat`
+                        `${API_BASE_URL}/ws/chat`
                     ),
                 connectHeaders: {
                     Authorization: `Bearer ${token}`
@@ -132,6 +367,8 @@ export const useChatStore = defineStore('chat', () => {
                     messages.value[roomId] = [];
                 }
 
+                applyRoomEventFromMessage(roomId, msg);
+
                 // Remove from pending queue if present
                 pendingMessages.value = pendingMessages.value.filter(
                     (p) => !(
@@ -178,14 +415,22 @@ export const useChatStore = defineStore('chat', () => {
                     rooms.value[roomIndex].lastMessage = msg;
                     rooms.value[roomIndex].updatedAt = msg.createdAt;
 
-                    // 현재 방이 아닌 경우 unreadCount 증가
-                    if (currentRoomId.value !== roomId) {
+                    const roomIsVisible = isRoomVisible(roomId);
+
+                    // 실제로 보이지 않는 방인 경우 unreadCount 증가
+                    if (!roomIsVisible) {
                         const myIds = getMyParticipantIds();
                         rooms.value[roomIndex].participants.forEach((p) => {
                             if (!myIds.includes(p)) return;
                             rooms.value[roomIndex].unreadCount[p] =
                                 (rooms.value[roomIndex].unreadCount[p] || 0) + 1;
                         });
+                    }
+
+                    const isMine = getMyParticipantIds().includes(msg.senderId);
+                    const shouldAlert = !roomIsVisible && !isMine && !isRoomMuted(roomId);
+                    if (shouldAlert) {
+                        triggerIncomingAlert(rooms.value[roomIndex], msg);
                     }
                 }
             } catch (e) {
@@ -297,12 +542,21 @@ export const useChatStore = defineStore('chat', () => {
 
     // ── Getters ────────────────────────────────────────────────────────────
     function normalizeIdForRoom(room: ChatRoom, id: string): string {
-        const raw = String(id);
-        if (/^[ef]\d+$/i.test(raw)) return raw.toLowerCase();
-        const possibleEmployer = `e${raw}`;
-        const possibleFreelancer = `f${raw}`;
-        if (room.participantNames[possibleEmployer]) return possibleEmployer;
-        if (room.participantNames[possibleFreelancer]) return possibleFreelancer;
+        const raw = String(id).trim();
+        if (!raw) return raw;
+
+        const matchedParticipant = room.participants.find((participantId) => idsMatch(participantId, raw));
+        if (matchedParticipant) {
+            return String(matchedParticipant);
+        }
+
+        const matchedParticipantNameKey = Object.keys(room.participantNames || {}).find((participantId) =>
+            idsMatch(participantId, raw)
+        );
+        if (matchedParticipantNameKey) {
+            return matchedParticipantNameKey;
+        }
+
         return raw;
     }
 
@@ -420,37 +674,46 @@ export const useChatStore = defineStore('chat', () => {
         names: { [key: string]: string },
         context: any
     ) {
-        const myIds = getMyParticipantIds();
         const myNormalizedId = getCurrentChatParticipantId();
-        const normalizedParticipants = Array.from(
-            new Set(
-                participants.map((id) => {
-                    const sid = String(id);
-                    if (myNormalizedId && myIds.includes(sid)) return myNormalizedId;
-                    return sid;
-                })
-            )
-        );
+        const normalizedParticipants = normalizeParticipantListForCurrentUser(participants);
+
+        const normalizedNames = normalizedParticipants.reduce<Record<string, string>>((acc, participantId) => {
+            const resolvedName = resolveParticipantNameFromMap(names, participantId);
+            if (resolvedName) {
+                acc[participantId] = resolvedName;
+            }
+            return acc;
+        }, {});
+
+        if (myNormalizedId && authStore.user) {
+            normalizedNames[myNormalizedId] = normalizedNames[myNormalizedId] ||
+                (authStore.user.role === 'EMPLOYER'
+                    ? authStore.user.companyName || authStore.user.name
+                    : authStore.user.name);
+        }
 
         const existingRoom = rooms.value.find(
             (r) =>
-                r.participants.every((p) => normalizedParticipants.includes(p)) &&
-                normalizedParticipants.every((p) => r.participants.includes(p)) &&
-                r.relatedJobId !== undefined &&
-                context.relatedJobId !== undefined &&
-                r.relatedJobId === context.relatedJobId
+                participantsMatch(r.participants, normalizedParticipants) &&
+                (
+                    (r.relatedApplicationId && context.relatedApplicationId && r.relatedApplicationId === context.relatedApplicationId) ||
+                    (r.relatedProposalId && context.relatedProposalId && r.relatedProposalId === context.relatedProposalId) ||
+                    (r.relatedJobId && context.relatedJobId && r.relatedJobId === context.relatedJobId) ||
+                    (!r.relatedApplicationId && !r.relatedProposalId && !r.relatedJobId &&
+                        !context.relatedApplicationId && !context.relatedProposalId && !context.relatedJobId)
+                )
         );
         if (existingRoom) return existingRoom.id;
 
         try {
             const newRoom = await apiCreateRoom({
                 participants: normalizedParticipants,
-                participantNames: names,
+                participantNames: normalizedNames,
                 relatedJobId: context.relatedJobId,
                 relatedApplicationId: context.relatedApplicationId,
                 relatedProposalId: context.relatedProposalId
             });
-            rooms.value.unshift(newRoom);
+            rooms.value = [newRoom, ...rooms.value.filter((room) => room.id !== newRoom.id)];
             messages.value[newRoom.id] = [];
             if (stompClient && stompClient.connected) {
                 subscribeToRoom(newRoom.id);
@@ -472,42 +735,28 @@ export const useChatStore = defineStore('chat', () => {
         return leftBy.some((id) => !myIds.includes(id));
     }
 
-    function leaveRoom(roomId: string) {
+    async function leaveRoom(roomId: string) {
         const roomIndex = rooms.value.findIndex((room) => room.id === roomId);
-        if (roomIndex === -1) return;
+        if (roomIndex === -1) return false;
 
-        const room = rooms.value[roomIndex];
-        const myIds = getMyParticipantIds();
-        const leaverName = authStore.user?.name || '상대방';
-
-        sendSystemMessage(roomId, `${leaverName}님이 채팅방을 나갔습니다.`, 'SYSTEM');
-
-        const currentLeftBy = room.leftBy || [];
-        const primaryId = getCurrentChatParticipantId();
-        const leftBy = Array.from(
-            new Set([
-                ...currentLeftBy.map((id) => normalizeIdForRoom(room, String(id))),
-                ...(primaryId ? [normalizeIdForRoom(room, primaryId)] : []),
-                ...myIds.map((id) => normalizeIdForRoom(room, String(id)))
-            ])
-        );
-
-        const participantIds = Array.from(
-            new Set(room.participants.map((id) => normalizeIdForRoom(room, String(id))))
-        );
-        const hasEveryoneLeft = participantIds.every((id) => leftBy.includes(id));
-
-        if (hasEveryoneLeft) {
-            rooms.value = rooms.value.filter((r) => r.id !== roomId);
-            if (messages.value[roomId]) delete messages.value[roomId];
-        } else {
-            rooms.value[roomIndex] = { ...room, leftBy, updatedAt: new Date() };
+        try {
+            await apiLeaveRoom(roomId);
+        } catch (error) {
+            console.error('[Chat] Failed to leave room:', error);
+            return false;
         }
+
+        rooms.value = rooms.value.filter((r) => r.id !== roomId);
+        if (messages.value[roomId]) delete messages.value[roomId];
+        if (hasLoadedHistory.value[roomId]) delete hasLoadedHistory.value[roomId];
+        if (isLoadingMessages.value[roomId]) delete isLoadingMessages.value[roomId];
+        if (messageBuffer.value[roomId]) delete messageBuffer.value[roomId];
 
         unsubscribeFromRoom(roomId);
 
         if (currentRoomId.value === roomId) currentRoomId.value = null;
         openDockedRooms.value = openDockedRooms.value.filter((r) => r.roomId !== roomId);
+        return true;
     }
 
     function updateRoomContract(roomId: string, contractId: number | null) {
@@ -519,9 +768,46 @@ export const useChatStore = defineStore('chat', () => {
         };
     }
 
+    async function persistRoomContract(roomId: string, contractId: number | null) {
+        const previousRoom = rooms.value.find((r) => r.id === roomId);
+        const previousContractId = previousRoom?.contractId ?? null;
+
+        try {
+            const updatedRoom = await apiUpdateChatRoomContract(roomId, contractId);
+            const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
+            if (roomIndex === -1) {
+                rooms.value = [updatedRoom, ...rooms.value];
+                return true;
+            }
+
+            rooms.value[roomIndex] = {
+                ...rooms.value[roomIndex],
+                ...updatedRoom
+            };
+            return true;
+        } catch (error) {
+            console.error('[Chat] Failed to persist room contract:', error);
+            updateRoomContract(roomId, previousContractId);
+            return false;
+        }
+    }
+
     // ── Docking Chat State ─────────────────────────────────────────────────
     const isRoomListOpen = ref(false);
     const openDockedRooms = ref<{ roomId: string; minimized: boolean }[]>([]);
+
+    function setMainChatVisible(isVisible: boolean) {
+        isMainChatVisible.value = isVisible;
+    }
+
+    function isRoomVisible(roomId: string) {
+        if (isMainChatVisible.value && currentRoomId.value === roomId) {
+            return true;
+        }
+
+        const dockedRoom = openDockedRooms.value.find((room) => room.roomId === roomId);
+        return Boolean(dockedRoom && !dockedRoom.minimized);
+    }
 
     function toggleRoomList() {
         isRoomListOpen.value = !isRoomListOpen.value;
@@ -582,6 +868,7 @@ export const useChatStore = defineStore('chat', () => {
         getMyParticipantIds,
         getOtherParticipantId,
         isRoomListOpen,
+        setMainChatVisible,
         openDockedRooms,
         toggleRoomList,
         openDockedRoom,
@@ -591,8 +878,15 @@ export const useChatStore = defineStore('chat', () => {
         resetDockedUIState,
         leaveRoom,
         isRoomReadOnly,
-        updateRoomContract
+        updateRoomContract,
+        persistRoomContract,
+        chatAlerts,
+        dismissAlert,
+        getParticipantName,
+        getOtherParticipantName
     };
 });
+
+
 
 

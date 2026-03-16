@@ -73,6 +73,11 @@ const routes: Array<RouteRecordRaw> = [
                 component: () => import('@/views/employer/Applications/ApplicationList.vue')
             },
             {
+                path: 'applications/:applicationId/reject',
+                name: 'employer.applications.reject',
+                component: () => import('@/views/employer/Applications/ApplicationRejectReasonWrite.vue')
+            },
+            {
                 path: 'recommended',
                 name: 'employer.recommended',
                 component: () => import('@/views/employer/Recommended/RecommendedView.vue')

@@ -1,5 +1,7 @@
-import { defineStore } from 'pinia';
+﻿import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import apiClient from '@/api/axiosInstance';
+import { uploadEmployerLogo } from '@/api/MyPage/employer';
 import type { EmployerProfile, FreelancerProfile } from '@/types/onboarding';
 
 export const useOnboardingStore = defineStore('onboarding', () => {
@@ -9,11 +11,12 @@ export const useOnboardingStore = defineStore('onboarding', () => {
 
     // Initial Data State
     const employerData = ref<Partial<EmployerProfile>>({
-        size: 'SIZE_1_TO_10' // Default enum value
+        size: 'S1_4' // Default enum value aligned with BE Scale
     });
 
     const freelancerData = ref<Partial<FreelancerProfile>>({
-        grade: 'JUNIOR', // Default enum value
+        job: '',
+        hope_salary: undefined,
         work_type: 'PERSONAL',
         work_style: 'REMOTE'
     });
@@ -45,12 +48,25 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     async function submitEmployerOnboarding() {
         isLoading.value = true;
         try {
-            // TODO: API call to save profile
-            // await api.post('/employers/onboarding', employerData.value);
+            const logoFile = employerData.value.logo_file;
+            if (logoFile) {
+                await uploadEmployerLogo(logoFile);
+            }
+            const payload = {
+                companyName: employerData.value.company_name ?? '',
+                industry: employerData.value.industry ?? '',
+                scale: employerData.value.size ?? '',
+                location: employerData.value.location ?? '',
+                websiteUrl: employerData.value.website ?? '',
+                description: employerData.value.description ?? ''
+            };
 
-            // Mock delay
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            return true;
+            const res = await apiClient.put('/api/employer/mypage/profile', payload);
+            if (res.data?.success === true) {
+                return true;
+            }
+            console.error(res.data?.message ?? 'Failed to submit employer onboarding');
+            return false;
         } catch (e) {
             console.error(e);
             return false;
@@ -62,11 +78,24 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     async function submitFreelancerOnboarding() {
         isLoading.value = true;
         try {
-            // TODO: API call to save profile
-            // await api.post('/freelancers/onboarding', freelancerData.value);
+            const payload = {
+                job: freelancerData.value.job ?? '',
+                introduction: freelancerData.value.introduction ?? '',
+                careerYears: freelancerData.value.career_years ?? 0,
+                wage: freelancerData.value.hope_salary ?? 0,
+                skills: freelancerData.value.freelancer_skills ?? [],
+                workType: freelancerData.value.work_type ?? '',
+                availableStartDate: freelancerData.value.start_date ?? null,
+                workStyle: freelancerData.value.work_style ?? '',
+                workLocation: freelancerData.value.location ?? ''
+            };
 
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            return true;
+            const res = await apiClient.put('/api/freelancer/mypage/profile', payload);
+            if (res.data?.success === true) {
+                return true;
+            }
+            console.error(res.data?.message ?? 'Failed to submit freelancer onboarding');
+            return false;
         } catch (e) {
             console.error(e);
             return false;

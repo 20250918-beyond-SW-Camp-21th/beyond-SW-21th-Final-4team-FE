@@ -21,17 +21,43 @@ const jobStore = useJobStore();
 
 const message = ref('');
 const selectedJobId = ref('');
+const isSubmitting = ref(false);
 
 onMounted(async () => {
   try {
-    await jobStore.fetchJobPostings();
+    await Promise.all([
+      jobStore.fetchJobPostings(),
+      freelancerStore.fetchEmployerProposals().catch((error) => {
+        console.warn('Failed to load existing employer proposals for proposal modal:', error);
+      }),
+    ]);
   } catch (error) {
     console.error('Failed to load employer jobs for proposal modal:', error);
     window.alert('공고 목록을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
   }
 });
 
-const employerJobs = computed(() => jobStore.myJobs.filter((job) => job.status === 'OPEN'));
+const proposedJobIdsForFreelancer = computed(() => {
+  const freelancerId = String(props.freelancer.id);
+  const employerId = String(authStore.user?.id ?? '');
+
+  return new Set(
+    freelancerStore.proposals
+      .filter(
+        (proposal) =>
+          proposal.freelancerId === freelancerId &&
+          proposal.employerId === employerId &&
+          proposal.jobId,
+      )
+      .map((proposal) => proposal.jobId as string),
+  );
+});
+
+const openEmployerJobs = computed(() => jobStore.myJobs.filter((job) => job.status === 'OPEN'));
+
+const employerJobs = computed(() =>
+  openEmployerJobs.value.filter((job) => !proposedJobIdsForFreelancer.value.has(job.id))
+);
 
 watch(
   employerJobs,
@@ -53,17 +79,7 @@ const isSubmitDisabled = computed(
   () => employerJobs.value.length === 0 || !selectedJobId.value || !message.value.trim()
 );
 
-const getNormalizedEmployerId = () => {
-  if (!authStore.user) return '';
-
-  const rawId = String(authStore.user.id);
-  if (/^[ef]\d+$/i.test(rawId)) {
-    return rawId;
-  }
-  return `e${rawId}`;
-};
-
-const handleSubmit = () => {
+const handleSubmit = async () => {
   if (!authStore.user) return;
   if (!selectedJobId.value) {
     alert('제안할 프로젝트를 선택해주세요.');
@@ -76,19 +92,32 @@ const handleSubmit = () => {
     return;
   }
 
-  // Use store action to add proposal
-  freelancerStore.addProposal({
-    employerId: getNormalizedEmployerId(),
-    employerName: authStore.user.companyName || authStore.user.name,
-    freelancerId: props.freelancer.id,
-    freelancerName: props.freelancer.name,
-    jobId: selectedJobId.value,
-    message: trimmedMessage,
-    status: 'PENDING',
-  });
+  isSubmitting.value = true;
 
-  alert(`${props.freelancer.name}님께 제안을 보냈습니다!`);
-  emit('close');
+  try {
+    await freelancerStore.addProposal({
+      employerId: String(authStore.user.id),
+      employerName: authStore.user.companyName || authStore.user.name,
+      freelancerId: String(props.freelancer.id),
+      freelancerName: props.freelancer.name,
+      jobId: selectedJobId.value,
+      message: trimmedMessage,
+      status: 'PENDING',
+    });
+
+    alert(`${props.freelancer.name}님께 제안을 보냈습니다!`);
+    emit('close');
+  } catch (error: any) {
+    console.error('Failed to send proposal:', error);
+    alert(
+      error?.response?.data?.error?.message ||
+      error?.response?.data?.message ||
+      error?.message ||
+      '제안 전송에 실패했습니다.'
+    );
+  } finally {
+    isSubmitting.value = false;
+  }
 };
 </script>
 
@@ -136,7 +165,7 @@ const handleSubmit = () => {
           <select
             v-model="selectedJobId"
             class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl focus:outline-none focus:border-blue-500 text-white"
-            :disabled="employerJobs.length === 0"
+            :disabled="employerJobs.length === 0 || isSubmitting"
             required
           >
             <option value="" disabled class="text-black">프로젝트를 선택하세요</option>
@@ -150,7 +179,11 @@ const handleSubmit = () => {
             </option>
           </select>
           <p v-if="employerJobs.length === 0" class="mt-2 text-sm text-amber-300">
-            제안 가능한 모집중 프로젝트가 없습니다. 먼저 공고를 등록하거나 상태를 확인해주세요.
+            {{
+              openEmployerJobs.length === 0
+                ? '제안 가능한 모집중 프로젝트가 없습니다. 먼저 공고를 등록하거나 상태를 확인해주세요.'
+                : '이 프리랜서에게 이미 제안한 공고만 남아 있습니다.'
+            }}
           </p>
         </div>
 
@@ -180,15 +213,15 @@ const handleSubmit = () => {
           </button>
           <button
             type="submit"
-            :disabled="isSubmitDisabled"
+            :disabled="isSubmitDisabled || isSubmitting"
             class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl hover:shadow-xl transition-all font-semibold flex items-center justify-center gap-2"
-            :class="isSubmitDisabled ? 'opacity-50 cursor-not-allowed hover:shadow-none' : ''"
+            :class="(isSubmitDisabled || isSubmitting) ? 'opacity-50 cursor-not-allowed hover:shadow-none' : ''"
             v-motion
             :hover="{ scale: 1.02 }"
             :tap="{ scale: 0.98 }"
           >
             <Send class="w-5 h-5" />
-            제안 보내기
+            {{ isSubmitting ? '전송 중...' : '제안 보내기' }}
           </button>
         </div>
       </form>

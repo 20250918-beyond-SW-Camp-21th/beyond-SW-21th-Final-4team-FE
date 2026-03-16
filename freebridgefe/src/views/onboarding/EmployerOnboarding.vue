@@ -2,7 +2,7 @@
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'vue-router';
-import { Building2, ArrowRight, Mail, Phone, Link, MapPin, Globe } from 'lucide-vue-next';
+import { Building2, ArrowRight, Mail, Link, MapPin, Globe } from 'lucide-vue-next';
 import AnimatedBackground from '../auth/components/AnimatedBackground.vue';
 import { onMounted } from 'vue';
 
@@ -11,6 +11,8 @@ const authStore = useAuthStore();
 const router = useRouter();
 
 onMounted(() => {
+    store.ensureDraftForUser(authStore.user?.id, 'EMPLOYER');
+
     // Reset step to 1
     store.setStep(1);
     
@@ -21,8 +23,8 @@ onMounted(() => {
 
 const handleFinish = async () => {
     // Validate all required fields across both steps
-    if (!store.employerData.company_name || !store.employerData.email || !store.employerData.phone) {
-        alert('기본 정보(기업명, 이메일, 전화번호)를 입력해주세요.');
+    if (!store.employerData.company_name || !store.employerData.email) {
+        alert('기본 정보(기업명, 이메일)를 입력해주세요.');
         store.setStep(1);
         return;
     }
@@ -33,6 +35,7 @@ const handleFinish = async () => {
 
     const success = await store.submitEmployerOnboarding();
     if (success) {
+        store.resetOnboardingState();
         alert('온보딩이 완료되었습니다. Freebridge 이용 가이드로 이동합니다.');
         router.push('/guide'); // Redirect to Guide as requested
     }
@@ -40,7 +43,7 @@ const handleFinish = async () => {
 
 const nextStep = () => {
     if (store.currentStep === 1) {
-         if (!store.employerData.company_name || !store.employerData.email || !store.employerData.phone) {
+         if (!store.employerData.company_name || !store.employerData.email) {
              alert('필수 정보를 입력해주세요.');
              return;
          }
@@ -100,7 +103,7 @@ const nextStep = () => {
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-6" v-motion :initial="{ opacity: 0, x: 20 }" :enter="{ opacity: 1, x: 0, transition: { delay: 200 } }">
+            <div v-motion :initial="{ opacity: 0, x: 20 }" :enter="{ opacity: 1, x: 0, transition: { delay: 200 } }">
                 <div>
                     <label class="block text-sm font-medium text-white/80 mb-2">대표 이메일 <span class="text-red-400">*</span></label>
                     <div class="relative group">
@@ -116,21 +119,6 @@ const nextStep = () => {
                         />
                     </div>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-white/80 mb-2">대표 전화번호 <span class="text-red-400">*</span></label>
-                    <div class="relative group">
-                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-blue-400">
-                            <Phone class="h-5 w-5 text-white/40" />
-                        </div>
-                        <input 
-                            type="tel" 
-                            :value="store.employerData.phone"
-                            @input="e => store.updateEmployerData({ phone: (e.target as HTMLInputElement).value })"
-                            class="pl-12 block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/50 focus:border-transparent sm:text-sm py-4 px-4 text-white placeholder:text-white/30 transition-all duration-300 hover:bg-white/10"
-                            placeholder="02-1234-5678"
-                        />
-                    </div>
-                </div>
             </div>
 
             <div v-motion :initial="{ opacity: 0, x: 20 }" :enter="{ opacity: 1, x: 0, transition: { delay: 300 } }">
@@ -140,11 +128,10 @@ const nextStep = () => {
                         <Link class="h-5 w-5 text-white/40" />
                     </div>
                     <input 
-                        type="url" 
-                        :value="store.employerData.logo_url"
-                        @input="e => store.updateEmployerData({ logo_url: (e.target as HTMLInputElement).value })"
+                        type="file" 
+                        accept="image/*"
+                        @change="e => store.updateEmployerData({ logo_file: (e.target as HTMLInputElement).files?.[0] ?? null })"
                         class="pl-12 block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/50 focus:border-transparent sm:text-sm py-4 px-4 text-white placeholder:text-white/30 transition-all duration-300 hover:bg-white/10"
-                        placeholder="https://example.com/logo.png"
                     />
                 </div>
             </div>
@@ -197,11 +184,13 @@ const nextStep = () => {
                             @change="e => store.updateEmployerData({ size: (e.target as HTMLSelectElement).value as any })"
                             class="block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/50 focus:border-transparent sm:text-sm py-4 px-4 text-white transition-all duration-300 hover:bg-white/10 [&>option]:bg-[#1a1a1a]"
                         >
-                            <option value="SIZE_1_TO_10">1-10명</option>
-                            <option value="SIZE_10_TO_50">10-50명</option>
-                            <option value="SIZE_50_TO_100">50-100명</option>
-                            <option value="SIZE_100_TO_500">100-500명</option>
-                            <option value="SIZE_500_PLUS">500명 이상</option>
+                            <option value="S1_4">1-4명</option>
+                            <option value="S5_9">5-9명</option>
+                            <option value="S10_29">10-29명</option>
+                            <option value="S30_99">30-99명</option>
+                            <option value="S100_299">100-299명</option>
+                            <option value="S300_999">300-999명</option>
+                            <option value="S1000_PLUS">1000명 이상</option>
                         </select>
                     </div>
                 </div>

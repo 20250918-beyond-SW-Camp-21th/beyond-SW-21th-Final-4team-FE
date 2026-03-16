@@ -32,10 +32,12 @@ onMounted(async () => {
       employerId: "hidden",
       employerName: "기업(AI 추천)",
       title: rec.nameOrTitle,
-      description: `이 공고는 회원님의 프로필 정보와 ${Math.round(rec.matchScore * 100)}% 일치합니다.`,
+      description:
+        rec.description ||
+        `이 공고는 회원님의 프로필 정보와 ${Math.round(rec.matchScore * 100)}% 일치합니다.`,
       techStack: rec.skills || [],
-      budget: 0, // Not provided by AI recommendation, avoid displaying 0
-      duration: 0, // Not provided by AI recommendation, avoid displaying 0
+      budget: rec.budget || 0,
+      duration: rec.duration || 0,
       status: "OPEN",
       createdAt: new Date(),
       updatedAt: new Date(),
