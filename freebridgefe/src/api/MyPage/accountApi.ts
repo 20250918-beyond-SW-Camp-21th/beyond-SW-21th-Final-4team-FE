@@ -25,6 +25,14 @@ export interface EmployerSubscriptionResponse {
     nextBillingDate: string | null;
 }
 
+export interface EmployerSubscriptionChangeResult {
+    currentPlanGrade: string;
+    pendingPlanGrade: string | null;
+    status: string;
+    nextBillingDate: string | null;
+    message: string;
+}
+
 export interface EmployerNotificationSettings {
     emailEnabled: boolean;
 }
@@ -79,11 +87,18 @@ export const getEmployerSubscription = async (): Promise<EmployerSubscriptionRes
     return response.data.data;
 };
 
-export const updateEmployerSubscription = async (targetPlan: string): Promise<boolean> => {
-    await apiClient.put<ApiResponse<null>>('/api/employer/mypage/account/subscription', {
-        targetPlan
-    });
-    return true;
+export const updateEmployerSubscription = async (
+    targetPlan: string,
+    billingKey?: string | null
+): Promise<EmployerSubscriptionChangeResult> => {
+    const response = await apiClient.put<ApiResponse<EmployerSubscriptionChangeResult>>(
+        '/api/employer/mypage/account/subscription',
+        {
+            targetPlan,
+            billingKey: billingKey ?? null,
+        }
+    );
+    return response.data.data;
 };
 
 export const getEmployerNotificationSettings = async (): Promise<EmployerNotificationSettings> => {

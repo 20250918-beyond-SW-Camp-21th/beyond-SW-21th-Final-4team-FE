@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { requestPayment, PaymentPayMethod } from '@portone/browser-sdk/v2';
+import { useRoute, useRouter } from 'vue-router';
+import { requestIssueBillingKey, requestPayment, PaymentPayMethod, BillingKeyMethod } from '@portone/browser-sdk/v2';
 import {
     CreditCard,
     Search,
@@ -11,18 +12,25 @@ import {
     Loader2,
     AlertCircle,
     CheckCircle2,
+    ArrowLeft,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
+import { updateEmployerSubscription } from '@/api/MyPage/accountApi';
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
+const route = useRoute();
+const router = useRouter();
 
 const searchQuery = ref('');
 const selectedSort = ref<'due_soon' | 'amount_desc' | 'amount_asc'>('due_soon');
 const payingContractId = ref<number | null>(null);
 const paymentError = ref<string | null>(null);
 const paymentSuccess = ref<string | null>(null);
+const subscriptionError = ref<string | null>(null);
+const subscriptionSuccess = ref<string | null>(null);
+const isSubscriptionProcessing = ref(false);
 
 const storeId = import.meta.env.VITE_PORTONE_STORE_ID as string | undefined;
 const channelKey = import.meta.env.VITE_PORTONE_CHANNEL_KEY as string | undefined;
@@ -40,6 +48,27 @@ const debugPortOneInfo = computed(() => {
         channelKey: maskValue(channelKey),
     };
 });
+
+type SubscriptionPlanType = 'PRO' | 'PRIME';
+
+const subscriptionMode = computed(() => route.query.mode === 'subscription');
+const requestedSubscriptionPlan = computed<SubscriptionPlanType | null>(() => {
+    const plan = typeof route.query.plan === 'string' ? route.query.plan.toUpperCase() : '';
+    return plan === 'PRO' || plan === 'PRIME' ? (plan as SubscriptionPlanType) : null;
+});
+
+const subscriptionPlanMeta: Record<SubscriptionPlanType, { label: string; price: number; description: string }> = {
+    PRO: {
+        label: 'PRO PLAN',
+        price: 9000,
+        description: '추천 기능과 수수료 할인 혜택이 포함된 고용주 구독 플랜',
+    },
+    PRIME: {
+        label: 'PRIME PLAN',
+        price: 19000,
+        description: '추천 기능, 더 큰 수수료 할인, AI 컨설팅 혜택이 포함된 최상위 플랜',
+    },
+};
 
 const myContracts = computed(() => {
     if (!authStore.user) return [];
@@ -102,6 +131,78 @@ const createPaymentId = () => {
         return `payment-${crypto.randomUUID()}`;
     }
     return `payment-${Date.now()}`;
+};
+
+const createBillingIssueId = () => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return `billing-${crypto.randomUUID()}`;
+    }
+    return `billing-${Date.now()}`;
+};
+
+const goBackFromSubscriptionPayment = async () => {
+    await router.push({
+        name: 'employer.mypage',
+        query: { tab: 'account' },
+    });
+};
+
+const handleSubscriptionPayment = async () => {
+    subscriptionError.value = null;
+    subscriptionSuccess.value = null;
+
+    const plan = requestedSubscriptionPlan.value;
+    if (!plan) {
+        subscriptionError.value = '결제할 구독 플랜 정보가 없습니다.';
+        return;
+    }
+
+    if (!storeId || !channelKey) {
+        subscriptionError.value = '포트원 설정이 누락되었습니다. VITE_PORTONE_STORE_ID와 VITE_PORTONE_CHANNEL_KEY를 확인해주세요.';
+        return;
+    }
+
+    try {
+        isSubscriptionProcessing.value = true;
+        const billingResponse = await requestIssueBillingKey({
+            storeId,
+            channelKey,
+            billingKeyMethod: BillingKeyMethod.CARD,
+            issueId: createBillingIssueId(),
+            issueName: `${subscriptionPlanMeta[plan].label} 구독 결제 수단 등록`,
+            customer: {
+                customerId: authStore.user?.id ? String(authStore.user.id) : undefined,
+                fullName: authStore.user?.name,
+                email: authStore.user?.email,
+            },
+            customData: {
+                mode: 'subscription',
+                planType: plan,
+            },
+            redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+        });
+
+        if (!billingResponse) {
+            subscriptionError.value = '빌링키 발급이 취소되었거나 완료되지 않았습니다.';
+            return;
+        }
+
+        if (billingResponse.code) {
+            subscriptionError.value = billingResponse.message || `빌링키 발급 실패 (${billingResponse.code})`;
+            return;
+        }
+
+        const result = await updateEmployerSubscription(plan, billingResponse.billingKey);
+        subscriptionSuccess.value = result.message || `${subscriptionPlanMeta[plan].label} 결제가 완료되었습니다.`;
+    } catch (error: any) {
+        const apiErrorMessage = error?.response?.data?.error?.message
+            || error?.response?.data?.message
+            || error?.message;
+        subscriptionError.value = apiErrorMessage || '구독 결제 처리 중 오류가 발생했습니다.';
+        console.error('Subscription payment failed:', error);
+    } finally {
+        isSubscriptionProcessing.value = false;
+    }
 };
 
 const handlePayContract = async (contract: ContractWithDetails) => {
@@ -175,6 +276,10 @@ const handlePayContract = async (contract: ContractWithDetails) => {
 };
 
 onMounted(async () => {
+    if (subscriptionMode.value) {
+        return;
+    }
+
     try {
         await Promise.all([
             contractStore.fetchContracts(),
@@ -189,6 +294,86 @@ onMounted(async () => {
 
 <template>
     <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white">
+        <template v-if="subscriptionMode">
+            <div class="max-w-3xl mx-auto">
+                <button
+                    @click="goBackFromSubscriptionPayment"
+                    class="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                    <ArrowLeft class="w-4 h-4" />
+                    구독 관리로 돌아가기
+                </button>
+
+                <div class="bg-[#1e293b]/60 border border-white/10 rounded-[28px] p-8 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.75)]">
+                    <div class="flex items-center gap-3 mb-4">
+                        <CreditCard class="w-8 h-8 text-sky-300" />
+                        <div>
+                            <h1 class="text-3xl font-bold">구독 결제</h1>
+                            <p class="text-white/60 text-sm mt-1">빌링키를 발급한 뒤 선택한 구독 플랜으로 즉시 전환합니다.</p>
+                        </div>
+                    </div>
+
+                    <div v-if="requestedSubscriptionPlan" class="rounded-2xl bg-white/5 border border-white/10 p-6 mb-6">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-sm text-white/50 mb-2">선택한 플랜</div>
+                                <div class="text-2xl font-bold">{{ subscriptionPlanMeta[requestedSubscriptionPlan].label }}</div>
+                                <p class="text-sm text-white/60 mt-2">{{ subscriptionPlanMeta[requestedSubscriptionPlan].description }}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-white/50 mb-2">즉시 결제 금액</div>
+                                <div class="text-3xl font-bold">{{ formatCurrency(subscriptionPlanMeta[requestedSubscriptionPlan].price) }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-sky-500/10 border border-sky-400/20 p-5 text-sm text-sky-100 mb-6">
+                        <div class="font-semibold mb-2">결제 전 확인</div>
+                        <ul class="space-y-2 text-sky-50/85">
+                            <li>카드 정보를 등록하면 선택한 구독 플랜으로 즉시 변경됩니다.</li>
+                            <li>이후 정기 결제는 저장된 billingKey를 기준으로 진행됩니다.</li>
+                            <li>결제가 실패하면 플랜 변경도 적용되지 않습니다.</li>
+                        </ul>
+                    </div>
+
+                    <div
+                        v-if="subscriptionError"
+                        class="mb-4 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 flex items-start gap-2"
+                    >
+                        <AlertCircle class="w-5 h-5 mt-0.5" />
+                        <span>{{ subscriptionError }}</span>
+                    </div>
+
+                    <div
+                        v-if="subscriptionSuccess"
+                        class="mb-4 p-4 rounded-xl border border-green-500/40 bg-green-500/10 text-green-200 flex items-start gap-2"
+                    >
+                        <CheckCircle2 class="w-5 h-5 mt-0.5" />
+                        <span>{{ subscriptionSuccess }}</span>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+                        <button
+                            @click="goBackFromSubscriptionPayment"
+                            class="px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                        >
+                            취소
+                        </button>
+                        <button
+                            @click="handleSubscriptionPayment"
+                            :disabled="isSubscriptionProcessing || !requestedSubscriptionPlan"
+                            class="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 min-w-[180px]"
+                        >
+                            <Loader2 v-if="isSubscriptionProcessing" class="w-4 h-4 animate-spin" />
+                            <CreditCard v-else class="w-4 h-4" />
+                            {{ isSubscriptionProcessing ? '결제 처리 중' : '카드 등록 후 결제하기' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template v-else>
         <div class="mb-8">
             <div class="flex items-center gap-3 mb-3">
                 <CreditCard class="w-10 h-10 text-white" />
@@ -293,5 +478,6 @@ onMounted(async () => {
                 </button>
             </div>
         </div>
+        </template>
     </div>
 </template>

@@ -1,5 +1,6 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
   ArrowLeft,
@@ -27,11 +28,17 @@ defineEmits<{
 
 type PlanType = 'FREE' | 'PRO' | 'PRIME';
 type AccountSection = 'subscription' | 'profile';
+const PLAN_RANK: Record<PlanType, number> = {
+  FREE: 0,
+  PRO: 1,
+  PRIME: 2,
+};
 
 const activeSection = ref<AccountSection>('subscription');
 const isLoading = ref(false);
 const isSaving = ref(false);
 const authStore = useAuthStore();
+const router = useRouter();
 
 const accountInfo = ref({
   name: '',
@@ -230,18 +237,51 @@ const handlePlanChange = async (plan: PlanType) => {
   const selectedPlan = plans.value[plan];
   if (!selectedPlan) return;
 
-  if (confirm(`${selectedPlan.name}로 변경하시겠습니까?`)) {
-    try {
-      isLoading.value = true;
-      await updateEmployerSubscription(plan);
-      currentPlan.value = plan;
-      alert(`${selectedPlan.name}로 변경되었습니다.`);
-    } catch (error) {
-      console.error('Failed to change plan:', error);
-      alert('플랜 변경에 실패했습니다.');
-    } finally {
-      isLoading.value = false;
+  const isDowngrade = PLAN_RANK[plan] < PLAN_RANK[currentPlan.value];
+
+  if (isDowngrade) {
+    const warningMessage = plan === 'FREE'
+      ? [
+          'BASIC 플랜으로 다운그레이드하면 즉시 반영됩니다.',
+          '이미 결제된 금액은 환불되지 않습니다.',
+          '이 변경은 되돌릴 수 없습니다.',
+          '계속하시겠습니까?'
+        ].join('\n')
+      : [
+          `${selectedPlan.name}으로 다운그레이드하면 즉시 반영됩니다.`,
+          '이미 결제된 금액은 환불되지 않습니다.',
+          '이 변경은 되돌릴 수 없습니다.',
+          '계속하시겠습니까?'
+        ].join('\n');
+
+    if (!confirm(warningMessage)) {
+      return;
     }
+  } else if (!confirm(`${selectedPlan.name}로 변경하시겠습니까?`)) {
+    return;
+  }
+
+  if (!isDowngrade) {
+    await router.push({
+      name: 'employer.payments',
+      query: {
+        mode: 'subscription',
+        plan,
+      },
+    });
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    const result = await updateEmployerSubscription(plan);
+    currentPlan.value = normalizeEmployerPlan(result.currentPlanGrade);
+    alert(result.message || `${selectedPlan.name}로 변경되었습니다.`);
+  } catch (error) {
+    console.error('Failed to change plan:', error);
+    alert('플랜 변경에 실패했습니다.');
+  } finally {
+    isLoading.value = false;
   }
 };
 
