@@ -48,23 +48,14 @@ onMounted(async () => {
 
 const currentUser = computed(() => authStore.user);
 
-const isSameFreelancer = (freelancerId: string | number, freelancerName: string) => {
-  if (!currentUser.value) return false;
-  const idMatched = String(freelancerId) === String(currentUser.value.id);
-  const nameMatched = freelancerName === currentUser.value.name;
-  return idMatched || nameMatched;
-};
-
 const myApplications = computed(() => {
   if (!currentUser.value) return [];
-  return jobStore.applications.filter((app) => isSameFreelancer(app.freelancerId, app.freelancerName));
+  return jobStore.applications;
 });
 
 const receivedProposals = computed(() => {
   if (!currentUser.value) return [];
-  return freelancerStore.proposals.filter((proposal) =>
-    isSameFreelancer(proposal.freelancerId, proposal.freelancerName)
-  );
+  return freelancerStore.proposals;
 });
 
 const getJobTitle = (jobId: string) => {
@@ -143,15 +134,9 @@ const handleAcceptProposal = async (proposalId: string) => {
 
 const handleRejectProposal = async (proposalId: string) => {
   if (!window.confirm('이 제안을 거절하시겠습니까?')) return;
-  const reason = window.prompt('거절 사유를 입력해 주세요. (선택)');
-  if (reason === null) return;
 
   try {
-    const updated = await freelancerStore.updateProposalStatus(
-      proposalId,
-      'REJECTED',
-      reason.trim() || undefined
-    );
+    const updated = await freelancerStore.updateProposalStatus(proposalId, 'REJECTED');
     if (!updated) {
       actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
       alert('제안 상태 변경에 실패했습니다.');

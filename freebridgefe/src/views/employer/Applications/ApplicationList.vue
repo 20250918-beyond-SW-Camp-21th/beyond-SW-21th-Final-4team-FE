@@ -49,7 +49,6 @@ onMounted(async () => {
 
 const currentUser = computed(() => authStore.user);
 const myJobs = computed(() => jobStore.myJobs);
-const currentEmployerName = computed(() => currentUser.value?.companyName || currentUser.value?.name || '');
 
 const sortByCreatedAtDesc = <T extends { id: string; createdAt: Date | string }>(items: T[]) => {
   const latestById = new Map<string, T>();
@@ -75,13 +74,7 @@ const myReceivedApplications = computed(() =>
 const mySentProposals = computed(() => {
   if (!currentUser.value) return [];
 
-  return sortByCreatedAtDesc(
-    freelancerStore.proposals.filter((proposal) => {
-      const idMatched = String(proposal.employerId) === String(currentUser.value?.id);
-      const nameMatched = proposal.employerName === currentEmployerName.value;
-      return idMatched || nameMatched;
-    }),
-  );
+  return sortByCreatedAtDesc(freelancerStore.proposals);
 });
 
 const statusConfig: Record<ApplicationStatus, { icon: any; label: string; gradient: string }> = {
