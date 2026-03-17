@@ -34,6 +34,7 @@ import { getEmployerReviewSummary } from '@/api/MyPage/evaluationApi';
 import { getEmployerProjectStats } from '@/api/MyPage/projectApi';
 import { getEmployerSubscription } from '@/api/MyPage/accountApi';
 import ProfileIdentityAvatar from '@/components/profile/ProfileIdentityAvatar.vue';
+import { formatPhoneNumber } from '@/utils/phone';
 
 import EmployerProfileManagement from './components/EmployerProfileManagement.vue';
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
@@ -179,6 +180,8 @@ const companySizeLabel = computed(() => {
   const size = employerProfile.value.size ?? '';
   return SCALE_LABELS[size] ?? size;
 });
+
+const formattedEmployerPhone = computed(() => formatPhoneNumber(employerProfile.value.phone));
 
 const topCrmBanner = computed(() => {
   const alerts = employerProfile.value.crmAlerts;
@@ -538,7 +541,7 @@ const safeWebsiteUrl = computed(() => {
                                       <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">연락처</label>
                                       <div class="flex items-center gap-2 text-sm">
                                           <Phone class="w-4 h-4 text-slate-400" />
-                                          {{ employerProfile.phone }}
+                                          {{ formattedEmployerPhone || employerProfile.phone }}
                                       </div>
                                   </div>
                                   <div class="group">

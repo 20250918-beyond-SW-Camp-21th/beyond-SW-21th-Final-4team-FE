@@ -33,11 +33,19 @@ const toneClass = computed(() => {
           <h3 class="mt-4 text-xl font-semibold text-white">{{ alertStore.title }}</h3>
           <p class="mt-3 text-sm text-white/70 leading-relaxed whitespace-pre-line">{{ alertStore.message }}</p>
         </div>
-        <div class="p-6 pt-0 flex justify-end">
+        <div class="p-6 pt-0 flex justify-end gap-3">
+          <button
+            v-if="alertStore.showCancel"
+            type="button"
+            class="px-5 py-2.5 rounded-full border border-white/15 bg-white/5 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
+            @click="alertStore.cancel"
+          >
+            {{ alertStore.cancelText }}
+          </button>
           <button
             type="button"
             class="px-5 py-2.5 rounded-full bg-white text-slate-900 text-sm font-semibold hover:bg-white/90 transition-colors"
-            @click="alertStore.close"
+            @click="alertStore.confirm"
           >
             {{ alertStore.confirmText }}
           </button>
