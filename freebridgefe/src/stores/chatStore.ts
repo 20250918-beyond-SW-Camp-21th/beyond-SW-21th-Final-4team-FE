@@ -9,6 +9,7 @@ import {
     getChatMessages,
     createChatRoom as apiCreateRoom,
     leaveChatRoom as apiLeaveRoom,
+    markChatRoomAsRead as apiMarkChatRoomAsRead,
     updateChatRoomContract as apiUpdateChatRoomContract
 } from '@/api/chatApi';
 import { API_BASE_URL, getAccessToken } from '@/api/axiosInstance';
@@ -195,6 +196,7 @@ export const useChatStore = defineStore('chat', () => {
     const hasLoadedHistory = ref<{ [roomId: string]: boolean }>({});
     const chatAlerts = ref<ChatAlert[]>([]);
     const isMainChatVisible = ref(false);
+    const roomReadSyncInFlight = new Set<string>();
 
     // ── STOMP WebSocket ────────────────────────────────────────────────────
     let stompClient: Client | null = null;
@@ -295,6 +297,55 @@ export const useChatStore = defineStore('chat', () => {
         const leftBy = room.leftBy || [];
         if (!leftBy.some((leftParticipantId) => idsMatch(leftParticipantId, normalizedParticipantId))) {
             room.leftBy = [...leftBy, normalizedParticipantId];
+        }
+    }
+
+    function clearLocalUnreadCount(roomId: string) {
+        if (!authStore.user) return;
+
+        const myIds = getMyParticipantIds();
+        const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
+        if (roomIndex === -1) return;
+
+        myIds.forEach((id) => {
+            if (id in rooms.value[roomIndex].unreadCount) {
+                rooms.value[roomIndex].unreadCount[id] = 0;
+            }
+        });
+    }
+
+    async function markRoomAsRead(roomId: string, options?: { skipLocalReset?: boolean }) {
+        if (!authStore.user || !roomId) return false;
+
+        const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
+        if (roomIndex === -1) return false;
+
+        if (!options?.skipLocalReset) {
+            clearLocalUnreadCount(roomId);
+        }
+
+        if (roomReadSyncInFlight.has(roomId)) {
+            return true;
+        }
+
+        roomReadSyncInFlight.add(roomId);
+        try {
+            const updatedRoom = await apiMarkChatRoomAsRead(roomId);
+            const updatedRoomIndex = rooms.value.findIndex((r) => r.id === roomId);
+            if (updatedRoomIndex === -1) {
+                rooms.value = [updatedRoom, ...rooms.value];
+            } else {
+                rooms.value[updatedRoomIndex] = {
+                    ...rooms.value[updatedRoomIndex],
+                    ...updatedRoom
+                };
+            }
+            return true;
+        } catch (error) {
+            console.error('[Chat] Failed to sync room read state:', error);
+            return false;
+        } finally {
+            roomReadSyncInFlight.delete(roomId);
         }
     }
 
@@ -428,6 +479,9 @@ export const useChatStore = defineStore('chat', () => {
                     }
 
                     const isMine = getMyParticipantIds().includes(msg.senderId);
+                    if (roomIsVisible && !isMine) {
+                        void markRoomAsRead(roomId, { skipLocalReset: true });
+                    }
                     const shouldAlert = !roomIsVisible && !isMine && !isRoomMuted(roomId);
                     if (shouldAlert) {
                         triggerIncomingAlert(rooms.value[roomIndex], msg);
@@ -590,18 +644,7 @@ export const useChatStore = defineStore('chat', () => {
     // ── 방 선택: 메시지 로드 + WebSocket 구독 ──────────────────────────────
     function selectRoom(roomId: string) {
         currentRoomId.value = roomId;
-
-        if (authStore.user) {
-            const myIds = getMyParticipantIds();
-            const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
-            if (roomIndex !== -1) {
-                myIds.forEach((id) => {
-                    if (id in rooms.value[roomIndex].unreadCount) {
-                        rooms.value[roomIndex].unreadCount[id] = 0;
-                    }
-                });
-            }
-        }
+        void markRoomAsRead(roomId);
 
         if (!hasLoadedHistory.value[roomId]) {
             // Await fetchMessages completes before fully proceeding, but subscribe To room immediately.
@@ -768,12 +811,16 @@ export const useChatStore = defineStore('chat', () => {
         };
     }
 
-    async function persistRoomContract(roomId: string, contractId: number | null) {
+    async function persistRoomContract(
+        roomId: string,
+        contractId: number | null,
+        options?: { overrideExisting?: boolean }
+    ) {
         const previousRoom = rooms.value.find((r) => r.id === roomId);
         const previousContractId = previousRoom?.contractId ?? null;
 
         try {
-            const updatedRoom = await apiUpdateChatRoomContract(roomId, contractId);
+            const updatedRoom = await apiUpdateChatRoomContract(roomId, contractId, options);
             const roomIndex = rooms.value.findIndex((r) => r.id === roomId);
             if (roomIndex === -1) {
                 rooms.value = [updatedRoom, ...rooms.value];
@@ -877,6 +924,7 @@ export const useChatStore = defineStore('chat', () => {
         resetChatUIState,
         resetDockedUIState,
         leaveRoom,
+        markRoomAsRead,
         isRoomReadOnly,
         updateRoomContract,
         persistRoomContract,

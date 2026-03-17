@@ -160,7 +160,9 @@ const getStringQueryValue = (value: unknown) => {
 async function syncRoomContract(contract: ContractWithDetails) {
     const routeRoomId = getStringQueryValue(route.query.roomId);
     if (!routeRoomId) return;
-    await chatStore.persistRoomContract(routeRoomId, contract.contractId ?? contract.id);
+    await chatStore.persistRoomContract(routeRoomId, contract.contractId ?? contract.id, {
+        overrideExisting: true
+    });
 }
 
 async function openContractDetail(contract: ContractWithDetails) {
