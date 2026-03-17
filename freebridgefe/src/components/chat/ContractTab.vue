@@ -136,7 +136,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
@@ -205,10 +205,7 @@ const relatedContracts = computed(() => {
     );
 });
 
-const currentContract = computed(() => {
-    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
-    return linkedContract || null;
-});
+const currentContract = computed(() => contractStore.findContractForChatRoom(currentRoom.value));
 
 const hasMultipleContractCandidates = computed(() => {
     return !currentRoom.value?.contractId && relatedContracts.value.length > 1;
@@ -221,6 +218,31 @@ const hasContractCandidates = computed(() => {
 const isContractLookupPending = computed(() => {
     return contractStore.isContractsLoading && !contractStore.hasFetchedContracts && !currentContract.value;
 });
+
+const isRepairingRoomContract = ref(false);
+
+watch(
+    [currentRoom, currentContract, isEmployer],
+    ([room, contract, employer]) => {
+        if (!employer || !room || !contract?.contractId || isRepairingRoomContract.value) {
+            return;
+        }
+        if (Number(room.contractId) === Number(contract.contractId)) {
+            return;
+        }
+
+        isRepairingRoomContract.value = true;
+        void chatStore
+            .persistRoomContract(room.id, contract.contractId, { overrideExisting: true })
+            .catch((error) => {
+                console.error('Failed to repair room contract linkage:', error);
+            })
+            .finally(() => {
+                isRepairingRoomContract.value = false;
+            });
+    },
+    { immediate: true },
+);
 
 const statusConfig = {
     WAITING_SIGNATURE: {
@@ -309,6 +331,9 @@ function openContractPage() {
 
     if (currentRoom.value?.relatedJobId) {
         query.jobId = String(currentRoom.value.relatedJobId);
+    }
+    if (currentRoom.value?.relatedApplicationId) {
+        query.applicationId = String(currentRoom.value.relatedApplicationId);
     }
     if (currentRoom.value?.relatedProposalId) {
         query.proposalId = String(currentRoom.value.relatedProposalId);

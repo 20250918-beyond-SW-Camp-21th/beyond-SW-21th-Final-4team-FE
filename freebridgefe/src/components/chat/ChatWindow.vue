@@ -162,10 +162,7 @@ const otherParticipantName = computed(() => {
     return chatStore.getOtherParticipantName(currentRoom.value);
 });
 
-const roomContract = computed(() => {
-    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
-    return linkedContract || null;
-});
+const roomContract = computed(() => contractStore.findContractForChatRoom(currentRoom.value));
 
 const contractNeedsAttention = computed(() => {
     if (!authStore.user) return false;

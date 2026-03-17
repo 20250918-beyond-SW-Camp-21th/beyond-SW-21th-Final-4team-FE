@@ -273,12 +273,18 @@ const handleSign = async (data: { signature: string }) => {
     submitError.value = '';
 
     const isFlexible = workScheduleType.value === 'FLEXIBLE';
+    const routeJobId = getNumericQueryValue(route.query.jobId);
+    const routeApplicationId = getStringQueryValue(route.query.applicationId);
+    const routeProposalId = getStringQueryValue(route.query.proposalId);
 
     try {
         const response = await createContract({
             projectName: projectName.value,
             freelancerId: selectedFreelancer.value.freelancerId,
             freelancerName: selectedFreelancer.value.freelancerName,
+            relatedJobId: routeJobId ? String(routeJobId) : undefined,
+            relatedApplicationId: routeApplicationId ?? undefined,
+            relatedProposalId: routeProposalId ?? undefined,
             startDate: startDate.value,
             endDate: endDate.value,
             budget: Number(budget.value),
@@ -300,9 +306,12 @@ const handleSign = async (data: { signature: string }) => {
         contractStore.addContract(response);
         const routeRoomId = getStringQueryValue(route.query.roomId);
         if (routeRoomId) {
-            await chatStore.persistRoomContract(routeRoomId, response.contractId ?? response.id, {
+            const persistedRoomContract = await chatStore.persistRoomContract(routeRoomId, response.contractId ?? response.id, {
                 overrideExisting: true
             });
+            if (!persistedRoomContract) {
+                throw new Error('계약서는 생성되었지만 채팅방 동기화에 실패했습니다. 다시 시도해 주세요.');
+            }
         }
         createdContract.value = response;
         state.value = 'success';
@@ -412,7 +421,7 @@ const navigateToContracts = () => {
 };
 
 watch(
-    () => [route.query.jobId, route.query.proposalId, route.query.contractId],
+    () => [route.query.jobId, route.query.applicationId, route.query.proposalId, route.query.contractId],
     () => {
         void applyRouteContextToCreateForm();
     }
