@@ -22,16 +22,14 @@
             </div>
 
             <div
-                v-else-if="!currentContract"
+                v-else-if="!displayContract && !hasContractCandidates"
                 class="h-full min-h-[320px] flex flex-col items-center justify-center text-center space-y-4"
             >
                 <div class="w-20 h-20 rounded-2xl bg-slate-900 border border-white/5 flex items-center justify-center">
                     <FileTextIcon class="w-10 h-10 text-slate-600" />
                 </div>
                 <div class="space-y-2">
-                    <h3 class="text-lg font-bold text-white">
-                        {{ hasMultipleContractCandidates ? '계약이 여러 건 있어 자동 연결하지 않았습니다' : '연결된 계약이 없습니다' }}
-                    </h3>
+                    <h3 class="text-lg font-bold text-white">연결된 계약이 없습니다</h3>
                     <p class="text-sm text-slate-400 max-w-md leading-relaxed">
                         {{ emptyStateDescription }}
                     </p>
@@ -55,13 +53,70 @@
             </div>
 
             <div v-else class="space-y-6">
-                <div class="bg-slate-900 rounded-2xl border border-white/5 overflow-hidden shadow-lg">
+                <div
+                    v-if="hasContractCandidates"
+                    class="bg-slate-900 rounded-2xl border border-white/5 overflow-hidden shadow-lg"
+                >
+                    <div class="px-6 py-4 border-b border-white/5">
+                        <p class="text-xs uppercase tracking-[0.18em] text-slate-500 mb-2">계약 목록</p>
+                        <h3 class="text-lg font-bold text-white">
+                            {{ contractCandidates.length > 1 ? '이 대화와 연결된 계약들' : '이 대화와 연결된 계약' }}
+                        </h3>
+                        <p class="text-sm text-slate-400 mt-1">
+                            {{ contractCandidates.length > 1 ? '여러 계약이 있어 채팅 안에서 바로 확인할 수 있도록 모두 보여줍니다.' : '현재 대화 상대와 연결된 계약입니다.' }}
+                        </p>
+                    </div>
+
+                    <div class="p-4 space-y-3">
+                        <button
+                            v-for="contract in contractCandidates"
+                            :key="contract.contractId"
+                            type="button"
+                            @click="selectedContractId = contract.contractId"
+                            :class="[
+                                'w-full rounded-2xl border px-4 py-4 text-left transition-colors',
+                                Number(displayContract?.contractId) === Number(contract.contractId)
+                                    ? 'border-emerald-500/40 bg-emerald-500/10'
+                                    : 'border-white/5 bg-slate-950/70 hover:border-white/10 hover:bg-slate-950'
+                            ]"
+                        >
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="text-base font-semibold text-white truncate">{{ contract.projectName }}</p>
+                                    <p class="text-sm text-slate-400 mt-1">계약번호 · {{ contract.contractId }}</p>
+                                    <p class="text-sm text-slate-500 mt-2">
+                                        {{ formatDate(contract.startDate) }} ~ {{ formatDate(contract.endDate) }}
+                                    </p>
+                                </div>
+                                <div class="text-right shrink-0">
+                                    <span
+                                        :class="statusConfig[contract.status].badgeClass"
+                                        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border"
+                                    >
+                                        {{ statusConfig[contract.status].label }}
+                                    </span>
+                                    <p class="text-sm font-semibold text-white mt-3">{{ formatCurrency(contract.budget) }}</p>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    v-if="!displayContract && hasContractCandidates"
+                    class="rounded-2xl border border-white/5 bg-slate-900 px-6 py-10 text-center"
+                >
+                    <p class="text-base font-semibold text-white">확인할 계약을 선택하세요</p>
+                    <p class="text-sm text-slate-400 mt-2">위 목록에서 계약을 선택하면 이 탭에서 상세 상태를 바로 볼 수 있습니다.</p>
+                </div>
+
+                <div v-if="displayContract" class="bg-slate-900 rounded-2xl border border-white/5 overflow-hidden shadow-lg">
                     <div class="px-6 py-4 border-b border-white/5 flex items-start justify-between gap-4">
                         <div>
                             <p class="text-xs uppercase tracking-[0.18em] text-slate-500 mb-2">현재 계약</p>
-                            <h3 class="text-xl font-bold text-white">{{ currentContract.projectName }}</h3>
+                            <h3 class="text-xl font-bold text-white">{{ displayContract.projectName }}</h3>
                             <p class="text-sm text-slate-400 mt-1">
-                                계약번호 · {{ currentContract.contractId }}
+                                계약번호 · {{ displayContract.contractId }}
                             </p>
                         </div>
                         <div
@@ -87,18 +142,18 @@
                             </div>
                             <div class="rounded-xl bg-slate-950/70 border border-white/5 p-4">
                                 <p class="text-xs text-slate-500 uppercase tracking-wider">총 계약금액</p>
-                                <p class="text-base font-semibold text-white mt-2">{{ formatCurrency(currentContract.budget) }}</p>
+                                <p class="text-base font-semibold text-white mt-2">{{ formatCurrency(displayContract.budget) }}</p>
                             </div>
                             <div class="rounded-xl bg-slate-950/70 border border-white/5 p-4">
                                 <p class="text-xs text-slate-500 uppercase tracking-wider">계약 기간</p>
                                 <p class="text-base font-semibold text-white mt-2">
-                                    {{ formatDate(currentContract.startDate) }} ~ {{ formatDate(currentContract.endDate) }}
+                                    {{ formatDate(displayContract.startDate) }} ~ {{ formatDate(displayContract.endDate) }}
                                 </p>
                             </div>
                             <div class="rounded-xl bg-slate-950/70 border border-white/5 p-4">
                                 <p class="text-xs text-slate-500 uppercase tracking-wider">정산일</p>
                                 <p class="text-base font-semibold text-white mt-2">
-                                    매월 {{ currentContract.paymentDay || 25 }}일
+                                    매월 {{ displayContract.paymentDay || 25 }}일
                                 </p>
                             </div>
                         </div>
@@ -110,10 +165,10 @@
                                     <p class="text-xs text-slate-500 mt-1">계약 화면에서만 서명할 수 있습니다.</p>
                                 </div>
                                 <span
-                                    :class="currentContract.employerSignedDate ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5'"
+                                    :class="displayContract.employerSignedDate ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5'"
                                     class="px-3 py-1.5 rounded-full text-xs font-semibold border"
                                 >
-                                    {{ currentContract.employerSignedDate ? '완료' : '대기중' }}
+                                    {{ displayContract.employerSignedDate ? '완료' : '대기중' }}
                                 </span>
                             </div>
                             <div class="flex items-center justify-between gap-3 rounded-xl bg-slate-950/70 border border-white/5 p-4">
@@ -122,10 +177,10 @@
                                     <p class="text-xs text-slate-500 mt-1">계약 화면에서만 서명할 수 있습니다.</p>
                                 </div>
                                 <span
-                                    :class="currentContract.freelancerSignedDate ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5'"
+                                    :class="displayContract.freelancerSignedDate ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5'"
                                     class="px-3 py-1.5 rounded-full text-xs font-semibold border"
                                 >
-                                    {{ currentContract.freelancerSignedDate ? '완료' : '대기중' }}
+                                    {{ displayContract.freelancerSignedDate ? '완료' : '대기중' }}
                                 </span>
                             </div>
                         </div>
@@ -158,62 +213,10 @@
         @close="selectedLegalAdviceContract = null"
     />
 
-    <div
-        v-if="isLegalAdviceSelectorOpen"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-    >
-        <div class="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h3 class="text-xl font-bold text-white">계약 선택</h3>
-                    <p class="mt-2 text-sm text-slate-400">
-                        같은 상대와 연결된 계약이 여러 건입니다. 법률 자문을 확인할 계약을 먼저 선택해 주세요.
-                    </p>
-                </div>
-                <button
-                    @click="closeLegalAdviceSelector"
-                    class="text-slate-400 hover:text-white transition-colors"
-                >
-                    닫기
-                </button>
-            </div>
-
-            <div class="mt-6 space-y-3">
-                <label class="block text-sm font-medium text-slate-300">대상 계약</label>
-                <select
-                    v-model="selectedLegalAdviceContractId"
-                    class="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white focus:border-sky-400/40 focus:outline-none"
-                >
-                    <option
-                        v-for="contract in legalAdviceCandidateContracts"
-                        :key="contract.id"
-                        :value="String(contract.id)"
-                    >
-                        {{ contract.projectName }} · 계약번호 {{ contract.contractId }}
-                    </option>
-                </select>
-            </div>
-
-            <div class="mt-6 flex gap-3">
-                <button
-                    @click="closeLegalAdviceSelector"
-                    class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white font-semibold hover:bg-white/10 transition-colors"
-                >
-                    취소
-                </button>
-                <button
-                    @click="openSelectedLegalAdviceContract"
-                    class="flex-1 rounded-xl bg-sky-500 px-4 py-3 text-white font-semibold hover:bg-sky-400 transition-colors"
-                >
-                    법률 자문 열기
-                </button>
-            </div>
-        </div>
-    </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
@@ -233,6 +236,7 @@ import { ko } from 'date-fns/locale';
 
 const props = defineProps<{
     roomId: string;
+    isActive?: boolean;
 }>();
 
 const authStore = useAuthStore();
@@ -240,8 +244,6 @@ const chatStore = useChatStore();
 const contractStore = useContractStore();
 const router = useRouter();
 const selectedLegalAdviceContract = ref<ContractWithDetails | null>(null);
-const isLegalAdviceSelectorOpen = ref(false);
-const selectedLegalAdviceContractId = ref('');
 
 const currentRoom = computed(() => chatStore.rooms.find((room) => room.id === props.roomId));
 const isEmployer = computed(() => authStore.user?.role === 'EMPLOYER');
@@ -253,6 +255,12 @@ const otherParticipantName = computed(() => {
     if (!currentRoom.value) return '알 수 없음';
     return chatStore.getOtherParticipantName(currentRoom.value);
 });
+
+function getContractSortTimestamp(value: Date | string | undefined) {
+    if (!value) return 0;
+    const timestamp = new Date(value).getTime();
+    return Number.isFinite(timestamp) ? timestamp : 0;
+}
 
 function parseParticipantNumericId(participantId: string | null) {
     if (!participantId) return null;
@@ -280,38 +288,119 @@ const roomParticipantIds = computed(() => {
 const relatedContracts = computed(() => {
     if (!roomParticipantIds.value) return [];
 
-    return contractStore.contracts.filter(
-        (contract) =>
-            Number(contract.employerId) === roomParticipantIds.value!.employerId &&
-            Number(contract.freelancerId) === roomParticipantIds.value!.freelancerId
+    return [...contractStore.contracts]
+        .filter(
+            (contract) =>
+                Number(contract.employerId) === roomParticipantIds.value!.employerId &&
+                Number(contract.freelancerId) === roomParticipantIds.value!.freelancerId
+        )
+        .sort((left, right) => {
+            const endDateDiff = getContractSortTimestamp(right.endDate) - getContractSortTimestamp(left.endDate);
+            if (endDateDiff !== 0) return endDateDiff;
+            return Number(right.contractId) - Number(left.contractId);
+        });
+});
+
+const linkedContract = computed(() => contractStore.findContractForChatRoom(currentRoom.value));
+const isEnsuringContractRoom = ref(false);
+const selectedContractId = ref<number | null>(null);
+
+const autoConnectableContract = computed(() => {
+    if (!props.isActive || !currentRoom.value || currentRoom.value.contractId) {
+        return null;
+    }
+    if (relatedContracts.value.length === 1) {
+        return relatedContracts.value[0];
+    }
+
+    const contextMatchedContracts = relatedContracts.value.filter((contract) =>
+        contractStore.matchesRoomContractContext(contract, currentRoom.value)
     );
+    if (contextMatchedContracts.length === 1) {
+        return contextMatchedContracts[0];
+    }
+
+    return null;
 });
 
-const currentContract = computed(() => {
-    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
-    if (linkedContract) return linkedContract;
-    if (!roomParticipantIds.value) return null;
-
-    return contractStore.findContractByParticipants(
-        roomParticipantIds.value.employerId,
-        roomParticipantIds.value.freelancerId
-    );
-});
-
-const hasMultipleContractCandidates = computed(() => {
-    return !currentRoom.value?.contractId && !currentContract.value && relatedContracts.value.length > 1;
-});
-const legalAdviceCandidateContracts = computed(() => {
-    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
-    if (linkedContract) {
-        return [linkedContract];
+const contractCandidates = computed(() => {
+    if (linkedContract.value) {
+        return relatedContracts.value.some((contract) => Number(contract.contractId) === Number(linkedContract.value?.contractId))
+            ? relatedContracts.value
+            : [linkedContract.value, ...relatedContracts.value];
     }
     return relatedContracts.value;
 });
 
-const isContractLookupPending = computed(() => {
-    return contractStore.isContractsLoading && !contractStore.hasFetchedContracts && !currentContract.value;
+const displayContract = computed(() => {
+    if (linkedContract.value) {
+        return linkedContract.value;
+    }
+
+    if (selectedContractId.value != null) {
+        return contractCandidates.value.find(
+            (contract) => Number(contract.contractId) === Number(selectedContractId.value)
+        ) || null;
+    }
+
+    if (autoConnectableContract.value) {
+        return autoConnectableContract.value;
+    }
+
+    return null;
 });
+
+const hasContractCandidates = computed(() => {
+    return contractCandidates.value.length > 0;
+});
+const isContractLookupPending = computed(() => {
+    return contractStore.isContractsLoading && !displayContract.value && !hasContractCandidates.value;
+});
+
+watch(
+    [() => props.isActive, currentRoom, autoConnectableContract],
+    ([isActive, room, contract]) => {
+        if (!isActive || !room || room.contractId || !contract?.contractId || isEnsuringContractRoom.value) {
+            return;
+        }
+
+        isEnsuringContractRoom.value = true;
+        void chatStore
+            .ensureContractRoomFromSourceRoom(room.id, contract.contractId)
+            .catch((error) => {
+                console.warn('Failed to ensure contract room from chat tab.', error);
+            })
+            .finally(() => {
+                isEnsuringContractRoom.value = false;
+            });
+    },
+    { immediate: true },
+);
+
+watch(
+    [contractCandidates, linkedContract],
+    ([contracts, linked]) => {
+        if (linked?.contractId) {
+            selectedContractId.value = linked.contractId;
+            return;
+        }
+
+        if (contracts.length === 1) {
+            selectedContractId.value = contracts[0].contractId;
+            return;
+        }
+
+        if (
+            selectedContractId.value != null &&
+            contracts.some((contract) => Number(contract.contractId) === Number(selectedContractId.value))
+        ) {
+            return;
+        }
+
+        selectedContractId.value = null;
+    },
+    { immediate: true },
+);
 
 const statusConfig = {
     WAITING_SIGNATURE: {
@@ -341,26 +430,26 @@ const statusConfig = {
 } as const;
 
 const currentStatusConfig = computed(() => {
-    if (!currentContract.value) {
+    if (!displayContract.value) {
         return statusConfig.WAITING_SIGNATURE;
     }
-    return statusConfig[currentContract.value.status];
+    return statusConfig[displayContract.value.status];
 });
 
 const primaryActionLabel = computed(() => {
-    if (!currentContract.value) {
-        if (hasMultipleContractCandidates.value) return '계약 목록으로 이동';
+    if (!displayContract.value) {
+        if (hasContractCandidates.value) return '계약 목록으로 이동';
         return isEmployer.value ? '계약서 작성 화면으로 이동' : '계약 목록으로 이동';
     }
-    if (currentContract.value.status === 'REJECTED' && isEmployer.value) {
+    if (displayContract.value.status === 'REJECTED' && isEmployer.value) {
         return '계약서 다시 작성 화면으로 이동';
     }
     return '계약 화면으로 이동';
 });
 
 const emptyStateDescription = computed(() => {
-    if (hasMultipleContractCandidates.value) {
-        return '같은 상대와 연결된 계약이 여러 건 있어 채팅에서는 하나를 임의로 선택하지 않았습니다. 계약 화면에서 정확한 계약을 확인하세요.';
+    if (hasContractCandidates.value) {
+        return '계약은 계약별 채팅방에 따로 연결됩니다. 이 대화방은 일반 대화방이므로 계약 상태는 해당 계약 채팅방이나 계약 화면에서 확인하세요.';
     }
     if (isEmployer.value) {
         return '채팅에서는 계약서를 작성하지 않습니다. 계약서 생성은 계약 화면에서 진행하고, 생성된 상태만 이 탭에서 확인합니다.';
@@ -379,13 +468,13 @@ function formatDate(date: Date | string | undefined) {
 
 function openContractPage() {
     const targetRouteName =
-        hasMultipleContractCandidates.value
+        hasContractCandidates.value
             ? isEmployer.value
                 ? 'employer.contracts'
                 : 'freelancer.contracts'
-            : !currentContract.value && isEmployer.value
+            : !displayContract.value && isEmployer.value
             ? 'employer.contracts.create'
-            : currentContract.value?.status === 'REJECTED' && isEmployer.value
+            : displayContract.value?.status === 'REJECTED' && isEmployer.value
               ? 'employer.contracts.create'
               : isEmployer.value
                 ? 'employer.contracts'
@@ -398,11 +487,14 @@ function openContractPage() {
     if (currentRoom.value?.relatedJobId) {
         query.jobId = String(currentRoom.value.relatedJobId);
     }
+    if (currentRoom.value?.relatedApplicationId) {
+        query.applicationId = String(currentRoom.value.relatedApplicationId);
+    }
     if (currentRoom.value?.relatedProposalId) {
         query.proposalId = String(currentRoom.value.relatedProposalId);
     }
-    if (currentContract.value?.contractId) {
-        query.contractId = String(currentContract.value.contractId);
+    if (displayContract.value?.contractId) {
+        query.contractId = String(displayContract.value.contractId);
     } else if (currentRoom.value?.contractId) {
         query.contractId = String(currentRoom.value.contractId);
     }
@@ -411,21 +503,7 @@ function openContractPage() {
 }
 
 function openLegalAdvicePage() {
-    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
-    if (linkedContract) {
-        selectedLegalAdviceContract.value = linkedContract;
-        return;
-    }
-
-    const contractToOpen =
-        currentContract.value ||
-        (relatedContracts.value.length === 1 ? relatedContracts.value[0] : null);
-
-    if (relatedContracts.value.length > 1) {
-        selectedLegalAdviceContractId.value = String(relatedContracts.value[0].id);
-        isLegalAdviceSelectorOpen.value = true;
-        return;
-    }
+    const contractToOpen = displayContract.value || linkedContract.value || autoConnectableContract.value || null;
 
     if (!contractToOpen) {
         window.alert('채팅과 바로 연결된 계약이 없어 법률 자문 모달을 열 수 없습니다. 계약 목록에서 먼저 계약을 확인해 주세요.');
@@ -433,24 +511,5 @@ function openLegalAdvicePage() {
     }
 
     selectedLegalAdviceContract.value = contractToOpen;
-}
-
-function closeLegalAdviceSelector() {
-    isLegalAdviceSelectorOpen.value = false;
-    selectedLegalAdviceContractId.value = '';
-}
-
-function openSelectedLegalAdviceContract() {
-    const selectedContract = legalAdviceCandidateContracts.value.find(
-        (contract) => String(contract.id) === selectedLegalAdviceContractId.value
-    );
-
-    if (!selectedContract) {
-        window.alert('열 계약을 선택해 주세요.');
-        return;
-    }
-
-    selectedLegalAdviceContract.value = selectedContract;
-    closeLegalAdviceSelector();
 }
 </script>

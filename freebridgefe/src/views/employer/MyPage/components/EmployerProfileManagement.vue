@@ -18,6 +18,7 @@ import {
 import { getEmployerProfile, updateEmployerProfile, type EmployerProfileData } from '@/api/MyPage/employer';
 import { PLAN_LABELS } from '@/constants/planLabels';
 import { useAlertStore } from '@/stores/alertStore';
+import { formatPhoneNumber } from '@/utils/phone';
 
 defineEmits<{
   (e: 'back'): void;
@@ -71,6 +72,8 @@ const subscriptionPlanText = computed(() => {
   const normalizedPlan = (profileData.value.plan ?? 'FREE').toUpperCase();
   return PLAN_LABELS[normalizedPlan] ?? normalizedPlan;
 });
+
+const formattedProfilePhone = computed(() => formatPhoneNumber(profileData.value.phone));
 
 const handleSave = async () => {
   isSaving.value = true;
@@ -233,7 +236,7 @@ const handleSave = async () => {
         </label>
         <input
           type="tel"
-          v-model="profileData.phone"
+          :value="formattedProfilePhone"
           class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white/70 outline-none"
           disabled
         />

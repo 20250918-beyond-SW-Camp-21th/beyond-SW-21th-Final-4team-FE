@@ -26,6 +26,7 @@ export interface EmployerSubscriptionResponse {
 }
 
 export interface EmployerSubscriptionChangeResult {
+    success: boolean;
     currentPlanGrade: string;
     pendingPlanGrade: string | null;
     status: string;
@@ -95,7 +96,8 @@ export const getEmployerSubscription = async (): Promise<EmployerSubscriptionRes
 
 export const updateEmployerSubscription = async (
     targetPlan: string,
-    billingKey?: string | null
+    billingKey?: string | null,
+    paymentId?: string | null
 ): Promise<EmployerSubscriptionChangeResult> => {
     const normalizedTargetPlan = targetPlan.toUpperCase() === 'FREE' ? 'BASIC' : targetPlan;
     const response = await apiClient.put<ApiResponse<EmployerSubscriptionChangeResult>>(
@@ -103,9 +105,16 @@ export const updateEmployerSubscription = async (
         {
             targetPlan: normalizedTargetPlan,
             billingKey: billingKey ?? null,
+            paymentId: paymentId ?? null,
         }
     );
-    return response.data.data;
+    if (response.data.success !== true) {
+        throw new Error(response.data.message ?? 'Failed to update subscription');
+    }
+    return {
+        success: true,
+        ...response.data.data
+    };
 };
 
 export const getEmployerNotificationSettings = async (): Promise<EmployerNotificationSettings> => {

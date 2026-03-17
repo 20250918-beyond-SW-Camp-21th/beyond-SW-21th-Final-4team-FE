@@ -1,374 +1,502 @@
 <template>
-    <div class="h-full bg-slate-900 border-l border-white/5 flex flex-col overflow-y-auto custom-scrollbar">
-        <!-- Profile Section -->
-        <div class="p-6 flex flex-col items-center text-center border-b border-white/5">
-            <div class="relative mb-4">
-                <div class="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 text-3xl font-bold border-4 border-slate-800 ring-2 ring-emerald-500/50">
-                    {{ otherParticipantName.charAt(0) }}
-                </div>
-            </div>
-            
-            <h2 class="text-xl font-bold text-white mb-1">{{ otherParticipantName }}</h2>
-            <p class="text-sm text-slate-400 mb-4">{{ otherParticipantSummary }}</p>
-            
-            <div class="flex gap-2 w-full">
-                <button
-                    type="button"
-                    @click="handleProfileClick"
-                    class="flex-1 py-2 text-sm font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors border border-white/5"
-                >
-                    프로필
-                </button>
-            </div>
-        </div>
+  <div class="custom-scrollbar flex h-full flex-col overflow-y-auto border-l border-white/5 bg-slate-900">
+    <div class="border-b border-white/5 p-6 text-center">
+      <ProfileIdentityAvatar
+        :label="otherParticipantName"
+        variant="neutral"
+        shape="circle"
+        size-class="mx-auto mb-4 h-24 w-24"
+        text-class="text-3xl font-bold"
+        ring-class="border-4 border-slate-800 ring-2 ring-emerald-500/50"
+      />
 
-        <!-- Proposed Project Summary -->
-        <div class="p-6 border-b border-white/5">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-sm font-bold text-white uppercase tracking-wider">현재 제안된 프로젝트</h3>
-            </div>
+      <h2 class="mb-1 text-xl font-bold text-white">{{ otherParticipantName }}</h2>
+      <p class="mb-4 text-sm text-slate-400">{{ otherParticipantSummary }}</p>
 
-            <div class="bg-slate-800/50 rounded-xl p-4 border border-white/5 hover:border-white/10 transition-colors">
-                <div class="flex justify-between items-start mb-2">
-                    <div class="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-                        <CodeIcon class="w-5 h-5" />
-                    </div>
-                    <span class="px-2 py-1 rounded text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        제안됨
-                    </span>
-                </div>
-
-                <h4 class="font-bold text-slate-200 mb-1">{{ proposedProject.title }}</h4>
-                <p class="text-xs text-slate-500 mb-4">{{ proposedProject.summary }}</p>
-
-                <button
-                    type="button"
-                    @click="handleProposalDetail"
-                    class="w-full py-2 text-sm font-medium text-white bg-slate-700/80 hover:bg-slate-700 rounded-lg transition-colors"
-                >
-                    상세보기
-                </button>
-            </div>
-        </div>
-
-        <!-- Shared Files -->
-        <div class="p-6">
-            <h3 class="text-sm font-bold text-white uppercase tracking-wider mb-4">공유된 파일</h3>
-            <div class="space-y-3">
-                <div
-                    v-for="file in sharedFiles"
-                    :key="file.id"
-                    class="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer group"
-                >
-                    <div class="p-2 rounded bg-slate-800 text-slate-400 group-hover:text-emerald-400 transition-colors">
-                        <FileTextIcon class="w-5 h-5" />
-                    </div>
-                    <div class="flex-1 overflow-hidden">
-                        <p class="text-sm text-slate-300 font-medium truncate group-hover:text-white">{{ file.name }}</p>
-                        <p class="text-xs text-slate-500">{{ formatFileMeta(file) }}</p>
-                    </div>
-                </div>
-
-                <div v-if="sharedFiles.length === 0" class="text-xs text-slate-500">
-                    아직 공유된 파일이 없습니다.
-                </div>
-            </div>
-        </div>
+      <button
+        type="button"
+        @click="handleProfileClick"
+        class="w-full rounded-lg border border-white/5 bg-slate-800 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700"
+      >
+        프로필 보기
+      </button>
     </div>
 
-    <!-- Employer Profile Modal (Freelancer View) -->
-    <div
-        v-if="isEmployerProfileOpen"
-        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-    >
-        <div class="w-full max-w-md rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-6 text-white shadow-2xl">
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center text-blue-300 font-bold">
-                        {{ employerProfile.companyName.charAt(0) }}
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold">기업 프로필</h3>
-                        <p class="text-xs text-slate-400">현재 대화 기준</p>
-                    </div>
-                </div>
-                <button class="text-slate-400 hover:text-white text-sm" @click="isEmployerProfileOpen = false">닫기</button>
-            </div>
-            <div class="grid gap-4 text-sm text-slate-200">
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div class="text-xs text-slate-400 mb-1">회사명</div>
-                    <div class="text-base font-semibold text-white">{{ employerProfile.companyName }}</div>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div class="text-xs text-slate-400 mb-1">전화번호</div>
-                    <div class="text-sm font-medium">{{ employerProfile.phone }}</div>
-                </div>
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <div class="text-xs text-slate-400 mb-1">위치</div>
-                    <div class="text-sm font-medium">{{ employerProfile.location }}</div>
-                </div>
-            </div>
+    <div class="border-b border-white/5 p-6">
+      <h3 class="mb-4 text-sm font-bold uppercase tracking-wider text-white">현재 연결 프로젝트</h3>
+      <div class="rounded-xl border border-white/5 bg-slate-800/50 p-4 transition-colors hover:border-white/10">
+        <div class="mb-2 flex items-start justify-between">
+          <div class="rounded-lg bg-blue-500/10 p-2 text-blue-400">
+            <CodeIcon class="h-5 w-5" />
+          </div>
+          <span class="rounded border border-amber-500/20 bg-amber-500/10 px-2 py-1 text-[10px] font-bold text-amber-400">
+            제안중
+          </span>
         </div>
+
+        <h4 class="mb-1 font-bold text-slate-200">{{ proposedProject.title }}</h4>
+        <p class="mb-4 text-xs text-slate-500">{{ proposedProject.summary }}</p>
+
+        <button
+          type="button"
+          @click="handleProposalDetail"
+          class="w-full rounded-lg bg-slate-700/80 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700"
+        >
+          상세 보기
+        </button>
+      </div>
     </div>
 
-    <!-- Job Detail Modal -->
-    <div
-        v-if="isJobDetailOpen"
-        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-    >
-        <div class="w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-6 text-white shadow-2xl">
-            <div class="flex items-center justify-between mb-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-400/20 flex items-center justify-center text-emerald-300 font-bold">
-                        공
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-bold">공고 상세</h3>
-                        <p class="text-xs text-slate-400">현재 제안된 프로젝트 기준</p>
-                    </div>
-                </div>
-                <button class="text-slate-400 hover:text-white text-sm" @click="isJobDetailOpen = false">닫기</button>
-            </div>
-
-            <div class="space-y-5">
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <div class="text-xs text-slate-400 mb-2">프로젝트 제목</div>
-                    <div class="text-xl font-semibold text-white">{{ jobDetail.title }}</div>
-                </div>
-
-                <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                    <div class="text-xs text-slate-400 mb-2">프로젝트 설명</div>
-                    <p class="text-sm leading-relaxed text-slate-300 whitespace-pre-wrap">{{ jobDetail.description }}</p>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div class="text-xs text-slate-400 mb-1">기술 스택</div>
-                        <div class="text-sm text-slate-200">
-                            {{ jobDetail.techStack.length ? jobDetail.techStack.join(', ') : '정보 없음' }}
-                        </div>
-                    </div>
-                    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div class="text-xs text-slate-400 mb-1">예산</div>
-                        <div class="text-sm text-slate-200">{{ jobDetail.budget }}</div>
-                    </div>
-                    <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
-                        <div class="text-xs text-slate-400 mb-1">기간</div>
-                        <div class="text-sm text-slate-200">{{ jobDetail.duration }}</div>
-                    </div>
-                </div>
-            </div>
+    <div class="p-6">
+      <h3 class="mb-4 text-sm font-bold uppercase tracking-wider text-white">공유 파일</h3>
+      <div class="space-y-3">
+        <div
+          v-for="file in sharedFiles"
+          :key="file.id"
+          class="group flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-800/50"
+        >
+          <div class="rounded bg-slate-800 p-2 text-slate-400 transition-colors group-hover:text-emerald-400">
+            <FileTextIcon class="h-5 w-5" />
+          </div>
+          <div class="flex-1 overflow-hidden">
+            <p class="truncate text-sm font-medium text-slate-300 group-hover:text-white">{{ file.name }}</p>
+            <p class="text-xs text-slate-500">{{ formatFileMeta(file) }}</p>
+          </div>
         </div>
+
+        <div v-if="sharedFiles.length === 0" class="text-xs text-slate-500">
+          아직 공유된 파일이 없습니다.
+        </div>
+      </div>
     </div>
+  </div>
+
+  <EmployerProfilePreviewModal
+    :is-open="isEmployerProfileOpen"
+    :is-loading="isEmployerProfileLoading"
+    :profile="employerProfile"
+    @close="isEmployerProfileOpen = false"
+  />
+
+  <FreelancerProfilePreviewModal
+    :is-open="isFreelancerProfileOpen"
+    :is-loading="isFreelancerProfileLoading"
+    :profile="freelancerProfile"
+    @close="isFreelancerProfileOpen = false"
+  />
+
+  <div
+    v-if="isJobDetailOpen"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+  >
+    <div class="w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-6 text-white shadow-2xl">
+      <div class="mb-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10 font-bold text-emerald-300">
+            공
+          </div>
+          <div>
+            <h3 class="text-lg font-bold">공고 상세</h3>
+            <p class="text-xs text-slate-400">현재 연결된 제안 프로젝트 정보</p>
+          </div>
+        </div>
+        <button class="text-sm text-slate-400 hover:text-white" @click="isJobDetailOpen = false">닫기</button>
+      </div>
+
+      <div class="space-y-5">
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div class="mb-2 text-xs text-slate-400">프로젝트 제목</div>
+          <div class="text-xl font-semibold text-white">{{ jobDetail.title }}</div>
+        </div>
+
+        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div class="mb-2 text-xs text-slate-400">프로젝트 설명</div>
+          <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">{{ jobDetail.description }}</p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="mb-1 text-xs text-slate-400">기술 스택</div>
+            <div class="text-sm text-slate-200">
+              {{ jobDetail.techStack.length ? jobDetail.techStack.join(', ') : '정보 없음' }}
+            </div>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="mb-1 text-xs text-slate-400">예산</div>
+            <div class="text-sm text-slate-200">{{ jobDetail.budget }}</div>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="mb-1 text-xs text-slate-400">기간</div>
+            <div class="text-sm text-slate-200">{{ jobDetail.duration }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useChatStore } from '@/stores/chatStore';
+import { Code as CodeIcon, FileText as FileTextIcon } from 'lucide-vue-next';
+import EmployerProfilePreviewModal from '@/components/profile/EmployerProfilePreviewModal.vue';
+import FreelancerProfilePreviewModal from '@/components/profile/FreelancerProfilePreviewModal.vue';
+import ProfileIdentityAvatar from '@/components/profile/ProfileIdentityAvatar.vue';
+import { getEmployerProfilePreview, getFreelancerProfilePreview } from '@/api/profilePreviewApi';
 import { useAuthStore } from '@/stores/authStore';
-import { useJobStore } from '@/stores/jobStore';
+import { useChatStore } from '@/stores/chatStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
-import { getEmployerProfile } from '@/api/MyPage/employer';
-import { 
-    Code as CodeIcon,
-    FileText as FileTextIcon
-} from 'lucide-vue-next';
+import { useJobStore } from '@/stores/jobStore';
 
 const props = defineProps<{
-    roomId: string;
+  roomId: string;
 }>();
 
-const chatStore = useChatStore();
 const authStore = useAuthStore();
-const jobStore = useJobStore();
+const chatStore = useChatStore();
 const freelancerStore = useFreelancerStore();
-const router = useRouter();
+const jobStore = useJobStore();
+
 const isEmployerProfileOpen = ref(false);
+const isEmployerProfileLoading = ref(false);
+const isFreelancerProfileOpen = ref(false);
+const isFreelancerProfileLoading = ref(false);
 const isJobDetailOpen = ref(false);
+
 const employerProfile = ref({
-    companyName: '알 수 없음',
-    phone: '알 수 없음',
-    location: '알 수 없음'
-});
-const jobDetail = ref({
-    title: '프로젝트 정보 없음',
-    description: '연결된 공고 정보를 찾을 수 없습니다.',
-    techStack: [] as string[],
-    budget: '정보 없음',
-    duration: '정보 없음'
-});
-const sharedFiles = computed(() => {
-    if (!currentRoom.value) return [];
-    const roomMessages = chatStore.messages[currentRoom.value.id] || [];
-    return roomMessages
-        .filter((msg) => msg.type === 'FILE')
-        .map((msg) => ({
-            id: msg.id,
-            name: msg.metadata?.fileName || msg.content || '파일',
-            size: msg.metadata?.fileSize,
-            createdAt: msg.createdAt
-        }))
-        .reverse();
+  companyName: '정보 없음',
+  logoUrl: null as string | null,
+  industry: null as string | null,
+  scale: null as string | null,
+  location: null as string | null,
+  phone: null as string | null,
+  website: null as string | null,
+  description: null as string | null,
 });
 
-const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
+const freelancerProfile = ref({
+  name: '정보 없음',
+  avatarUrl: null as string | null,
+  job: null as string | null,
+  careerYears: null as number | null,
+  wage: null as number | null,
+  grade: null as string | null,
+  introduction: null as string | null,
+  skills: [] as string[],
+  birthDate: null as string | null,
+  phone: null as string | null,
+  email: null as string | null,
+  address: null as string | null,
+  educations: [] as Array<{
+    schoolType: string | null;
+    schoolName: string | null;
+    major: string | null;
+    status: string | null;
+    entranceDate: string | null;
+    graduationDate: string | null;
+  }>,
+  careers: [] as Array<{
+    companyName: string | null;
+    department: string | null;
+    position: string | null;
+    jobType: string | null;
+    employmentType: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    description: string | null;
+  }>,
+  certifications: [] as Array<{
+    name: string | null;
+    issuer: string | null;
+    acquisitionDate: string | null;
+  }>,
+  portfolioUrl: null as string | null,
+  portfolioFileName: null as string | null,
+  portfolioLastUpdated: null as string | null,
+});
+
+const jobDetail = ref({
+  title: '프로젝트 정보 없음',
+  description: '연결된 공고 정보를 찾을 수 없습니다.',
+  techStack: [] as string[],
+  budget: '정보 없음',
+  duration: '정보 없음',
+});
+
+const currentRoom = computed(() => chatStore.rooms.find((room) => room.id === props.roomId));
+
+const sharedFiles = computed(() => {
+  if (!currentRoom.value) return [];
+
+  const roomMessages = chatStore.messages[currentRoom.value.id] || [];
+  return roomMessages
+    .filter((msg) => msg.type === 'FILE')
+    .map((msg) => ({
+      id: msg.id,
+      name: msg.metadata?.fileName || msg.content || '파일',
+      size: msg.metadata?.fileSize,
+      createdAt: msg.createdAt,
+    }))
+    .reverse();
+});
 
 const otherParticipantName = computed(() => {
-    if (!currentRoom.value) return '알 수 없음';
-    return chatStore.getOtherParticipantName(currentRoom.value);
+  if (!currentRoom.value) return '정보 없음';
+  return chatStore.getOtherParticipantName(currentRoom.value);
 });
 
 const otherParticipantSummary = computed(() => {
-    const room = currentRoom.value;
-    if (!room || !authStore.user) {
-        return '상대 정보를 불러오는 중입니다.';
-    }
+  const room = currentRoom.value;
+  if (!room || !authStore.user) {
+    return '상대 프로필 정보를 불러오는 중입니다.';
+  }
 
-    const otherId = chatStore.getOtherParticipantId(room);
-    const otherUserId = otherId?.replace(/^[a-z]/i, '') ?? '';
-    const proposal = room.relatedProposalId
-        ? freelancerStore.proposals.find((item) => item.id === room.relatedProposalId)
-        : null;
-    const job = room.relatedJobId ? jobStore.getJobById(room.relatedJobId) : null;
+  const otherId = chatStore.getOtherParticipantId(room);
+  const otherUserId = otherId?.replace(/^[a-z]/i, '') ?? '';
+  const proposal = room.relatedProposalId
+    ? freelancerStore.proposals.find((item) => item.id === room.relatedProposalId)
+    : null;
+  const job = room.relatedJobId ? jobStore.getJobById(room.relatedJobId) : null;
 
-    if (authStore.user.role === 'EMPLOYER') {
-        const freelancer = freelancerStore.freelancers.find(
-            (item) => String(item.id) === otherUserId
-        );
-        const introduction = freelancer?.bio?.trim();
-        if (introduction) {
-            return introduction;
-        }
+  if (authStore.user.role === 'EMPLOYER') {
+    const freelancer = freelancerStore.freelancers.find((item) => String(item.id) === otherUserId);
+    if (freelancer?.bio?.trim()) return freelancer.bio.trim();
+    if (freelancer?.skills?.length) return `주요 기술: ${freelancer.skills.slice(0, 3).join(', ')}`;
+    return '프리랜서 소개 정보가 아직 없습니다.';
+  }
 
-        const skills = freelancer?.skills?.filter(Boolean).slice(0, 3) ?? [];
-        if (skills.length > 0) {
-            return `주요 기술: ${skills.join(', ')}`;
-        }
-
-        return '프리랜서 소개 정보가 아직 없습니다.';
-    }
-
-    const companyDescription = job?.description?.trim();
-    if (companyDescription) {
-        return companyDescription;
-    }
-
-    const proposalMessage = proposal?.message?.trim();
-    if (proposalMessage) {
-        return proposalMessage;
-    }
-
-    return '기업 소개 정보가 아직 없습니다.';
+  if (job?.description?.trim()) return job.description.trim();
+  if (proposal?.message?.trim()) return proposal.message.trim();
+  return '기업 소개 정보가 아직 없습니다.';
 });
 
 const proposedProject = computed(() => {
-    if (!currentRoom.value) {
-        return {
-            title: '제안된 프로젝트가 없습니다',
-            summary: '현재 채팅에 연결된 제안 프로젝트를 찾을 수 없습니다.',
-            proposalId: null as string | null,
-            jobId: null as string | null
-        };
-    }
-
-    const proposalId = currentRoom.value.relatedProposalId ?? null;
-    const proposal = proposalId
-        ? freelancerStore.proposals.find((item) => item.id === proposalId)
-        : null;
-
-    const jobId = currentRoom.value.relatedJobId ?? proposal?.jobId ?? null;
-    const job = jobId ? jobStore.getJobById(jobId) : null;
-
+  if (!currentRoom.value) {
     return {
-        title: job?.title || proposal?.message?.slice(0, 24) || '프로젝트 제안',
-        summary: job?.description || proposal?.message || '현재 제안된 프로젝트의 상세 정보를 확인하세요.',
-        proposalId,
-        jobId
+      title: '제안된 프로젝트가 없습니다',
+      summary: '현재 채팅과 연결된 제안 프로젝트를 찾을 수 없습니다.',
+      proposalId: null as string | null,
+      jobId: null as string | null,
     };
+  }
+
+  const proposalId = currentRoom.value.relatedProposalId ?? null;
+  const proposal = proposalId
+    ? freelancerStore.proposals.find((item) => item.id === proposalId)
+    : null;
+  const jobId = currentRoom.value.relatedJobId ?? proposal?.jobId ?? null;
+  const job = jobId ? jobStore.getJobById(jobId) : null;
+
+  return {
+    title: job?.title || proposal?.message?.slice(0, 24) || '프로젝트 제안',
+    summary: job?.description || proposal?.message || '현재 제안된 프로젝트의 상세 정보를 확인해 주세요.',
+    proposalId,
+    jobId,
+  };
 });
 
-const handleProfileClick = () => {
-    const room = currentRoom.value;
-    if (!room || !authStore.user) return;
+const extractEntityId = (participantId?: string | null) => {
+  if (!participantId) return null;
+  const normalized = String(participantId).trim();
+  const matched = normalized.match(/^[a-z](\d+)$/i);
+  if (!matched) return null;
+  return matched[1];
+};
 
-    const otherId = chatStore.getOtherParticipantId(room);
-    if (!otherId) return;
-    const otherUserId = otherId.replace(/^[a-z]/i, '');
+const extractNumericId = (value?: string | number | null) => {
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim();
+  const directNumber = normalized.match(/^(\d+)$/);
+  if (directNumber) return directNumber[1];
+  const suffixedNumber = normalized.match(/(\d+)$/);
+  return suffixedNumber ? suffixedNumber[1] : null;
+};
 
-    if (authStore.user.role === 'EMPLOYER') {
-        router.push({ name: 'employer.freelancer.profile', params: { id: otherUserId } });
-        return;
+const findParticipantByPrefix = (prefix: 'e' | 'f') => {
+  const room = currentRoom.value;
+  if (!room) return null;
+  const matched = room.participants.find((participantId) =>
+    new RegExp(`^${prefix}\\d+$`, 'i').test(participantId),
+  );
+  return matched ?? null;
+};
+
+const resolveFreelancerPreviewId = () => {
+  const room = currentRoom.value;
+  if (!room) return null;
+
+  if (room.relatedApplicationId) {
+    const application = jobStore.applications.find(
+      (item) => item.id === room.relatedApplicationId,
+    );
+    if (application?.freelancerId) {
+      return String(application.freelancerId);
     }
+  }
 
-    const job = room.relatedJobId ? jobStore.getJobById(room.relatedJobId) : null;
-    const proposal = room.relatedProposalId
-        ? freelancerStore.proposals.find((item) => item.id === room.relatedProposalId)
-        : null;
+  if (room.relatedProposalId) {
+    const proposal = freelancerStore.proposals.find(
+      (item) => item.id === room.relatedProposalId,
+    );
+    if (proposal?.freelancerId) {
+      return String(proposal.freelancerId);
+    }
+  }
+
+  const participantId = findParticipantByPrefix('f');
+  return extractEntityId(participantId);
+};
+
+const resolveEmployerPreviewId = () => {
+  const room = currentRoom.value;
+  if (!room) return null;
+
+  const job = room.relatedJobId ? jobStore.getJobById(room.relatedJobId) : null;
+  if (job?.employerId) {
+    return extractNumericId(job.employerId);
+  }
+
+  if (room.relatedProposalId) {
+    const proposal = freelancerStore.proposals.find(
+      (item) => item.id === room.relatedProposalId,
+    );
+    if (proposal?.employerId) {
+      return extractNumericId(proposal.employerId);
+    }
+  }
+
+  const participantId = findParticipantByPrefix('e');
+  return extractEntityId(participantId);
+};
+
+const openFreelancerProfile = async (freelancerId: string) => {
+  isFreelancerProfileOpen.value = true;
+  isFreelancerProfileLoading.value = true;
+
+  try {
+    const preview = await getFreelancerProfilePreview(freelancerId);
+    freelancerProfile.value = {
+      name: preview.name || '정보 없음',
+      avatarUrl: preview.avatarUrl,
+      job: preview.job,
+      careerYears: preview.careerYears,
+      wage: preview.wage,
+      grade: preview.grade,
+      introduction: preview.introduction,
+      skills: preview.skills ?? [],
+      birthDate: preview.birthDate,
+      phone: preview.phone,
+      email: preview.email,
+      address: preview.address,
+      educations: preview.educations ?? [],
+      careers: preview.careers ?? [],
+      certifications: preview.certifications ?? [],
+      portfolioUrl: preview.portfolioFileUrl,
+      portfolioFileName: preview.portfolioFileName,
+      portfolioLastUpdated: preview.portfolioLastUpdated,
+    };
+  } catch (error) {
+    console.error('Failed to load freelancer preview:', error);
+  } finally {
+    isFreelancerProfileLoading.value = false;
+  }
+};
+
+const openEmployerProfile = async (employerId: string) => {
+  isEmployerProfileOpen.value = true;
+  isEmployerProfileLoading.value = true;
+
+  try {
+    const preview = await getEmployerProfilePreview(employerId);
+    employerProfile.value = {
+      companyName: preview.companyName || '정보 없음',
+      logoUrl: preview.logoUrl,
+      industry: preview.industry,
+      scale: preview.scale,
+      location: preview.location,
+      phone: preview.phone,
+      website: preview.websiteUrl,
+      description: preview.description,
+    };
+  } catch (error) {
+    console.error('Failed to load employer preview:', error);
+    const room = currentRoom.value;
+    const proposal = room?.relatedProposalId
+      ? freelancerStore.proposals.find((item) => item.id === room.relatedProposalId)
+      : null;
+    const job = room?.relatedJobId ? jobStore.getJobById(room.relatedJobId) : null;
 
     employerProfile.value = {
-        companyName: job?.employerName || proposal?.employerName || chatStore.getParticipantName(room, otherId) || '알 수 없음',
-        phone: job ? '02-0000-0000' : '02-0000-0000',
-        location: job ? '서울' : '서울'
+      companyName: job?.employerName || proposal?.employerName || otherParticipantName.value,
+      logoUrl: null,
+      industry: null,
+      scale: null,
+      location: null,
+      phone: null,
+      website: null,
+      description: job?.description || proposal?.message || otherParticipantSummary.value,
     };
+  } finally {
+    isEmployerProfileLoading.value = false;
+  }
+};
 
-    if (proposal || job) {
-        isEmployerProfileOpen.value = true;
-        return;
+const handleProfileClick = async () => {
+  const room = currentRoom.value;
+  if (!room || !authStore.user) return;
+
+  if (authStore.user.role === 'EMPLOYER') {
+    const freelancerId = resolveFreelancerPreviewId();
+    if (!freelancerId) {
+      console.warn('Unable to resolve freelancer preview id for room:', room.id);
+      window.alert('프로필을 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
+      return;
     }
+    await openFreelancerProfile(freelancerId);
+    return;
+  }
 
-    getEmployerProfile(otherUserId)
-        .then((profile) => {
-            employerProfile.value = {
-                companyName: profile.companyName || employerProfile.value.companyName,
-                phone: profile.phone || employerProfile.value.phone,
-                location: profile.location || employerProfile.value.location
-            };
-            isEmployerProfileOpen.value = true;
-        })
-        .catch(() => {
-            isEmployerProfileOpen.value = true;
-        });
+  const employerId = resolveEmployerPreviewId();
+  if (!employerId) {
+    console.warn('Unable to resolve employer preview id for room:', room.id);
+    window.alert('프로필을 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
+    return;
+  }
+  await openEmployerProfile(employerId);
 };
 
 const handleProposalDetail = () => {
-    if (!authStore.user) return;
-    if (!proposedProject.value.proposalId && !proposedProject.value.jobId) {
-        alert('연결된 제안 프로젝트가 없습니다.');
-        return;
-    }
+  if (!proposedProject.value.proposalId && !proposedProject.value.jobId) return;
 
-    const jobId = proposedProject.value.jobId;
-    const job = jobId ? jobStore.getJobById(jobId) : null;
-    const proposalMessage = proposedProject.value.summary || '연결된 제안 메시지를 찾을 수 없습니다.';
+  const jobId = proposedProject.value.jobId;
+  const job = jobId ? jobStore.getJobById(jobId) : null;
+  const proposalMessage = proposedProject.value.summary || '연결된 제안 메시지를 찾을 수 없습니다.';
 
-    jobDetail.value = job
-        ? {
-            title: job.title,
-            description: job.description,
-            techStack: job.techStack,
-            budget: `${job.budget.toLocaleString()}원`,
-            duration: `${job.duration}개월`
-        }
-        : {
-            title: '프로젝트 제안',
-            description: proposalMessage,
-            techStack: [],
-            budget: '정보 없음',
-            duration: '정보 없음'
-        };
+  jobDetail.value = job
+    ? {
+        title: job.title,
+        description: job.description,
+        techStack: job.techStack,
+        budget: `${job.budget.toLocaleString()}원`,
+        duration: `${job.duration}개월`,
+      }
+    : {
+        title: '프로젝트 제안',
+        description: proposalMessage,
+        techStack: [],
+        budget: '정보 없음',
+        duration: '정보 없음',
+      };
 
-    isJobDetailOpen.value = true;
+  isJobDetailOpen.value = true;
 };
 
 function formatFileMeta(file: { size?: number; createdAt: Date }) {
-    const sizeLabel = typeof file.size === 'number'
-        ? `${Math.max(1, Math.round(file.size / 1024))} KB`
-        : '파일';
-    const dateLabel = new Date(file.createdAt).toLocaleDateString('ko-KR', {
-        month: 'short',
-        day: 'numeric'
-    });
-    return `${sizeLabel} • ${dateLabel}`;
+  const sizeLabel =
+    typeof file.size === 'number' ? `${Math.max(1, Math.round(file.size / 1024))} KB` : '파일';
+  const dateLabel = new Date(file.createdAt).toLocaleDateString('ko-KR', {
+    month: 'short',
+    day: 'numeric',
+  });
+  return `${sizeLabel} · ${dateLabel}`;
 }
 </script>

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { listContracts, type ContractListParams } from '@/api/contractApi';
 import { getUserById } from '@/api/authApi';
+import type { ChatRoom } from '@/types';
 import {
     getEmployerNextSettlement,
     getEmployerSettlementSummary,
@@ -23,6 +24,9 @@ export interface Contract {
     projectName: string;
     freelancerId: number;
     employerId: number;
+    relatedJobId?: string;
+    relatedApplicationId?: string;
+    relatedProposalId?: string;
     startDate: Date | string;
     endDate: Date | string;
     status: 'WAITING_SIGNATURE' | 'IN_PROGRESS' | 'COMPLETED' | 'REJECTED';
@@ -183,6 +187,56 @@ export const useContractStore = defineStore('contract', () => {
 
         if (matches.length !== 1) return null;
         return matches[0];
+    }
+
+    function normalizeContextValue(value: string | null | undefined) {
+        if (value === undefined || value === null) return null;
+        const normalizedValue = String(value).trim();
+        return normalizedValue.length > 0 ? normalizedValue : null;
+    }
+
+    function parseChatParticipantId(participantId: string | null | undefined) {
+        const normalizedParticipantId = normalizeContextValue(participantId);
+        if (!normalizedParticipantId) return null;
+
+        const matchedParticipant = normalizedParticipantId.match(/^[a-z](\d+)$/i);
+        if (matchedParticipant) {
+            return Number(matchedParticipant[1]);
+        }
+
+        const numericId = Number(normalizedParticipantId);
+        return Number.isFinite(numericId) ? numericId : null;
+    }
+
+    function matchesRoomContractContext(
+        contract: ContractWithDetails,
+        room?: Pick<ChatRoom, 'relatedJobId' | 'relatedApplicationId' | 'relatedProposalId'> | null,
+    ) {
+        if (!room) return false;
+
+        const relatedApplicationId = normalizeContextValue(room.relatedApplicationId);
+        if (relatedApplicationId) {
+            return normalizeContextValue(contract.relatedApplicationId) === relatedApplicationId;
+        }
+
+        const relatedProposalId = normalizeContextValue(room.relatedProposalId);
+        if (relatedProposalId) {
+            return normalizeContextValue(contract.relatedProposalId) === relatedProposalId;
+        }
+
+        const relatedJobId = normalizeContextValue(room.relatedJobId);
+        if (relatedJobId) {
+            return normalizeContextValue(contract.relatedJobId) === relatedJobId;
+        }
+
+        return false;
+    }
+
+    function findContractForChatRoom(
+        room?: Pick<ChatRoom, 'participants' | 'relatedJobId' | 'relatedApplicationId' | 'relatedProposalId' | 'contractId'> | null,
+    ) {
+        if (!room) return null;
+        return findContractByAnyId(room.contractId);
     }
 
     async function fetchContracts(params?: ContractListParams) {
@@ -391,6 +445,8 @@ export const useContractStore = defineStore('contract', () => {
         freelancerSettlementsWithDetails,
         findContractByAnyId,
         findContractByParticipants,
+        findContractForChatRoom,
+        matchesRoomContractContext,
         fetchContracts,
         ensureContractsLoaded,
         fetchEmployerSettlements,

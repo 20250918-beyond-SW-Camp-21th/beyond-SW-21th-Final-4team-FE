@@ -12,6 +12,9 @@ export interface ContractSummaryDto {
   projectName: string;
   freelancerId: number;
   employerId: number;
+  relatedJobId?: string | null;
+  relatedApplicationId?: string | null;
+  relatedProposalId?: string | null;
   startDate: string;
   endDate: string;
   status: string;
@@ -69,6 +72,9 @@ export interface CreateContractRequest {
   projectName: string;
   freelancerId: number;
   freelancerName?: string;
+  relatedJobId?: string;
+  relatedApplicationId?: string;
+  relatedProposalId?: string;
   startDate: string;
   endDate: string;
   budget: number;

@@ -60,9 +60,13 @@ const routes: Array<RouteRecordRaw> = [
         meta: { requiresAuth: true, role: 'EMPLOYER' },
         children: [
             {
+                path: '',
+                redirect: '/employer/jobs'
+            },
+            {
                 path: 'dashboard',
                 name: 'employer.dashboard',
-                component: () => import('@/views/employer/Dashboard/DashboardView.vue')
+                redirect: '/employer/jobs'
             },
             {
                 path: 'jobs',
@@ -213,7 +217,7 @@ router.beforeEach(async (to, _from, next) => {
     // Check role requirement
     if (to.meta.role && authStore.user?.role !== to.meta.role) {
         if (authStore.user?.role === 'EMPLOYER') {
-            next('/employer/dashboard')
+            next('/employer/jobs')
         } else {
             next('/freelancer/jobs')
         }
@@ -243,7 +247,7 @@ router.beforeEach(async (to, _from, next) => {
                 type: 'error',
                 confirmText: '확인',
             })
-            next('/employer/dashboard')
+            next('/employer/jobs')
             return
         }
     }

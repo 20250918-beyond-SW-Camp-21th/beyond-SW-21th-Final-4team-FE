@@ -2,11 +2,15 @@
 import { computed, onMounted, ref } from 'vue';
 import { Search, Filter, Users, Star, DollarSign, SlidersHorizontal, Send, BriefcaseBusiness, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import { getEmployerFreelancers, type EmployerFreelancerSearchItem } from '@/api/MyPage/employerFreelancerApi';
+import { getFreelancerProfilePreview } from '@/api/profilePreviewApi';
 import { useFavoritesStore } from '@/stores/favoritesStore';
+import { useAlertStore } from '@/stores/alertStore';
 import type { User } from '@/types';
 import ProposalModal from '@/views/employer/Recommended/components/ProposalModal.vue';
+import FreelancerProfilePreviewModal from '@/components/profile/FreelancerProfilePreviewModal.vue';
 
 const favoritesStore = useFavoritesStore();
+const alertStore = useAlertStore();
 const pageSize = 20;
 
 const searchQueryInput = ref('');
@@ -27,6 +31,48 @@ const currentPage = ref(0);
 const totalPages = ref(0);
 const totalElements = ref(0);
 const selectedFreelancer = ref<User | null>(null);
+const isFreelancerProfileOpen = ref(false);
+const isFreelancerProfileLoading = ref(false);
+const lastFreelancerProfileRequestId = ref(0);
+const freelancerProfile = ref({
+  name: '',
+  avatarUrl: null as string | null,
+  job: null as string | null,
+  careerYears: null as number | null,
+  wage: null as number | null,
+  grade: null as string | null,
+  introduction: null as string | null,
+  skills: [] as string[],
+  phone: null as string | null,
+  email: null as string | null,
+  address: null as string | null,
+  educations: [] as Array<{
+    schoolType?: string | null;
+    schoolName?: string | null;
+    major?: string | null;
+    status?: string | null;
+    entranceDate?: string | null;
+    graduationDate?: string | null;
+  }>,
+  careers: [] as Array<{
+    companyName?: string | null;
+    department?: string | null;
+    position?: string | null;
+    jobType?: string | null;
+    employmentType?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    description?: string | null;
+  }>,
+  certifications: [] as Array<{
+    name?: string | null;
+    issuer?: string | null;
+    acquisitionDate?: string | null;
+  }>,
+  portfolioUrl: null as string | null,
+  portfolioFileName: null as string | null,
+  portfolioLastUpdated: null as string | null,
+});
 
 const allSkills = computed(() => {
   const skills = new Set<string>();
@@ -83,6 +129,72 @@ const toProposalFreelancer = (freelancer: EmployerFreelancerSearchItem): User =>
   monthlySalary: freelancer.wage ?? 0,
   bio: freelancer.introduction ?? freelancer.job ?? '',
 });
+
+const seedFreelancerProfile = (freelancer: EmployerFreelancerSearchItem) => ({
+  name: freelancer.name,
+  avatarUrl: freelancer.avatarUrl ?? null,
+  job: freelancer.job ?? null,
+  careerYears: freelancer.careerYears ?? null,
+  wage: freelancer.wage ?? null,
+  grade: freelancer.grade ?? null,
+  introduction: freelancer.introduction ?? null,
+  skills: freelancer.skills ?? [],
+  phone: null,
+  email: null,
+  address: null,
+  educations: [],
+  careers: [],
+  certifications: [],
+  portfolioUrl: null,
+  portfolioFileName: null,
+  portfolioLastUpdated: null,
+});
+
+const openFreelancerProfile = async (freelancer: EmployerFreelancerSearchItem) => {
+  const requestId = ++lastFreelancerProfileRequestId.value;
+  freelancerProfile.value = seedFreelancerProfile(freelancer);
+  isFreelancerProfileOpen.value = true;
+  isFreelancerProfileLoading.value = true;
+
+  try {
+    const preview = await getFreelancerProfilePreview(freelancer.freelancerId);
+    if (requestId !== lastFreelancerProfileRequestId.value) {
+      return;
+    }
+    freelancerProfile.value = {
+      name: preview.name ?? freelancer.name,
+      avatarUrl: preview.avatarUrl ?? freelancer.avatarUrl ?? null,
+      job: preview.job ?? freelancer.job ?? null,
+      careerYears: preview.careerYears ?? freelancer.careerYears ?? null,
+      wage: preview.wage ?? freelancer.wage ?? null,
+      grade: preview.grade ?? freelancer.grade ?? null,
+      introduction: preview.introduction ?? freelancer.introduction ?? null,
+      skills: preview.skills ?? freelancer.skills ?? [],
+      phone: preview.phone,
+      email: preview.email,
+      address: preview.address,
+      educations: preview.educations ?? [],
+      careers: preview.careers ?? [],
+      certifications: preview.certifications ?? [],
+      portfolioUrl: preview.portfolioFileUrl,
+      portfolioFileName: preview.portfolioFileName,
+      portfolioLastUpdated: preview.portfolioLastUpdated,
+    };
+  } catch (error) {
+    if (requestId !== lastFreelancerProfileRequestId.value) {
+      return;
+    }
+    console.error('Failed to load freelancer profile preview:', error);
+    alertStore.open({
+      message: '프로필 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.',
+      type: 'error'
+    });
+  } finally {
+    if (requestId === lastFreelancerProfileRequestId.value) {
+      isFreelancerProfileLoading.value = false;
+    }
+  }
+};
 
 const loadFreelancers = async () => {
   isLoading.value = true;
@@ -262,7 +374,12 @@ onMounted(() => {
       <div
         v-for="freelancer in filteredFreelancers"
         :key="freelancer.freelancerId"
-        class="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all"
+        class="cursor-pointer bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all"
+        role="button"
+        tabindex="0"
+        @click="openFreelancerProfile(freelancer)"
+        @keyup.enter.self="openFreelancerProfile(freelancer)"
+        @keyup.space.self.prevent="openFreelancerProfile(freelancer)"
       >
         <div class="flex items-start gap-4 mb-4">
           <div class="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 overflow-hidden flex items-center justify-center text-white text-2xl font-bold">
@@ -313,7 +430,7 @@ onMounted(() => {
           <div class="flex items-center gap-2">
             <button
               type="button"
-              @click="toggleFavorite(freelancer.freelancerId)"
+              @click.stop="toggleFavorite(freelancer.freelancerId)"
               class="px-3 py-2 rounded-lg border transition-all"
               :class="isFavorite(freelancer.freelancerId)
                 ? 'bg-yellow-400/20 border-yellow-400/40 text-yellow-300'
@@ -326,7 +443,7 @@ onMounted(() => {
             </button>
             <button
               type="button"
-              @click="selectedFreelancer = toProposalFreelancer(freelancer)"
+              @click.stop="selectedFreelancer = toProposalFreelancer(freelancer)"
               class="px-4 py-2 bg-emerald-400 text-black rounded-lg font-semibold hover:bg-emerald-300 transition-colors flex items-center gap-2"
             >
               <Send class="w-4 h-4" />
@@ -365,6 +482,12 @@ onMounted(() => {
       v-if="selectedFreelancer"
       :freelancer="selectedFreelancer"
       @close="selectedFreelancer = null"
+    />
+    <FreelancerProfilePreviewModal
+      :is-open="isFreelancerProfileOpen"
+      :is-loading="isFreelancerProfileLoading"
+      :profile="freelancerProfile"
+      @close="isFreelancerProfileOpen = false"
     />
   </div>
 </template>

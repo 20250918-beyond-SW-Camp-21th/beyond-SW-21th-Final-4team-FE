@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import {
     FileText,
     Calendar,
@@ -25,6 +25,7 @@ const authStore = useAuthStore();
 const chatStore = useChatStore();
 const contractStore = useContractStore();
 const route = useRoute();
+const router = useRouter();
 
 const selectedContract = ref<ContractWithDetails | null>(null);
 const selectedContractTab = ref<'details' | 'contract' | 'ai-advice'>('details');
@@ -188,7 +189,21 @@ const getStringQueryValue = (value: unknown) => {
 async function syncRoomContract(contract: ContractWithDetails) {
     const routeRoomId = getStringQueryValue(route.query.roomId);
     if (!routeRoomId) return;
-    await chatStore.persistRoomContract(routeRoomId, contract.contractId ?? contract.id);
+    const contractRoomId = await chatStore.ensureContractRoomFromSourceRoom(
+        routeRoomId,
+        contract.contractId ?? contract.id
+    );
+    if (!contractRoomId) return;
+
+    if (routeRoomId !== contractRoomId || Number(route.query.contractId) !== Number(contract.contractId)) {
+        await router.replace({
+            query: {
+                ...route.query,
+                roomId: contractRoomId,
+                contractId: String(contract.contractId),
+            },
+        }).catch(() => undefined);
+    }
 }
 
 async function openContractDetail(

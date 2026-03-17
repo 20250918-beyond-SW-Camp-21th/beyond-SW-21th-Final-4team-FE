@@ -29,6 +29,7 @@ import {
     getFreelancerAiPositivityIndex,
     getFreelancerStrengthWeakness,
 } from '@/api/MyPage/evaluationApi';
+import ProfileIdentityAvatar from '@/components/profile/ProfileIdentityAvatar.vue';
 import { getFreelancerProjectStats } from '@/api/MyPage/projectApi';
 import ResumeManagementPage from './components/ResumeManagementPage.vue';
 import EvaluationListPage from './components/EvaluationListPage.vue';
@@ -376,12 +377,15 @@ const hideChurnAlert = ref(false);
                 <div class="bg-white/5 rounded-3xl border border-white/10 backdrop-blur-xl shadow-[0_30px_90px_-60px_rgba(255,255,255,0.35)] overflow-visible relative group">
                     <div class="flex flex-col md:flex-row gap-8 p-8">
                         <div class="w-full md:w-[34%] flex flex-col items-center text-center">
-                            <div class="w-28 h-28 rounded-full overflow-hidden bg-white/10 border-2 border-white/20 relative shadow-[0_10px_40px_-20px_rgba(0,0,0,0.6)]">
-                                <img v-if="profile.avatar" :src="profile.avatar" alt="Profile" class="w-full h-full object-cover" />
-                                <div v-else class="w-full h-full flex items-center justify-center bg-slate-800">
-                                     <User class="w-10 h-10 text-slate-400" />
-                                </div>
-                            </div>
+                            <ProfileIdentityAvatar
+                                :image-url="profile.avatar"
+                                :label="profile.name"
+                                variant="freelancer"
+                                shape="circle"
+                                size-class="w-28 h-28"
+                                text-class="text-4xl font-bold"
+                                ring-class="border-2 border-white/20 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.6)]"
+                            />
 
                             <h2 class="text-xl md:text-2xl font-semibold tracking-tight mt-5 mb-2 text-white">{{ profile.name }}</h2>
                             <div
