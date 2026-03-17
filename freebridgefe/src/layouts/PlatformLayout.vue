@@ -168,9 +168,8 @@ watch(
     <nav class="hidden lg:block sticky top-0 z-50 h-20 bg-white/5 backdrop-blur-2xl border-b border-white/10">
       <div class="w-full px-4 xl:px-8 h-full flex items-center justify-between gap-4">
         <div 
-          @click="router.push(isEmployer ? '/employer/dashboard' : '/freelancer/jobs')"
+          @click="router.push(isEmployer ? '/employer/jobs' : '/freelancer/jobs')"
           class="shrink-0 text-2xl font-bold bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent cursor-pointer"
-          :data-tour="isEmployer ? 'employer.dashboard' : undefined"
           v-motion="{
             initial: { opacity: 0, x: -20 },
             enter: { opacity: 1, x: 0 }

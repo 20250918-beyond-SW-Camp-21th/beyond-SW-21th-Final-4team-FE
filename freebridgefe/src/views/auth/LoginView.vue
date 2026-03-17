@@ -31,7 +31,7 @@ const handleLogin = async (e: Event) => {
 
     // Success - redirect based on role
     if (data.user.role === 'EMPLOYER') {
-      router.push('/employer/dashboard');
+      router.push('/employer/jobs');
     } else {
       router.push('/freelancer/jobs');
     }

@@ -15,14 +15,6 @@ export type TourStep = {
 // 고용주 페이지별 튜토리얼
 export const employerTourSteps: TourStep[] = [
   {
-    id: 'employer.dashboard',
-    title: '대시보드',
-    description: '프로젝트 현황, 계약 중인 프리랜서 수, 이번 달 계약 건수 등 핵심 지표를 한눈에 확인할 수 있습니다. 여기서 전체적인 비즈니스 상황을 빠르게 파악하세요.',
-    route: '/employer/dashboard',
-    selector: '[data-tour="employer.dashboard"]',
-    placement: 'center',
-  },
-  {
     id: 'employer.jobs',
     title: '내 공고',
     description: '새로운 프로젝트 공고를 등록하고 관리할 수 있습니다. 공고 상태 확인, 수정, 마감 등 모든 공고 관련 작업을 이곳에서 처리하세요.',
@@ -120,4 +112,4 @@ export const getTourSteps = (role: UserRole) =>
   role === 'EMPLOYER' ? employerTourSteps : freelancerTourSteps;
 
 export const getFirstTourRoute = (role: UserRole) =>
-  getTourSteps(role)[0]?.route || (role === 'EMPLOYER' ? '/employer/dashboard' : '/freelancer/jobs');
+  getTourSteps(role)[0]?.route || (role === 'EMPLOYER' ? '/employer/jobs' : '/freelancer/jobs');

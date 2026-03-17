@@ -335,10 +335,10 @@ const safeWebsiteUrl = computed(() => {
 
         <div class="p-4 border-t border-white/10">
           <button
-            @click="router.push({ name: 'employer.dashboard' })"
+            @click="router.push({ name: 'employer.jobs' })"
             class="w-full py-2 text-sm text-slate-400 hover:text-white transition-colors"
           >
-            대시보드로 돌아가기
+            내 공고로 돌아가기
           </button>
         </div>
       </div>
