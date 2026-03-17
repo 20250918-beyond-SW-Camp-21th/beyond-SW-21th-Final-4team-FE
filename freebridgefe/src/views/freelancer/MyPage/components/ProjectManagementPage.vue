@@ -29,9 +29,11 @@ interface ContractProjectCard {
   endDate: string;
   budget: number;
   status: ContractWithDetails['status'];
+  statusLabel: string;
   stage: Exclude<ProjectStage, 'ALL'>;
   stageLabel: string;
   stageDescription: string;
+  progress: number;
 }
 
 const authStore = useAuthStore();
@@ -65,6 +67,37 @@ const formatDate = (value?: string | Date | null) => {
 const formatBudget = (value?: number | null) => {
   if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) return '-';
   return `${value.toLocaleString()}원`;
+};
+
+const getContractStatusLabel = (status: ContractWithDetails['status']) => {
+  switch (status) {
+    case 'WAITING_SIGNATURE':
+      return '서명 대기';
+    case 'IN_PROGRESS':
+      return '진행 계약';
+    case 'COMPLETED':
+      return '계약 완료';
+    case 'REJECTED':
+      return '계약 종료';
+    default:
+      return '상태 확인 필요';
+  }
+};
+
+const calculateProgress = (contract: ContractWithDetails) => {
+  if (contract.status === 'COMPLETED') return 100;
+
+  const start = toDate(contract.startDate);
+  const end = toDate(contract.endDate);
+  if (!start || !end || end <= start) return 0;
+
+  const now = new Date();
+  if (now <= start) return 0;
+  if (now >= end) return 100;
+
+  const total = end.getTime() - start.getTime();
+  const elapsed = now.getTime() - start.getTime();
+  return Math.max(0, Math.min(100, Math.round((elapsed / total) * 100)));
 };
 
 const normalizeProjectStage = (contract: ContractWithDetails): Exclude<ProjectStage, 'ALL'> | null => {
@@ -165,9 +198,11 @@ const contractCards = computed<ContractProjectCard[]>(() => {
         endDate: formatDate(contract.endDate),
         budget: contract.budget ?? 0,
         status: contract.status,
+        statusLabel: getContractStatusLabel(contract.status),
         stage,
         stageLabel: getStageLabel(stage),
         stageDescription: getStageDescription(stage, contract.startDate, contract.endDate),
+        progress: calculateProgress(contract),
       };
     })
     .filter((card): card is ContractProjectCard => card !== null);
@@ -220,7 +255,7 @@ const openDetailModal = (contractId: number) => {
         </button>
         <div>
           <h2 class="text-2xl font-bold text-white mb-2">프로젝트 관리</h2>
-          <p class="text-slate-400 text-sm">계약된 프로젝트를 상태별 카드로 확인하세요.</p>
+          <p class="text-slate-400 text-sm">계약된 프로젝트를 상태별 카드로 확인해보세요.</p>
         </div>
       </div>
 
@@ -266,16 +301,21 @@ const openDetailModal = (contractId: number) => {
         @keydown.space.prevent="openDetailModal(project.contractId)"
         role="button"
         tabindex="0"
-        class="border rounded-2xl p-6 transition-all group flex flex-col min-h-[280px]"
+        class="border rounded-2xl p-6 transition-all group flex flex-col min-h-[320px]"
         :class="getStageConfig(project.stage).cardClass"
       >
         <div class="flex justify-between items-start mb-5">
-          <div
-            class="px-3 py-1 rounded-full text-xs font-bold border inline-flex items-center gap-1.5"
-            :class="getStageConfig(project.stage).labelClass"
-          >
-            <component :is="getStageConfig(project.stage).icon" class="w-3.5 h-3.5" />
-            {{ project.stageLabel }}
+          <div class="flex flex-wrap items-center gap-2">
+            <div
+              class="px-3 py-1 rounded-full text-xs font-bold border inline-flex items-center gap-1.5"
+              :class="getStageConfig(project.stage).labelClass"
+            >
+              <component :is="getStageConfig(project.stage).icon" class="w-3.5 h-3.5" />
+              {{ project.stageLabel }}
+            </div>
+            <div class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300">
+              {{ project.statusLabel }}
+            </div>
           </div>
           <div class="text-xs text-slate-400 font-mono">#{{ project.contractId }}</div>
         </div>
@@ -310,21 +350,36 @@ const openDetailModal = (contractId: number) => {
               <span class="text-slate-400">프로젝트 상태</span>
               <span class="text-white">{{ project.stageDescription }}</span>
             </div>
+            <div class="space-y-2 pt-1">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-400">진행률</span>
+                <span class="text-white font-semibold">{{ project.progress }}%</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded-full bg-white/10">
+                <div
+                  class="h-full rounded-full bg-gradient-to-r from-sky-400 via-blue-400 to-emerald-400 transition-all duration-500"
+                  :style="{ width: `${project.progress}%` }"
+                ></div>
+              </div>
+            </div>
           </div>
         </div>
 
         <div class="pt-4 mt-4 border-t border-white/10 flex items-center justify-between text-xs">
           <span class="text-slate-400">계약 상태</span>
-          <span class="text-slate-200">{{ project.status }}</span>
+          <span class="text-slate-200">{{ project.statusLabel }}</span>
         </div>
       </div>
     </div>
 
-    <div v-else class="flex-1 flex flex-col items-center justify-center text-slate-500 space-y-4 min-h-[400px]">
-      <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center">
-        <Search class="w-8 h-8 opacity-50" />
+    <div v-else class="flex-1 flex items-center justify-center">
+      <div class="text-center max-w-md rounded-3xl border border-white/10 bg-slate-900/60 px-8 py-10">
+        <Briefcase class="w-16 h-16 text-slate-600 mx-auto mb-4" />
+        <h3 class="text-xl font-semibold text-white mb-2">진행할 프로젝트가 없습니다</h3>
+        <p class="text-slate-400 leading-relaxed">
+          아직 연결된 계약 프로젝트가 없거나, 현재 필터 조건에 맞는 프로젝트가 없습니다.
+        </p>
       </div>
-      <p>아직 계약된 프로젝트가 없습니다.</p>
     </div>
 
     <ContractProjectDetailModal
