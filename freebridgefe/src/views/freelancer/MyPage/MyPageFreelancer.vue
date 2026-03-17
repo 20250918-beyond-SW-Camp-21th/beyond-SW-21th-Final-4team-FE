@@ -483,7 +483,7 @@ const hideChurnAlert = ref(false);
                                         <label class="text-[11px] text-slate-500 mb-1 block">희망 월급</label>
                                         <div class="flex items-center gap-2 text-sm text-white">
                                             <Award class="w-4 h-4 text-slate-400" />
-                                            {{ profile.salary.toLocaleString() }}원/월
+                                            {{ profile.salary.toLocaleString() }}만원/월
                                         </div>
                                     </div>
                                     <div class="group">
