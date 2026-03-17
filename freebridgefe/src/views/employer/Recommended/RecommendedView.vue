@@ -3,19 +3,64 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Crown, Lock, Send, Star, TrendingUp } from "lucide-vue-next";
 import { getEmployerSubscription } from "@/api/MyPage/accountApi";
+import { getFreelancerProfilePreview } from "@/api/profilePreviewApi";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useFreelancerStore } from "@/stores/freelancerStore";
 import { useJobStore } from "@/stores/jobStore";
+import { useAlertStore } from "@/stores/alertStore";
 import { normalizeEmployerPlan } from "@/utils/employerSubscription";
 import type { JobPosting, User } from "@/types";
 import ProposalModal from "./components/ProposalModal.vue";
+import FreelancerProfilePreviewModal from "@/components/profile/FreelancerProfilePreviewModal.vue";
 
 const freelancerStore = useFreelancerStore();
 const favoritesStore = useFavoritesStore();
 const jobStore = useJobStore();
+const alertStore = useAlertStore();
 const router = useRouter();
 
 const selectedFreelancer = ref<User | null>(null);
+const isFreelancerProfileOpen = ref(false);
+const isFreelancerProfileLoading = ref(false);
+const freelancerProfile = ref({
+  name: "",
+  avatarUrl: null as string | null,
+  job: null as string | null,
+  careerYears: null as number | null,
+  wage: null as number | null,
+  grade: null as string | null,
+  introduction: null as string | null,
+  skills: [] as string[],
+  phone: null as string | null,
+  email: null as string | null,
+  address: null as string | null,
+  educations: [] as Array<{
+    schoolType?: string | null;
+    schoolName?: string | null;
+    major?: string | null;
+    status?: string | null;
+    entranceDate?: string | null;
+    graduationDate?: string | null;
+  }>,
+  careers: [] as Array<{
+    companyName?: string | null;
+    department?: string | null;
+    position?: string | null;
+    jobType?: string | null;
+    employmentType?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    description?: string | null;
+  }>,
+  certifications: [] as Array<{
+    name?: string | null;
+    issuer?: string | null;
+    acquisitionDate?: string | null;
+  }>,
+  portfolioUrl: null as string | null,
+  portfolioFileName: null as string | null,
+  portfolioLastUpdated: null as string | null,
+});
 const selectedJobId = ref("");
 const recommendationRequestId = ref(0);
 const planLoading = ref(true);
@@ -36,6 +81,63 @@ const isFavorite = (id: string | number) =>
 
 const toggleFavorite = (id: string | number) =>
   favoritesStore.toggleFavorite(String(id));
+
+const seedFreelancerProfile = (freelancer: User) => ({
+  name: freelancer.name,
+  avatarUrl: null,
+  job: null,
+  careerYears: freelancer.experience ?? null,
+  wage: freelancer.monthlySalary ?? null,
+  grade: null,
+  introduction: freelancer.bio ?? null,
+  skills: freelancer.skills ?? [],
+  phone: null,
+  email: null,
+  address: null,
+  educations: [],
+  careers: [],
+  certifications: [],
+  portfolioUrl: null,
+  portfolioFileName: null,
+  portfolioLastUpdated: null,
+});
+
+const openFreelancerProfile = async (freelancer: User) => {
+  freelancerProfile.value = seedFreelancerProfile(freelancer);
+  isFreelancerProfileOpen.value = true;
+  isFreelancerProfileLoading.value = true;
+
+  try {
+    const preview = await getFreelancerProfilePreview(freelancer.id);
+    freelancerProfile.value = {
+      name: preview.name ?? freelancer.name,
+      avatarUrl: preview.avatarUrl ?? null,
+      job: preview.job ?? null,
+      careerYears: preview.careerYears ?? freelancer.experience ?? null,
+      wage: preview.wage ?? freelancer.monthlySalary ?? null,
+      grade: preview.grade ?? null,
+      introduction: preview.introduction ?? freelancer.bio ?? null,
+      skills: preview.skills ?? freelancer.skills ?? [],
+      phone: preview.phone,
+      email: preview.email,
+      address: preview.address,
+      educations: preview.educations ?? [],
+      careers: preview.careers ?? [],
+      certifications: preview.certifications ?? [],
+      portfolioUrl: preview.portfolioFileUrl,
+      portfolioFileName: preview.portfolioFileName,
+      portfolioLastUpdated: preview.portfolioLastUpdated,
+    };
+  } catch (error) {
+    console.error("Failed to load recommended freelancer profile preview:", error);
+    alertStore.open({
+      message: "프로필 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      type: "error",
+    });
+  } finally {
+    isFreelancerProfileLoading.value = false;
+  }
+};
 
 const hasAccess = computed(
   () => !planLoading.value && ["PRO", "PRIME"].includes(currentPlan.value),
@@ -385,7 +487,12 @@ onBeforeUnmount(() => {
       <div
         v-for="freelancer in freelancerStore.freelancers"
         :key="freelancer.id"
-        class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:border-white/20 hover:bg-white/10 transition-all"
+        class="cursor-pointer bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:border-white/20 hover:bg-white/10 transition-all"
+        role="button"
+        tabindex="0"
+        @click="openFreelancerProfile(freelancer)"
+        @keyup.enter="openFreelancerProfile(freelancer)"
+        @keyup.space.prevent="openFreelancerProfile(freelancer)"
         v-motion
         :initial="{ opacity: 0, y: 20 }"
         :enter="{ opacity: 1, y: 0 }"
@@ -397,15 +504,11 @@ onBeforeUnmount(() => {
             {{ freelancer.name[0] }}
           </div>
           <div class="flex-1">
-            <router-link
-              :to="{
-                name: 'employer.freelancer.profile',
-                params: { id: freelancer.id },
-              }"
-              class="text-xl font-bold mb-1 hover:text-blue-400 transition-colors cursor-pointer block"
+            <div
+              class="text-xl font-bold mb-1 hover:text-blue-400 transition-colors"
             >
               {{ freelancer.name }}
-            </router-link>
+            </div>
             <p class="text-sm text-white/60">
               {{ freelancer.experience }}년 경력
             </p>
@@ -449,7 +552,7 @@ onBeforeUnmount(() => {
           <div class="flex items-center gap-2">
             <button
               type="button"
-              @click="toggleFavorite(freelancer.id)"
+              @click.stop="toggleFavorite(freelancer.id)"
               class="px-3 py-2 rounded-lg border transition-all"
               :class="
                 isFavorite(freelancer.id)
@@ -468,7 +571,7 @@ onBeforeUnmount(() => {
             </button>
             <button
               type="button"
-              @click="selectedFreelancer = freelancer"
+              @click.stop="selectedFreelancer = freelancer"
               class="px-4 py-2 bg-[#2D5BFF] text-white rounded-lg hover:bg-[#2D5BFF]/90 hover:shadow-lg transition-all flex items-center gap-2"
             >
               <Send class="w-4 h-4" />
@@ -508,6 +611,12 @@ onBeforeUnmount(() => {
       v-if="selectedFreelancer"
       :freelancer="selectedFreelancer"
       @close="selectedFreelancer = null"
+    />
+    <FreelancerProfilePreviewModal
+      :is-open="isFreelancerProfileOpen"
+      :is-loading="isFreelancerProfileLoading"
+      :profile="freelancerProfile"
+      @close="isFreelancerProfileOpen = false"
     />
   </div>
 </template>
