@@ -26,6 +26,7 @@ export interface EmployerSubscriptionResponse {
 }
 
 export interface EmployerSubscriptionChangeResult {
+    success: boolean;
     currentPlanGrade: string;
     pendingPlanGrade: string | null;
     status: string;
@@ -107,7 +108,13 @@ export const updateEmployerSubscription = async (
             paymentId: paymentId ?? null,
         }
     );
-    return response.data.data;
+    if (response.data.success !== true) {
+        throw new Error(response.data.message ?? 'Failed to update subscription');
+    }
+    return {
+        success: true,
+        ...response.data.data
+    };
 };
 
 export const getEmployerNotificationSettings = async (): Promise<EmployerNotificationSettings> => {

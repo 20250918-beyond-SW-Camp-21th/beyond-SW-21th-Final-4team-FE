@@ -277,6 +277,14 @@ const handlePlanChange = async (plan: PlanType) => {
         try {
           isLoading.value = true;
           const result = await updateEmployerSubscription(plan);
+          if (result.success !== true) {
+            alertStore.open({
+              title: '플랜 변경 실패',
+              message: result.message || '플랜 변경에 실패했습니다.',
+              type: 'error'
+            });
+            return;
+          }
           currentPlan.value = normalizeEmployerPlan(result.currentPlanGrade);
           alertStore.open({
             title: '플랜 변경 완료',

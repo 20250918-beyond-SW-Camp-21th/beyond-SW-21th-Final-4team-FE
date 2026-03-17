@@ -7,7 +7,9 @@ export const normalizePhoneForSubmit = (value: string | null | undefined): strin
   if (!trimmed) return '';
 
   if (trimmed.startsWith('+')) {
-    return `+${trimmed.slice(1).replace(DIGIT_ONLY_REGEX, '')}`;
+    const digits = trimmed.slice(1).replace(DIGIT_ONLY_REGEX, '');
+    if (!digits) return '';
+    return `+${digits}`;
   }
 
   return trimmed.replace(DIGIT_ONLY_REGEX, '');

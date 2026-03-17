@@ -22,6 +22,7 @@ const router = useRouter();
 const selectedFreelancer = ref<User | null>(null);
 const isFreelancerProfileOpen = ref(false);
 const isFreelancerProfileLoading = ref(false);
+const lastFreelancerProfileRequestId = ref(0);
 const freelancerProfile = ref({
   name: "",
   avatarUrl: null as string | null,
@@ -103,12 +104,16 @@ const seedFreelancerProfile = (freelancer: User) => ({
 });
 
 const openFreelancerProfile = async (freelancer: User) => {
+  const requestId = ++lastFreelancerProfileRequestId.value;
   freelancerProfile.value = seedFreelancerProfile(freelancer);
   isFreelancerProfileOpen.value = true;
   isFreelancerProfileLoading.value = true;
 
   try {
     const preview = await getFreelancerProfilePreview(freelancer.id);
+    if (requestId !== lastFreelancerProfileRequestId.value) {
+      return;
+    }
     freelancerProfile.value = {
       name: preview.name ?? freelancer.name,
       avatarUrl: preview.avatarUrl ?? null,
@@ -129,13 +134,18 @@ const openFreelancerProfile = async (freelancer: User) => {
       portfolioLastUpdated: preview.portfolioLastUpdated,
     };
   } catch (error) {
+    if (requestId !== lastFreelancerProfileRequestId.value) {
+      return;
+    }
     console.error("Failed to load recommended freelancer profile preview:", error);
     alertStore.open({
       message: "프로필 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
       type: "error",
     });
   } finally {
-    isFreelancerProfileLoading.value = false;
+    if (requestId === lastFreelancerProfileRequestId.value) {
+      isFreelancerProfileLoading.value = false;
+    }
   }
 };
 
@@ -491,8 +501,8 @@ onBeforeUnmount(() => {
         role="button"
         tabindex="0"
         @click="openFreelancerProfile(freelancer)"
-        @keyup.enter="openFreelancerProfile(freelancer)"
-        @keyup.space.prevent="openFreelancerProfile(freelancer)"
+        @keyup.enter.self="openFreelancerProfile(freelancer)"
+        @keyup.space.self.prevent="openFreelancerProfile(freelancer)"
         v-motion
         :initial="{ opacity: 0, y: 20 }"
         :enter="{ opacity: 1, y: 0 }"

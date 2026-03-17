@@ -4,6 +4,15 @@ import { useAlertStore } from '@/stores/alertStore';
 
 const alertStore = useAlertStore();
 
+const handleBackdropClick = () => {
+  if (alertStore.showCancel) {
+    void alertStore.cancel();
+    return;
+  }
+
+  alertStore.close();
+};
+
 const toneClass = computed(() => {
   switch (alertStore.type) {
     case 'success':
@@ -23,7 +32,7 @@ const toneClass = computed(() => {
     <div
       v-if="alertStore.isOpen"
       class="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      @click.self="alertStore.close"
+      @click.self="handleBackdropClick"
     >
       <div class="w-full max-w-md rounded-[28px] border border-white/10 bg-white/10 shadow-[0_30px_90px_-60px_rgba(255,255,255,0.35)] backdrop-blur-2xl">
         <div class="p-6">
