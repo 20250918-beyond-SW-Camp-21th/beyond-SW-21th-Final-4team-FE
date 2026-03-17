@@ -329,6 +329,11 @@ export const uploadFreelancerAvatar = async (file: File): Promise<string> => {
   const response = await apiClient.post<ApiResponse<string>>(
     "/api/freelancer/mypage/profile/avatar",
     form,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    },
   );
   if (!response.data.success || !response.data.data) {
     const message = response.data.message ?? "Unknown error";
@@ -344,7 +349,11 @@ export const uploadFreelancerPortfolio = async (
   form.append("file", file);
   const response = await apiClient.post<
     ApiResponse<{ fileUrl: string | null; fileName: string | null; lastUpdated: string | null }>
-  >("/api/freelancer/mypage/portfolio", form);
+  >("/api/freelancer/mypage/portfolio", form, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 
   if (!response.data.success || !response.data.data) {
     const message = response.data.message ?? "Unknown error";
@@ -359,4 +368,28 @@ export const uploadFreelancerPortfolio = async (
     fileName,
     lastUpdated,
   };
+};
+
+export const getFreelancerPortfolioDownloadUrl = async (): Promise<string> => {
+  const response = await apiClient.get<ApiResponse<string>>("/api/freelancer/mypage/portfolio/download");
+  if (!response.data.success || !response.data.data) {
+    const message = response.data.message ?? "Unknown error";
+    throw new Error(`getFreelancerPortfolioDownloadUrl failed (/api/freelancer/mypage/portfolio/download): ${message}`);
+  }
+  return response.data.data;
+};
+
+export const deleteFreelancerPortfolio = async (): Promise<void> => {
+  const response = await apiClient.delete<ApiResponse<null>>("/api/freelancer/mypage/portfolio");
+  if (!response.data.success) {
+    const message = response.data.message ?? "Unknown error";
+    throw new Error(`deleteFreelancerPortfolio failed (/api/freelancer/mypage/portfolio): ${message}`);
+  }
+};
+
+export const downloadFreelancerPortfolioTemplate = async (): Promise<Blob> => {
+  const response = await apiClient.get("/api/freelancer/mypage/portfolio/template", {
+    responseType: "blob",
+  });
+  return response.data as Blob;
 };

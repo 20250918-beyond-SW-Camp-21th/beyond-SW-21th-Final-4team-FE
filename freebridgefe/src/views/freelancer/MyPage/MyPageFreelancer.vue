@@ -17,15 +17,23 @@ import {
   Upload,
   Download,
   Eye,
-  AlertTriangle,
-  X,
-  Edit3,
-  TrendingUp,
+    AlertTriangle,
+    X,
+    Edit3,
+    TrendingUp,
+    Trash2,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useAlertStore } from '@/stores/alertStore';
 import { useContractStore } from '@/stores/contractStore';
-import { getFreelancerProfile, uploadFreelancerPortfolio, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
+import {
+    getFreelancerProfile,
+    uploadFreelancerPortfolio,
+    getFreelancerPortfolioDownloadUrl,
+    deleteFreelancerPortfolio,
+    downloadFreelancerPortfolioTemplate,
+    type FreelancerProfileDashboard
+} from '@/api/MyPage/freelancerApi';
 import {
     getFreelancerReviewSummary,
     getFreelancerAiPositivityIndex,
@@ -266,30 +274,80 @@ const onFileChange = async (event: Event) => {
     }
 };
 
-const viewPortfolio = () => {
+const resolvePortfolioAvailability = () => {
     const fileUrl = profile.value.portfolio.fileUrl;
-    const isValid = fileUrl && typeof fileUrl === 'string' && fileUrl.trim() !== '' && fileUrl !== '#';
+    return fileUrl && typeof fileUrl === 'string' && fileUrl.trim() !== '' && fileUrl !== '#';
+};
 
-    if (isValid) {
-        window.open(fileUrl, '_blank');
-    } else {
+const viewPortfolio = async () => {
+    if (!resolvePortfolioAvailability()) {
         alert('확인할 포트폴리오가 없습니다.');
+        return;
+    }
+
+    try {
+        const downloadUrl = await getFreelancerPortfolioDownloadUrl();
+        window.open(downloadUrl, '_blank');
+    } catch (error) {
+        console.error('Failed to open portfolio:', error);
+        alert('포트폴리오를 열지 못했습니다.');
     }
 };
 
-const downloadPortfolio = () => {
-    const fileUrl = profile.value.portfolio.fileUrl;
-    const isValid = fileUrl && typeof fileUrl === 'string' && fileUrl.trim() !== '' && fileUrl !== '#';
+const downloadPortfolio = async () => {
+    if (!resolvePortfolioAvailability()) {
+        alert('다운로드할 포트폴리오가 없습니다.');
+        return;
+    }
 
-    if (isValid) {
+    try {
+        const downloadUrl = await getFreelancerPortfolioDownloadUrl();
         const link = document.createElement('a');
-        link.href = fileUrl!;
+        link.href = downloadUrl;
         link.download = profile.value.portfolio.fileName || 'portfolio.pdf';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    } else {
-        alert('다운로드할 포트폴리오가 없습니다.');
+    } catch (error) {
+        console.error('Failed to download portfolio:', error);
+        alert('포트폴리오 다운로드에 실패했습니다.');
+    }
+};
+
+const deletePortfolio = async () => {
+    if (!resolvePortfolioAvailability()) {
+        alert('삭제할 포트폴리오가 없습니다.');
+        return;
+    }
+
+    try {
+        await deleteFreelancerPortfolio();
+        profile.value.portfolio = {
+            fileUrl: null,
+            fileName: '',
+            lastUpdated: '',
+        };
+        alert('포트폴리오를 삭제했습니다.');
+    } catch (error) {
+        console.error('Failed to delete portfolio:', error);
+        alert('포트폴리오 삭제에 실패했습니다.');
+    }
+};
+
+const downloadPortfolioTemplate = async () => {
+    try {
+        const blob = await downloadFreelancerPortfolioTemplate();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'freelancer-portfolio-template.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Failed to download portfolio template:', error);
+        alert('포트폴리오 양식 다운로드에 실패했습니다.');
     }
 };
 const hideRateBumpAlert = ref(false);
@@ -718,6 +776,13 @@ const hideChurnAlert = ref(false);
                         />
                         <div class="flex items-center gap-2">
                             <button
+                                @click="downloadPortfolioTemplate"
+                                class="text-slate-500 hover:text-white transition-colors"
+                                title="양식 다운로드"
+                            >
+                                <FileText class="w-4 h-4" />
+                            </button>
+                            <button
                                 @click="viewPortfolio"
                                 class="text-slate-500 hover:text-white transition-colors"
                                 title="보기"
@@ -738,6 +803,13 @@ const hideChurnAlert = ref(false);
                                 title="업로드"
                             >
                                 <Upload class="w-4 h-4" />
+                            </button>
+                            <button
+                                @click="deletePortfolio"
+                                class="text-slate-500 hover:text-white transition-colors"
+                                title="삭제"
+                            >
+                                <Trash2 class="w-4 h-4" />
                             </button>
                         </div>
                     </div>
@@ -760,6 +832,13 @@ const hideChurnAlert = ref(false);
                         <p class="text-xs text-slate-500">
                             최신 업데이트된 포트폴리오를 다운로드해 확인하세요.
                         </p>
+                        <button
+                            @click="downloadPortfolioTemplate"
+                            class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-slate-200 transition hover:border-white/20 hover:bg-white/10"
+                        >
+                            <Download class="w-3.5 h-3.5" />
+                            <span>포트폴리오 양식 다운로드</span>
+                        </button>
                     </div>
                 </div>
             </div>
