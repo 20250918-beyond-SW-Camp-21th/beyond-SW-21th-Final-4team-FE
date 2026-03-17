@@ -336,11 +336,11 @@ const deletePortfolio = async () => {
 
 const downloadPortfolioTemplate = async () => {
     try {
-        const blob = await downloadFreelancerPortfolioTemplate();
+        const { blob, fileName } = await downloadFreelancerPortfolioTemplate();
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'freelancer-portfolio-template.pdf';
+        link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
