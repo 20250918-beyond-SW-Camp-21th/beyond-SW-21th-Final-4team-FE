@@ -16,7 +16,10 @@ onMounted(() => {
     // Reset step to 1
     store.setStep(1);
     
-    if (authStore.user?.email && !store.employerData.email) {
+    if (
+        authStore.user?.email &&
+        (!store.employerData.email || store.employerData.email !== authStore.user.email)
+    ) {
         store.updateEmployerData({ email: authStore.user.email });
     }
 });

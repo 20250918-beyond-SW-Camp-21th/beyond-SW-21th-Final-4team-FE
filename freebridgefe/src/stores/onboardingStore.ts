@@ -15,6 +15,16 @@ const DEFAULT_FREELANCER_DATA: Partial<FreelancerProfile> = {
     work_style: 'REMOTE'
 };
 
+type SerializedFileMeta = {
+    name: string;
+    size: number;
+    type: string;
+};
+
+type SerializedEmployerDraft = Omit<Partial<EmployerProfile>, 'logo_file'> & {
+    logo_file?: SerializedFileMeta | null;
+};
+
 export const useOnboardingStore = defineStore('onboarding', () => {
     const currentStep = ref(1);
     const totalSteps = ref(2);
@@ -31,11 +41,23 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     function persistDraft() {
         if (!currentDraftKey.value) return;
 
+        const sanitizedEmployerData: SerializedEmployerDraft = {
+            ...employerData.value,
+            logo_file:
+                employerData.value.logo_file instanceof File
+                    ? {
+                          name: employerData.value.logo_file.name,
+                          size: employerData.value.logo_file.size,
+                          type: employerData.value.logo_file.type
+                      }
+                    : null
+        };
+
         sessionStorage.setItem(
             currentDraftKey.value,
             JSON.stringify({
                 currentStep: currentStep.value,
-                employerData: employerData.value,
+                employerData: sanitizedEmployerData,
                 freelancerData: freelancerData.value
             })
         );
@@ -44,18 +66,28 @@ export const useOnboardingStore = defineStore('onboarding', () => {
     function ensureDraftForUser(userId: string | number | undefined, role: 'EMPLOYER' | 'FREELANCER') {
         currentDraftKey.value = getDraftKey(userId, role);
         const rawDraft = sessionStorage.getItem(currentDraftKey.value);
-        if (!rawDraft) return;
+        if (!rawDraft) {
+            if (role === 'EMPLOYER') {
+                employerData.value = { ...DEFAULT_EMPLOYER_DATA };
+            } else {
+                freelancerData.value = { ...DEFAULT_FREELANCER_DATA };
+            }
+            sessionStorage.removeItem(currentDraftKey.value);
+            currentStep.value = 1;
+            return;
+        }
 
         try {
             const parsedDraft = JSON.parse(rawDraft) as {
                 currentStep?: number;
-                employerData?: Partial<EmployerProfile>;
+                employerData?: SerializedEmployerDraft;
                 freelancerData?: Partial<FreelancerProfile>;
             };
 
             employerData.value = {
                 ...DEFAULT_EMPLOYER_DATA,
-                ...(parsedDraft.employerData ?? {})
+                ...(parsedDraft.employerData ?? {}),
+                logo_file: null
             };
             freelancerData.value = {
                 ...DEFAULT_FREELANCER_DATA,
@@ -117,7 +149,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
         isLoading.value = true;
         try {
             const logoFile = employerData.value.logo_file;
-            if (logoFile) {
+            if (logoFile instanceof File) {
                 await uploadEmployerLogo(logoFile);
             }
 
