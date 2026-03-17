@@ -82,6 +82,15 @@ export async function getMyChatRooms(): Promise<ChatRoom[]> {
 }
 
 /**
+ * 채팅방 읽음 처리
+ * POST /api/chat/rooms/{roomId}/read
+ */
+export async function markChatRoomAsRead(roomId: string): Promise<ChatRoom> {
+    const res = await apiClient.post<BackendChatRoomResponse>(`/api/chat/rooms/${roomId}/read`);
+    return mapToChatRoom(res.data);
+}
+
+/**
  * 채팅방 이전 메시지 조회 (커서 기반 페이징)
  * GET /api/chat/rooms/{roomId}/messages?size=20&cursorDateStr=...
  */
@@ -134,9 +143,14 @@ export async function leaveChatRoom(roomId: string): Promise<ChatRoom> {
  * 채팅방 계약 연결 업데이트
  * PATCH /api/chat/rooms/{roomId}/contract
  */
-export async function updateChatRoomContract(roomId: string, contractId: number | null): Promise<ChatRoom> {
+export async function updateChatRoomContract(
+    roomId: string,
+    contractId: number | null,
+    options?: { overrideExisting?: boolean }
+): Promise<ChatRoom> {
     const res = await apiClient.patch<BackendChatRoomResponse>(`/api/chat/rooms/${roomId}/contract`, {
-        contractId
+        contractId,
+        overrideExisting: options?.overrideExisting ?? false
     });
     return mapToChatRoom(res.data);
 }
