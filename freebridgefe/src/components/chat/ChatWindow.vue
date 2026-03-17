@@ -117,7 +117,7 @@
 
             <!-- Tab: CONTRACT -->
             <div v-show="activeTab === 'CONTRACT'" class="h-full">
-                <ContractTab :roomId="roomId" />
+                <ContractTab :roomId="roomId" :isActive="activeTab === 'CONTRACT'" />
             </div>
         </div>
     </div>
@@ -277,6 +277,10 @@ onMounted(() => {
     void ensureContractsLoadedForChat();
 });
 watch(messages, scrollToBottom, { deep: true });
+watch(shouldLoadContracts, (nextShouldLoadContracts) => {
+    if (!nextShouldLoadContracts) return;
+    void ensureContractsLoadedForChat();
+}, { immediate: true });
 watch(shouldRefreshContracts, (nextShouldRefreshContracts) => {
     if (!nextShouldRefreshContracts) return;
     void fetchContractsForChat();

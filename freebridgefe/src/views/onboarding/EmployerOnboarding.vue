@@ -41,7 +41,7 @@ const handleFinish = async () => {
     if (success) {
         store.resetOnboardingState();
         alert('프로필 정보 기입이 완료되었습니다!');
-        router.push({ name: 'employer.dashboard' });
+        router.push({ name: 'employer.jobs' });
     }
 };
 
