@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { requestIssueBillingKey, requestPayment, PaymentPayMethod, BillingKeyMethod } from '@portone/browser-sdk/v2';
+import { requestPayment, PaymentPayMethod } from '@portone/browser-sdk/v2';
 import {
     CreditCard,
     Search,
@@ -74,8 +74,8 @@ const subscriptionPlanMeta: Record<SubscriptionPlanType, { label: string; price:
     },
 };
 
-const redirectedBillingKey = computed(() =>
-    typeof route.query.billingKey === 'string' ? route.query.billingKey : null
+const redirectedPaymentId = computed(() =>
+    typeof route.query.paymentId === 'string' ? route.query.paymentId : null
 );
 const redirectedErrorCode = computed(() =>
     typeof route.query.code === 'string' ? route.query.code : null
@@ -147,13 +147,6 @@ const createPaymentId = () => {
     return `payment-${Date.now()}`;
 };
 
-const createBillingIssueId = () => {
-    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-        return `billing-${crypto.randomUUID()}`;
-    }
-    return `billing-${Date.now()}`;
-};
-
 const goBackFromSubscriptionPayment = async () => {
     await router.push({
         name: 'employer.mypage',
@@ -202,8 +195,8 @@ const scheduleSubscriptionSuccessRedirect = () => {
     }, 3000);
 };
 
-const finalizeSubscriptionUpgrade = async (plan: SubscriptionPlanType, billingKey: string) => {
-    const result = await updateEmployerSubscription(plan, billingKey);
+const finalizeSubscriptionUpgrade = async (plan: SubscriptionPlanType, paymentId: string) => {
+    const result = await updateEmployerSubscription(plan, null, paymentId);
     subscriptionSuccess.value = result.message || `${subscriptionPlanMeta[plan].label} 결제가 완료되었습니다.`;
     await clearSubscriptionRedirectParams();
     scheduleSubscriptionSuccessRedirect();
@@ -226,35 +219,38 @@ const handleSubscriptionPayment = async () => {
 
     try {
         isSubscriptionProcessing.value = true;
-        const billingResponse = await requestIssueBillingKey({
+        const paymentId = createPaymentId();
+        const paymentResponse = await requestPayment({
             storeId,
             channelKey,
-            billingKeyMethod: BillingKeyMethod.CARD,
-            issueId: createBillingIssueId(),
-            issueName: `${subscriptionPlanMeta[plan].label} 구독 결제 수단 등록`,
+            paymentId,
+            orderName: `${subscriptionPlanMeta[plan].label} 구독 결제`,
+            totalAmount: subscriptionPlanMeta[plan].price,
+            currency: 'KRW',
+            payMethod: PaymentPayMethod.CARD,
             customer: {
-                customerId: authStore.user?.id ? String(authStore.user.id) : undefined,
                 fullName: authStore.user?.name,
                 email: authStore.user?.email,
             },
-            customData: {
+            customData: JSON.stringify({
                 mode: 'subscription',
                 planType: plan,
-            },
+                employerId: Number(authStore.user?.id || 0),
+            }) as unknown as Record<string, any>,
             redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         });
 
-        if (!billingResponse) {
-            subscriptionError.value = '빌링키 발급이 취소되었거나 완료되지 않았습니다.';
+        if (!paymentResponse) {
+            subscriptionError.value = '결제가 취소되었거나 리디렉션 방식으로 처리되었습니다.';
             return;
         }
 
-        if (billingResponse.code) {
-            subscriptionError.value = billingResponse.message || `빌링키 발급 실패 (${billingResponse.code})`;
+        if (paymentResponse.code) {
+            subscriptionError.value = paymentResponse.message || `결제 실패 (${paymentResponse.code})`;
             return;
         }
 
-        await finalizeSubscriptionUpgrade(plan, billingResponse.billingKey);
+        await finalizeSubscriptionUpgrade(plan, paymentResponse.paymentId);
     } catch (error: any) {
         const apiErrorMessage = error?.response?.data?.error?.message
             || error?.response?.data?.message
@@ -340,7 +336,7 @@ onMounted(async () => {
     if (subscriptionMode.value) {
         if (!hasHandledSubscriptionRedirect.value) {
             const plan = requestedSubscriptionPlan.value;
-            const billingKey = redirectedBillingKey.value;
+            const paymentId = redirectedPaymentId.value;
             const errorCode = redirectedErrorCode.value;
             const errorMessage = redirectedErrorMessage.value;
 
@@ -350,11 +346,11 @@ onMounted(async () => {
                 return;
             }
 
-            if (billingKey) {
+            if (paymentId) {
                 try {
                     isSubscriptionProcessing.value = true;
                     hasHandledSubscriptionRedirect.value = true;
-                    await finalizeSubscriptionUpgrade(plan, billingKey);
+                    await finalizeSubscriptionUpgrade(plan, paymentId);
                 } catch (error: any) {
                     const apiErrorMessage = error?.response?.data?.error?.message
                         || error?.response?.data?.message
@@ -367,7 +363,7 @@ onMounted(async () => {
             }
 
             if (errorCode || errorMessage) {
-                subscriptionError.value = errorMessage || `빌링키 발급 실패 (${errorCode})`;
+                subscriptionError.value = errorMessage || `결제 실패 (${errorCode})`;
                 hasHandledSubscriptionRedirect.value = true;
             }
         }
@@ -412,7 +408,7 @@ onBeforeUnmount(() => {
                         <CreditCard class="w-8 h-8 text-sky-300" />
                         <div>
                             <h1 class="text-3xl font-bold">구독 결제</h1>
-                            <p class="text-white/60 text-sm mt-1">빌링키를 발급한 뒤 선택한 구독 플랜으로 즉시 전환합니다.</p>
+                            <p class="text-white/60 text-sm mt-1">최상의 경험을 제공하기 위해 최선의 선택을 제공합니다.</p>
                         </div>
                     </div>
 
@@ -434,7 +430,6 @@ onBeforeUnmount(() => {
                         <div class="font-semibold mb-2">결제 전 확인</div>
                         <ul class="space-y-2 text-sky-50/85">
                             <li>카드 정보를 등록하면 선택한 구독 플랜으로 즉시 변경됩니다.</li>
-                            <li>이후 정기 결제는 저장된 billingKey를 기준으로 진행됩니다.</li>
                             <li>결제가 실패하면 플랜 변경도 적용되지 않습니다.</li>
                         </ul>
                     </div>
