@@ -157,6 +157,59 @@
         initial-tab="ai-advice"
         @close="selectedLegalAdviceContract = null"
     />
+
+    <div
+        v-if="isLegalAdviceSelectorOpen"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+    >
+        <div class="w-full max-w-md rounded-3xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-xl font-bold text-white">계약 선택</h3>
+                    <p class="mt-2 text-sm text-slate-400">
+                        같은 상대와 연결된 계약이 여러 건입니다. 법률 자문을 확인할 계약을 먼저 선택해 주세요.
+                    </p>
+                </div>
+                <button
+                    @click="closeLegalAdviceSelector"
+                    class="text-slate-400 hover:text-white transition-colors"
+                >
+                    닫기
+                </button>
+            </div>
+
+            <div class="mt-6 space-y-3">
+                <label class="block text-sm font-medium text-slate-300">대상 계약</label>
+                <select
+                    v-model="selectedLegalAdviceContractId"
+                    class="w-full rounded-xl border border-white/10 bg-slate-950 px-4 py-3 text-white focus:border-sky-400/40 focus:outline-none"
+                >
+                    <option
+                        v-for="contract in legalAdviceCandidateContracts"
+                        :key="contract.id"
+                        :value="String(contract.id)"
+                    >
+                        {{ contract.projectName }} · 계약번호 {{ contract.contractId }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="mt-6 flex gap-3">
+                <button
+                    @click="closeLegalAdviceSelector"
+                    class="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white font-semibold hover:bg-white/10 transition-colors"
+                >
+                    취소
+                </button>
+                <button
+                    @click="openSelectedLegalAdviceContract"
+                    class="flex-1 rounded-xl bg-sky-500 px-4 py-3 text-white font-semibold hover:bg-sky-400 transition-colors"
+                >
+                    법률 자문 열기
+                </button>
+            </div>
+        </div>
+    </div>
 </template>
 
 <script setup lang="ts">
@@ -164,7 +217,7 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
-import { useContractStore } from '@/stores/contractStore';
+import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
 import ContractDetailModal from '@/views/employer/Contracts/components/ContractDetailModal.vue';
 import {
     AlertCircle as AlertCircleIcon,
@@ -186,7 +239,9 @@ const authStore = useAuthStore();
 const chatStore = useChatStore();
 const contractStore = useContractStore();
 const router = useRouter();
-const selectedLegalAdviceContract = ref<ReturnType<typeof contractStore.findContractByAnyId>>(null);
+const selectedLegalAdviceContract = ref<ContractWithDetails | null>(null);
+const isLegalAdviceSelectorOpen = ref(false);
+const selectedLegalAdviceContractId = ref('');
 
 const currentRoom = computed(() => chatStore.rooms.find((room) => room.id === props.roomId));
 const isEmployer = computed(() => authStore.user?.role === 'EMPLOYER');
@@ -245,6 +300,13 @@ const currentContract = computed(() => {
 
 const hasMultipleContractCandidates = computed(() => {
     return !currentRoom.value?.contractId && !currentContract.value && relatedContracts.value.length > 1;
+});
+const legalAdviceCandidateContracts = computed(() => {
+    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
+    if (linkedContract) {
+        return [linkedContract];
+    }
+    return relatedContracts.value;
 });
 
 const isContractLookupPending = computed(() => {
@@ -349,9 +411,21 @@ function openContractPage() {
 }
 
 function openLegalAdvicePage() {
+    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
+    if (linkedContract) {
+        selectedLegalAdviceContract.value = linkedContract;
+        return;
+    }
+
     const contractToOpen =
         currentContract.value ||
         (relatedContracts.value.length === 1 ? relatedContracts.value[0] : null);
+
+    if (relatedContracts.value.length > 1) {
+        selectedLegalAdviceContractId.value = String(relatedContracts.value[0].id);
+        isLegalAdviceSelectorOpen.value = true;
+        return;
+    }
 
     if (!contractToOpen) {
         window.alert('채팅과 바로 연결된 계약이 없어 법률 자문 모달을 열 수 없습니다. 계약 목록에서 먼저 계약을 확인해 주세요.');
@@ -359,5 +433,24 @@ function openLegalAdvicePage() {
     }
 
     selectedLegalAdviceContract.value = contractToOpen;
+}
+
+function closeLegalAdviceSelector() {
+    isLegalAdviceSelectorOpen.value = false;
+    selectedLegalAdviceContractId.value = '';
+}
+
+function openSelectedLegalAdviceContract() {
+    const selectedContract = legalAdviceCandidateContracts.value.find(
+        (contract) => String(contract.id) === selectedLegalAdviceContractId.value
+    );
+
+    if (!selectedContract) {
+        window.alert('열 계약을 선택해 주세요.');
+        return;
+    }
+
+    selectedLegalAdviceContract.value = selectedContract;
+    closeLegalAdviceSelector();
 }
 </script>
