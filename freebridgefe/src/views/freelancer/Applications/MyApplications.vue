@@ -17,11 +17,25 @@ import { useRouter } from 'vue-router';
 import { useJobStore } from '@/stores/jobStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import type { ApplicationStatus } from '@/types';
+import { getEmployerProfilePreview } from '@/api/profilePreviewApi';
+import EmployerProfilePreviewModal from '@/components/profile/EmployerProfilePreviewModal.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
+const isEmployerProfileOpen = ref(false);
+const isEmployerProfileLoading = ref(false);
+const employerProfile = ref({
+  companyName: '정보 없음',
+  logoUrl: null as string | null,
+  industry: null as string | null,
+  scale: null as string | null,
+  location: null as string | null,
+  phone: null as string | null,
+  website: null as string | null,
+  description: null as string | null,
+});
 
 onMounted(async () => {
   const [jobsResult, proposalsResult, applicationsResult] = await Promise.allSettled([
@@ -96,6 +110,38 @@ const stats = computed(() => {
 
 const formatDate = (date: Date | string) => {
   return new Date(date).toLocaleDateString('ko-KR');
+};
+
+const extractNumericId = (value?: string | number | null) => {
+  if (value == null) return null;
+  const matched = String(value).match(/(\d+)$/);
+  return matched ? matched[1] : String(value);
+};
+
+const openEmployerProfile = async (employerId?: string | number | null) => {
+  const resolvedEmployerId = extractNumericId(employerId);
+  if (!resolvedEmployerId) return;
+
+  isEmployerProfileOpen.value = true;
+  isEmployerProfileLoading.value = true;
+
+  try {
+    const preview = await getEmployerProfilePreview(resolvedEmployerId);
+    employerProfile.value = {
+      companyName: preview.companyName || '정보 없음',
+      logoUrl: preview.logoUrl,
+      industry: preview.industry,
+      scale: preview.scale,
+      location: preview.location,
+      phone: preview.phone,
+      website: preview.websiteUrl,
+      description: preview.description,
+    };
+  } catch (error) {
+    console.error('Failed to load employer preview:', error);
+  } finally {
+    isEmployerProfileLoading.value = false;
+  }
 };
 
 const actionFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -374,6 +420,16 @@ const handleRejectProposal = async (proposalId: string) => {
               </button>
             </div>
 
+            <div class="mb-4">
+              <button
+                type="button"
+                class="flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
+                @click="openEmployerProfile(proposal.employerId)"
+              >
+                ?꾨줈??蹂닿린
+              </button>
+            </div>
+
             <div
               v-if="proposal.status === 'ACCEPTED'"
               class="flex items-center gap-3 rounded-2xl border border-green-500/20 bg-green-500/10 p-4"
@@ -484,5 +540,11 @@ const handleRejectProposal = async (proposalId: string) => {
         </div>
       </div>
     </div>
+    <EmployerProfilePreviewModal
+      :is-open="isEmployerProfileOpen"
+      :is-loading="isEmployerProfileLoading"
+      :profile="employerProfile"
+      @close="isEmployerProfileOpen = false"
+    />
   </div>
 </template>

@@ -1,9 +1,14 @@
 <template>
   <div class="custom-scrollbar flex h-full flex-col overflow-y-auto border-l border-white/5 bg-slate-900">
     <div class="border-b border-white/5 p-6 text-center">
-      <div class="mx-auto mb-4 flex h-24 w-24 items-center justify-center rounded-full border-4 border-slate-800 bg-slate-800 text-3xl font-bold text-slate-300 ring-2 ring-emerald-500/50">
-        {{ otherParticipantName.charAt(0) }}
-      </div>
+      <ProfileIdentityAvatar
+        :label="otherParticipantName"
+        variant="neutral"
+        shape="circle"
+        size-class="mx-auto mb-4 h-24 w-24"
+        text-class="text-3xl font-bold"
+        ring-class="border-4 border-slate-800 ring-2 ring-emerald-500/50"
+      />
 
       <h2 class="mb-1 text-xl font-bold text-white">{{ otherParticipantName }}</h2>
       <p class="mb-4 text-sm text-slate-400">{{ otherParticipantSummary }}</p>
@@ -135,6 +140,7 @@ import { computed, ref } from 'vue';
 import { Code as CodeIcon, FileText as FileTextIcon } from 'lucide-vue-next';
 import EmployerProfilePreviewModal from '@/components/profile/EmployerProfilePreviewModal.vue';
 import FreelancerProfilePreviewModal from '@/components/profile/FreelancerProfilePreviewModal.vue';
+import ProfileIdentityAvatar from '@/components/profile/ProfileIdentityAvatar.vue';
 import { getEmployerProfilePreview, getFreelancerProfilePreview } from '@/api/profilePreviewApi';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
@@ -176,9 +182,33 @@ const freelancerProfile = ref({
   grade: null as string | null,
   introduction: null as string | null,
   skills: [] as string[],
+  birthDate: null as string | null,
   phone: null as string | null,
   email: null as string | null,
   address: null as string | null,
+  educations: [] as Array<{
+    schoolType: string | null;
+    schoolName: string | null;
+    major: string | null;
+    status: string | null;
+    entranceDate: string | null;
+    graduationDate: string | null;
+  }>,
+  careers: [] as Array<{
+    companyName: string | null;
+    department: string | null;
+    position: string | null;
+    jobType: string | null;
+    employmentType: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    description: string | null;
+  }>,
+  certifications: [] as Array<{
+    name: string | null;
+    issuer: string | null;
+    acquisitionDate: string | null;
+  }>,
   portfolioUrl: null as string | null,
   portfolioFileName: null as string | null,
   portfolioLastUpdated: null as string | null,
@@ -353,9 +383,13 @@ const openFreelancerProfile = async (freelancerId: string) => {
       grade: preview.grade,
       introduction: preview.introduction,
       skills: preview.skills ?? [],
+      birthDate: preview.birthDate,
       phone: preview.phone,
       email: preview.email,
       address: preview.address,
+      educations: preview.educations ?? [],
+      careers: preview.careers ?? [],
+      certifications: preview.certifications ?? [],
       portfolioUrl: preview.portfolioFileUrl,
       portfolioFileName: preview.portfolioFileName,
       portfolioLastUpdated: preview.portfolioLastUpdated,

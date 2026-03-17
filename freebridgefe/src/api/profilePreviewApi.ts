@@ -34,6 +34,35 @@ export interface FreelancerProfilePreview {
   phone: string | null;
   email: string | null;
   address: string | null;
+  educations:
+    | {
+        schoolType: string | null;
+        schoolName: string | null;
+        major: string | null;
+        status: string | null;
+        entranceDate: string | null;
+        graduationDate: string | null;
+      }[]
+    | null;
+  careers:
+    | {
+        companyName: string | null;
+        department: string | null;
+        position: string | null;
+        jobType: string | null;
+        employmentType: string | null;
+        startDate: string | null;
+        endDate: string | null;
+        description: string | null;
+      }[]
+    | null;
+  certifications:
+    | {
+        name: string | null;
+        issuer: string | null;
+        acquisitionDate: string | null;
+      }[]
+    | null;
   portfolioFileUrl: string | null;
   portfolioFileName: string | null;
   portfolioLastUpdated: string | null;

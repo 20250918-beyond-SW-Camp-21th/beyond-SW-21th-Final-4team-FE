@@ -33,6 +33,7 @@ import { PLAN_LABELS } from '@/constants/planLabels';
 import { getEmployerReviewSummary } from '@/api/MyPage/evaluationApi';
 import { getEmployerProjectStats } from '@/api/MyPage/projectApi';
 import { getEmployerSubscription } from '@/api/MyPage/accountApi';
+import ProfileIdentityAvatar from '@/components/profile/ProfileIdentityAvatar.vue';
 
 import EmployerProfileManagement from './components/EmployerProfileManagement.vue';
 import EmployerAccountManagement from './components/EmployerAccountManagement.vue';
@@ -426,17 +427,15 @@ const safeWebsiteUrl = computed(() => {
                       <div class="w-full md:w-1/3 flex flex-col items-center text-center border-b md:border-b-0 md:border-r border-white/10 pb-8 md:pb-0 md:pr-8">
                           <!-- Logo Upload -->
                           <div class="relative group cursor-pointer mb-4">
-                              <div class="w-32 h-32 rounded-3xl overflow-hidden border border-white/15 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.6)] bg-white/5 flex items-center justify-center">
-                                  <img 
-                                      v-if="employerProfile.logoUrl" 
-                                      :src="employerProfile.logoUrl" 
-                                      alt="Company Logo" 
-                                      class="w-full h-full object-cover"
-                                  />
-                                  <div v-else class="text-4xl font-bold text-white/20">
-                                      {{ employerProfile.companyName.charAt(0) }}
-                                  </div>
-                              </div>
+                              <ProfileIdentityAvatar
+                                  :image-url="employerProfile.logoUrl"
+                                  :label="employerProfile.companyName"
+                                  variant="employer"
+                                  shape="square"
+                                  size-class="w-32 h-32"
+                                  text-class="text-4xl font-bold"
+                                  ring-class="border border-white/15 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.6)]"
+                              />
                               
                               <!-- Hover Overlay -->
                               <div class="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
