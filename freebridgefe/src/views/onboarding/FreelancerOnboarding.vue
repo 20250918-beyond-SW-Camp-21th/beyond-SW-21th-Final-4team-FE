@@ -53,8 +53,8 @@ const handleFinish = async () => {
     const success = await store.submitFreelancerOnboarding();
     if (success) {
         store.resetOnboardingState();
-        alert('온보딩이 완료되었습니다. Freebridge 이용 가이드로 이동합니다.');
-        router.push('/guide'); 
+        alert('프로필 입력이 완료되었습니다!');
+        router.push({ name: 'freelancer.jobs' });
     }
 };
 
