@@ -82,6 +82,15 @@ export async function getMyChatRooms(): Promise<ChatRoom[]> {
 }
 
 /**
+ * 채팅방 읽음 처리
+ * POST /api/chat/rooms/{roomId}/read
+ */
+export async function markChatRoomAsRead(roomId: string): Promise<ChatRoom> {
+    const res = await apiClient.post<BackendChatRoomResponse>(`/api/chat/rooms/${roomId}/read`);
+    return mapToChatRoom(res.data);
+}
+
+/**
  * 채팅방 이전 메시지 조회 (커서 기반 페이징)
  * GET /api/chat/rooms/{roomId}/messages?size=20&cursorDateStr=...
  */
