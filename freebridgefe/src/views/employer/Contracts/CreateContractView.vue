@@ -43,6 +43,7 @@ const currentStep = ref(1);
 const totalSteps = 2;
 const isSubmitting = ref(false);
 const submitError = ref('');
+const contractRoomConnectionWarning = ref('');
 
 // Projects & matched freelancers
 const projectOptions = ref<EmployerProject[]>([]);
@@ -272,6 +273,7 @@ const handleSign = async (data: { signature: string }) => {
 
     isSubmitting.value = true;
     submitError.value = '';
+    contractRoomConnectionWarning.value = '';
 
     const isFlexible = workScheduleType.value === 'FLEXIBLE';
     const routeJobId = getNumericQueryValue(route.query.jobId);
@@ -315,14 +317,14 @@ const handleSign = async (data: { signature: string }) => {
                 if (contractRoomId) {
                     createdContractRoomId.value = contractRoomId;
                 } else {
-                    submitError.value = '계약은 생성되었지만 계약 채팅방 연결에 실패했습니다. 계약 목록에서 다시 시도해 주세요.';
+                    contractRoomConnectionWarning.value = '계약은 생성되었지만 계약 채팅방 연결에 실패했습니다. 계약 목록에서 다시 시도해 주세요.';
                     console.warn('Contract room connection returned empty result after contract creation.', {
                         routeRoomId,
                         contractId: response.contractId ?? response.id,
                     });
                 }
             } catch (roomError) {
-                submitError.value = '계약은 생성되었지만 계약 채팅방 연결에 실패했습니다. 계약 목록에서 다시 시도해 주세요.';
+                contractRoomConnectionWarning.value = '계약은 생성되었지만 계약 채팅방 연결에 실패했습니다. 계약 목록에서 다시 시도해 주세요.';
                 console.warn('Failed to connect contract room after successful contract creation.', roomError);
             }
         }
@@ -355,6 +357,7 @@ const handleReset = () => {
     workDaysPerWeek.value = 5;
     weeklyHoliday.value = '토, 일';
     submitError.value = '';
+    contractRoomConnectionWarning.value = '';
     createdContract.value = null;
     createdContractRoomId.value = null;
     currentStep.value = 1;
@@ -926,6 +929,16 @@ watch(
                         <div class="flex items-center justify-center gap-2 text-white/60">
                             <Send class="w-4 h-4" />
                             <span>프리랜서에게 서명 요청이 전송되었습니다</span>
+                        </div>
+                        <div
+                            v-if="contractRoomConnectionWarning"
+                            class="mt-4 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-4 text-left text-amber-300"
+                        >
+                            <AlertCircle class="mt-0.5 h-5 w-5 flex-shrink-0" />
+                            <div class="space-y-1">
+                                <p class="text-sm font-semibold">계약 채팅방 연결이 완료되지 않았습니다</p>
+                                <p class="text-sm text-amber-200/90">{{ contractRoomConnectionWarning }}</p>
+                            </div>
                         </div>
                         <div
                             v-if="createdContract"
