@@ -327,12 +327,12 @@ const hideChurnAlert = ref(false);
                             <TrendingUp class="w-6 h-6 text-emerald-400" />
                         </div>
                         <div>
-                            <h4 class="text-white font-bold text-sm">단가 인상 최적기입니다!</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 3개 프로젝트에서 좋은 고용주 평가를 받으셨습니다. 이번 기회에 희망 단가를 10~15% 상향 조정해보세요.</p>
+                            <h4 class="text-white font-bold text-sm">월급 인상 최적기입니다!</h4>
+                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 3개 프로젝트에서 좋은 고용주 평가를 받으셨습니다. 이번 기회에 희망 월급을 10~15% 상향 조정해보세요.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
-                        <button @click="activeTab = 'edit'" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-emerald-900/20">단가 수정하러 가기</button>
+                        <button @click="activeTab = 'edit'" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-emerald-900/20">월급 수정하러 가기</button>
                         <button @click="hideRateBumpAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
                     </div>
                 </div>
@@ -374,7 +374,7 @@ const hideChurnAlert = ref(false);
 
             <!-- Profile Summary Card -->
             <div class="relative mt-8">
-                <div class="bg-white/5 rounded-3xl border border-white/10 backdrop-blur-xl shadow-[0_30px_90px_-60px_rgba(255,255,255,0.35)] overflow-visible relative group">
+                <div class="bg-white/5 rounded-3xl border border-white/10 backdrop-blur-xl shadow-[0_30px_90px_-60px_rgba(255,255,255,0.35)] overflow-visible relative">
                     <div class="flex flex-col md:flex-row gap-8 p-8">
                         <div class="w-full md:w-[34%] flex flex-col items-center text-center">
                             <ProfileIdentityAvatar
@@ -422,7 +422,7 @@ const hideChurnAlert = ref(false);
                                 <div class="flex items-center gap-2">
                                     <button 
                                         @click="activeTab = 'edit'"
-                                        class="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-medium text-white/85 shadow-[0_18px_40px_-26px_rgba(255,255,255,0.25)] transition-all hover:-translate-y-0.5 hover:bg-white/18 hover:text-white"
+                                        class="flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-medium text-white/85 shadow-[0_18px_40px_-26px_rgba(255,255,255,0.25)] transition-colors hover:bg-white/18 hover:text-white"
                                     >
                                         <Edit3 class="w-3.5 h-3.5" />
                                         프로필 수정하기
@@ -440,28 +440,28 @@ const hideChurnAlert = ref(false);
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="space-y-4">
                                     <div class="group">
-                                        <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">프리랜서 유형</label>
+                                        <label class="text-[11px] text-slate-500 mb-1 block">프리랜서 유형</label>
                                         <div class="flex items-center gap-2 text-sm text-white">
                                             <Briefcase class="w-4 h-4 text-slate-400" />
                                             {{ profile.workConditions.type }}
                                         </div>
                                     </div>
                                     <div class="group">
-                                        <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">업무 시작 가능일</label>
+                                        <label class="text-[11px] text-slate-500 mb-1 block">업무 시작 가능일</label>
                                         <div class="flex items-center gap-2 text-sm text-white">
                                             <CheckCircle class="w-4 h-4 text-slate-400" />
                                             {{ profile.workConditions.startDate }}
                                         </div>
                                     </div>
                                     <div class="group">
-                                        <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">근무 형태</label>
+                                        <label class="text-[11px] text-slate-500 mb-1 block">근무 형태</label>
                                         <div class="flex items-center gap-2 text-sm text-white">
                                             <CreditCard class="w-4 h-4 text-slate-400" />
                                             {{ profile.workConditions.workStyle }}
                                         </div>
                                     </div>
                                     <div class="group">
-                                        <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">근무 지역</label>
+                                        <label class="text-[11px] text-slate-500 mb-1 block">근무 지역</label>
                                         <div class="flex items-center gap-2 text-sm text-white">
                                             <Settings class="w-4 h-4 text-slate-400" />
                                             {{ profile.workConditions.location }}
@@ -470,20 +470,20 @@ const hideChurnAlert = ref(false);
                                 </div>
                                 <div class="space-y-4">
                                     <div class="group">
-                                        <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">희망 단가</label>
+                                        <label class="text-[11px] text-slate-500 mb-1 block">희망 월급</label>
                                         <div class="flex items-center gap-2 text-sm text-white">
                                             <Award class="w-4 h-4 text-slate-400" />
                                             {{ profile.salary.toLocaleString() }}원/월
                                         </div>
                                     </div>
                                     <div class="group">
-                                        <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">자기 소개</label>
+                                        <label class="text-[11px] text-slate-500 mb-1 block">자기 소개</label>
                                         <p class="text-xs text-slate-300 bg-white/5 p-3 rounded-2xl border border-white/10 leading-relaxed">
                                             {{ profile.introduction }}
                                         </p>
                                     </div>
                                     <div class="group">
-                                        <label class="text-[11px] text-slate-500 mb-2 block group-hover:text-white/70 transition-colors">기술 스택</label>
+                                        <label class="text-[11px] text-slate-500 mb-2 block">기술 스택</label>
                                         <div class="flex flex-wrap gap-2">
                                             <span v-for="skill in profile.skills.slice(0, 10)" :key="skill" class="text-xs px-2.5 py-1 bg-white/5 text-slate-200 rounded-full border border-white/10">
                                                 {{ skill }}

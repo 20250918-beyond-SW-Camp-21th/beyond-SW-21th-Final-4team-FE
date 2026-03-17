@@ -164,6 +164,7 @@ const nextStep = () => {
                             class="block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-green-500/50 focus:border-transparent sm:text-sm py-4 px-4 text-white placeholder:text-white/30 transition-all duration-300 hover:bg-white/10"
                             placeholder="500"
                         />
+                        <p class="mt-2 text-xs text-white/45">월급 기준으로 입력해 주세요.</p>
                     </div>
                 </div>
             </div>

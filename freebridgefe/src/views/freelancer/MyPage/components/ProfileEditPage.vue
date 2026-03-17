@@ -141,8 +141,9 @@ const saveProfile = async () => {
                             <input v-model.number="formData.careerYears" type="number" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors" />
                         </div>
                          <div class="space-y-1">
-                            <label class="text-xs text-slate-400 font-bold">희망 시급 (시간당)</label>
-                            <input v-model.number="formData.salary" type="number" placeholder="ex) 50000" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors" />
+                            <label class="text-xs text-slate-400 font-bold">희망 월급</label>
+                            <input v-model.number="formData.salary" type="number" placeholder="ex) 5000000" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm focus:border-white/30 focus:outline-none focus:bg-white/10 transition-colors" />
+                            <p class="text-[11px] text-slate-400">월급 기준으로 입력해 주세요.</p>
                         </div>
                     </div>
 
