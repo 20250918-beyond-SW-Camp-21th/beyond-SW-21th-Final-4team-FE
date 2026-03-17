@@ -139,6 +139,81 @@ export const useContractStore = defineStore('contract', () => {
     let fetchContractsPromise: Promise<void> | null = null;
     let fetchContractsPromiseKey = '';
 
+    async function resolveContractNames(items: ContractWithDetails[]) {
+        const placeholderPattern = /user\s*#?\s*\d+/i;
+        const numericOnlyPattern = /^\s*#?\d+\s*$/;
+        const needsName = (name?: string | null) => {
+            if (!name) return true;
+            const trimmed = name.trim();
+            return (
+                trimmed.length === 0 ||
+                trimmed === 'Unknown' ||
+                placeholderPattern.test(trimmed) ||
+                numericOnlyPattern.test(trimmed)
+            );
+        };
+
+        const collectMissingIds = (
+            getter: (c: ContractWithDetails) => number,
+            nameGetter: (c: ContractWithDetails) => string | undefined | null
+        ) =>
+            Array.from(
+                new Set(
+                    items
+                        .filter((c) => needsName(nameGetter(c)))
+                        .map((c) => Number(getter(c)))
+                        .filter((id) => Number.isFinite(id) && id > 0)
+                )
+            );
+
+        const missingFreelancerIds = collectMissingIds((c) => c.freelancerId, (c) => c.freelancerName);
+        const missingEmployerIds = collectMissingIds((c) => c.employerId, (c) => c.employerName);
+        const missingIds = Array.from(new Set([...missingFreelancerIds, ...missingEmployerIds]));
+
+        if (missingIds.length === 0) return items;
+
+        const results = await Promise.allSettled(missingIds.map((id) => getUserById(id)));
+        const idToName = new Map<number, string>();
+
+        results.forEach((result, index) => {
+            if (result.status !== 'fulfilled') return;
+            const user = result.value as Record<string, any>;
+            const payload = user?.data ?? user;
+            const name =
+                payload?.name ||
+                payload?.fullName ||
+                payload?.username ||
+                payload?.nickname ||
+                payload?.userName ||
+                payload?.memberName ||
+                payload?.realName;
+            if (name) {
+                idToName.set(missingIds[index], String(name));
+            }
+        });
+
+        if (idToName.size === 0) return items;
+
+        return items.map((contract) => {
+            const resolvedFreelancer = idToName.get(Number(contract.freelancerId));
+            const resolvedEmployer = idToName.get(Number(contract.employerId));
+            if (!resolvedFreelancer && !resolvedEmployer) return contract;
+            return {
+                ...contract,
+                freelancerName: resolvedFreelancer ?? contract.freelancerName,
+                employerName: resolvedEmployer ?? contract.employerName,
+            };
+        });
+    }
+
+    async function setResolvedContracts(items: ContractWithDetails[], isDefaultRequest: boolean) {
+        contracts.value = items;
+        if (isDefaultRequest) {
+            hasFetchedContracts.value = true;
+        }
+        contracts.value = await resolveContractNames(items);
+    }
+
     const contractsWithDetails = computed<ContractWithDetails[]>(() => contracts.value);
 
     const employerSettlementsWithDetails = computed<EmployerSettlementWithDetails[]>(() => {
@@ -334,6 +409,33 @@ export const useContractStore = defineStore('contract', () => {
         return request;
     }
 
+    async function fetchAllContracts(params?: ContractListParams) {
+        isContractsLoading.value = true;
+        try {
+            const limit = 100;
+            let page = 1;
+            let totalPages = 1;
+            const aggregated: ContractWithDetails[] = [];
+
+            do {
+                const data = await listContracts({
+                    ...params,
+                    page,
+                    limit,
+                });
+                const items = (data.items || []) as ContractWithDetails[];
+                aggregated.push(...items);
+                totalPages = Math.max(data.pagination?.totalPages ?? page, 1);
+                if (items.length < limit) break;
+                page += 1;
+            } while (page <= totalPages);
+
+            await setResolvedContracts(aggregated, isDefaultContractListRequest(params));
+        } finally {
+            isContractsLoading.value = false;
+        }
+    }
+
     async function ensureContractsLoaded() {
         if (hasFetchedContracts.value && contracts.value.length > 0) return;
         if (hasFetchedContracts.value && !isContractsLoading.value) return;
@@ -448,6 +550,7 @@ export const useContractStore = defineStore('contract', () => {
         findContractForChatRoom,
         matchesRoomContractContext,
         fetchContracts,
+        fetchAllContracts,
         ensureContractsLoaded,
         fetchEmployerSettlements,
         fetchFreelancerSettlements,

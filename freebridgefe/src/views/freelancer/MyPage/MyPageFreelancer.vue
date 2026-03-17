@@ -331,22 +331,44 @@ const downloadPortfolio = async () => {
 
 const deletePortfolio = async () => {
     if (!resolvePortfolioAvailability()) {
-        alert('삭제할 포트폴리오가 없습니다.');
+        alertStore.open({
+            title: '포트폴리오',
+            message: '삭제할 포트폴리오가 없습니다.',
+            type: 'warning',
+        });
         return;
     }
 
-    try {
-        await deleteFreelancerPortfolio();
-        profile.value.portfolio = {
-            fileUrl: null,
-            fileName: '',
-            lastUpdated: '',
-        };
-        alert('포트폴리오를 삭제했습니다.');
-    } catch (error) {
-        console.error('Failed to delete portfolio:', error);
-        alert('포트폴리오 삭제에 실패했습니다.');
-    }
+    alertStore.open({
+        title: '포트폴리오 삭제',
+        message: '업로드한 포트폴리오를 삭제하시겠습니까?',
+        type: 'warning',
+        confirmText: '삭제',
+        cancelText: '취소',
+        showCancel: true,
+        onConfirm: async () => {
+            try {
+                await deleteFreelancerPortfolio();
+                profile.value.portfolio = {
+                    fileUrl: null,
+                    fileName: '',
+                    lastUpdated: '',
+                };
+                alertStore.open({
+                    title: '포트폴리오',
+                    message: '포트폴리오를 삭제했습니다.',
+                    type: 'success',
+                });
+            } catch (error) {
+                console.error('Failed to delete portfolio:', error);
+                alertStore.open({
+                    title: '포트폴리오',
+                    message: '포트폴리오 삭제에 실패했습니다.',
+                    type: 'error',
+                });
+            }
+        },
+    });
 };
 
 const downloadPortfolioTemplate = async () => {

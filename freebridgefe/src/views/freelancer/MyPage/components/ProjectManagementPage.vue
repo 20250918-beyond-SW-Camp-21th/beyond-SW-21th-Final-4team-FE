@@ -226,7 +226,7 @@ const loadProjects = async () => {
   isLoading.value = true;
   loadError.value = null;
   try {
-    await contractStore.fetchContracts();
+    await contractStore.fetchAllContracts();
   } catch (error) {
     console.error('Failed to load contract projects:', error);
     loadError.value = error;
