@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
@@ -22,6 +22,7 @@ import {
 } from '@/api/MyPage/accountApi';
 import { normalizeEmployerPlan } from '@/utils/employerSubscription';
 import { useAlertStore } from '@/stores/alertStore';
+import { formatPhoneNumber, normalizePhoneForSubmit } from '@/utils/phone';
 
 defineEmits<{
   (e: 'back'): void;
@@ -49,6 +50,13 @@ const accountInfo = ref({
 });
 
 const currentPlan = ref<PlanType>('FREE');
+
+const formattedAccountPhone = computed({
+  get: () => formatPhoneNumber(accountInfo.value.phone),
+  set: (value: string) => {
+    accountInfo.value.phone = formatPhoneNumber(value);
+  }
+});
 
 interface SubscriptionPlan {
   name: string;
@@ -168,7 +176,10 @@ const handleSaveAccountInfo = async () => {
 
   try {
     isSaving.value = true;
-    await updateAccountInfo(accountInfo.value);
+    await updateAccountInfo({
+      ...accountInfo.value,
+      phone: normalizePhoneForSubmit(accountInfo.value.phone)
+    });
     alertStore.open({ message: '계정 정보가 수정되었습니다.', type: 'success' });
   } catch (error) {
     console.error('Failed to update account info:', error);
@@ -255,35 +266,66 @@ const handlePlanChange = async (plan: PlanType) => {
           '계속하시겠습니까?'
         ].join('\n');
 
-    if (!confirm(warningMessage)) {
-      return;
-    }
-  } else if (!confirm(`${selectedPlan.name}로 변경하시겠습니까?`)) {
-    return;
-  }
-
-  if (!isDowngrade) {
-    await router.push({
-      name: 'employer.payments',
-      query: {
-        mode: 'subscription',
-        plan,
-      },
+    alertStore.open({
+      title: '다운그레이드 확인',
+      message: warningMessage,
+      type: 'warning',
+      confirmText: '변경하기',
+      cancelText: '취소',
+      showCancel: true,
+      onConfirm: async () => {
+        try {
+          isLoading.value = true;
+          const result = await updateEmployerSubscription(plan);
+          if (result.success !== true) {
+            alertStore.open({
+              title: '플랜 변경 실패',
+              message: result.message || '플랜 변경에 실패했습니다.',
+              type: 'error'
+            });
+            return;
+          }
+          currentPlan.value = normalizeEmployerPlan(result.currentPlanGrade);
+          alertStore.open({
+            title: '플랜 변경 완료',
+            message: result.message || `${selectedPlan.name}로 변경되었습니다.`,
+            type: 'success'
+          });
+        } catch (error) {
+          console.error('Failed to change plan:', error);
+          alertStore.open({
+            title: '플랜 변경 실패',
+            message: '플랜 변경에 실패했습니다.',
+            type: 'error'
+          });
+        } finally {
+          isLoading.value = false;
+        }
+      }
     });
     return;
   }
 
-  try {
-    isLoading.value = true;
-    const result = await updateEmployerSubscription(plan);
-    currentPlan.value = normalizeEmployerPlan(result.currentPlanGrade);
-    alert(result.message || `${selectedPlan.name}로 변경되었습니다.`);
-  } catch (error) {
-    console.error('Failed to change plan:', error);
-    alert('플랜 변경에 실패했습니다.');
-  } finally {
-    isLoading.value = false;
-  }
+  alertStore.open({
+    title: '플랜 업그레이드',
+    message: [
+      `${selectedPlan.name}으로 변경하시겠습니까?`,
+      '결제 페이지로 이동해 업그레이드를 진행합니다.'
+    ].join('\n'),
+    type: 'info',
+    confirmText: '결제 페이지로 이동',
+    cancelText: '취소',
+    showCancel: true,
+    onConfirm: async () => {
+      await router.push({
+        name: 'employer.payments',
+        query: {
+          mode: 'subscription',
+          plan,
+        },
+      });
+    }
+  });
 };
 
 onMounted(() => {
@@ -448,7 +490,7 @@ onMounted(() => {
             <label class="text-xs text-white/50 mb-2 block uppercase tracking-[0.2em]">휴대폰 번호</label>
             <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
               <Phone class="w-4 h-4 text-white/50" />
-              <input type="tel" v-model="accountInfo.phone" class="bg-transparent border-none outline-none w-full text-white text-sm" />
+              <input type="tel" v-model="formattedAccountPhone" class="bg-transparent border-none outline-none w-full text-white text-sm" />
             </div>
           </div>
         </div>
