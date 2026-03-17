@@ -307,14 +307,24 @@ const handleSign = async (data: { signature: string }) => {
         contractStore.addContract(response);
         const routeRoomId = getStringQueryValue(route.query.roomId);
         if (routeRoomId) {
-            const contractRoomId = await chatStore.ensureContractRoomFromSourceRoom(
-                routeRoomId,
-                response.contractId ?? response.id
-            );
-            if (!contractRoomId) {
-                throw new Error('계약서는 생성되었지만 계약 채팅방 생성에 실패했습니다. 다시 시도해 주세요.');
+            try {
+                const contractRoomId = await chatStore.ensureContractRoomFromSourceRoom(
+                    routeRoomId,
+                    response.contractId ?? response.id
+                );
+                if (contractRoomId) {
+                    createdContractRoomId.value = contractRoomId;
+                } else {
+                    submitError.value = '계약은 생성되었지만 계약 채팅방 연결에 실패했습니다. 계약 목록에서 다시 시도해 주세요.';
+                    console.warn('Contract room connection returned empty result after contract creation.', {
+                        routeRoomId,
+                        contractId: response.contractId ?? response.id,
+                    });
+                }
+            } catch (roomError) {
+                submitError.value = '계약은 생성되었지만 계약 채팅방 연결에 실패했습니다. 계약 목록에서 다시 시도해 주세요.';
+                console.warn('Failed to connect contract room after successful contract creation.', roomError);
             }
-            createdContractRoomId.value = contractRoomId;
         }
         createdContract.value = response;
         state.value = 'success';
