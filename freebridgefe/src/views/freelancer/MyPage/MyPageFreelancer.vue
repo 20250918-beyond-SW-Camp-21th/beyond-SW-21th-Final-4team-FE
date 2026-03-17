@@ -39,7 +39,6 @@ import AccountManagementPage from './components/AccountManagementPage.vue';
 import GradeCheckPage from './components/GradeCheckPage.vue';
 import ProfileEditPage from './components/ProfileEditPage.vue';
 import ProjectManagementPage from './components/ProjectManagementPage.vue';
-import ProjectDetailModal from './components/ProjectDetailModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -50,14 +49,6 @@ const currentUser = computed(() => authStore.user);
 const activeTab = ref('dashboard');
 const isConditionOpen = ref(false);
 const isPortfolioOpen = ref(false);
-
-const isProjectDetailOpen = ref(false);
-const selectedProjectId = ref<number | null>(null);
-
-const openProjectDetail = (projectId: number) => {
-    selectedProjectId.value = projectId;
-    isProjectDetailOpen.value = true;
-};
 
 const toggleRestMode = () => {
     alert('휴식 모드로 전환했습니다.');
@@ -784,7 +775,6 @@ const hideChurnAlert = ref(false);
         <ProjectManagementPage
             v-else-if="activeTab === 'projects'"
             @back="activeTab = 'dashboard'"
-            @openDetail="openProjectDetail"
         />
 
         <ResumeManagementPage
@@ -807,12 +797,6 @@ const hideChurnAlert = ref(false);
         <AccountManagementPage
             v-else-if="activeTab === 'account'"
             @back="activeTab = 'dashboard'"
-        />
-
-        <ProjectDetailModal
-            :is-open="isProjectDetailOpen"
-            :project-id="selectedProjectId"
-            @close="isProjectDetailOpen = false"
         />
 
     </main>
