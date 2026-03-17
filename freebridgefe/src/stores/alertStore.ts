@@ -16,20 +16,20 @@ interface AlertPayload {
 
 export const useAlertStore = defineStore('alert', () => {
   const isOpen = ref(false);
-  const title = ref('?뚮┝');
+  const title = ref('알림');
   const message = ref('');
   const type = ref<AlertType>('info');
-  const confirmText = ref('?뺤씤');
+  const confirmText = ref('확인');
   const cancelText = ref('취소');
   const showCancel = ref(false);
   const onConfirm = ref<(() => void | Promise<void>) | null>(null);
   const onCancel = ref<(() => void | Promise<void>) | null>(null);
 
   const open = (payload: AlertPayload) => {
-    title.value = payload.title ?? '?뚮┝';
+    title.value = payload.title ?? '알림';
     message.value = payload.message;
     type.value = payload.type ?? 'info';
-    confirmText.value = payload.confirmText ?? '?뺤씤';
+    confirmText.value = payload.confirmText ?? '확인';
     cancelText.value = payload.cancelText ?? '취소';
     showCancel.value = payload.showCancel ?? false;
     onConfirm.value = payload.onConfirm ?? null;
