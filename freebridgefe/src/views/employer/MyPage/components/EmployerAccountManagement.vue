@@ -1,5 +1,6 @@
 ﻿<script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
   ArrowLeft,
@@ -19,6 +20,7 @@ import {
   updateEmployerSubscription,
   changeEmployerPassword
 } from '@/api/MyPage/accountApi';
+import { normalizeEmployerPlan } from '@/utils/employerSubscription';
 import { useAlertStore } from '@/stores/alertStore';
 
 defineEmits<{
@@ -27,12 +29,18 @@ defineEmits<{
 
 type PlanType = 'FREE' | 'PRO' | 'PRIME';
 type AccountSection = 'subscription' | 'profile';
+const PLAN_RANK: Record<PlanType, number> = {
+  FREE: 0,
+  PRO: 1,
+  PRIME: 2,
+};
 
 const activeSection = ref<AccountSection>('subscription');
 const isLoading = ref(false);
 const isSaving = ref(false);
 const authStore = useAuthStore();
 const alertStore = useAlertStore();
+const router = useRouter();
 
 const accountInfo = ref({
   name: '',
@@ -40,15 +48,7 @@ const accountInfo = ref({
   phone: '',
 });
 
-const currentPlan = ref<PlanType>('PRO');
-
-const normalizePlan = (plan?: string): PlanType => {
-  const normalizedPlan = (plan ?? 'FREE').trim().toUpperCase();
-  if (normalizedPlan === 'PARTNER') return 'PRO';
-  if (normalizedPlan === 'ENTERPRISE') return 'PRIME';
-  if (normalizedPlan === 'PRO' || normalizedPlan === 'PRIME') return normalizedPlan;
-  return 'FREE';
-};
+const currentPlan = ref<PlanType>('FREE');
 
 interface SubscriptionPlan {
   name: string;
@@ -89,26 +89,26 @@ const fetchSubscriptionPlans = async () => {
         price: '무료',
         period: '',
         fee: '12%',
-        icon: '🧊',
-        features: ['최신순 조회만 가능', '기본 지원'],
+        icon: '🧾',
+        features: ['최신순 조회 가능', '기본 지원'],
       },
       PRO: {
         name: 'PRO PLAN',
         description: '채용 효율을 높이는 구독',
-        price: '월 9,000',
+        price: '월 9,900',
         period: '월',
         fee: '10%',
-        icon: '💎',
+        icon: '💼',
         features: ['추천 기능 제공', '수수료 할인 (10%)'],
       },
       PRIME: {
-        name: '프라임 플랜',
+        name: 'PRIME PLAN',
         description: '빠른 매칭을 위한 최상위 구독',
-        price: '월 19,000',
+        price: '월 19,900',
         period: '월',
         fee: '7%',
         icon: '👑',
-        features: ['다양한 조회 가능', '추천 기능 제공', '대폭 수수료 할인 (7%)', '전담 AI 컨설팅 배정'],
+        features: ['다양한 조회 가능', '추천 기능 제공', '최대 수수료 할인 (7%)', '전담 AI 컨설턴트 배정'],
       },
     };
   } catch (error) {
@@ -119,10 +119,9 @@ const fetchSubscriptionPlans = async () => {
 const fetchCurrentPlan = async () => {
   try {
     const subscription = await getEmployerSubscription();
-    currentPlan.value = normalizePlan(subscription.currentPlan);
+    currentPlan.value = normalizeEmployerPlan(subscription.currentPlan);
   } catch (error) {
     console.error('Failed to fetch current subscription plan:', error);
-    currentPlan.value = 'FREE';
   }
 };
 
@@ -239,18 +238,51 @@ const handlePlanChange = async (plan: PlanType) => {
   const selectedPlan = plans.value[plan];
   if (!selectedPlan) return;
 
-  if (confirm(`${selectedPlan.name}로 변경하시겠습니까?`)) {
-    try {
-      isLoading.value = true;
-      await updateEmployerSubscription(plan);
-      currentPlan.value = plan;
-      alertStore.open({ message: `${selectedPlan.name}로 변경되었습니다.`, type: 'success' });
-    } catch (error) {
-      console.error('Failed to change plan:', error);
-      alertStore.open({ message: '플랜 변경에 실패했습니다.', type: 'error' });
-    } finally {
-      isLoading.value = false;
+  const isDowngrade = PLAN_RANK[plan] < PLAN_RANK[currentPlan.value];
+
+  if (isDowngrade) {
+    const warningMessage = plan === 'FREE'
+      ? [
+          'BASIC 플랜으로 다운그레이드하면 즉시 반영됩니다.',
+          '이미 결제된 금액은 환불되지 않습니다.',
+          '이 변경은 되돌릴 수 없습니다.',
+          '계속하시겠습니까?'
+        ].join('\n')
+      : [
+          `${selectedPlan.name}으로 다운그레이드하면 즉시 반영됩니다.`,
+          '이미 결제된 금액은 환불되지 않습니다.',
+          '이 변경은 되돌릴 수 없습니다.',
+          '계속하시겠습니까?'
+        ].join('\n');
+
+    if (!confirm(warningMessage)) {
+      return;
     }
+  } else if (!confirm(`${selectedPlan.name}로 변경하시겠습니까?`)) {
+    return;
+  }
+
+  if (!isDowngrade) {
+    await router.push({
+      name: 'employer.payments',
+      query: {
+        mode: 'subscription',
+        plan,
+      },
+    });
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    const result = await updateEmployerSubscription(plan);
+    currentPlan.value = normalizeEmployerPlan(result.currentPlanGrade);
+    alert(result.message || `${selectedPlan.name}로 변경되었습니다.`);
+  } catch (error) {
+    console.error('Failed to change plan:', error);
+    alert('플랜 변경에 실패했습니다.');
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -264,12 +296,12 @@ onMounted(() => {
 <template>
   <div class="max-w-6xl mx-auto px-4 md:px-10 py-10 text-white">
     <div class="flex items-center gap-4 mb-10">
-      <button @click="$emit('back')" class="p-2 hover:bg-white/10 rounded-full transition-colors">
+      <button @click="$emit('back')" class="p-2 hover:bg-white/10 rounded-full transition-colors" aria-label="뒤로가기" title="뒤로가기">
         <ArrowLeft class="w-5 h-5 text-white/60" />
       </button>
       <div>
         <h1 class="text-2xl font-semibold tracking-tight">고용주 계정 관리</h1>
-        <p class="text-sm text-white/40 mt-1">구독과 계정 정보를 관리하세요</p>
+        <p class="text-sm text-white/40 mt-1">구독과 계정 정보를 관리해보세요</p>
       </div>
     </div>
 
@@ -373,7 +405,7 @@ onMounted(() => {
             type="password"
             v-model="verificationPassword"
             class="bg-transparent border-none outline-none w-full text-white text-sm"
-            placeholder="비밀번호를 입력하세요"
+            placeholder="비밀번호를 입력해 주세요"
             @keyup.enter="handleVerifyIdentity"
           />
         </div>

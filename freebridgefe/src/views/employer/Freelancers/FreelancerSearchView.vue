@@ -73,7 +73,7 @@ const isFavorite = (id: number) => favoritesStore.favoriteIds.includes(String(id
 const toggleFavorite = (id: number) => favoritesStore.toggleFavorite(String(id));
 
 const toProposalFreelancer = (freelancer: EmployerFreelancerSearchItem): User => ({
-  id: String(freelancer.freelancerId),
+  id: String(freelancer.userId),
   role: 'FREELANCER',
   name: freelancer.name,
   email: 'hidden@example.com',

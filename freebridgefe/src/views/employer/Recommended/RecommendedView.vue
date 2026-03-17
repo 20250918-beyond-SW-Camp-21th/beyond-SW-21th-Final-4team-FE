@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Crown, Lock, Send, Star, TrendingUp } from "lucide-vue-next";
@@ -6,6 +6,7 @@ import { getEmployerSubscription } from "@/api/MyPage/accountApi";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useFreelancerStore } from "@/stores/freelancerStore";
 import { useJobStore } from "@/stores/jobStore";
+import { normalizeEmployerPlan } from "@/utils/employerSubscription";
 import type { JobPosting, User } from "@/types";
 import ProposalModal from "./components/ProposalModal.vue";
 
@@ -36,32 +37,34 @@ const isFavorite = (id: string | number) =>
 const toggleFavorite = (id: string | number) =>
   favoritesStore.toggleFavorite(String(id));
 
-const normalizePlan = (plan?: string): PlanType => {
-  const normalizedPlan = (plan ?? "FREE").trim().toUpperCase();
-
-  if (["PRO", "PARTNER", "프로 플랜".toUpperCase()].includes(normalizedPlan)) {
-    return "PRO";
-  }
-
-  if (
-    ["PRIME", "ENTERPRISE", "프라임 플랜".toUpperCase()].includes(
-      normalizedPlan,
-    )
-  ) {
-    return "PRIME";
-  }
-
-  return "FREE";
-};
-
 const hasAccess = computed(
   () => !planLoading.value && ["PRO", "PRIME"].includes(currentPlan.value),
 );
 
 const employerJobs = computed(() => jobStore.myJobs);
+const recommendableEmployerJobs = computed(() =>
+  employerJobs.value.filter((job) => {
+    if (job.status === "CLOSED" || job.status === "CONTRACTED") {
+      return false;
+    }
+
+    if (
+      typeof job.headcount === "number" &&
+      typeof job.matchedHeadcount === "number" &&
+      job.headcount > 0 &&
+      job.matchedHeadcount >= job.headcount
+    ) {
+      return false;
+    }
+
+    return true;
+  }),
+);
 
 const selectedJob = computed<JobPosting | null>(
-  () => employerJobs.value.find((job) => job.id === selectedJobId.value) ?? null,
+  () =>
+    recommendableEmployerJobs.value.find((job) => job.id === selectedJobId.value) ??
+    null,
 );
 
 const isJobSelectDisabled = computed(
@@ -84,7 +87,7 @@ const fetchCurrentPlan = async () => {
 
   try {
     const subscription = await getEmployerSubscription();
-    currentPlan.value = normalizePlan(subscription.currentPlan);
+    currentPlan.value = normalizeEmployerPlan(subscription.currentPlan);
   } catch (error) {
     console.error("Failed to fetch employer plan:", error);
     planFetchError.value = "subscription_fetch_failed";
@@ -104,7 +107,7 @@ const parseSelectedJobId = (): number | string | null => {
   if (!/^\d+$/.test(rawJobId)) {
     freelancerStore.freelancers = [];
     freelancerStore.recommendedFetchError =
-      "유효한 프로젝트 공고를 선택해주세요.";
+      "유효한 프로젝트 공고를 선택해 주세요.";
     return null;
   }
 
@@ -131,6 +134,10 @@ const parseSelectedJobId = (): number | string | null => {
 const loadRecommendationForSelectedJob = async (requestId: number) => {
   const parsedJobId = parseSelectedJobId();
   if (parsedJobId === null) {
+    console.warn("[employer-reco-view] invalid selected job id", {
+      requestId,
+      rawSelectedJobId: selectedJobId.value,
+    });
     return;
   }
 
@@ -138,12 +145,22 @@ const loadRecommendationForSelectedJob = async (requestId: number) => {
   const controller = new AbortController();
   activeRecommendationController = controller;
   isJobSelectionLoading.value = true;
+  console.info("[employer-reco-view] load recommendation", {
+    requestId,
+    jobId: String(parsedJobId),
+  });
 
   try {
     await freelancerStore.fetchRecommendedFreelancers(
       parsedJobId,
       controller.signal,
     );
+    console.info("[employer-reco-view] load completed", {
+      requestId,
+      jobId: String(parsedJobId),
+      count: freelancerStore.freelancers.length,
+      hasError: Boolean(freelancerStore.recommendedFetchError),
+    });
   } finally {
     if (requestId === recommendationRequestId.value) {
       isJobSelectionLoading.value = false;
@@ -156,14 +173,25 @@ const loadRecommendationForSelectedJob = async (requestId: number) => {
 
 const loadRecommendedFreelancers = async () => {
   initLoading.value = true;
-  let jobs = jobStore.myJobs;
+  let jobs = recommendableEmployerJobs.value;
+  console.info("[employer-reco-view] init load start", {
+    currentJobCount: employerJobs.value.length,
+    recommendableJobCount: jobs.length,
+  });
 
   try {
-    if (!jobs.length) {
+    if (!employerJobs.value.length) {
       try {
         await jobStore.fetchJobPostings();
-        jobs = jobStore.myJobs;
+        jobs = recommendableEmployerJobs.value;
+        console.info("[employer-reco-view] jobs fetched", {
+          totalJobs: employerJobs.value.length,
+          recommendableJobs: jobs.length,
+        });
       } catch {
+        console.error("[employer-reco-view] failed to fetch jobs", {
+          message: jobStore.errorMessage,
+        });
         freelancerStore.freelancers = [];
         freelancerStore.recommendedFetchError =
           jobStore.errorMessage || "프로젝트 공고를 불러오지 못했습니다.";
@@ -172,14 +200,20 @@ const loadRecommendedFreelancers = async () => {
     }
 
     if (!jobs.length) {
+      console.warn("[employer-reco-view] no recommendable jobs");
       freelancerStore.freelancers = [];
       freelancerStore.recommendedFetchError =
-        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
+        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해 주세요.";
       selectedJobId.value = "";
+      freelancerStore.recommendedFetchError = null;
       return;
     }
 
     ensureSelectedJob(jobs);
+    console.info("[employer-reco-view] selected job", {
+      selectedJobId: selectedJobId.value,
+      selectedJobTitle: selectedJob.value?.title,
+    });
     recommendationRequestId.value += 1;
     await loadRecommendationForSelectedJob(recommendationRequestId.value);
   } finally {
@@ -189,6 +223,9 @@ const loadRecommendedFreelancers = async () => {
 
 const handleJobChange = async (event: Event) => {
   selectedJobId.value = (event.target as HTMLSelectElement).value;
+  console.info("[employer-reco-view] job changed", {
+    selectedJobId: selectedJobId.value,
+  });
   recommendationRequestId.value += 1;
   await loadRecommendationForSelectedJob(recommendationRequestId.value);
 };
@@ -199,11 +236,16 @@ const goToUpgrade = () => {
 
 onMounted(async () => {
   await fetchCurrentPlan();
+  console.info("[employer-reco-view] plan loaded", {
+    plan: currentPlan.value,
+    hasAccess: hasAccess.value,
+    planFetchError: planFetchError.value,
+  });
 
   if (planFetchError.value) {
     freelancerStore.freelancers = [];
     freelancerStore.recommendedFetchError =
-      "구독 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
+      "구독 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
     return;
   }
 
@@ -227,11 +269,11 @@ onBeforeUnmount(() => {
         <TrendingUp class="w-6 h-6 text-[#2D5BFF]" />
         <h1 class="text-3xl font-bold">추천 프리랜서</h1>
       </div>
-      <p class="text-white/60">AI가 선별한 최적의 프리랜서를 만나보세요</p>
+      <p class="text-white/60">AI가 분석한 최적의 프리랜서를 만나보세요.</p>
     </div>
 
     <div
-      v-if="hasAccess && employerJobs.length"
+      v-if="hasAccess && recommendableEmployerJobs.length"
       class="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
     >
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -249,7 +291,7 @@ onBeforeUnmount(() => {
             class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-[#2D5BFF] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <option
-              v-for="job in employerJobs"
+              v-for="job in recommendableEmployerJobs"
               :key="job.id"
               :value="job.id"
             >
@@ -304,7 +346,7 @@ onBeforeUnmount(() => {
         <TrendingUp class="w-8 h-8 text-red-400" />
       </div>
       <h3 class="text-xl font-semibold mb-2 text-red-200">
-        추천을 불러오지 못했습니다
+        추천을 불러오지 못했습니다.
       </h3>
       <p class="text-red-300/60">{{ freelancerStore.recommendedFetchError }}</p>
     </div>
@@ -318,7 +360,7 @@ onBeforeUnmount(() => {
       ></div>
       <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
       <p class="text-white/50">
-        등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다
+        등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다.
       </p>
     </div>
 
@@ -332,10 +374,10 @@ onBeforeUnmount(() => {
         <TrendingUp class="w-8 h-8 text-white/70" />
       </div>
       <h3 class="text-xl font-semibold mb-2 text-white">
-        현재 조건에 맞는 추천 프리랜서가 없습니다
+        현재 조건에 맞는 추천 프리랜서가 없습니다.
       </h3>
       <p class="text-white/60">
-        공고 설명을 조금 더 구체적으로 작성하거나 기술 스택을 조정한 뒤 다시 확인해보세요.
+        공고 설명을 조금 더 구체적으로 작성하거나 기술 스택을 조정한 뒤 다시 확인해 보세요.
       </p>
     </div>
 

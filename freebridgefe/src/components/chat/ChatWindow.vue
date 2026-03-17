@@ -156,40 +156,13 @@ const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.room
 const messages = computed(() => chatStore.messages[props.roomId] || []);
 const nonSystemMessages = computed(() => messages.value.filter((msg) => msg.type !== 'SYSTEM'));
 const isReadOnly = computed(() => chatStore.isRoomReadOnly(props.roomId));
-const otherParticipantId = computed(() => {
-    if (!currentRoom.value) return null;
-    return chatStore.getOtherParticipantId(currentRoom.value) || null;
-});
 
 const otherParticipantName = computed(() => {
     if (!currentRoom.value) return '알 수 없음';
     return chatStore.getOtherParticipantName(currentRoom.value);
 });
 
-function parseParticipantNumericId(participantId: string | null) {
-    if (!participantId) return null;
-    const matchedParticipant = String(participantId).match(/^[efa](\d+)$/i);
-    if (matchedParticipant) {
-        return Number(matchedParticipant[1]);
-    }
-    const numericId = Number(participantId);
-    return Number.isFinite(numericId) ? numericId : null;
-}
-
-const roomContract = computed(() => {
-    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
-    if (linkedContract) return linkedContract;
-    if (!authStore.user || !otherParticipantId.value) return null;
-
-    const myUserId = Number(authStore.user.id);
-    const counterpartId = parseParticipantNumericId(otherParticipantId.value);
-    if (!Number.isFinite(myUserId) || !Number.isFinite(counterpartId)) return null;
-
-    const employerId = authStore.user.role === 'EMPLOYER' ? myUserId : counterpartId;
-    const freelancerId = authStore.user.role === 'FREELANCER' ? myUserId : counterpartId;
-
-    return contractStore.findContractByParticipants(employerId, freelancerId);
-});
+const roomContract = computed(() => contractStore.findContractForChatRoom(currentRoom.value));
 
 const contractNeedsAttention = computed(() => {
     if (!authStore.user) return false;

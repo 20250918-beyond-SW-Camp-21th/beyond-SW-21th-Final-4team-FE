@@ -29,9 +29,7 @@
                     <FileTextIcon class="w-10 h-10 text-slate-600" />
                 </div>
                 <div class="space-y-2">
-                    <h3 class="text-lg font-bold text-white">
-                        {{ hasMultipleContractCandidates ? '계약이 여러 건 있어 자동 연결하지 않았습니다' : '연결된 계약이 없습니다' }}
-                    </h3>
+                    <h3 class="text-lg font-bold text-white">연결된 계약이 없습니다</h3>
                     <p class="text-sm text-slate-400 max-w-md leading-relaxed">
                         {{ emptyStateDescription }}
                     </p>
@@ -205,19 +203,10 @@ const relatedContracts = computed(() => {
     );
 });
 
-const currentContract = computed(() => {
-    const linkedContract = contractStore.findContractByAnyId(currentRoom.value?.contractId);
-    if (linkedContract) return linkedContract;
-    if (!roomParticipantIds.value) return null;
+const currentContract = computed(() => contractStore.findContractForChatRoom(currentRoom.value));
 
-    return contractStore.findContractByParticipants(
-        roomParticipantIds.value.employerId,
-        roomParticipantIds.value.freelancerId
-    );
-});
-
-const hasMultipleContractCandidates = computed(() => {
-    return !currentRoom.value?.contractId && !currentContract.value && relatedContracts.value.length > 1;
+const hasContractCandidates = computed(() => {
+    return !currentRoom.value?.contractId && relatedContracts.value.length > 0;
 });
 
 const isContractLookupPending = computed(() => {
@@ -260,7 +249,7 @@ const currentStatusConfig = computed(() => {
 
 const primaryActionLabel = computed(() => {
     if (!currentContract.value) {
-        if (hasMultipleContractCandidates.value) return '계약 목록으로 이동';
+        if (hasContractCandidates.value) return '계약 목록으로 이동';
         return isEmployer.value ? '계약서 작성 화면으로 이동' : '계약 목록으로 이동';
     }
     if (currentContract.value.status === 'REJECTED' && isEmployer.value) {
@@ -270,8 +259,8 @@ const primaryActionLabel = computed(() => {
 });
 
 const emptyStateDescription = computed(() => {
-    if (hasMultipleContractCandidates.value) {
-        return '같은 상대와 연결된 계약이 여러 건 있어 채팅에서는 하나를 임의로 선택하지 않았습니다. 계약 화면에서 정확한 계약을 확인하세요.';
+    if (hasContractCandidates.value) {
+        return '계약은 계약별 채팅방에 따로 연결됩니다. 이 대화방은 일반 대화방이므로 계약 상태는 해당 계약 채팅방이나 계약 화면에서 확인하세요.';
     }
     if (isEmployer.value) {
         return '채팅에서는 계약서를 작성하지 않습니다. 계약서 생성은 계약 화면에서 진행하고, 생성된 상태만 이 탭에서 확인합니다.';
@@ -290,7 +279,7 @@ function formatDate(date: Date | string | undefined) {
 
 function openContractPage() {
     const targetRouteName =
-        hasMultipleContractCandidates.value
+        hasContractCandidates.value
             ? isEmployer.value
                 ? 'employer.contracts'
                 : 'freelancer.contracts'
@@ -308,6 +297,9 @@ function openContractPage() {
 
     if (currentRoom.value?.relatedJobId) {
         query.jobId = String(currentRoom.value.relatedJobId);
+    }
+    if (currentRoom.value?.relatedApplicationId) {
+        query.applicationId = String(currentRoom.value.relatedApplicationId);
     }
     if (currentRoom.value?.relatedProposalId) {
         query.proposalId = String(currentRoom.value.relatedProposalId);

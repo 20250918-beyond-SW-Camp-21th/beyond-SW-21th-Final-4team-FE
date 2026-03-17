@@ -160,7 +160,21 @@ const getStringQueryValue = (value: unknown) => {
 async function syncRoomContract(contract: ContractWithDetails) {
     const routeRoomId = getStringQueryValue(route.query.roomId);
     if (!routeRoomId) return;
-    await chatStore.persistRoomContract(routeRoomId, contract.contractId ?? contract.id);
+    const contractRoomId = await chatStore.ensureContractRoomFromSourceRoom(
+        routeRoomId,
+        contract.contractId ?? contract.id
+    );
+    if (!contractRoomId) return;
+
+    if (routeRoomId !== contractRoomId || Number(route.query.contractId) !== Number(contract.contractId)) {
+        await router.replace({
+            query: {
+                ...route.query,
+                roomId: contractRoomId,
+                contractId: String(contract.contractId),
+            },
+        }).catch(() => undefined);
+    }
 }
 
 async function openContractDetail(contract: ContractWithDetails) {
