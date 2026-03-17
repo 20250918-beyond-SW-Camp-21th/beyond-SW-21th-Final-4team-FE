@@ -2,7 +2,7 @@
 import { computed, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useTourStore } from '@/stores/tourStore';
-import { X, ChevronRight, Briefcase, FileText, TrendingUp, FileCheck, Wallet, UserCircle, LayoutDashboard } from 'lucide-vue-next';
+import { X, ChevronRight, Briefcase, FileText, TrendingUp, FileCheck, Wallet, UserCircle } from 'lucide-vue-next';
 
 const router = useRouter();
 const route = useRoute();
@@ -13,7 +13,6 @@ const currentStep = computed(() => tourStore.currentStep);
 // 아이콘 매핑
 const getIcon = (stepId: string) => {
   const iconMap: Record<string, any> = {
-    'employer.dashboard': LayoutDashboard,
     'employer.jobs': Briefcase,
     'employer.applications': FileText,
     'employer.recommended': TrendingUp,

@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { 
   Briefcase, FileText, Users, TrendingUp, 
-  FileCheck, Wallet, UserCircle, LayoutDashboard,
+  FileCheck, Wallet, UserCircle,
   CheckCircle, ArrowRight
 } from 'lucide-vue-next';
 
@@ -25,17 +25,6 @@ watch(() => currentUser.value, (newUser) => {
 
 // 고용주 가이드 데이터
 const employerGuides = [
-  {
-    icon: LayoutDashboard,
-    title: '대시보드',
-    description: '기업의 프로젝트 현황과 핵심 지표를 한눈에 파악할 수 있는 관제탑입니다.',
-    features: [
-      '진행 중인 프로젝트 수 및 계약 현황 확인',
-      '최근 계약 체결한 프리랜서 목록 빠른 접근',
-      '이번 달 계약 건수 및 지출 현황 요약',
-      '플랜 업그레이드 및 계정 상태 확인'
-    ]
-  },
   {
     icon: Briefcase,
     title: '내 공고',
@@ -167,7 +156,7 @@ const currentGuides = computed(() => activeTab.value === 'EMPLOYER' ? employerGu
 
 const handleReturnToService = () => {
   if (currentUser.value) {
-    router.push(currentUser.value.role === 'EMPLOYER' ? '/employer/dashboard' : '/freelancer/jobs');
+    router.push(currentUser.value.role === 'EMPLOYER' ? '/employer/jobs' : '/freelancer/jobs');
   } else {
     router.push('/');
   }
