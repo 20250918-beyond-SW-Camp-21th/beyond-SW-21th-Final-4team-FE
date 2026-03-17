@@ -232,11 +232,11 @@ const handleSubscriptionPayment = async () => {
                 fullName: authStore.user?.name,
                 email: authStore.user?.email,
             },
-            customData: JSON.stringify({
+            customData: {
                 mode: 'subscription',
                 planType: plan,
                 employerId: Number(authStore.user?.id || 0),
-            }) as unknown as Record<string, any>,
+            },
             redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined,
         });
 
@@ -250,7 +250,14 @@ const handleSubscriptionPayment = async () => {
             return;
         }
 
+        if (typeof paymentResponse.paymentId !== 'string' || !paymentResponse.paymentId.trim()) {
+            subscriptionError.value = '구독 결제 번호를 확인할 수 없습니다.';
+            console.error('Subscription payment response missing paymentId:', paymentResponse);
+            return;
+        }
+
         await finalizeSubscriptionUpgrade(plan, paymentResponse.paymentId);
+
     } catch (error: any) {
         const apiErrorMessage = error?.response?.data?.error?.message
             || error?.response?.data?.message
