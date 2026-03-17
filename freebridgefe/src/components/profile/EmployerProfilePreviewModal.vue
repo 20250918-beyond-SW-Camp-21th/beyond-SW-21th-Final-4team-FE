@@ -1,10 +1,12 @@
 <script setup lang="ts">
 defineProps<{
   isOpen: boolean;
+  isLoading?: boolean;
   profile: {
     companyName: string;
     logoUrl?: string | null;
     industry?: string | null;
+    scale?: string | null;
     location?: string | null;
     phone?: string | null;
     website?: string | null;
@@ -57,7 +59,11 @@ const fallbackText = (value?: string | null) => {
           </div>
         </div>
 
-        <div class="grid gap-4 px-7 py-7">
+        <div v-if="isLoading" class="px-7 py-10 text-sm text-white/60">
+          프로필 정보를 불러오는 중입니다.
+        </div>
+
+        <div v-else class="grid gap-4 px-7 py-7">
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <div class="text-[11px] uppercase tracking-[0.24em] text-white/40">업종</div>
@@ -80,9 +86,14 @@ const fallbackText = (value?: string | null) => {
             </div>
           </div>
 
+          <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <div class="text-[11px] uppercase tracking-[0.24em] text-white/40">기업 규모</div>
+            <div class="mt-2 text-sm font-medium text-white/90">{{ fallbackText(profile.scale) }}</div>
+          </div>
+
           <div class="rounded-[26px] border border-blue-400/15 bg-blue-400/5 p-5">
             <div class="text-[11px] uppercase tracking-[0.24em] text-blue-100/60">기업 소개</div>
-            <p class="mt-3 text-sm leading-relaxed text-white/80 whitespace-pre-line">
+            <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-white/80">
               {{ fallbackText(profile.description) }}
             </p>
           </div>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 defineProps<{
   isOpen: boolean;
+  isLoading?: boolean;
   profile: {
     name: string;
     avatarUrl?: string | null;
@@ -10,8 +11,12 @@ defineProps<{
     grade?: string | null;
     introduction?: string | null;
     skills?: string[];
+    phone?: string | null;
+    email?: string | null;
+    address?: string | null;
     portfolioUrl?: string | null;
-    resumeUrl?: string | null;
+    portfolioFileName?: string | null;
+    portfolioLastUpdated?: string | null;
   };
 }>();
 
@@ -73,32 +78,36 @@ const formatWage = (value?: number | null) => {
           </div>
         </div>
 
-        <div class="grid gap-4 px-7 py-7">
+        <div v-if="isLoading" class="px-7 py-10 text-sm text-white/60">
+          프로필 정보를 불러오는 중입니다.
+        </div>
+
+        <div v-else class="grid gap-4 px-7 py-7">
           <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
               <div class="text-[11px] uppercase tracking-[0.24em] text-white/40">희망 급여</div>
               <div class="mt-2 text-sm font-medium text-white/90">{{ formatWage(profile.wage) }}</div>
             </div>
             <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-              <div class="text-[11px] uppercase tracking-[0.24em] text-white/40">이력 링크</div>
-              <div class="mt-2 text-sm font-medium text-white/90">
-                <a
-                  v-if="profile.resumeUrl"
-                  :href="profile.resumeUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="text-blue-300 hover:text-blue-200 hover:underline"
-                >
-                  이력서 보기
-                </a>
-                <span v-else>정보 없음</span>
-              </div>
+              <div class="text-[11px] uppercase tracking-[0.24em] text-white/40">연락처</div>
+              <div class="mt-2 text-sm font-medium text-white/90">{{ fallbackText(profile.phone) }}</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div class="text-[11px] uppercase tracking-[0.24em] text-white/40">이메일</div>
+              <div class="mt-2 break-all text-sm font-medium text-white/90">{{ fallbackText(profile.email) }}</div>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <div class="text-[11px] uppercase tracking-[0.24em] text-white/40">주소</div>
+              <div class="mt-2 text-sm font-medium text-white/90">{{ fallbackText(profile.address) }}</div>
             </div>
           </div>
 
           <div class="rounded-[26px] border border-white/10 bg-white/[0.04] p-5">
             <div class="text-[11px] uppercase tracking-[0.24em] text-white/40">소개</div>
-            <p class="mt-3 text-sm leading-relaxed text-white/80 whitespace-pre-line">
+            <p class="mt-3 whitespace-pre-line text-sm leading-relaxed text-white/80">
               {{ fallbackText(profile.introduction) }}
             </p>
           </div>
@@ -117,15 +126,19 @@ const formatWage = (value?: number | null) => {
             </div>
           </div>
 
-          <div class="flex justify-end">
+          <div class="flex flex-wrap justify-end gap-3">
+            <span v-if="profile.portfolioLastUpdated" class="self-center text-xs text-white/40">
+              {{ profile.portfolioLastUpdated }}
+            </span>
             <a
               v-if="profile.portfolioUrl"
               :href="profile.portfolioUrl"
+              :download="profile.portfolioFileName || 'portfolio.pdf'"
               target="_blank"
               rel="noopener noreferrer"
               class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
             >
-              포트폴리오 보기
+              {{ profile.portfolioFileName || '포트폴리오 PDF 다운로드' }}
             </a>
           </div>
         </div>
