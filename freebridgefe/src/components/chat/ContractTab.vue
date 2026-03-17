@@ -335,7 +335,7 @@ const hasContractCandidates = computed(() => {
 });
 
 const isContractLookupPending = computed(() => {
-    return contractStore.isContractsLoading && !currentContract.value;
+    return contractStore.isContractsLoading && !displayContract.value;
 });
 
 watch(
@@ -484,7 +484,7 @@ function openContractPage() {
 }
 
 function openLegalAdvicePage() {
-    if (!currentContract.value && !currentRoom.value?.contractId) {
+    if (!displayContract.value && !currentRoom.value?.contractId) {
         openContractPage();
         return;
     }
@@ -500,8 +500,8 @@ function openLegalAdvicePage() {
     if (currentRoom.value?.relatedProposalId) {
         query.proposalId = String(currentRoom.value.relatedProposalId);
     }
-    if (currentContract.value?.contractId) {
-        query.contractId = String(currentContract.value.contractId);
+    if (displayContract.value?.contractId) {
+        query.contractId = String(displayContract.value.contractId);
     } else if (currentRoom.value?.contractId) {
         query.contractId = String(currentRoom.value.contractId);
     }
