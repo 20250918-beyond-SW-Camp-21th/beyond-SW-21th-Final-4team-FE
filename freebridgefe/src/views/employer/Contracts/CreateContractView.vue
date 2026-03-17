@@ -180,6 +180,7 @@ const employerCEO = ref(authStore.user?.representativeName || '');
 
 // Created contract reference
 const createdContract = ref<ContractWithDetails | null>(null);
+const createdContractRoomId = ref<string | null>(null);
 
 const selectedFreelancer = computed(() =>
     freelancerOptions.value.find((f) => f.freelancerId === Number(selectedFreelancerId.value))
@@ -306,12 +307,14 @@ const handleSign = async (data: { signature: string }) => {
         contractStore.addContract(response);
         const routeRoomId = getStringQueryValue(route.query.roomId);
         if (routeRoomId) {
-            const persistedRoomContract = await chatStore.persistRoomContract(routeRoomId, response.contractId ?? response.id, {
-                overrideExisting: true
-            });
-            if (!persistedRoomContract) {
-                throw new Error('계약서는 생성되었지만 채팅방 동기화에 실패했습니다. 다시 시도해 주세요.');
+            const contractRoomId = await chatStore.ensureContractRoomFromSourceRoom(
+                routeRoomId,
+                response.contractId ?? response.id
+            );
+            if (!contractRoomId) {
+                throw new Error('계약서는 생성되었지만 계약 채팅방 생성에 실패했습니다. 다시 시도해 주세요.');
             }
+            createdContractRoomId.value = contractRoomId;
         }
         createdContract.value = response;
         state.value = 'success';
@@ -343,6 +346,7 @@ const handleReset = () => {
     weeklyHoliday.value = '토, 일';
     submitError.value = '';
     createdContract.value = null;
+    createdContractRoomId.value = null;
     currentStep.value = 1;
     state.value = 'form';
 };
@@ -410,7 +414,9 @@ const navigateToContracts = () => {
     const query: Record<string, string> = {};
     const routeRoomId = getStringQueryValue(route.query.roomId);
 
-    if (routeRoomId) {
+    if (createdContractRoomId.value) {
+        query.roomId = createdContractRoomId.value;
+    } else if (routeRoomId) {
         query.roomId = routeRoomId;
     }
     if (createdContract.value?.contractId) {

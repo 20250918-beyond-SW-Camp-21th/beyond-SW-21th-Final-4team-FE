@@ -29,9 +29,7 @@
                     <FileTextIcon class="w-10 h-10 text-slate-600" />
                 </div>
                 <div class="space-y-2">
-                    <h3 class="text-lg font-bold text-white">
-                        {{ hasMultipleContractCandidates ? '계약이 여러 건 있어 자동 연결하지 않았습니다' : '연결된 계약이 없습니다' }}
-                    </h3>
+                    <h3 class="text-lg font-bold text-white">연결된 계약이 없습니다</h3>
                     <p class="text-sm text-slate-400 max-w-md leading-relaxed">
                         {{ emptyStateDescription }}
                     </p>
@@ -136,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
@@ -207,10 +205,6 @@ const relatedContracts = computed(() => {
 
 const currentContract = computed(() => contractStore.findContractForChatRoom(currentRoom.value));
 
-const hasMultipleContractCandidates = computed(() => {
-    return !currentRoom.value?.contractId && relatedContracts.value.length > 1;
-});
-
 const hasContractCandidates = computed(() => {
     return !currentRoom.value?.contractId && relatedContracts.value.length > 0;
 });
@@ -218,31 +212,6 @@ const hasContractCandidates = computed(() => {
 const isContractLookupPending = computed(() => {
     return contractStore.isContractsLoading && !contractStore.hasFetchedContracts && !currentContract.value;
 });
-
-const isRepairingRoomContract = ref(false);
-
-watch(
-    [currentRoom, currentContract, isEmployer],
-    ([room, contract, employer]) => {
-        if (!employer || !room || !contract?.contractId || isRepairingRoomContract.value) {
-            return;
-        }
-        if (Number(room.contractId) === Number(contract.contractId)) {
-            return;
-        }
-
-        isRepairingRoomContract.value = true;
-        void chatStore
-            .persistRoomContract(room.id, contract.contractId, { overrideExisting: true })
-            .catch((error) => {
-                console.error('Failed to repair room contract linkage:', error);
-            })
-            .finally(() => {
-                isRepairingRoomContract.value = false;
-            });
-    },
-    { immediate: true },
-);
 
 const statusConfig = {
     WAITING_SIGNATURE: {
@@ -290,11 +259,8 @@ const primaryActionLabel = computed(() => {
 });
 
 const emptyStateDescription = computed(() => {
-    if (hasMultipleContractCandidates.value) {
-        return '같은 상대와 연결된 계약이 여러 건 있어 채팅에서는 하나를 임의로 선택하지 않았습니다. 계약 화면에서 정확한 계약을 확인하세요.';
-    }
     if (hasContractCandidates.value) {
-        return '같은 상대와 연결된 계약이 있지만 아직 이 채팅방과 명시적으로 연결되지 않았습니다. 계약 화면에서 올바른 계약을 선택하세요.';
+        return '계약은 계약별 채팅방에 따로 연결됩니다. 이 대화방은 일반 대화방이므로 계약 상태는 해당 계약 채팅방이나 계약 화면에서 확인하세요.';
     }
     if (isEmployer.value) {
         return '채팅에서는 계약서를 작성하지 않습니다. 계약서 생성은 계약 화면에서 진행하고, 생성된 상태만 이 탭에서 확인합니다.';

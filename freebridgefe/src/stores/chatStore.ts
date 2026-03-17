@@ -711,14 +711,28 @@ export const useChatStore = defineStore('chat', () => {
         sendMessage(content, type, undefined, roomId);
     }
 
+    function normalizeRoomContractId(contractId: number | string | null | undefined): number | null {
+        const parsedContractId = Number(contractId);
+        if (!Number.isFinite(parsedContractId) || parsedContractId <= 0) {
+            return null;
+        }
+        return parsedContractId;
+    }
+
     // ── 채팅방 생성 (REST API) ──────────────────────────────────────────────
     async function createRoom(
         participants: string[],
         names: { [key: string]: string },
-        context: any
+        context: {
+            relatedJobId?: string;
+            relatedApplicationId?: string;
+            relatedProposalId?: string;
+            contractId?: number | null;
+        }
     ) {
         const myNormalizedId = getCurrentChatParticipantId();
         const normalizedParticipants = normalizeParticipantListForCurrentUser(participants);
+        const normalizedContractId = normalizeRoomContractId(context.contractId);
 
         const normalizedNames = normalizedParticipants.reduce<Record<string, string>>((acc, participantId) => {
             const resolvedName = resolveParticipantNameFromMap(names, participantId);
@@ -738,13 +752,15 @@ export const useChatStore = defineStore('chat', () => {
         const existingRoom = rooms.value.find(
             (r) =>
                 participantsMatch(r.participants, normalizedParticipants) &&
-                (
-                    (r.relatedApplicationId && context.relatedApplicationId && r.relatedApplicationId === context.relatedApplicationId) ||
-                    (r.relatedProposalId && context.relatedProposalId && r.relatedProposalId === context.relatedProposalId) ||
-                    (r.relatedJobId && context.relatedJobId && r.relatedJobId === context.relatedJobId) ||
-                    (!r.relatedApplicationId && !r.relatedProposalId && !r.relatedJobId &&
-                        !context.relatedApplicationId && !context.relatedProposalId && !context.relatedJobId)
-                )
+                (normalizedContractId
+                    ? Number(r.contractId) === normalizedContractId
+                    : (
+                        (r.relatedApplicationId && context.relatedApplicationId && r.relatedApplicationId === context.relatedApplicationId) ||
+                        (r.relatedProposalId && context.relatedProposalId && r.relatedProposalId === context.relatedProposalId) ||
+                        (r.relatedJobId && context.relatedJobId && r.relatedJobId === context.relatedJobId) ||
+                        (!r.relatedApplicationId && !r.relatedProposalId && !r.relatedJobId && !r.contractId &&
+                            !context.relatedApplicationId && !context.relatedProposalId && !context.relatedJobId)
+                    ))
         );
         if (existingRoom) return existingRoom.id;
 
@@ -754,7 +770,8 @@ export const useChatStore = defineStore('chat', () => {
                 participantNames: normalizedNames,
                 relatedJobId: context.relatedJobId,
                 relatedApplicationId: context.relatedApplicationId,
-                relatedProposalId: context.relatedProposalId
+                relatedProposalId: context.relatedProposalId,
+                contractId: normalizedContractId ?? undefined
             });
             rooms.value = [newRoom, ...rooms.value.filter((room) => room.id !== newRoom.id)];
             messages.value[newRoom.id] = [];
@@ -766,6 +783,33 @@ export const useChatStore = defineStore('chat', () => {
             console.error('[Chat] Failed to create room:', e);
             throw e;
         }
+    }
+
+    async function ensureContractRoomFromSourceRoom(roomId: string, contractId: number | null | undefined) {
+        const normalizedContractId = normalizeRoomContractId(contractId);
+        if (!normalizedContractId) {
+            return null;
+        }
+
+        let sourceRoom = rooms.value.find((room) => room.id === roomId);
+        if (!sourceRoom) {
+            await fetchRooms().catch(() => undefined);
+            sourceRoom = rooms.value.find((room) => room.id === roomId);
+        }
+        if (!sourceRoom) {
+            return null;
+        }
+
+        if (Number(sourceRoom.contractId) === normalizedContractId) {
+            return sourceRoom.id;
+        }
+
+        return createRoom(sourceRoom.participants, sourceRoom.participantNames || {}, {
+            relatedJobId: sourceRoom.relatedJobId,
+            relatedApplicationId: sourceRoom.relatedApplicationId,
+            relatedProposalId: sourceRoom.relatedProposalId,
+            contractId: normalizedContractId
+        });
     }
 
     // ── 방 관련 유틸 ───────────────────────────────────────────────────────
@@ -906,6 +950,7 @@ export const useChatStore = defineStore('chat', () => {
         sendMessage,
         sendSystemMessage,
         createRoom,
+        ensureContractRoomFromSourceRoom,
         fetchRooms,
         fetchMessages,
         connectWebSocket,

@@ -235,28 +235,7 @@ export const useContractStore = defineStore('contract', () => {
         room?: Pick<ChatRoom, 'participants' | 'relatedJobId' | 'relatedApplicationId' | 'relatedProposalId' | 'contractId'> | null,
     ) {
         if (!room) return null;
-
-        const employerId = parseChatParticipantId(room.participants.find((participantId) => /^e/i.test(participantId)));
-        const freelancerId = parseChatParticipantId(room.participants.find((participantId) => /^f/i.test(participantId)));
-
-        const participantContracts =
-            Number.isFinite(employerId) && Number.isFinite(freelancerId)
-                ? contracts.value.filter(
-                    (contract) =>
-                        Number(contract.employerId) === employerId && Number(contract.freelancerId) === freelancerId,
-                )
-                : contracts.value;
-
-        const linkedContract = findContractByAnyId(room.contractId);
-        if (linkedContract && matchesRoomContractContext(linkedContract, room)) {
-            return linkedContract;
-        }
-
-        const contextMatchedContract = participantContracts
-            .filter((contract) => matchesRoomContractContext(contract, room))
-            .sort((left, right) => Number(right.id) - Number(left.id))[0];
-
-        return contextMatchedContract || linkedContract || null;
+        return findContractByAnyId(room.contractId);
     }
 
     async function fetchContracts(params?: ContractListParams) {

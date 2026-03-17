@@ -125,6 +125,7 @@ export async function createChatRoom(body: {
     relatedJobId?: string;
     relatedApplicationId?: string;
     relatedProposalId?: string;
+    contractId?: number;
 }): Promise<ChatRoom> {
     const res = await apiClient.post<BackendChatRoomResponse>('/api/chat/rooms', body);
     return mapToChatRoom(res.data);
