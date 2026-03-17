@@ -24,6 +24,7 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useAlertStore } from '@/stores/alertStore';
+import { useContractStore } from '@/stores/contractStore';
 import { getFreelancerProfile, uploadFreelancerPortfolio, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
 import {
     getFreelancerReviewSummary,
@@ -43,6 +44,7 @@ import ProjectDetailModal from './components/ProjectDetailModal.vue';
 const router = useRouter();
 const authStore = useAuthStore();
 const alertStore = useAlertStore();
+const contractStore = useContractStore();
 const currentUser = computed(() => authStore.user);
 
 const activeTab = ref('dashboard');
@@ -67,12 +69,31 @@ const viewRecommendedProjects = () => {
     hideChurnAlert.value = true;
 };
 
-const handleLegalNoticeClick = () => {
-    alertStore.open({
-        title: 'NOTICE',
-        message: '법률 자문 AI Agent 기능은 현재 구현중입니다.',
-        type: 'info',
-    });
+const handleLegalNoticeClick = async () => {
+    try {
+        await contractStore.fetchContracts();
+        const latestContract = [...contractStore.contractsWithDetails]
+            .sort((left, right) => Number(right.contractId ?? right.id) - Number(left.contractId ?? left.id))[0];
+
+        await router.push({
+            name: 'freelancer.contracts',
+            query: latestContract
+                ? {
+                    contractId: String(latestContract.contractId ?? latestContract.id),
+                    contractTab: 'ai-advice',
+                }
+                : {
+                    contractTab: 'ai-advice',
+                },
+        });
+    } catch (error) {
+        console.error('Failed to open freelancer legal ai guide:', error);
+        alertStore.open({
+            title: 'NOTICE',
+            message: '법률 자문 AI 화면으로 이동하지 못했습니다.',
+            type: 'error',
+        });
+    }
 };
 
 // 초기값 로딩 상태를 고려한 기본값 설정
