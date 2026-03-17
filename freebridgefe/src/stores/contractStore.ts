@@ -36,6 +36,7 @@ export interface Contract {
     contractPdfUrl?: string;
     signedPdfUrl?: string;
     signedDate?: Date | string;
+    aiLegalAdvice?: string | null;
 
     jobDescription?: string;
     workLocation?: string;
