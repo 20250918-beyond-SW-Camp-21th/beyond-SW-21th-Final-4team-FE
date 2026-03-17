@@ -23,6 +23,7 @@ import {
   TrendingUp,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
+import { useAlertStore } from '@/stores/alertStore';
 import { getFreelancerProfile, uploadFreelancerPortfolio, type FreelancerProfileDashboard } from '@/api/MyPage/freelancerApi';
 import {
     getFreelancerReviewSummary,
@@ -41,6 +42,7 @@ import ProjectDetailModal from './components/ProjectDetailModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const alertStore = useAlertStore();
 const currentUser = computed(() => authStore.user);
 
 const activeTab = ref('dashboard');
@@ -63,6 +65,14 @@ const toggleRestMode = () => {
 const viewRecommendedProjects = () => {
     alert('추천 프로젝트 페이지로 이동합니다.');
     hideChurnAlert.value = true;
+};
+
+const handleLegalNoticeClick = () => {
+    alertStore.open({
+        title: 'NOTICE',
+        message: '법률 자문 AI Agent 기능은 현재 구현중입니다.',
+        type: 'info',
+    });
 };
 
 // 초기값 로딩 상태를 고려한 기본값 설정
@@ -501,70 +511,94 @@ const hideChurnAlert = ref(false);
             </div>
 
             <!-- My Project Status Section -->
-            <div class="mb-8">
-                <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-base md:text-lg font-semibold text-white flex items-center gap-2">
-                        <Briefcase class="w-5 h-5 text-white/70" />
-                        나의 프로젝트 현황
-                    </h3>
-                    <button
-                        @click="router.push({ name: 'freelancer.applications' })"
-                        class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-white/5 px-3 py-1.5 rounded-full border border-white/10"
-                    >
-                        전체보기 <ChevronRight class="w-4 h-4" />
-                    </button>
+            <div class="mb-8 grid grid-cols-1 xl:grid-cols-[minmax(0,3fr)_minmax(0,1fr)] gap-6 items-stretch">
+                <div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <h3 class="text-base md:text-lg font-semibold text-white flex items-center gap-2">
+                            <Briefcase class="w-5 h-5 text-white/70" />
+                            나의 프로젝트 현황
+                        </h3>
+                        <button
+                            @click="router.push({ name: 'freelancer.applications' })"
+                            class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-white/5 px-3 py-1.5 rounded-full border border-white/10"
+                        >
+                            전체보기 <ChevronRight class="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                        <!-- Applied / Proposed Projects -->
+                        <div
+                            @click="activeTab = 'projects'"
+                            class="bg-blue-500/10 rounded-3xl p-4 h-[206px] border border-blue-400/20 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(59,130,246,0.35)] relative overflow-hidden group cursor-pointer hover:bg-blue-500/15 hover:border-blue-300/30 transition-all flex flex-col justify-between"
+                        >
+                            <div class="relative z-10">
+                                <div class="flex items-start justify-between mb-5">
+                                    <h4 class="text-sm font-semibold text-blue-200 flex items-center gap-2">
+                                        <Briefcase class="w-4 h-4" />
+                                        지원/제안 프로젝트
+                                    </h4>
+                                    <ChevronRight class="text-blue-200/80 w-5 h-5" />
+                                </div>
+                                <div class="mt-auto">
+                                    <div class="text-5xl leading-none font-bold text-white">{{ profile.statPending }}<span class="ml-0.5 text-xl font-semibold text-blue-200/90">건</span></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Projects -->
+                        <div
+                            @click="activeTab = 'projects'"
+                            class="bg-rose-500/10 rounded-3xl p-4 h-[206px] border border-rose-400/20 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(244,63,94,0.35)] relative overflow-hidden group hover:bg-rose-500/15 hover:border-rose-300/30 transition-all cursor-pointer flex flex-col justify-between"
+                        >
+                            <div class="relative z-10">
+                                <div class="flex items-start justify-between mb-5">
+                                    <span class="text-rose-200 font-semibold text-sm">진행중인 프로젝트</span>
+                                    <ChevronRight class="text-rose-200/80 w-5 h-5" />
+                                </div>
+                                <div class="mt-auto text-5xl leading-none font-bold text-white">{{ profile.statInteresting }}<span class="ml-0.5 text-xl font-semibold text-rose-200/90">건</span></div>
+                            </div>
+                        </div>
+
+                        <!-- Completed Projects -->
+                        <div
+                             @click="activeTab = 'projects'"
+                            class="bg-emerald-500/10 rounded-3xl p-4 h-[206px] border border-emerald-400/20 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(16,185,129,0.35)] relative overflow-hidden group hover:bg-emerald-500/15 hover:border-emerald-300/30 transition-all cursor-pointer flex flex-col justify-between"
+                        >
+                            <div class="relative z-10">
+                                <div class="flex items-start justify-between mb-5">
+                                    <span class="text-emerald-200 font-semibold text-sm flex items-center gap-2">
+                                        <CheckCircle class="w-4 h-4" />
+                                        프로젝트 종료
+                                    </span>
+                                    <ChevronRight class="text-emerald-200/80 w-5 h-5" />
+                                </div>
+                                <div class="mt-auto text-5xl leading-none font-bold text-white">{{ profile.statCompleted }}<span class="ml-0.5 text-xl font-semibold text-emerald-200/90">건</span></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <!-- Applied / Proposed Projects -->
-                    <div
-                        @click="activeTab = 'projects'"
-                        class="bg-blue-500/10 rounded-3xl p-6 min-h-[156px] border border-blue-400/20 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(59,130,246,0.35)] relative overflow-hidden group cursor-pointer hover:bg-blue-500/15 hover:border-blue-300/30 transition-all flex flex-col justify-between"
-                    >
-                        <div class="relative z-10">
-                            <div class="flex items-start justify-between mb-5">
-                                <h4 class="text-sm font-semibold text-blue-200 flex items-center gap-2">
-                                    <Briefcase class="w-4 h-4" />
-                                    지원/제안 프로젝트
-                                </h4>
-                                <ChevronRight class="text-blue-200/80 w-5 h-5" />
-                            </div>
-                            <div class="mt-auto">
-                                <div class="text-5xl leading-none font-bold text-white">{{ profile.statPending }}<span class="ml-0.5 text-xl font-semibold text-blue-200/90">건</span></div>
-                            </div>
+                <div class="bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-slate-700/60 border border-white/10 rounded-2xl p-5 relative overflow-hidden flex flex-col justify-center h-[206px] shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur xl:mt-[3.25rem]">
+                    <div class="relative z-10 w-full h-full flex flex-col justify-between">
+                        <div class="inline-flex items-center gap-2 mb-2">
+                            <span class="text-[10px] tracking-[0.2em] font-semibold text-slate-300 inline-block">NOTICE</span>
+                            <span class="px-2 py-1 rounded-full bg-white/8 border border-white/10 text-[10px] font-semibold text-slate-200">LEGAL AI AGENT</span>
                         </div>
-                    </div>
-
-                    <!-- Active Projects -->
-                    <div
-                        @click="activeTab = 'projects'"
-                        class="bg-rose-500/10 rounded-3xl p-6 min-h-[156px] border border-rose-400/20 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(244,63,94,0.35)] relative overflow-hidden group hover:bg-rose-500/15 hover:border-rose-300/30 transition-all cursor-pointer flex flex-col justify-between"
-                    >
-                        <div class="relative z-10">
-                            <div class="flex items-start justify-between mb-5">
-                                <span class="text-rose-200 font-semibold text-sm">진행중인 프로젝트</span>
-                                <ChevronRight class="text-rose-200/80 w-5 h-5" />
-                            </div>
-                            <div class="mt-auto text-5xl leading-none font-bold text-white">{{ profile.statInteresting }}<span class="ml-0.5 text-xl font-semibold text-rose-200/90">건</span></div>
+                        <div>
+                            <h4 class="font-semibold text-white text-base leading-snug mb-2">계약 전 확인이 필요할 때<br/>법률 자문 AI Agent 제공</h4>
                         </div>
+                        <p class="text-[11px] leading-relaxed text-slate-300/80">계약 조항 점검과 리스크 확인을<br/>AI Agent로 빠르게 도와드립니다.</p>
+                        <button
+                            type="button"
+                            @click="handleLegalNoticeClick"
+                            class="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/8 px-3.5 py-2 text-[11px] font-semibold text-slate-200 transition-colors hover:bg-white/12 hover:text-white"
+                        >
+                            자세히 보기 <ArrowRight class="w-3 h-3" />
+                        </button>
                     </div>
-
-                    <!-- Completed Projects -->
-                    <div
-                         @click="activeTab = 'projects'"
-                        class="bg-emerald-500/10 rounded-3xl p-6 min-h-[156px] border border-emerald-400/20 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(16,185,129,0.35)] relative overflow-hidden group hover:bg-emerald-500/15 hover:border-emerald-300/30 transition-all cursor-pointer flex flex-col justify-between"
-                    >
-                        <div class="relative z-10">
-                            <div class="flex items-start justify-between mb-5">
-                                <span class="text-emerald-200 font-semibold text-sm flex items-center gap-2">
-                                    <CheckCircle class="w-4 h-4" />
-                                    프로젝트 종료
-                                </span>
-                                <ChevronRight class="text-emerald-200/80 w-5 h-5" />
-                            </div>
-                            <div class="mt-auto text-5xl leading-none font-bold text-white">{{ profile.statCompleted }}<span class="ml-0.5 text-xl font-semibold text-emerald-200/90">건</span></div>
-                        </div>
-                    </div>
+                    <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none"></div>
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
                 </div>
             </div>
 
