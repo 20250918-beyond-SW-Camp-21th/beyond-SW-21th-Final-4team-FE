@@ -264,6 +264,80 @@ const proposedProject = computed(() => {
   };
 });
 
+const extractEntityId = (participantId?: string | null) => {
+  if (!participantId) return null;
+  const normalized = String(participantId).trim();
+  const matched = normalized.match(/^[a-z](\d+)$/i);
+  if (!matched) return null;
+  return matched[1];
+};
+
+const extractNumericId = (value?: string | number | null) => {
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim();
+  const directNumber = normalized.match(/^(\d+)$/);
+  if (directNumber) return directNumber[1];
+  const suffixedNumber = normalized.match(/(\d+)$/);
+  return suffixedNumber ? suffixedNumber[1] : null;
+};
+
+const findParticipantByPrefix = (prefix: 'e' | 'f') => {
+  const room = currentRoom.value;
+  if (!room) return null;
+  const matched = room.participants.find((participantId) =>
+    new RegExp(`^${prefix}\\d+$`, 'i').test(participantId),
+  );
+  return matched ?? null;
+};
+
+const resolveFreelancerPreviewId = () => {
+  const room = currentRoom.value;
+  if (!room) return null;
+
+  if (room.relatedApplicationId) {
+    const application = jobStore.applications.find(
+      (item) => item.id === room.relatedApplicationId,
+    );
+    if (application?.freelancerId) {
+      return String(application.freelancerId);
+    }
+  }
+
+  if (room.relatedProposalId) {
+    const proposal = freelancerStore.proposals.find(
+      (item) => item.id === room.relatedProposalId,
+    );
+    if (proposal?.freelancerId) {
+      return String(proposal.freelancerId);
+    }
+  }
+
+  const participantId = findParticipantByPrefix('f');
+  return extractEntityId(participantId);
+};
+
+const resolveEmployerPreviewId = () => {
+  const room = currentRoom.value;
+  if (!room) return null;
+
+  const job = room.relatedJobId ? jobStore.getJobById(room.relatedJobId) : null;
+  if (job?.employerId) {
+    return extractNumericId(job.employerId);
+  }
+
+  if (room.relatedProposalId) {
+    const proposal = freelancerStore.proposals.find(
+      (item) => item.id === room.relatedProposalId,
+    );
+    if (proposal?.employerId) {
+      return extractNumericId(proposal.employerId);
+    }
+  }
+
+  const participantId = findParticipantByPrefix('e');
+  return extractEntityId(participantId);
+};
+
 const openFreelancerProfile = async (freelancerId: string) => {
   isFreelancerProfileOpen.value = true;
   isFreelancerProfileLoading.value = true;
@@ -336,17 +410,16 @@ const handleProfileClick = async () => {
   const room = currentRoom.value;
   if (!room || !authStore.user) return;
 
-  const otherId = chatStore.getOtherParticipantId(room);
-  if (!otherId) return;
-
   if (authStore.user.role === 'EMPLOYER') {
-    await openFreelancerProfile(otherId.replace(/^[a-z]/i, ''));
+    const freelancerId = resolveFreelancerPreviewId();
+    if (!freelancerId) return;
+    await openFreelancerProfile(freelancerId);
     return;
   }
 
-  const job = room.relatedJobId ? jobStore.getJobById(room.relatedJobId) : null;
-  const employerId = job?.employerId || otherId.replace(/^[a-z]/i, '');
-  await openEmployerProfile(String(employerId));
+  const employerId = resolveEmployerPreviewId();
+  if (!employerId) return;
+  await openEmployerProfile(employerId);
 };
 
 const handleProposalDetail = () => {
