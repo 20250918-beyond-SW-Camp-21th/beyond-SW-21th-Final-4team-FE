@@ -12,6 +12,7 @@ import {
   Sparkles,
   FileDown,
 } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
 import { getContract, type ContractResponseDto } from '@/api/contractApi';
 
 const props = defineProps<{
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 
 const isLoading = ref(false);
 const contract = ref<ContractResponseDto | null>(null);
+const router = useRouter();
 
 const toDate = (value?: string | null) => {
   if (!value) return null;
@@ -46,6 +48,19 @@ const formatCurrency = (amount?: number | null) => {
 const openExternal = (url?: string | null) => {
   if (!url) return;
   window.open(url, '_blank', 'noopener,noreferrer');
+};
+
+const openContractPage = (contractTab?: 'details' | 'ai-advice') => {
+  if (!contract.value?.contractId) return;
+
+  void router.push({
+    name: 'freelancer.contracts',
+    query: {
+      contractId: String(contract.value.contractId),
+      contractTab: contractTab ?? 'details',
+    },
+  });
+  emit('close');
 };
 
 const contractStatusLabel = computed(() => {
@@ -214,6 +229,22 @@ watch(
             <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
               <div class="mb-3 text-sm font-semibold text-white">빠른 액션</div>
               <div class="space-y-2">
+                <button
+                  type="button"
+                  class="flex w-full items-center justify-between rounded-2xl border border-sky-400/20 bg-sky-400/10 px-4 py-3 text-left text-sm text-white transition-colors hover:bg-sky-400/15"
+                  @click="openContractPage('details')"
+                >
+                  <span>계약 화면에서 보기</span>
+                  <FileText class="h-4 w-4 text-slate-200" />
+                </button>
+                <button
+                  type="button"
+                  class="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-white transition-colors hover:bg-white/10"
+                  @click="openContractPage('ai-advice')"
+                >
+                  <span>AI 법률 자문 보기</span>
+                  <Sparkles class="h-4 w-4 text-sky-300" />
+                </button>
                 <button
                   type="button"
                   class="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-left text-sm text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
