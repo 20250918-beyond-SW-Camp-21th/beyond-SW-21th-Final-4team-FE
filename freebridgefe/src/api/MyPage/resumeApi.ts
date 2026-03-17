@@ -3,6 +3,10 @@
 interface ApiResponse<T> {
   success: boolean;
   message?: string;
+  error?: {
+    code?: string;
+    message?: string;
+  };
   data: T;
 }
 
@@ -98,12 +102,25 @@ interface CertificationDto {
   acquisitionDate: string | null;
 }
 
+const getApiErrorMessage = (response: ApiResponse<unknown>): string =>
+  response.error?.message ?? response.message ?? 'Unknown error';
+
 const unwrapApiResponse = <T>(response: ApiResponse<T>): T => {
-  if (!response.success || response.data == null) {
-    const message = response.message ?? 'Unknown error';
-    throw new Error(`resumeApi failed: ${message}`);
+  if (!response.success) {
+    throw new Error(`resumeApi failed: ${getApiErrorMessage(response)}`);
   }
+
+  if (response.data == null) {
+    throw new Error('resumeApi failed: Missing response data');
+  }
+
   return response.data;
+};
+
+const unwrapVoidApiResponse = (response: ApiResponse<unknown>): void => {
+  if (!response.success) {
+    throw new Error(`resumeApi failed: ${getApiErrorMessage(response)}`);
+  }
 };
 
 const EDU_STATUS_LABELS: Record<string, string> = {
@@ -219,7 +236,7 @@ export const updateResumeBasicInfo = async (data: ResumeDetail): Promise<void> =
     email: data.email,
     address: data.address,
   });
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };
 
 export const addEducation = async (education: Education): Promise<void> => {
@@ -231,7 +248,7 @@ export const addEducation = async (education: Education): Promise<void> => {
     entranceDate: normalizeDate(education.entranceDate),
     graduationDate: normalizeDate(education.graduationDate),
   });
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };
 
 export const updateEducation = async (index: number, education: Education): Promise<void> => {
@@ -243,12 +260,12 @@ export const updateEducation = async (index: number, education: Education): Prom
     entranceDate: normalizeDate(education.entranceDate),
     graduationDate: normalizeDate(education.graduationDate),
   });
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };
 
 export const deleteEducation = async (index: number): Promise<void> => {
   const response = await apiClient.delete<ApiResponse<null>>(`/api/freelancer/mypage/resume/educations/${index}`);
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };
 
 export const addCareer = async (career: Career): Promise<void> => {
@@ -263,7 +280,7 @@ export const addCareer = async (career: Career): Promise<void> => {
     endDate: isCurrent ? null : normalizeDate(career.endDate),
     description: career.description ?? '',
   });
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };
 
 export const updateCareer = async (index: number, career: Career): Promise<void> => {
@@ -278,12 +295,12 @@ export const updateCareer = async (index: number, career: Career): Promise<void>
     endDate: isCurrent ? null : normalizeDate(career.endDate),
     description: career.description ?? '',
   });
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };
 
 export const deleteCareer = async (index: number): Promise<void> => {
   const response = await apiClient.delete<ApiResponse<null>>(`/api/freelancer/mypage/resume/careers/${index}`);
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };
 
 export const addCertification = async (cert: Certification): Promise<void> => {
@@ -292,7 +309,7 @@ export const addCertification = async (cert: Certification): Promise<void> => {
     issuer: cert.issuer,
     acquisitionDate: normalizeDate(cert.acquisitionDate),
   });
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };
 
 export const updateCertification = async (
@@ -304,10 +321,10 @@ export const updateCertification = async (
     issuer: cert.issuer,
     acquisitionDate: normalizeDate(cert.acquisitionDate),
   });
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };
 
 export const deleteCertification = async (index: number): Promise<void> => {
   const response = await apiClient.delete<ApiResponse<null>>(`/api/freelancer/mypage/resume/certifications/${index}`);
-  unwrapApiResponse(response.data);
+  unwrapVoidApiResponse(response.data);
 };

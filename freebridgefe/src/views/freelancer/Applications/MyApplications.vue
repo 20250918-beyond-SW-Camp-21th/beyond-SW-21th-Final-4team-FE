@@ -17,11 +17,25 @@ import { useRouter } from 'vue-router';
 import { useJobStore } from '@/stores/jobStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import type { ApplicationStatus } from '@/types';
+import { getEmployerProfilePreview } from '@/api/profilePreviewApi';
+import EmployerProfilePreviewModal from '@/components/profile/EmployerProfilePreviewModal.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
+const isEmployerProfileOpen = ref(false);
+const isEmployerProfileLoading = ref(false);
+const employerProfile = ref({
+  companyName: '정보 없음',
+  logoUrl: null as string | null,
+  industry: null as string | null,
+  scale: null as string | null,
+  location: null as string | null,
+  phone: null as string | null,
+  website: null as string | null,
+  description: null as string | null,
+});
 
 onMounted(async () => {
   const [jobsResult, proposalsResult, applicationsResult] = await Promise.allSettled([
@@ -48,23 +62,14 @@ onMounted(async () => {
 
 const currentUser = computed(() => authStore.user);
 
-const isSameFreelancer = (freelancerId: string | number, freelancerName: string) => {
-  if (!currentUser.value) return false;
-  const idMatched = String(freelancerId) === String(currentUser.value.id);
-  const nameMatched = freelancerName === currentUser.value.name;
-  return idMatched || nameMatched;
-};
-
 const myApplications = computed(() => {
   if (!currentUser.value) return [];
-  return jobStore.applications.filter((app) => isSameFreelancer(app.freelancerId, app.freelancerName));
+  return jobStore.applications;
 });
 
 const receivedProposals = computed(() => {
   if (!currentUser.value) return [];
-  return freelancerStore.proposals.filter((proposal) =>
-    isSameFreelancer(proposal.freelancerId, proposal.freelancerName)
-  );
+  return freelancerStore.proposals;
 });
 
 const getJobTitle = (jobId: string) => {
@@ -107,6 +112,38 @@ const formatDate = (date: Date | string) => {
   return new Date(date).toLocaleDateString('ko-KR');
 };
 
+const extractNumericId = (value?: string | number | null) => {
+  if (value == null) return null;
+  const matched = String(value).match(/(\d+)$/);
+  return matched ? matched[1] : String(value);
+};
+
+const openEmployerProfile = async (employerId?: string | number | null) => {
+  const resolvedEmployerId = extractNumericId(employerId);
+  if (!resolvedEmployerId) return;
+
+  isEmployerProfileOpen.value = true;
+  isEmployerProfileLoading.value = true;
+
+  try {
+    const preview = await getEmployerProfilePreview(resolvedEmployerId);
+    employerProfile.value = {
+      companyName: preview.companyName || '정보 없음',
+      logoUrl: preview.logoUrl,
+      industry: preview.industry,
+      scale: preview.scale,
+      location: preview.location,
+      phone: preview.phone,
+      website: preview.websiteUrl,
+      description: preview.description,
+    };
+  } catch (error) {
+    console.error('Failed to load employer preview:', error);
+  } finally {
+    isEmployerProfileLoading.value = false;
+  }
+};
+
 const actionFeedback = ref<{ type: 'success' | 'error'; message: string } | null>(null);
 
 const handleAcceptProposal = async (proposalId: string) => {
@@ -143,15 +180,9 @@ const handleAcceptProposal = async (proposalId: string) => {
 
 const handleRejectProposal = async (proposalId: string) => {
   if (!window.confirm('이 제안을 거절하시겠습니까?')) return;
-  const reason = window.prompt('거절 사유를 입력해 주세요. (선택)');
-  if (reason === null) return;
 
   try {
-    const updated = await freelancerStore.updateProposalStatus(
-      proposalId,
-      'REJECTED',
-      reason.trim() || undefined
-    );
+    const updated = await freelancerStore.updateProposalStatus(proposalId, 'REJECTED');
     if (!updated) {
       actionFeedback.value = { type: 'error', message: '제안 상태 변경에 실패했습니다. 다시 시도해 주세요.' };
       alert('제안 상태 변경에 실패했습니다.');
@@ -331,56 +362,46 @@ const handleRejectProposal = async (proposalId: string) => {
           {{ freelancerStore.proposalFetchError }}
         </div>
 
-        <div class="space-y-4">
-          <div v-if="!freelancerStore.isFetchingProposals && receivedProposals.length === 0" class="text-center py-10 text-white/40">
-            아직 받은 제안이 없습니다.
-          </div>
+        <div v-else-if="receivedProposals.length === 0" class="text-center py-10 text-white/40">
+          아직 받은 제안이 없습니다.
+        </div>
 
-          <div
-            v-for="(proposal, index) in receivedProposals"
+        <div v-else class="space-y-4">
+          <article
+            v-for="proposal in receivedProposals"
             :key="proposal.id"
-            class="bg-white/5 border rounded-2xl p-6"
-            :class="
-              proposal.status === 'ACCEPTED'
-                ? 'border-green-500/30'
-                : proposal.status === 'REJECTED'
-                  ? 'border-red-500/30'
-                  : 'border-white/10'
-            "
-            v-motion
-            :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
+            class="rounded-2xl border border-white/10 bg-slate-800/80 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
           >
-            <div class="flex flex-col lg:flex-row items-start justify-between gap-6 mb-5">
+            <div class="mb-5 flex flex-col items-start justify-between gap-6 lg:flex-row">
               <div class="flex-1">
-                <div class="flex items-center gap-3 mb-2 flex-wrap">
+                <div class="mb-2 flex flex-wrap items-center gap-3">
                   <h3 class="text-2xl font-bold text-white">{{ proposal.employerName }}</h3>
                   <div
-                    class="px-4 py-2 rounded-full bg-gradient-to-r text-white text-sm font-medium flex items-center gap-2 shadow-lg"
+                    class="flex items-center gap-2 rounded-full bg-gradient-to-r px-4 py-2 text-sm font-medium text-white shadow-lg"
                     :class="statusConfig[proposal.status].gradient"
                   >
-                    <component :is="statusConfig[proposal.status].icon" class="w-4 h-4" />
+                    <component :is="statusConfig[proposal.status].icon" class="h-4 w-4" />
                     {{ statusConfig[proposal.status].label }}
                   </div>
                 </div>
-                <div class="flex items-center gap-2 text-white/60 mb-2">
-                  <Sparkles class="w-4 h-4" />
+                <div class="mb-2 flex items-center gap-2 text-white/80">
+                  <Sparkles class="h-4 w-4" />
                   <span>{{ formatDate(proposal.createdAt) }} 제안</span>
                 </div>
-                <div v-if="proposal.jobId" class="text-sm text-white/70">
+                <div v-if="proposal.jobId" class="text-sm text-white/85">
                   제안 프로젝트: {{ getJobTitle(proposal.jobId) }}
                 </div>
               </div>
             </div>
 
-            <div class="mb-5">
-              <div class="text-sm text-white/60 mb-3">제안 메시지</div>
-              <div class="text-sm bg-white/5 border border-white/10 p-5 rounded-2xl text-white/80 leading-relaxed">
+            <div class="mb-4">
+              <div class="mb-2 text-sm text-white/80">제안 메시지</div>
+              <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/95">
                 {{ proposal.message }}
               </div>
             </div>
 
-            <div v-if="proposal.status === 'PENDING'" class="flex flex-wrap gap-3 mb-4">
+            <div v-if="proposal.status === 'PENDING'" class="mb-4 flex flex-wrap gap-3">
               <button
                 type="button"
                 @click="handleAcceptProposal(proposal.id)"
@@ -399,29 +420,39 @@ const handleRejectProposal = async (proposalId: string) => {
               </button>
             </div>
 
+            <div class="mb-4">
+              <button
+                type="button"
+                class="flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
+                @click="openEmployerProfile(proposal.employerId)"
+              >
+                프로필 보기
+              </button>
+            </div>
+
             <div
               v-if="proposal.status === 'ACCEPTED'"
-              class="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 flex items-center gap-3"
+              class="flex items-center gap-3 rounded-2xl border border-green-500/20 bg-green-500/10 p-4"
             >
-              <CheckCircle class="w-5 h-5 text-green-400" />
-              <span class="text-green-300 font-medium">
+              <CheckCircle class="h-5 w-5 text-green-400" />
+              <span class="font-medium text-green-300">
                 제안이 수락되었습니다. 계약 진행 정보를 확인해주세요.
               </span>
             </div>
 
             <div
               v-if="proposal.status === 'REJECTED'"
-              class="pt-4 border-t border-white/10"
+              class="rounded-2xl border border-red-500/20 bg-red-500/10 p-4"
             >
-              <div class="text-sm text-white/60 mb-2 flex items-center gap-2">
-                <AlertCircle class="w-4 h-4" />
+              <div class="mb-2 flex items-center gap-2 font-medium text-red-300">
+                <AlertCircle class="h-4 w-4" />
                 거절 사유
               </div>
-              <div class="text-sm bg-red-500/10 border border-red-500/20 p-4 rounded-2xl text-red-300">
+              <div class="text-sm text-red-200">
                 {{ proposal.rejectionReason || '사유가 입력되지 않았습니다.' }}
               </div>
             </div>
-          </div>
+          </article>
         </div>
       </div>
 
@@ -447,76 +478,73 @@ const handleRejectProposal = async (proposalId: string) => {
           {{ jobStore.applicationFetchError }}
         </div>
 
-        <div v-else class="space-y-4">
-          <div v-if="myApplications.length === 0" class="text-center py-10 text-white/40">
-            아직 보낸 지원서가 없습니다.
-          </div>
+        <div v-else-if="myApplications.length === 0" class="text-center py-10 text-white/40">
+          아직 보낸 지원서가 없습니다.
+        </div>
 
-          <div
-            v-for="(app, index) in myApplications"
+        <div v-else class="space-y-4">
+          <article
+            v-for="app in myApplications"
             :key="app.id"
-            class="bg-white/5 border border-white/10 rounded-2xl p-6"
-            v-motion
-            :initial="{ opacity: 0, y: 10 }"
-            :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
+            class="rounded-2xl border border-white/10 bg-slate-800/80 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
           >
-            <div class="flex flex-col lg:flex-row items-start justify-between gap-6 mb-6">
+            <div class="mb-5 flex flex-col items-start justify-between gap-6 lg:flex-row">
               <div class="flex-1">
-                <div class="flex items-center gap-3 mb-3 flex-wrap">
+                <div class="mb-2 flex flex-wrap items-center gap-3">
                   <h3 class="text-2xl font-bold text-white">{{ getJobTitle(app.jobId) }}</h3>
                   <div
-                    class="px-4 py-2 rounded-full bg-gradient-to-r text-white text-sm font-medium flex items-center gap-2 shadow-lg"
+                    class="flex items-center gap-2 rounded-full bg-gradient-to-r px-4 py-2 text-sm font-medium text-white shadow-lg"
                     :class="statusConfig[app.status].gradient"
                   >
-                    <component :is="statusConfig[app.status].icon" class="w-4 h-4" />
+                    <component :is="statusConfig[app.status].icon" class="h-4 w-4" />
                     {{ statusConfig[app.status].label }}
                   </div>
                 </div>
-                <div class="flex items-center gap-2 text-white/60">
-                  <Sparkles class="w-4 h-4" />
+                <div class="mb-2 flex items-center gap-2 text-white/80">
+                  <Sparkles class="h-4 w-4" />
                   <span>{{ formatDate(app.createdAt) }} 지원</span>
                 </div>
               </div>
             </div>
 
-            <div class="mb-6">
-              <div class="text-sm text-white/60 mb-3">지원 메시지</div>
-              <div class="text-sm bg-white/5 border border-white/10 p-5 rounded-2xl text-white/80 leading-relaxed">
+            <div class="mb-4">
+              <div class="mb-2 text-sm text-white/80">지원 메시지</div>
+              <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/95">
                 {{ app.message }}
               </div>
             </div>
 
             <div
               v-if="app.status === 'REJECTED' && app.rejectionReason"
-              class="pt-6 border-t border-white/10"
-              v-motion
-              :initial="{ opacity: 0, height: 0 }"
-              :enter="{ opacity: 1, height: 'auto' }"
+              class="rounded-2xl border border-red-500/20 bg-red-500/10 p-4"
             >
-              <div class="text-sm text-white/60 mb-3 flex items-center gap-2">
-                <AlertCircle class="w-4 h-4" />
+              <div class="mb-2 flex items-center gap-2 font-medium text-red-300">
+                <AlertCircle class="h-4 w-4" />
                 거절 사유
               </div>
-              <div class="text-sm bg-red-500/10 border border-red-500/20 p-4 rounded-2xl text-red-300">
+              <div class="text-sm text-red-200">
                 {{ app.rejectionReason }}
               </div>
             </div>
 
             <div
               v-if="app.status === 'ACCEPTED'"
-              class="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 flex items-center gap-3"
-              v-motion
-              :initial="{ opacity: 0, scale: 0.95 }"
-              :enter="{ opacity: 1, scale: 1 }"
+              class="flex items-center gap-3 rounded-2xl border border-green-500/20 bg-green-500/10 p-4"
             >
-              <CheckCircle class="w-5 h-5 text-green-400" />
-              <span class="text-green-300 font-medium">
+              <CheckCircle class="h-5 w-5 text-green-400" />
+              <span class="font-medium text-green-300">
                 축하합니다! 지원이 수락되었습니다. 곧 계약이 진행될 예정입니다.
               </span>
             </div>
-          </div>
+          </article>
         </div>
       </div>
     </div>
+    <EmployerProfilePreviewModal
+      :is-open="isEmployerProfileOpen"
+      :is-loading="isEmployerProfileLoading"
+      :profile="employerProfile"
+      @close="isEmployerProfileOpen = false"
+    />
   </div>
 </template>

@@ -25,6 +25,15 @@ export interface EmployerSubscriptionResponse {
     nextBillingDate: string | null;
 }
 
+export interface EmployerSubscriptionChangeResult {
+    success: boolean;
+    currentPlanGrade: string;
+    pendingPlanGrade: string | null;
+    status: string;
+    nextBillingDate: string | null;
+    message: string;
+}
+
 export interface EmployerNotificationSettings {
     emailEnabled: boolean;
 }
@@ -85,11 +94,27 @@ export const getEmployerSubscription = async (): Promise<EmployerSubscriptionRes
     return response.data.data;
 };
 
-export const updateEmployerSubscription = async (targetPlan: string): Promise<boolean> => {
-    await apiClient.put<ApiResponse<null>>('/api/employer/mypage/account/subscription', {
-        targetPlan
-    });
-    return true;
+export const updateEmployerSubscription = async (
+    targetPlan: string,
+    billingKey?: string | null,
+    paymentId?: string | null
+): Promise<EmployerSubscriptionChangeResult> => {
+    const normalizedTargetPlan = targetPlan.toUpperCase() === 'FREE' ? 'BASIC' : targetPlan;
+    const response = await apiClient.put<ApiResponse<EmployerSubscriptionChangeResult>>(
+        '/api/employer/mypage/account/subscription',
+        {
+            targetPlan: normalizedTargetPlan,
+            billingKey: billingKey ?? null,
+            paymentId: paymentId ?? null,
+        }
+    );
+    if (response.data.success !== true) {
+        throw new Error(response.data.message ?? 'Failed to update subscription');
+    }
+    return {
+        success: true,
+        ...response.data.data
+    };
 };
 
 export const getEmployerNotificationSettings = async (): Promise<EmployerNotificationSettings> => {

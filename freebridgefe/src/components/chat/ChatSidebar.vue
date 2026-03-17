@@ -74,10 +74,15 @@
             >
                 <!-- Avatar -->
                 <div class="relative shrink-0">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 font-bold overflow-hidden border border-white/5 ring-2 ring-[#020617] group-hover:ring-slate-800 transition-all">
-                        <img v-if="getOtherParticipantImage(room)" :src="getOtherParticipantImage(room)" class="w-full h-full object-cover" />
-                        <span v-else>{{ getOtherParticipantName(room).charAt(0) }}</span>
-                    </div>
+                    <ProfileIdentityAvatar
+                        :image-url="getOtherParticipantImage(room)"
+                        :label="getOtherParticipantName(room)"
+                        variant="neutral"
+                        shape="circle"
+                        size-class="w-12 h-12"
+                        text-class="text-sm font-bold"
+                        ring-class="border border-white/5 ring-2 ring-[#020617] group-hover:ring-slate-800 transition-all"
+                    />
                     <span
                         v-if="hasPresenceSignal(room)"
                         class="absolute bottom-0 right-0 w-3 h-3 border-2 border-[#020617] rounded-full"
@@ -141,6 +146,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import type { ChatRoom } from '@/types';
 import { CHAT_HIDDEN_ROOMS_KEY, CHAT_MUTED_ROOMS_KEY, CHAT_PINNED_ROOMS_KEY } from '@/constants/chatUi';
+import ProfileIdentityAvatar from '@/components/profile/ProfileIdentityAvatar.vue';
 
 const chatStore = useChatStore();
 const authStore = useAuthStore();

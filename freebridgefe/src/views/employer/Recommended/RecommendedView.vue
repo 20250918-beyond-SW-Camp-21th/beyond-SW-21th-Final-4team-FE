@@ -1,20 +1,67 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { Crown, Lock, Send, Star, TrendingUp } from "lucide-vue-next";
 import { getEmployerSubscription } from "@/api/MyPage/accountApi";
+import { getFreelancerProfilePreview } from "@/api/profilePreviewApi";
 import { useFavoritesStore } from "@/stores/favoritesStore";
 import { useFreelancerStore } from "@/stores/freelancerStore";
 import { useJobStore } from "@/stores/jobStore";
+import { useAlertStore } from "@/stores/alertStore";
+import { normalizeEmployerPlan } from "@/utils/employerSubscription";
 import type { JobPosting, User } from "@/types";
 import ProposalModal from "./components/ProposalModal.vue";
+import FreelancerProfilePreviewModal from "@/components/profile/FreelancerProfilePreviewModal.vue";
 
 const freelancerStore = useFreelancerStore();
 const favoritesStore = useFavoritesStore();
 const jobStore = useJobStore();
+const alertStore = useAlertStore();
 const router = useRouter();
 
 const selectedFreelancer = ref<User | null>(null);
+const isFreelancerProfileOpen = ref(false);
+const isFreelancerProfileLoading = ref(false);
+const lastFreelancerProfileRequestId = ref(0);
+const freelancerProfile = ref({
+  name: "",
+  avatarUrl: null as string | null,
+  job: null as string | null,
+  careerYears: null as number | null,
+  wage: null as number | null,
+  grade: null as string | null,
+  introduction: null as string | null,
+  skills: [] as string[],
+  phone: null as string | null,
+  email: null as string | null,
+  address: null as string | null,
+  educations: [] as Array<{
+    schoolType?: string | null;
+    schoolName?: string | null;
+    major?: string | null;
+    status?: string | null;
+    entranceDate?: string | null;
+    graduationDate?: string | null;
+  }>,
+  careers: [] as Array<{
+    companyName?: string | null;
+    department?: string | null;
+    position?: string | null;
+    jobType?: string | null;
+    employmentType?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    description?: string | null;
+  }>,
+  certifications: [] as Array<{
+    name?: string | null;
+    issuer?: string | null;
+    acquisitionDate?: string | null;
+  }>,
+  portfolioUrl: null as string | null,
+  portfolioFileName: null as string | null,
+  portfolioLastUpdated: null as string | null,
+});
 const selectedJobId = ref("");
 const recommendationRequestId = ref(0);
 const planLoading = ref(true);
@@ -36,22 +83,70 @@ const isFavorite = (id: string | number) =>
 const toggleFavorite = (id: string | number) =>
   favoritesStore.toggleFavorite(String(id));
 
-const normalizePlan = (plan?: string): PlanType => {
-  const normalizedPlan = (plan ?? "FREE").trim().toUpperCase();
+const seedFreelancerProfile = (freelancer: User) => ({
+  name: freelancer.name,
+  avatarUrl: null,
+  job: null,
+  careerYears: freelancer.experience ?? null,
+  wage: freelancer.monthlySalary ?? null,
+  grade: null,
+  introduction: freelancer.bio ?? null,
+  skills: freelancer.skills ?? [],
+  phone: null,
+  email: null,
+  address: null,
+  educations: [],
+  careers: [],
+  certifications: [],
+  portfolioUrl: null,
+  portfolioFileName: null,
+  portfolioLastUpdated: null,
+});
 
-  if (["PRO", "PARTNER", "프로 플랜".toUpperCase()].includes(normalizedPlan)) {
-    return "PRO";
+const openFreelancerProfile = async (freelancer: User) => {
+  const requestId = ++lastFreelancerProfileRequestId.value;
+  freelancerProfile.value = seedFreelancerProfile(freelancer);
+  isFreelancerProfileOpen.value = true;
+  isFreelancerProfileLoading.value = true;
+
+  try {
+    const preview = await getFreelancerProfilePreview(freelancer.id);
+    if (requestId !== lastFreelancerProfileRequestId.value) {
+      return;
+    }
+    freelancerProfile.value = {
+      name: preview.name ?? freelancer.name,
+      avatarUrl: preview.avatarUrl ?? null,
+      job: preview.job ?? null,
+      careerYears: preview.careerYears ?? freelancer.experience ?? null,
+      wage: preview.wage ?? freelancer.monthlySalary ?? null,
+      grade: preview.grade ?? null,
+      introduction: preview.introduction ?? freelancer.bio ?? null,
+      skills: preview.skills ?? freelancer.skills ?? [],
+      phone: preview.phone,
+      email: preview.email,
+      address: preview.address,
+      educations: preview.educations ?? [],
+      careers: preview.careers ?? [],
+      certifications: preview.certifications ?? [],
+      portfolioUrl: preview.portfolioFileUrl,
+      portfolioFileName: preview.portfolioFileName,
+      portfolioLastUpdated: preview.portfolioLastUpdated,
+    };
+  } catch (error) {
+    if (requestId !== lastFreelancerProfileRequestId.value) {
+      return;
+    }
+    console.error("Failed to load recommended freelancer profile preview:", error);
+    alertStore.open({
+      message: "프로필 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.",
+      type: "error",
+    });
+  } finally {
+    if (requestId === lastFreelancerProfileRequestId.value) {
+      isFreelancerProfileLoading.value = false;
+    }
   }
-
-  if (
-    ["PRIME", "ENTERPRISE", "프라임 플랜".toUpperCase()].includes(
-      normalizedPlan,
-    )
-  ) {
-    return "PRIME";
-  }
-
-  return "FREE";
 };
 
 const hasAccess = computed(
@@ -59,13 +154,43 @@ const hasAccess = computed(
 );
 
 const employerJobs = computed(() => jobStore.myJobs);
+const recommendableEmployerJobs = computed(() =>
+  employerJobs.value.filter((job) => {
+    if (job.status === "CLOSED" || job.status === "CONTRACTED") {
+      return false;
+    }
+
+    if (
+      typeof job.headcount === "number" &&
+      typeof job.matchedHeadcount === "number" &&
+      job.headcount > 0 &&
+      job.matchedHeadcount >= job.headcount
+    ) {
+      return false;
+    }
+
+    return true;
+  }),
+);
 
 const selectedJob = computed<JobPosting | null>(
-  () => employerJobs.value.find((job) => job.id === selectedJobId.value) ?? null,
+  () =>
+    recommendableEmployerJobs.value.find((job) => job.id === selectedJobId.value) ??
+    null,
 );
 
 const isJobSelectDisabled = computed(
   () => initLoading.value || isJobSelectionLoading.value,
+);
+
+const showEmptyRecommendations = computed(
+  () =>
+    hasAccess.value &&
+    !planLoading.value &&
+    !initLoading.value &&
+    !freelancerStore.isFetchingRecommended &&
+    !freelancerStore.recommendedFetchError &&
+    freelancerStore.freelancers.length === 0,
 );
 
 const fetchCurrentPlan = async () => {
@@ -74,7 +199,7 @@ const fetchCurrentPlan = async () => {
 
   try {
     const subscription = await getEmployerSubscription();
-    currentPlan.value = normalizePlan(subscription.currentPlan);
+    currentPlan.value = normalizeEmployerPlan(subscription.currentPlan);
   } catch (error) {
     console.error("Failed to fetch employer plan:", error);
     planFetchError.value = "subscription_fetch_failed";
@@ -94,7 +219,7 @@ const parseSelectedJobId = (): number | string | null => {
   if (!/^\d+$/.test(rawJobId)) {
     freelancerStore.freelancers = [];
     freelancerStore.recommendedFetchError =
-      "유효한 프로젝트 공고를 선택해주세요.";
+      "유효한 프로젝트 공고를 선택해 주세요.";
     return null;
   }
 
@@ -121,6 +246,10 @@ const parseSelectedJobId = (): number | string | null => {
 const loadRecommendationForSelectedJob = async (requestId: number) => {
   const parsedJobId = parseSelectedJobId();
   if (parsedJobId === null) {
+    console.warn("[employer-reco-view] invalid selected job id", {
+      requestId,
+      rawSelectedJobId: selectedJobId.value,
+    });
     return;
   }
 
@@ -128,12 +257,22 @@ const loadRecommendationForSelectedJob = async (requestId: number) => {
   const controller = new AbortController();
   activeRecommendationController = controller;
   isJobSelectionLoading.value = true;
+  console.info("[employer-reco-view] load recommendation", {
+    requestId,
+    jobId: String(parsedJobId),
+  });
 
   try {
     await freelancerStore.fetchRecommendedFreelancers(
       parsedJobId,
       controller.signal,
     );
+    console.info("[employer-reco-view] load completed", {
+      requestId,
+      jobId: String(parsedJobId),
+      count: freelancerStore.freelancers.length,
+      hasError: Boolean(freelancerStore.recommendedFetchError),
+    });
   } finally {
     if (requestId === recommendationRequestId.value) {
       isJobSelectionLoading.value = false;
@@ -146,14 +285,25 @@ const loadRecommendationForSelectedJob = async (requestId: number) => {
 
 const loadRecommendedFreelancers = async () => {
   initLoading.value = true;
-  let jobs = jobStore.myJobs;
+  let jobs = recommendableEmployerJobs.value;
+  console.info("[employer-reco-view] init load start", {
+    currentJobCount: employerJobs.value.length,
+    recommendableJobCount: jobs.length,
+  });
 
   try {
-    if (!jobs.length) {
+    if (!employerJobs.value.length) {
       try {
         await jobStore.fetchJobPostings();
-        jobs = jobStore.myJobs;
+        jobs = recommendableEmployerJobs.value;
+        console.info("[employer-reco-view] jobs fetched", {
+          totalJobs: employerJobs.value.length,
+          recommendableJobs: jobs.length,
+        });
       } catch {
+        console.error("[employer-reco-view] failed to fetch jobs", {
+          message: jobStore.errorMessage,
+        });
         freelancerStore.freelancers = [];
         freelancerStore.recommendedFetchError =
           jobStore.errorMessage || "프로젝트 공고를 불러오지 못했습니다.";
@@ -162,14 +312,20 @@ const loadRecommendedFreelancers = async () => {
     }
 
     if (!jobs.length) {
+      console.warn("[employer-reco-view] no recommendable jobs");
       freelancerStore.freelancers = [];
       freelancerStore.recommendedFetchError =
-        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해주세요.";
+        "등록된 프로젝트 공고가 없습니다. 공고를 먼저 등록해 주세요.";
       selectedJobId.value = "";
+      freelancerStore.recommendedFetchError = null;
       return;
     }
 
     ensureSelectedJob(jobs);
+    console.info("[employer-reco-view] selected job", {
+      selectedJobId: selectedJobId.value,
+      selectedJobTitle: selectedJob.value?.title,
+    });
     recommendationRequestId.value += 1;
     await loadRecommendationForSelectedJob(recommendationRequestId.value);
   } finally {
@@ -179,6 +335,9 @@ const loadRecommendedFreelancers = async () => {
 
 const handleJobChange = async (event: Event) => {
   selectedJobId.value = (event.target as HTMLSelectElement).value;
+  console.info("[employer-reco-view] job changed", {
+    selectedJobId: selectedJobId.value,
+  });
   recommendationRequestId.value += 1;
   await loadRecommendationForSelectedJob(recommendationRequestId.value);
 };
@@ -189,11 +348,16 @@ const goToUpgrade = () => {
 
 onMounted(async () => {
   await fetchCurrentPlan();
+  console.info("[employer-reco-view] plan loaded", {
+    plan: currentPlan.value,
+    hasAccess: hasAccess.value,
+    planFetchError: planFetchError.value,
+  });
 
   if (planFetchError.value) {
     freelancerStore.freelancers = [];
     freelancerStore.recommendedFetchError =
-      "구독 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.";
+      "구독 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
     return;
   }
 
@@ -217,11 +381,11 @@ onBeforeUnmount(() => {
         <TrendingUp class="w-6 h-6 text-[#2D5BFF]" />
         <h1 class="text-3xl font-bold">추천 프리랜서</h1>
       </div>
-      <p class="text-white/60">AI가 선별한 최적의 프리랜서를 만나보세요</p>
+      <p class="text-white/60">AI가 분석한 최적의 프리랜서를 만나보세요.</p>
     </div>
 
     <div
-      v-if="hasAccess && employerJobs.length"
+      v-if="hasAccess && recommendableEmployerJobs.length"
       class="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
     >
       <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -239,7 +403,7 @@ onBeforeUnmount(() => {
             class="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition focus:border-[#2D5BFF] disabled:cursor-not-allowed disabled:opacity-60"
           >
             <option
-              v-for="job in employerJobs"
+              v-for="job in recommendableEmployerJobs"
               :key="job.id"
               :value="job.id"
             >
@@ -294,7 +458,7 @@ onBeforeUnmount(() => {
         <TrendingUp class="w-8 h-8 text-red-400" />
       </div>
       <h3 class="text-xl font-semibold mb-2 text-red-200">
-        추천을 불러오지 못했습니다
+        추천을 불러오지 못했습니다.
       </h3>
       <p class="text-red-300/60">{{ freelancerStore.recommendedFetchError }}</p>
     </div>
@@ -308,7 +472,24 @@ onBeforeUnmount(() => {
       ></div>
       <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
       <p class="text-white/50">
-        등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다
+        등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다.
+      </p>
+    </div>
+
+    <div
+      v-else-if="showEmptyRecommendations"
+      class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-12 text-center"
+    >
+      <div
+        class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4"
+      >
+        <TrendingUp class="w-8 h-8 text-white/70" />
+      </div>
+      <h3 class="text-xl font-semibold mb-2 text-white">
+        현재 조건에 맞는 추천 프리랜서가 없습니다.
+      </h3>
+      <p class="text-white/60">
+        공고 설명을 조금 더 구체적으로 작성하거나 기술 스택을 조정한 뒤 다시 확인해 보세요.
       </p>
     </div>
 
@@ -316,7 +497,12 @@ onBeforeUnmount(() => {
       <div
         v-for="freelancer in freelancerStore.freelancers"
         :key="freelancer.id"
-        class="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:border-white/20 hover:bg-white/10 transition-all"
+        class="cursor-pointer bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 hover:border-white/20 hover:bg-white/10 transition-all"
+        role="button"
+        tabindex="0"
+        @click="openFreelancerProfile(freelancer)"
+        @keyup.enter.self="openFreelancerProfile(freelancer)"
+        @keyup.space.self.prevent="openFreelancerProfile(freelancer)"
         v-motion
         :initial="{ opacity: 0, y: 20 }"
         :enter="{ opacity: 1, y: 0 }"
@@ -328,15 +514,11 @@ onBeforeUnmount(() => {
             {{ freelancer.name[0] }}
           </div>
           <div class="flex-1">
-            <router-link
-              :to="{
-                name: 'employer.freelancer.profile',
-                params: { id: freelancer.id },
-              }"
-              class="text-xl font-bold mb-1 hover:text-blue-400 transition-colors cursor-pointer block"
+            <div
+              class="text-xl font-bold mb-1 hover:text-blue-400 transition-colors"
             >
               {{ freelancer.name }}
-            </router-link>
+            </div>
             <p class="text-sm text-white/60">
               {{ freelancer.experience }}년 경력
             </p>
@@ -380,7 +562,7 @@ onBeforeUnmount(() => {
           <div class="flex items-center gap-2">
             <button
               type="button"
-              @click="toggleFavorite(freelancer.id)"
+              @click.stop="toggleFavorite(freelancer.id)"
               class="px-3 py-2 rounded-lg border transition-all"
               :class="
                 isFavorite(freelancer.id)
@@ -399,7 +581,7 @@ onBeforeUnmount(() => {
             </button>
             <button
               type="button"
-              @click="selectedFreelancer = freelancer"
+              @click.stop="selectedFreelancer = freelancer"
               class="px-4 py-2 bg-[#2D5BFF] text-white rounded-lg hover:bg-[#2D5BFF]/90 hover:shadow-lg transition-all flex items-center gap-2"
             >
               <Send class="w-4 h-4" />
@@ -439,6 +621,12 @@ onBeforeUnmount(() => {
       v-if="selectedFreelancer"
       :freelancer="selectedFreelancer"
       @close="selectedFreelancer = null"
+    />
+    <FreelancerProfilePreviewModal
+      :is-open="isFreelancerProfileOpen"
+      :is-loading="isFreelancerProfileLoading"
+      :profile="freelancerProfile"
+      @close="isFreelancerProfileOpen = false"
     />
   </div>
 </template>

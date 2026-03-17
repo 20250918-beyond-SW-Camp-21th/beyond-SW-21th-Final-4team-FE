@@ -3,8 +3,8 @@ import { ref, onMounted } from 'vue';
 import { useOnboardingStore } from '@/stores/onboardingStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useRouter } from 'vue-router';
-import { User, Code2, ArrowRight, HelpCircle, Plus, X, Briefcase } from 'lucide-vue-next';
-import type { FreelancerGrade, WorkType, WorkStyle } from '@/types/onboarding';
+import { User, Code2, ArrowRight, Plus, X, Briefcase } from 'lucide-vue-next';
+import type { WorkType, WorkStyle } from '@/types/onboarding';
 import AnimatedBackground from '../auth/components/AnimatedBackground.vue';
 
 const store = useOnboardingStore();
@@ -13,7 +13,6 @@ const router = useRouter();
 
 // Local state for skills input
 const newSkillName = ref('');
-const showGradeGuide = ref(false);
 
 onMounted(() => {
     store.ensureDraftForUser(authStore.user?.id, 'FREELANCER');
@@ -54,14 +53,14 @@ const handleFinish = async () => {
     const success = await store.submitFreelancerOnboarding();
     if (success) {
         store.resetOnboardingState();
-        alert('온보딩이 완료되었습니다. Freebridge 이용 가이드로 이동합니다.');
-        router.push('/guide'); 
+        alert('프로필 입력이 완료되었습니다!');
+        router.push({ name: 'freelancer.jobs' });
     }
 };
 
 const nextStep = () => {
     if (store.currentStep === 1) {
-        if (!store.freelancerData.name || store.freelancerData.career_years == null || store.freelancerData.hope_salary == null) {
+        if (!store.freelancerData.name || !store.freelancerData.job || store.freelancerData.career_years == null || store.freelancerData.hope_salary == null) {
             alert('필수 정보를 입력해주세요.');
             return;
         }
@@ -122,41 +121,24 @@ const nextStep = () => {
             </div>
 
             <div v-motion :initial="{ opacity: 0, x: 20 }" :enter="{ opacity: 1, x: 0, transition: { delay: 200 } }">
-                <div class="flex items-center justify-between mb-2">
-                    <label class="block text-sm font-medium text-white/80">등급 (Grade) <span class="text-red-400">*</span></label>
-                    <button @click="showGradeGuide = !showGradeGuide" class="text-xs text-green-400 flex items-center hover:text-green-300 transition-colors bg-green-500/10 px-2 py-1 rounded-lg hover:bg-green-500/20">
-                        <HelpCircle class="w-3 h-3 mr-1" /> 등급 가이드
-                    </button>
-                </div>
-                
-                <!-- Grade Guide Accordion -->
-                <div v-if="showGradeGuide" 
-                     v-motion 
-                     :initial="{ opacity: 0, height: 0 }" 
-                     :enter="{ opacity: 1, height: 'auto' }"
-                     class="mb-4 p-5 bg-gradient-to-br from-green-500/10 to-emerald-500/5 rounded-2xl text-xs text-white/80 space-y-2 border border-green-500/20 backdrop-blur-sm"
-                >
-                    <p class="flex items-start gap-2"><span class="font-bold text-green-400 min-w-[80px]">JUNIOR</span> <span>관련 분야 경력 3년 미만 / 기사 자격증 소지자</span></p>
-                    <p class="flex items-start gap-2"><span class="font-bold text-green-400 min-w-[80px]">MID</span> <span>관련 분야 경력 3년 이상 / 기사 자격 취득 후 3년 이상</span></p>
-                    <p class="flex items-start gap-2"><span class="font-bold text-green-400 min-w-[80px]">SENIOR</span> <span>관련 분야 경력 6년 이상 / 기사 자격 취득 후 6년 이상</span></p>
-                    <p class="flex items-start gap-2"><span class="font-bold text-green-400 min-w-[80px]">MASTER</span> <span>관련 분야 경력 9년 이상 / 기술사 자격 취득자</span></p>
-                </div>
-
+                <label class="block text-sm font-medium text-white/80 mb-2">직무 정보<span class="text-red-400">*</span></label>
                 <div class="relative group">
-                    <select 
-                        :value="store.freelancerData.grade"
-                        @change="e => store.updateFreelancerData({ grade: (e.target as HTMLSelectElement).value as FreelancerGrade })"
-                        class="block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-green-500/50 focus:border-transparent sm:text-sm py-4 px-4 text-white transition-all duration-300 hover:bg-white/10 [&>option]:bg-[#1a1a1a]"
-                    >
-                        <option value="JUNIOR">JUNIOR (초급)</option>
-                        <option value="MID">MID (중급)</option>
-                        <option value="SENIOR">SENIOR (고급)</option>
-                        <option value="MASTER">MASTER (특급)</option>
-                    </select>
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors group-focus-within:text-green-400">
+                        <Briefcase class="h-5 w-5 text-white/40" />
+                    </div>
+                    <input 
+                        type="text" 
+                        :value="store.freelancerData.job"
+                        @input="e => store.updateFreelancerData({ job: (e.target as HTMLInputElement).value })"
+                        class="pl-12 block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-green-500/50 focus:border-transparent sm:text-sm py-4 text-white placeholder:text-white/30 transition-all duration-300 hover:bg-white/10"
+                        placeholder="직무 입력"
+                    />
+                    <div class="absolute inset-0 rounded-2xl ring-1 ring-white/10 pointer-events-none group-hover:ring-white/20 transition-all"></div>
                 </div>
+                <p class="text-xs text-white/50 mt-2">등급은 회원등급 계산기에서 자동 산정됩니다.</p>
             </div>
 
-            <div class="grid grid-cols-2 gap-6" v-motion :initial="{ opacity: 0, x: 20 }" :enter="{ opacity: 1, x: 0, transition: { delay: 300 } }">
+<div class="grid grid-cols-2 gap-6" v-motion :initial="{ opacity: 0, x: 20 }" :enter="{ opacity: 1, x: 0, transition: { delay: 300 } }">
                 <div>
                     <label class="block text-sm font-medium text-white/80 mb-2">총 경력 (년) <span class="text-red-400">*</span></label>
                     <div class="relative group">

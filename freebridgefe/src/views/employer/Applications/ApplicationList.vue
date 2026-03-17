@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import {
   Check,
   X,
@@ -18,11 +18,35 @@ import { useRouter } from 'vue-router';
 import { useJobStore } from '@/stores/jobStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import type { Application, ApplicationStatus } from '@/types';
+import { getFreelancerProfilePreview } from '@/api/profilePreviewApi';
+import FreelancerProfilePreviewModal from '@/components/profile/FreelancerProfilePreviewModal.vue';
+import ProfileIdentityAvatar from '@/components/profile/ProfileIdentityAvatar.vue';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const jobStore = useJobStore();
 const freelancerStore = useFreelancerStore();
+const isFreelancerProfileOpen = ref(false);
+const isFreelancerProfileLoading = ref(false);
+const freelancerProfile = ref({
+  name: '정보 없음',
+  avatarUrl: null as string | null,
+  job: null as string | null,
+  careerYears: null as number | null,
+  wage: null as number | null,
+  grade: null as string | null,
+  introduction: null as string | null,
+  skills: [] as string[],
+  phone: null as string | null,
+  email: null as string | null,
+  address: null as string | null,
+  educations: [] as Array<Record<string, string | null>>,
+  careers: [] as Array<Record<string, string | null>>,
+  certifications: [] as Array<Record<string, string | null>>,
+  portfolioUrl: null as string | null,
+  portfolioFileName: null as string | null,
+  portfolioLastUpdated: null as string | null,
+});
 
 onMounted(async () => {
   const [jobsResult, proposalsResult, applicationsResult] = await Promise.allSettled([
@@ -49,7 +73,6 @@ onMounted(async () => {
 
 const currentUser = computed(() => authStore.user);
 const myJobs = computed(() => jobStore.myJobs);
-const currentEmployerName = computed(() => currentUser.value?.companyName || currentUser.value?.name || '');
 
 const sortByCreatedAtDesc = <T extends { id: string; createdAt: Date | string }>(items: T[]) => {
   const latestById = new Map<string, T>();
@@ -75,13 +98,7 @@ const myReceivedApplications = computed(() =>
 const mySentProposals = computed(() => {
   if (!currentUser.value) return [];
 
-  return sortByCreatedAtDesc(
-    freelancerStore.proposals.filter((proposal) => {
-      const idMatched = String(proposal.employerId) === String(currentUser.value?.id);
-      const nameMatched = proposal.employerName === currentEmployerName.value;
-      return idMatched || nameMatched;
-    }),
-  );
+  return sortByCreatedAtDesc(freelancerStore.proposals);
 });
 
 const statusConfig: Record<ApplicationStatus, { icon: any; label: string; gradient: string }> = {
@@ -140,6 +157,59 @@ const handleReject = (app: Application) => {
 };
 
 const formatDate = (date: Date | string) => new Date(date).toLocaleDateString('ko-KR');
+
+const openFreelancerProfile = async (freelancerId: string | number) => {
+  isFreelancerProfileOpen.value = true;
+  isFreelancerProfileLoading.value = true;
+
+  try {
+    const preview = await getFreelancerProfilePreview(freelancerId);
+    freelancerProfile.value = {
+      name: preview.name || '정보 없음',
+      avatarUrl: preview.avatarUrl,
+      job: preview.job,
+      careerYears: preview.careerYears,
+      wage: preview.wage,
+      grade: preview.grade,
+      introduction: preview.introduction,
+      skills: preview.skills ?? [],
+      phone: preview.phone,
+      email: preview.email,
+      address: preview.address,
+      educations: preview.educations ?? [],
+      careers: preview.careers ?? [],
+      certifications: preview.certifications ?? [],
+      portfolioUrl: preview.portfolioFileUrl,
+      portfolioFileName: preview.portfolioFileName,
+      portfolioLastUpdated: preview.portfolioLastUpdated,
+    };
+  } catch (error) {
+    console.error('Failed to load freelancer preview:', error);
+    isFreelancerProfileOpen.value = false;
+    freelancerProfile.value = {
+      name: '정보 없음',
+      avatarUrl: null,
+      job: null,
+      careerYears: null,
+      wage: null,
+      grade: null,
+      introduction: null,
+      skills: [],
+      phone: null,
+      email: null,
+      address: null,
+      educations: [],
+      careers: [],
+      certifications: [],
+      portfolioUrl: null,
+      portfolioFileName: null,
+      portfolioLastUpdated: null,
+    };
+    window.alert('프로필 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+  } finally {
+    isFreelancerProfileLoading.value = false;
+  }
+};
 </script>
 
 <template>
@@ -219,6 +289,16 @@ const formatDate = (date: Date | string) => new Date(date).toLocaleDateString('k
               </div>
             </div>
 
+            <div class="mb-4">
+              <button
+                type="button"
+                class="flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
+                @click="openFreelancerProfile(proposal.freelancerId)"
+              >
+                ?꾨줈??蹂닿린
+              </button>
+            </div>
+
             <div
               v-if="proposal.status === 'ACCEPTED'"
               class="flex items-center gap-3 rounded-2xl border border-green-500/20 bg-green-500/10 p-4"
@@ -274,9 +354,14 @@ const formatDate = (date: Date | string) => new Date(date).toLocaleDateString('k
           >
             <div class="mb-4 flex flex-col items-start justify-between gap-4 md:flex-row">
               <div class="flex items-center gap-4">
-                <div class="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-500 text-xl font-bold text-white shadow-lg">
-                  {{ app.freelancerName[0] }}
-                </div>
+                <ProfileIdentityAvatar
+                  :label="app.freelancerName"
+                  variant="freelancer"
+                  shape="circle"
+                  size-class="h-14 w-14"
+                  text-class="text-xl font-bold"
+                  ring-class="shadow-lg"
+                />
                 <div>
                   <div class="flex items-center gap-2 text-lg font-semibold text-white">
                     {{ app.freelancerName }}
@@ -288,12 +373,13 @@ const formatDate = (date: Date | string) => new Date(date).toLocaleDateString('k
                   <div class="mt-1 text-sm text-white/85">
                     지원 공고: {{ getJobTitle(app.jobId) }}
                   </div>
-                  <router-link
-                    :to="{ name: 'employer.freelancer.profile', params: { id: app.freelancerId } }"
+                  <button
+                    type="button"
                     class="mt-1 flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 hover:underline"
+                    @click="openFreelancerProfile(app.freelancerId)"
                   >
                     프로필 및 포트폴리오 보기
-                  </router-link>
+                  </button>
                 </div>
               </div>
 
@@ -362,5 +448,11 @@ const formatDate = (date: Date | string) => new Date(date).toLocaleDateString('k
         </div>
       </section>
     </div>
+    <FreelancerProfilePreviewModal
+      :is-open="isFreelancerProfileOpen"
+      :is-loading="isFreelancerProfileLoading"
+      :profile="freelancerProfile"
+      @close="isFreelancerProfileOpen = false"
+    />
   </div>
 </template>

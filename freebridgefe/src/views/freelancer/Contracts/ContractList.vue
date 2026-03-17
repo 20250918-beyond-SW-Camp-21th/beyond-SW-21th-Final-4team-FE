@@ -28,6 +28,7 @@ const route = useRoute();
 const router = useRouter();
 
 const selectedContract = ref<ContractWithDetails | null>(null);
+const selectedContractTab = ref<'details' | 'contract' | 'ai-advice'>('details');
 const signingContract = ref<ContractWithDetails | null>(null);
 
 // Search and filter state
@@ -205,8 +206,12 @@ async function syncRoomContract(contract: ContractWithDetails) {
     }
 }
 
-async function openContractDetail(contract: ContractWithDetails) {
+async function openContractDetail(
+    contract: ContractWithDetails,
+    initialTab: 'details' | 'contract' | 'ai-advice' = 'details'
+) {
     selectedContract.value = contract;
+    selectedContractTab.value = initialTab;
     await syncRoomContract(contract);
 }
 
@@ -224,7 +229,10 @@ async function syncSelectedContractFromRoute() {
 
     const matchedContract = contractStore.findContractByAnyId(routeContractId);
     if (matchedContract) {
-        await openContractDetail(matchedContract);
+        await openContractDetail(
+            matchedContract,
+            route.query.contractTab === 'ai-advice' ? 'ai-advice' : 'details'
+        );
     }
 }
 
@@ -443,6 +451,7 @@ watch(
             v-if="selectedContract"
             :contract="selectedContract"
             :isFreelancer="true"
+            :initial-tab="selectedContractTab"
             @close="selectedContract = null"
             @sign="openSignModal(selectedContract!)"
         />

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { requestPayment, PaymentPayMethod } from '@portone/browser-sdk/v2';
 import {
     CreditCard,
@@ -11,21 +12,78 @@ import {
     Loader2,
     AlertCircle,
     CheckCircle2,
+    ArrowLeft,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
+import { updateEmployerSubscription } from '@/api/MyPage/accountApi';
 
 const authStore = useAuthStore();
 const contractStore = useContractStore();
+const route = useRoute();
+const router = useRouter();
 
 const searchQuery = ref('');
 const selectedSort = ref<'due_soon' | 'amount_desc' | 'amount_asc'>('due_soon');
 const payingContractId = ref<number | null>(null);
 const paymentError = ref<string | null>(null);
 const paymentSuccess = ref<string | null>(null);
+const subscriptionError = ref<string | null>(null);
+const subscriptionSuccess = ref<string | null>(null);
+const isSubscriptionProcessing = ref(false);
+const hasHandledSubscriptionRedirect = ref(false);
+const subscriptionRedirectCountdown = ref<number | null>(null);
+let subscriptionRedirectTimer: ReturnType<typeof setTimeout> | null = null;
+let subscriptionRedirectInterval: ReturnType<typeof setInterval> | null = null;
 
 const storeId = import.meta.env.VITE_PORTONE_STORE_ID as string | undefined;
 const channelKey = import.meta.env.VITE_PORTONE_CHANNEL_KEY as string | undefined;
+const isDev = import.meta.env.DEV;
+
+const maskValue = (value?: string) => {
+    if (!value) return '(empty)';
+    if (value.length <= 8) return `${value.slice(0, 2)}***`;
+    return `${value.slice(0, 6)}...${value.slice(-4)}`;
+};
+
+const debugPortOneInfo = computed(() => {
+    return {
+        storeId: maskValue(storeId),
+        channelKey: maskValue(channelKey),
+    };
+});
+
+type SubscriptionPlanType = 'PRO' | 'PRIME';
+
+const subscriptionMode = computed(() => route.query.mode === 'subscription');
+const requestedSubscriptionPlan = computed<SubscriptionPlanType | null>(() => {
+    const plan = typeof route.query.plan === 'string' ? route.query.plan.toUpperCase() : '';
+    return plan === 'PRO' || plan === 'PRIME' ? (plan as SubscriptionPlanType) : null;
+});
+
+const subscriptionPlanMeta: Record<SubscriptionPlanType, { label: string; price: number; description: string }> = {
+    PRO: {
+        label: 'PRO PLAN',
+        price: 9900,
+        description: '추천 기능과 수수료 할인 혜택이 포함된 고용주 구독 플랜',
+    },
+    PRIME: {
+        label: 'PRIME PLAN',
+        price: 19900,
+        description: '추천 기능, 더 큰 수수료 할인, AI 컨설팅 혜택이 포함된 최상위 플랜',
+    },
+};
+
+const redirectedPaymentId = computed(() =>
+    typeof route.query.paymentId === 'string' ? route.query.paymentId : null
+);
+const redirectedErrorCode = computed(() =>
+    typeof route.query.code === 'string' ? route.query.code : null
+);
+const redirectedErrorMessage = computed(() =>
+    typeof route.query.message === 'string' ? route.query.message : null
+);
+
 const myContracts = computed(() => {
     if (!authStore.user) return [];
     return contractStore.contractsWithDetails.filter((contract) => {
@@ -89,6 +147,128 @@ const createPaymentId = () => {
     return `payment-${Date.now()}`;
 };
 
+const goBackFromSubscriptionPayment = async () => {
+    await router.push({
+        name: 'employer.mypage',
+        query: { tab: 'account' },
+    });
+};
+
+const clearSubscriptionRedirectParams = async () => {
+    if (!subscriptionMode.value || !requestedSubscriptionPlan.value) {
+        return;
+    }
+
+    await router.replace({
+        name: 'employer.payments',
+        query: {
+            mode: 'subscription',
+            plan: requestedSubscriptionPlan.value,
+        },
+    });
+};
+
+const scheduleSubscriptionSuccessRedirect = () => {
+    if (subscriptionRedirectTimer) {
+        clearTimeout(subscriptionRedirectTimer);
+    }
+    if (subscriptionRedirectInterval) {
+        clearInterval(subscriptionRedirectInterval);
+    }
+
+    subscriptionRedirectCountdown.value = 3;
+    subscriptionRedirectInterval = setInterval(() => {
+        if (subscriptionRedirectCountdown.value == null) {
+            return;
+        }
+        if (subscriptionRedirectCountdown.value <= 1) {
+            clearInterval(subscriptionRedirectInterval!);
+            subscriptionRedirectInterval = null;
+            subscriptionRedirectCountdown.value = null;
+            return;
+        }
+        subscriptionRedirectCountdown.value -= 1;
+    }, 1000);
+
+    subscriptionRedirectTimer = setTimeout(async () => {
+        await goBackFromSubscriptionPayment();
+    }, 3000);
+};
+
+const finalizeSubscriptionUpgrade = async (plan: SubscriptionPlanType, paymentId: string) => {
+    const result = await updateEmployerSubscription(plan, null, paymentId);
+    subscriptionSuccess.value = result.message || `${subscriptionPlanMeta[plan].label} 결제가 완료되었습니다.`;
+    await clearSubscriptionRedirectParams();
+    scheduleSubscriptionSuccessRedirect();
+};
+
+const handleSubscriptionPayment = async () => {
+    subscriptionError.value = null;
+    subscriptionSuccess.value = null;
+
+    const plan = requestedSubscriptionPlan.value;
+    if (!plan) {
+        subscriptionError.value = '결제할 구독 플랜 정보가 없습니다.';
+        return;
+    }
+
+    if (!storeId || !channelKey) {
+        subscriptionError.value = '포트원 설정이 누락되었습니다. VITE_PORTONE_STORE_ID와 VITE_PORTONE_CHANNEL_KEY를 확인해주세요.';
+        return;
+    }
+
+    try {
+        isSubscriptionProcessing.value = true;
+        const paymentId = createPaymentId();
+        const paymentResponse = await requestPayment({
+            storeId,
+            channelKey,
+            paymentId,
+            orderName: `${subscriptionPlanMeta[plan].label} 구독 결제`,
+            totalAmount: subscriptionPlanMeta[plan].price,
+            currency: 'KRW',
+            payMethod: PaymentPayMethod.CARD,
+            customer: {
+                fullName: authStore.user?.name,
+                email: authStore.user?.email,
+            },
+            customData: {
+                mode: 'subscription',
+                planType: plan,
+                employerId: Number(authStore.user?.id || 0),
+            },
+            redirectUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+        });
+
+        if (!paymentResponse) {
+            subscriptionError.value = '결제가 취소되었거나 리디렉션 방식으로 처리되었습니다.';
+            return;
+        }
+
+        if (paymentResponse.code) {
+            subscriptionError.value = paymentResponse.message || `결제 실패 (${paymentResponse.code})`;
+            return;
+        }
+
+        if (typeof paymentResponse.paymentId !== 'string' || !paymentResponse.paymentId.trim()) {
+            subscriptionError.value = '구독 결제 번호를 확인할 수 없습니다.';
+            console.error('Subscription payment response missing paymentId:', paymentResponse);
+            return;
+        }
+
+        await finalizeSubscriptionUpgrade(plan, paymentResponse.paymentId);
+
+    } catch (error: any) {
+        const apiErrorMessage = error?.response?.data?.error?.message
+            || error?.response?.data?.message
+            || error?.message;
+        subscriptionError.value = apiErrorMessage || '구독 결제 처리 중 오류가 발생했습니다.';
+        console.error('Subscription payment failed:', error);
+    } finally {
+        isSubscriptionProcessing.value = false;
+    }
+};
+
 const handlePayContract = async (contract: ContractWithDetails) => {
     paymentError.value = null;
     paymentSuccess.value = null;
@@ -146,32 +326,186 @@ const handlePayContract = async (contract: ContractWithDetails) => {
         paymentError.value = apiErrorCode
             ? `${apiErrorCode}: ${apiErrorMessage || '결제 검증에 실패했습니다.'}`
             : apiErrorMessage || error?.message || '결제 처리 중 오류가 발생했습니다.';
+        console.error('Payment verify failed:', {
+            status: error?.response?.status,
+            data: error?.response?.data,
+            contractId: contract.id,
+            paymentId,
+            requestedAmount: totalAmount,
+            budget: contract.budget,
+        });
     } finally {
         payingContractId.value = null;
     }
 };
 
 onMounted(async () => {
+    if (subscriptionMode.value) {
+        if (!hasHandledSubscriptionRedirect.value) {
+            const plan = requestedSubscriptionPlan.value;
+            const paymentId = redirectedPaymentId.value;
+            const errorCode = redirectedErrorCode.value;
+            const errorMessage = redirectedErrorMessage.value;
+
+            if (!plan) {
+                subscriptionError.value = '구독 결제 플랜 정보가 누락되었습니다.';
+                hasHandledSubscriptionRedirect.value = true;
+                return;
+            }
+
+            if (paymentId) {
+                try {
+                    isSubscriptionProcessing.value = true;
+                    hasHandledSubscriptionRedirect.value = true;
+                    await finalizeSubscriptionUpgrade(plan, paymentId);
+                } catch (error: any) {
+                    const apiErrorMessage = error?.response?.data?.error?.message
+                        || error?.response?.data?.message
+                        || error?.message;
+                    subscriptionError.value = apiErrorMessage || '리디렉션 복귀 후 구독 변경 처리에 실패했습니다.';
+                } finally {
+                    isSubscriptionProcessing.value = false;
+                }
+                return;
+            }
+
+            if (errorCode || errorMessage) {
+                subscriptionError.value = errorMessage || `결제 실패 (${errorCode})`;
+                hasHandledSubscriptionRedirect.value = true;
+            }
+        }
+        return;
+    }
+
     try {
         await Promise.all([
             contractStore.fetchContracts(),
             contractStore.fetchEmployerSettlements(),
             contractStore.fetchEmployerSettlementSummary().catch(() => undefined),
         ]);
-    } catch {
-        paymentError.value = '결제 페이지 초기화에 실패했습니다.';
+    } catch (error) {
+        console.error('Failed to initialize payment page:', error);
+    }
+});
+
+onBeforeUnmount(() => {
+    if (subscriptionRedirectTimer) {
+        clearTimeout(subscriptionRedirectTimer);
+    }
+    if (subscriptionRedirectInterval) {
+        clearInterval(subscriptionRedirectInterval);
     }
 });
 </script>
 
 <template>
     <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white">
+        <template v-if="subscriptionMode">
+            <div class="max-w-3xl mx-auto">
+                <button
+                    @click="goBackFromSubscriptionPayment"
+                    class="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                >
+                    <ArrowLeft class="w-4 h-4" />
+                    구독 관리로 돌아가기
+                </button>
+
+                <div class="bg-[#1e293b]/60 border border-white/10 rounded-[28px] p-8 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.75)]">
+                    <div class="flex items-center gap-3 mb-4">
+                        <CreditCard class="w-8 h-8 text-sky-300" />
+                        <div>
+                            <h1 class="text-3xl font-bold">구독 결제</h1>
+                            <p class="text-white/60 text-sm mt-1">최상의 경험을 제공하기 위해 최선의 선택을 제공합니다.</p>
+                        </div>
+                    </div>
+
+                    <div v-if="requestedSubscriptionPlan" class="rounded-2xl bg-white/5 border border-white/10 p-6 mb-6">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <div class="text-sm text-white/50 mb-2">선택한 플랜</div>
+                                <div class="text-2xl font-bold">{{ subscriptionPlanMeta[requestedSubscriptionPlan].label }}</div>
+                                <p class="text-sm text-white/60 mt-2">{{ subscriptionPlanMeta[requestedSubscriptionPlan].description }}</p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-white/50 mb-2">즉시 결제 금액</div>
+                                <div class="text-3xl font-bold">{{ formatCurrency(subscriptionPlanMeta[requestedSubscriptionPlan].price) }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-sky-500/10 border border-sky-400/20 p-5 text-sm text-sky-100 mb-6">
+                        <div class="font-semibold mb-2">결제 전 확인</div>
+                        <ul class="space-y-2 text-sky-50/85">
+                            <li>카드 정보를 등록하면 선택한 구독 플랜으로 즉시 변경됩니다.</li>
+                            <li>결제가 실패하면 플랜 변경도 적용되지 않습니다.</li>
+                        </ul>
+                    </div>
+
+                    <div
+                        v-if="subscriptionError"
+                        class="mb-4 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 flex items-start gap-2"
+                    >
+                        <AlertCircle class="w-5 h-5 mt-0.5" />
+                        <span>{{ subscriptionError }}</span>
+                    </div>
+
+                    <div
+                        v-if="subscriptionSuccess"
+                        class="mb-4 p-4 rounded-xl border border-green-500/40 bg-green-500/10 text-green-200 flex items-start gap-2"
+                    >
+                        <CheckCircle2 class="w-5 h-5 mt-0.5" />
+                        <div>
+                            <div>{{ subscriptionSuccess }}</div>
+                            <div v-if="subscriptionRedirectCountdown !== null" class="text-xs text-green-100/80 mt-1">
+                                {{ subscriptionRedirectCountdown }}초 후 내 계정 관리로 이동합니다.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
+                        <button
+                            @click="goBackFromSubscriptionPayment"
+                            class="px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                        >
+                            취소
+                        </button>
+                        <button
+                            v-if="!subscriptionSuccess"
+                            @click="handleSubscriptionPayment"
+                            :disabled="isSubscriptionProcessing || !requestedSubscriptionPlan"
+                            class="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 min-w-[180px]"
+                        >
+                            <Loader2 v-if="isSubscriptionProcessing" class="w-4 h-4 animate-spin" />
+                            <CreditCard v-else class="w-4 h-4" />
+                            {{ isSubscriptionProcessing ? '결제 처리 중' : '카드 등록 후 결제하기' }}
+                        </button>
+                        <button
+                            v-else
+                            @click="goBackFromSubscriptionPayment"
+                            class="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 font-semibold flex items-center justify-center gap-2 min-w-[180px]"
+                        >
+                            내 계정 관리로 돌아가기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template v-else>
         <div class="mb-8">
             <div class="flex items-center gap-3 mb-3">
                 <CreditCard class="w-10 h-10 text-white" />
                 <h1 class="text-4xl font-bold">결제 관리</h1>
             </div>
             <p class="text-white/60">진행 중인 계약의 선결제를 진행하고 정산 생성을 시작하세요.</p>
+            <div
+                v-if="isDev"
+                class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs bg-yellow-500/10 border border-yellow-500/30 text-yellow-300"
+            >
+                <span>DEBUG</span>
+                <span>storeId={{ debugPortOneInfo.storeId }}</span>
+                <span>channelKey={{ debugPortOneInfo.channelKey }}</span>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -262,5 +596,6 @@ onMounted(async () => {
                 </button>
             </div>
         </div>
+        </template>
     </div>
 </template>

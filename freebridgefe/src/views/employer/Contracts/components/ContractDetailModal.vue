@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { X, FileText, Calendar, DollarSign, CheckCircle, User, PenTool, Clock, MapPin, Briefcase, Shield, ScrollText, Loader2 } from 'lucide-vue-next';
+import { useRoute } from 'vue-router';
+import { X, FileText, Calendar, DollarSign, CheckCircle, User, PenTool, Clock, MapPin, Briefcase, Shield, ScrollText, Loader2, Scale, Sparkles } from 'lucide-vue-next';
 import type { ContractWithDetails } from '@/stores/contractStore';
 import ContractPreview from '@/components/contract/ContractPreview.vue';
 import { getContract } from '@/api/contractApi';
 import { getUserById } from '@/api/authApi';
 
-type ViewTab = 'details' | 'contract';
+type ViewTab = 'details' | 'contract' | 'ai-advice';
 
 const props = defineProps<{
     contract: ContractWithDetails;
     isFreelancer?: boolean;
+    initialTab?: ViewTab;
 }>();
 
 defineEmits<{
@@ -28,6 +30,7 @@ const statusLabels: Record<string, string> = {
 // Full contract detail (fetched on open; falls back to prop if fetch fails)
 const fullContract = ref<ContractWithDetails>(props.contract);
 const isLoadingDetail = ref(false);
+const route = useRoute();
 
 const placeholderPattern = /(user|사용자)\s*#\s*\d+/i;
 const numericOnlyPattern = /^\s*#?\d+\s*$/;
@@ -103,8 +106,21 @@ const formatCurrency = (amount: number) => {
 };
 
 const isFlexibleWork = computed(() => fullContract.value.workStartTime === '자율');
+const hasAiLegalAdvice = computed(() => {
+    const advice = fullContract.value.aiLegalAdvice;
+    return typeof advice === 'string' && advice.trim().length > 0;
+});
+const normalizedAiLegalAdvice = computed(() => {
+    if (!hasAiLegalAdvice.value) {
+        return '아직 AI 법률 자문 결과가 준비되지 않았습니다.';
+    }
 
-const activeTab = ref<ViewTab>('details');
+    return fullContract.value.aiLegalAdvice!.replace(/\r\n/g, '\n').trim();
+});
+const activeTab = ref<ViewTab>(
+    props.initialTab ||
+        (route.query.contractTab === 'ai-advice' ? 'ai-advice' : 'details'),
+);
 </script>
 
 <template>
@@ -165,6 +181,16 @@ const activeTab = ref<ViewTab>('details');
                     >
                         <ScrollText class="w-4 h-4" />
                         계약서 보기
+                    </button>
+                    <button
+                        @click="activeTab = 'ai-advice'"
+                        class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                        :class="activeTab === 'ai-advice'
+                            ? 'bg-white/10 text-white'
+                            : 'text-white/50 hover:text-white hover:bg-white/5'"
+                    >
+                        <Scale class="w-4 h-4" />
+                        법률 자문 AI
                     </button>
                 </div>
             </div>
@@ -390,7 +416,7 @@ const activeTab = ref<ViewTab>('details');
             </div>
 
             <!-- Contract Tab Content -->
-            <div v-else class="p-6">
+            <div v-else-if="activeTab === 'contract'" class="p-6">
                 <ContractPreview :contract="fullContract" />
 
                 <!-- Action Buttons -->
@@ -415,6 +441,59 @@ const activeTab = ref<ViewTab>('details');
                     >
                         닫기
                     </button>
+                </div>
+            </div>
+
+            <!-- AI Advice Tab Content -->
+            <div v-else class="p-6 text-white">
+                <div class="max-w-4xl mx-auto space-y-6">
+                    <div class="rounded-3xl border border-sky-400/20 bg-gradient-to-br from-sky-500/10 via-cyan-500/5 to-transparent p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-sky-500/15 border border-sky-400/20 flex items-center justify-center shrink-0">
+                                <Sparkles class="w-6 h-6 text-sky-300" />
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-xl font-bold">법률 자문 AI</h3>
+                                <p class="text-sm text-white/70 leading-relaxed">
+                                    현재 계약서를 기준으로 핵심 요약, 독소 조항 여부, 체결 전 확인할 권장 사항을 안내합니다.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-3xl border border-white/10 bg-white/5 p-6">
+                        <div class="flex items-center gap-2 mb-4 text-white/80">
+                            <Scale class="w-5 h-5 text-sky-300" />
+                            <span class="font-semibold">AI 분석 결과</span>
+                        </div>
+                        <div
+                            class="rounded-2xl bg-slate-950/70 border border-white/5 p-5 text-sm leading-7 whitespace-pre-line"
+                            :class="hasAiLegalAdvice ? 'text-white/90' : 'text-white/50'"
+                        >
+                            {{ normalizedAiLegalAdvice }}
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button
+                            @click="activeTab = 'contract'"
+                            class="flex-1 py-4 bg-sky-500 text-white font-semibold rounded-2xl hover:bg-sky-400 transition-all"
+                            v-motion
+                            :hover="{ scale: 1.02 }"
+                            :tap="{ scale: 0.98 }"
+                        >
+                            계약서 보기
+                        </button>
+                        <button
+                            @click="$emit('close')"
+                            class="flex-1 py-4 bg-white/10 border border-white/10 hover:bg-white/20 text-white font-semibold rounded-2xl hover:shadow-xl transition-all"
+                            v-motion
+                            :hover="{ scale: 1.02 }"
+                            :tap="{ scale: 0.98 }"
+                        >
+                            닫기
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
