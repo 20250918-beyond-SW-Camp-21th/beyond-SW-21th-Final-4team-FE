@@ -28,6 +28,7 @@ export interface ContractResponseDto extends ContractSummaryDto {
   contractPdfUrl?: string | null;
   signedPdfUrl?: string | null;
   signedDate?: string | null;
+  aiLegalAdvice?: string | null;
   jobDescription?: string | null;
   workLocation?: string | null;
   workStartTime?: string | null;

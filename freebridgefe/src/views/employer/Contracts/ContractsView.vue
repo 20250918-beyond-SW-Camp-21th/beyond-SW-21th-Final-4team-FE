@@ -26,6 +26,7 @@ const chatStore = useChatStore();
 const contractStore = useContractStore();
 
 const selectedContract = ref<ContractWithDetails | null>(null);
+const selectedContractTab = ref<'details' | 'contract' | 'ai-advice'>('details');
 
 // Search and filter state
 const searchQuery = ref('');
@@ -163,8 +164,12 @@ async function syncRoomContract(contract: ContractWithDetails) {
     await chatStore.persistRoomContract(routeRoomId, contract.contractId ?? contract.id);
 }
 
-async function openContractDetail(contract: ContractWithDetails) {
+async function openContractDetail(
+    contract: ContractWithDetails,
+    initialTab: 'details' | 'contract' | 'ai-advice' = 'details'
+) {
     selectedContract.value = contract;
+    selectedContractTab.value = initialTab;
     await syncRoomContract(contract);
 }
 
@@ -178,7 +183,10 @@ async function syncSelectedContractFromRoute() {
 
     const matchedContract = contractStore.findContractByAnyId(routeContractId);
     if (matchedContract) {
-        await openContractDetail(matchedContract);
+        await openContractDetail(
+            matchedContract,
+            route.query.contractTab === 'ai-advice' ? 'ai-advice' : 'details'
+        );
     }
 }
 
@@ -390,6 +398,7 @@ watch(
         <ContractDetailModal
             v-if="selectedContract"
             :contract="selectedContract"
+            :initial-tab="selectedContractTab"
             @close="selectedContract = null"
         />
     </div>

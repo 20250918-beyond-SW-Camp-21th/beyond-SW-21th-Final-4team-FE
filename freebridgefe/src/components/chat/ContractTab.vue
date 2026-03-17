@@ -128,6 +128,13 @@
                             {{ primaryActionLabel }}
                             <ArrowRightIcon class="w-4 h-4" />
                         </button>
+                        <button
+                            @click="openLegalAdvicePage"
+                            class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-sky-400/20 bg-sky-500/10 text-sky-100 font-semibold hover:bg-sky-500/20 transition-colors"
+                        >
+                            <ScaleIcon class="w-4 h-4" />
+                            법률 자문 AI 보기
+                        </button>
                     </div>
                 </div>
             </div>
@@ -148,6 +155,7 @@ import {
     Clock as ClockIcon,
     FileText as FileTextIcon,
     Loader2 as Loader2Icon,
+    Scale as ScaleIcon,
 } from 'lucide-vue-next';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -319,5 +327,34 @@ function openContractPage() {
     }
 
     router.push({ name: targetRouteName, query });
+}
+
+function openLegalAdvicePage() {
+    if (!currentContract.value && !currentRoom.value?.contractId) {
+        openContractPage();
+        return;
+    }
+
+    const query: Record<string, string> = {
+        roomId: props.roomId,
+        contractTab: 'ai-advice',
+    };
+
+    if (currentRoom.value?.relatedJobId) {
+        query.jobId = String(currentRoom.value.relatedJobId);
+    }
+    if (currentRoom.value?.relatedProposalId) {
+        query.proposalId = String(currentRoom.value.relatedProposalId);
+    }
+    if (currentContract.value?.contractId) {
+        query.contractId = String(currentContract.value.contractId);
+    } else if (currentRoom.value?.contractId) {
+        query.contractId = String(currentRoom.value.contractId);
+    }
+
+    router.push({
+        name: isEmployer.value ? 'employer.contracts' : 'freelancer.contracts',
+        query,
+    });
 }
 </script>
