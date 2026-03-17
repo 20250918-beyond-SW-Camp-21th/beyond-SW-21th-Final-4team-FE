@@ -355,7 +355,7 @@ const hideChurnAlert = ref(false);
                         </div>
                         <div>
                             <h4 class="text-white font-bold text-sm">휴식이 필요한 시점입니다.</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 프로젝트 일정이 매우 타이트합니다. 컨디션 관리를 위해 잠시 '휴식 상태'로 전환하는 것을 권장합니다.</p>
+                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 프로젝트 일정이 매우 타이트합니다. 컨디션 관리를 위해 잠시 휴식하는 것을 권장합니다.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-3 shrink-0">
@@ -530,6 +530,10 @@ const hideChurnAlert = ref(false);
                         <!-- Applied / Proposed Projects -->
                         <div
                             @click="activeTab = 'projects'"
+                            @keydown.enter="activeTab = 'projects'"
+                            @keydown.space.prevent="activeTab = 'projects'"
+                            role="button"
+                            tabindex="0"
                             class="bg-blue-500/10 rounded-3xl p-4 h-[206px] border border-blue-400/20 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(59,130,246,0.35)] relative overflow-hidden group cursor-pointer hover:bg-blue-500/15 hover:border-blue-300/30 transition-all flex flex-col justify-between"
                         >
                             <div class="relative z-10">
@@ -549,6 +553,10 @@ const hideChurnAlert = ref(false);
                         <!-- Active Projects -->
                         <div
                             @click="activeTab = 'projects'"
+                            @keydown.enter="activeTab = 'projects'"
+                            @keydown.space.prevent="activeTab = 'projects'"
+                            role="button"
+                            tabindex="0"
                             class="bg-rose-500/10 rounded-3xl p-4 h-[206px] border border-rose-400/20 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(244,63,94,0.35)] relative overflow-hidden group hover:bg-rose-500/15 hover:border-rose-300/30 transition-all cursor-pointer flex flex-col justify-between"
                         >
                             <div class="relative z-10">
@@ -562,7 +570,11 @@ const hideChurnAlert = ref(false);
 
                         <!-- Completed Projects -->
                         <div
-                             @click="activeTab = 'projects'"
+                            @click="activeTab = 'projects'"
+                            @keydown.enter="activeTab = 'projects'"
+                            @keydown.space.prevent="activeTab = 'projects'"
+                            role="button"
+                            tabindex="0"
                             class="bg-emerald-500/10 rounded-3xl p-4 h-[206px] border border-emerald-400/20 backdrop-blur-xl shadow-[0_20px_60px_-40px_rgba(16,185,129,0.35)] relative overflow-hidden group hover:bg-emerald-500/15 hover:border-emerald-300/30 transition-all cursor-pointer flex flex-col justify-between"
                         >
                             <div class="relative z-10">
