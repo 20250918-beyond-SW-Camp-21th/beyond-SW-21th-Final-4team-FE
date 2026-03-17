@@ -51,6 +51,7 @@ const tabs: Array<{ id: ProjectStage; label: string }> = [
 const activeTab = ref<ProjectStage>('ALL');
 const searchQuery = ref('');
 const isLoading = ref(false);
+const loadError = ref<unknown | null>(null);
 
 const toDate = (value?: string | Date | null) => {
   if (!value) return null;
@@ -86,6 +87,7 @@ const getContractStatusLabel = (status: ContractWithDetails['status']) => {
 
 const calculateProgress = (contract: ContractWithDetails) => {
   if (contract.status === 'COMPLETED') return 100;
+  if (contract.status === 'REJECTED' || contract.status === 'WAITING_SIGNATURE') return 0;
 
   const start = toDate(contract.startDate);
   const end = toDate(contract.endDate);
@@ -101,21 +103,19 @@ const calculateProgress = (contract: ContractWithDetails) => {
 };
 
 const normalizeProjectStage = (contract: ContractWithDetails): Exclude<ProjectStage, 'ALL'> | null => {
+  if (contract.status === 'WAITING_SIGNATURE') return 'BEFORE_START';
   if (contract.status === 'REJECTED') return null;
+  if (contract.status === 'COMPLETED') return 'COMPLETED';
 
   const now = new Date();
   const startDate = toDate(contract.startDate);
   const endDate = toDate(contract.endDate);
-
-  if (contract.status === 'COMPLETED') return 'COMPLETED';
 
   if (startDate && endDate) {
     if (now < startDate) return 'BEFORE_START';
     if (now > endDate) return 'COMPLETED';
     return 'IN_PROGRESS';
   }
-
-  if (contract.status === 'WAITING_SIGNATURE') return 'BEFORE_START';
   if (contract.status === 'IN_PROGRESS') return 'IN_PROGRESS';
 
   return 'BEFORE_START';
@@ -224,10 +224,12 @@ const filteredProjects = computed(() => {
 
 const loadProjects = async () => {
   isLoading.value = true;
+  loadError.value = null;
   try {
     await contractStore.fetchContracts();
   } catch (error) {
     console.error('Failed to load contract projects:', error);
+    loadError.value = error;
   } finally {
     isLoading.value = false;
   }
@@ -369,6 +371,23 @@ const openDetailModal = (contractId: number) => {
           <span class="text-slate-400">계약 상태</span>
           <span class="text-slate-200">{{ project.statusLabel }}</span>
         </div>
+      </div>
+    </div>
+
+    <div v-else-if="loadError" class="flex-1 flex items-center justify-center">
+      <div class="text-center max-w-md rounded-3xl border border-red-400/20 bg-red-500/10 px-8 py-10">
+        <Briefcase class="w-16 h-16 text-red-300 mx-auto mb-4" />
+        <h3 class="text-xl font-semibold text-white mb-2">프로젝트를 불러오지 못했습니다.</h3>
+        <p class="text-slate-300 leading-relaxed mb-5">
+          요청을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.
+        </p>
+        <button
+          type="button"
+          @click="loadProjects"
+          class="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/15"
+        >
+          다시 불러오기
+        </button>
       </div>
     </div>
 

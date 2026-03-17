@@ -22,6 +22,7 @@ import {
     Edit3,
     TrendingUp,
     Trash2,
+    ArrowRight,
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useAlertStore } from '@/stores/alertStore';
@@ -285,10 +286,17 @@ const viewPortfolio = async () => {
         return;
     }
 
+    const newWindow = window.open('', '_blank', 'noopener');
     try {
         const downloadUrl = await getFreelancerPortfolioDownloadUrl();
-        window.open(downloadUrl, '_blank');
+        if (!newWindow) {
+            throw new Error('Failed to open portfolio window');
+        }
+        newWindow.location.href = downloadUrl;
     } catch (error) {
+        if (newWindow) {
+            newWindow.close();
+        }
         console.error('Failed to open portfolio:', error);
         alert('포트폴리오를 열지 못했습니다.');
     }
@@ -302,12 +310,19 @@ const downloadPortfolio = async () => {
 
     try {
         const downloadUrl = await getFreelancerPortfolioDownloadUrl();
+        const response = await fetch(downloadUrl);
+        if (!response.ok) {
+            throw new Error(`Portfolio download failed: ${response.status}`);
+        }
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = downloadUrl;
+        link.href = objectUrl;
         link.download = profile.value.portfolio.fileName || 'portfolio.pdf';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(objectUrl);
     } catch (error) {
         console.error('Failed to download portfolio:', error);
         alert('포트폴리오 다운로드에 실패했습니다.');
@@ -553,7 +568,7 @@ const hideChurnAlert = ref(false);
                                         <label class="text-[11px] text-slate-500 mb-1 block">희망 월급</label>
                                         <div class="flex items-center gap-2 text-sm text-white">
                                             <Award class="w-4 h-4 text-slate-400" />
-                                            {{ profile.salary.toLocaleString() }}만원/월
+                                            {{ profile.salary.toLocaleString() }}원/월
                                         </div>
                                     </div>
                                     <div class="group">

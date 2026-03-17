@@ -26,6 +26,7 @@ const emit = defineEmits<{
 
 const isLoading = ref(false);
 const contract = ref<ContractResponseDto | null>(null);
+const lastLoadRequestId = ref(0);
 const router = useRouter();
 
 const toDate = (value?: string | null) => {
@@ -88,6 +89,14 @@ const signatureStatusLabel = computed(() => {
 });
 
 const progress = computed(() => {
+  switch (contract.value?.status) {
+    case 'COMPLETED':
+      return 100;
+    case 'REJECTED':
+    case 'WAITING_SIGNATURE':
+      return 0;
+  }
+
   const start = toDate(contract.value?.startDate);
   const end = toDate(contract.value?.endDate);
 
@@ -104,6 +113,15 @@ const progress = computed(() => {
 });
 
 const progressLabel = computed(() => {
+  switch (contract.value?.status) {
+    case 'COMPLETED':
+      return '프로젝트 완료';
+    case 'WAITING_SIGNATURE':
+      return '서명 대기';
+    case 'REJECTED':
+      return '일정 확인 필요';
+  }
+
   const start = toDate(contract.value?.startDate);
   const end = toDate(contract.value?.endDate);
 
@@ -143,17 +161,36 @@ const summaryItems = computed(() => {
   ];
 });
 
-const loadContract = async () => {
-  if (!props.contractId || !props.isOpen) return;
+const formatWorkDaysPerWeek = (value?: number | null) => {
+  if (value == null) return '-';
+  return `${value}일`;
+};
 
+const loadContract = async (requestedContractId: number) => {
+  if (!requestedContractId || !props.isOpen) return;
+
+  const requestId = ++lastLoadRequestId.value;
   isLoading.value = true;
   try {
-    contract.value = await getContract(props.contractId);
+    const response = await getContract(requestedContractId);
+    if (
+      requestId !== lastLoadRequestId.value
+      || !props.isOpen
+      || props.contractId !== requestedContractId
+    ) {
+      return;
+    }
+    contract.value = response;
   } catch (error) {
+    if (requestId !== lastLoadRequestId.value) {
+      return;
+    }
     console.error('Failed to load contract detail:', error);
     contract.value = null;
   } finally {
-    isLoading.value = false;
+    if (requestId === lastLoadRequestId.value) {
+      isLoading.value = false;
+    }
   }
 };
 
@@ -161,11 +198,13 @@ watch(
   () => [props.contractId, props.isOpen] as const,
   ([contractId, isOpen]) => {
     if (contractId && isOpen) {
-      void loadContract();
+      void loadContract(contractId);
       return;
     }
 
     if (!isOpen) {
+      lastLoadRequestId.value += 1;
+      isLoading.value = false;
       contract.value = null;
     }
   },
@@ -366,7 +405,7 @@ watch(
                 </div>
                 <div class="flex items-center justify-between gap-4">
                   <span class="text-slate-400">주 근무일</span>
-                  <span class="text-white">{{ contract.workDaysPerWeek ?? '-' }}일</span>
+                  <span class="text-white">{{ formatWorkDaysPerWeek(contract.workDaysPerWeek) }}</span>
                 </div>
                 <div class="flex items-center justify-between gap-4">
                   <span class="text-slate-400">주휴일</span>

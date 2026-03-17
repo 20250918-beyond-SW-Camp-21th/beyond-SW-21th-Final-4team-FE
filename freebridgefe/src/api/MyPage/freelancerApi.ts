@@ -329,11 +329,6 @@ export const uploadFreelancerAvatar = async (file: File): Promise<string> => {
   const response = await apiClient.post<ApiResponse<string>>(
     "/api/freelancer/mypage/profile/avatar",
     form,
-    {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    },
   );
   if (!response.data.success || !response.data.data) {
     const message = response.data.message ?? "Unknown error";
@@ -349,11 +344,7 @@ export const uploadFreelancerPortfolio = async (
   form.append("file", file);
   const response = await apiClient.post<
     ApiResponse<{ fileUrl: string | null; fileName: string | null; lastUpdated: string | null }>
-  >("/api/freelancer/mypage/portfolio", form, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  >("/api/freelancer/mypage/portfolio", form);
 
   if (!response.data.success || !response.data.data) {
     const message = response.data.message ?? "Unknown error";
