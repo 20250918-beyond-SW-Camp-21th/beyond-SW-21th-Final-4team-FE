@@ -95,7 +95,8 @@ export const getEmployerSubscription = async (): Promise<EmployerSubscriptionRes
 
 export const updateEmployerSubscription = async (
     targetPlan: string,
-    billingKey?: string | null
+    billingKey?: string | null,
+    paymentId?: string | null
 ): Promise<EmployerSubscriptionChangeResult> => {
     const normalizedTargetPlan = targetPlan.toUpperCase() === 'FREE' ? 'BASIC' : targetPlan;
     const response = await apiClient.put<ApiResponse<EmployerSubscriptionChangeResult>>(
@@ -103,6 +104,7 @@ export const updateEmployerSubscription = async (
         {
             targetPlan: normalizedTargetPlan,
             billingKey: billingKey ?? null,
+            paymentId: paymentId ?? null,
         }
     );
     return response.data.data;
