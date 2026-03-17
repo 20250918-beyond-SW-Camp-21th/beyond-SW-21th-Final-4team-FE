@@ -185,6 +185,27 @@ const openFreelancerProfile = async (freelancerId: string | number) => {
     };
   } catch (error) {
     console.error('Failed to load freelancer preview:', error);
+    isFreelancerProfileOpen.value = false;
+    freelancerProfile.value = {
+      name: '정보 없음',
+      avatarUrl: null,
+      job: null,
+      careerYears: null,
+      wage: null,
+      grade: null,
+      introduction: null,
+      skills: [],
+      phone: null,
+      email: null,
+      address: null,
+      educations: [],
+      careers: [],
+      certifications: [],
+      portfolioUrl: null,
+      portfolioFileName: null,
+      portfolioLastUpdated: null,
+    };
+    window.alert('프로필 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
   } finally {
     isFreelancerProfileLoading.value = false;
   }

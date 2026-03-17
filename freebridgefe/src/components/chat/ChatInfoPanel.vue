@@ -446,13 +446,21 @@ const handleProfileClick = async () => {
 
   if (authStore.user.role === 'EMPLOYER') {
     const freelancerId = resolveFreelancerPreviewId();
-    if (!freelancerId) return;
+    if (!freelancerId) {
+      console.warn('Unable to resolve freelancer preview id for room:', room.id);
+      window.alert('프로필을 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
     await openFreelancerProfile(freelancerId);
     return;
   }
 
   const employerId = resolveEmployerPreviewId();
-  if (!employerId) return;
+  if (!employerId) {
+    console.warn('Unable to resolve employer preview id for room:', room.id);
+    window.alert('프로필을 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
+    return;
+  }
   await openEmployerProfile(employerId);
 };
 

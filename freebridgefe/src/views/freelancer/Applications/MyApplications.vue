@@ -426,7 +426,7 @@ const handleRejectProposal = async (proposalId: string) => {
                 class="flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
                 @click="openEmployerProfile(proposal.employerId)"
               >
-                ?꾨줈??蹂닿린
+                프로필 보기
               </button>
             </div>
 
