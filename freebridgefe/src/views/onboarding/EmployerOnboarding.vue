@@ -16,8 +16,9 @@ onMounted(() => {
     // Reset step to 1
     store.setStep(1);
     
-    // Pre-fill specific fields if available
-    // For Employer, we don't automatically fill company_name with user name to avoid confusion.
+    if (authStore.user?.email && !store.employerData.email) {
+        store.updateEmployerData({ email: authStore.user.email });
+    }
 });
 
 
@@ -36,8 +37,8 @@ const handleFinish = async () => {
     const success = await store.submitEmployerOnboarding();
     if (success) {
         store.resetOnboardingState();
-        alert('온보딩이 완료되었습니다. Freebridge 이용 가이드로 이동합니다.');
-        router.push('/guide'); // Redirect to Guide as requested
+        alert('프로필 정보 기입이 완료되었습니다!');
+        router.push({ name: 'employer.dashboard' });
     }
 };
 

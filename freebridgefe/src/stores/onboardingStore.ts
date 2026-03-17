@@ -1,48 +1,116 @@
-﻿import { defineStore } from 'pinia';
+import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import apiClient from '@/api/axiosInstance';
 import { uploadEmployerLogo } from '@/api/MyPage/employer';
 import type { EmployerProfile, FreelancerProfile } from '@/types/onboarding';
 
+const DEFAULT_EMPLOYER_DATA: Partial<EmployerProfile> = {
+    size: 'S1_4'
+};
+
+const DEFAULT_FREELANCER_DATA: Partial<FreelancerProfile> = {
+    job: '',
+    hope_salary: undefined,
+    work_type: 'PERSONAL',
+    work_style: 'REMOTE'
+};
+
 export const useOnboardingStore = defineStore('onboarding', () => {
     const currentStep = ref(1);
-    const totalSteps = ref(2); // Fixed 2-step flow
+    const totalSteps = ref(2);
     const isLoading = ref(false);
+    const currentDraftKey = ref<string | null>(null);
 
-    // Initial Data State
-    const employerData = ref<Partial<EmployerProfile>>({
-        size: 'S1_4' // Default enum value aligned with BE Scale
-    });
+    const employerData = ref<Partial<EmployerProfile>>({ ...DEFAULT_EMPLOYER_DATA });
+    const freelancerData = ref<Partial<FreelancerProfile>>({ ...DEFAULT_FREELANCER_DATA });
 
-    const freelancerData = ref<Partial<FreelancerProfile>>({
-        job: '',
-        hope_salary: undefined,
-        work_type: 'PERSONAL',
-        work_style: 'REMOTE'
-    });
+    function getDraftKey(userId: string | number | undefined, role: 'EMPLOYER' | 'FREELANCER') {
+        return `onboarding_draft:${role}:${userId ?? 'anonymous'}`;
+    }
+
+    function persistDraft() {
+        if (!currentDraftKey.value) return;
+
+        sessionStorage.setItem(
+            currentDraftKey.value,
+            JSON.stringify({
+                currentStep: currentStep.value,
+                employerData: employerData.value,
+                freelancerData: freelancerData.value
+            })
+        );
+    }
+
+    function ensureDraftForUser(userId: string | number | undefined, role: 'EMPLOYER' | 'FREELANCER') {
+        currentDraftKey.value = getDraftKey(userId, role);
+        const rawDraft = sessionStorage.getItem(currentDraftKey.value);
+        if (!rawDraft) return;
+
+        try {
+            const parsedDraft = JSON.parse(rawDraft) as {
+                currentStep?: number;
+                employerData?: Partial<EmployerProfile>;
+                freelancerData?: Partial<FreelancerProfile>;
+            };
+
+            employerData.value = {
+                ...DEFAULT_EMPLOYER_DATA,
+                ...(parsedDraft.employerData ?? {})
+            };
+            freelancerData.value = {
+                ...DEFAULT_FREELANCER_DATA,
+                ...(parsedDraft.freelancerData ?? {})
+            };
+
+            if (
+                typeof parsedDraft.currentStep === 'number' &&
+                parsedDraft.currentStep >= 1 &&
+                parsedDraft.currentStep <= totalSteps.value
+            ) {
+                currentStep.value = parsedDraft.currentStep;
+            }
+        } catch (error) {
+            console.error('Failed to restore onboarding draft', error);
+            sessionStorage.removeItem(currentDraftKey.value);
+        }
+    }
+
+    function resetOnboardingState() {
+        if (currentDraftKey.value) {
+            sessionStorage.removeItem(currentDraftKey.value);
+        }
+        currentStep.value = 1;
+        employerData.value = { ...DEFAULT_EMPLOYER_DATA };
+        freelancerData.value = { ...DEFAULT_FREELANCER_DATA };
+    }
 
     function setStep(step: number) {
         currentStep.value = step;
+        persistDraft();
     }
 
     function nextStep() {
         if (currentStep.value < totalSteps.value) {
             currentStep.value++;
+            persistDraft();
         }
     }
 
     function prevStep() {
         if (currentStep.value > 1) {
             currentStep.value--;
+            persistDraft();
         }
     }
 
     function updateEmployerData(data: Partial<EmployerProfile>) {
         employerData.value = { ...employerData.value, ...data };
+        persistDraft();
     }
 
     function updateFreelancerData(data: Partial<FreelancerProfile>) {
         freelancerData.value = { ...freelancerData.value, ...data };
+        persistDraft();
     }
 
     async function submitEmployerOnboarding() {
@@ -52,6 +120,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
             if (logoFile) {
                 await uploadEmployerLogo(logoFile);
             }
+
             const payload = {
                 companyName: employerData.value.company_name ?? '',
                 industry: employerData.value.industry ?? '',
@@ -65,6 +134,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
             if (res.data?.success === true) {
                 return true;
             }
+
             console.error(res.data?.message ?? 'Failed to submit employer onboarding');
             return false;
         } catch (e) {
@@ -94,6 +164,7 @@ export const useOnboardingStore = defineStore('onboarding', () => {
             if (res.data?.success === true) {
                 return true;
             }
+
             console.error(res.data?.message ?? 'Failed to submit freelancer onboarding');
             return false;
         } catch (e) {
@@ -113,6 +184,8 @@ export const useOnboardingStore = defineStore('onboarding', () => {
         setStep,
         nextStep,
         prevStep,
+        ensureDraftForUser,
+        resetOnboardingState,
         updateEmployerData,
         updateFreelancerData,
         submitEmployerOnboarding,
