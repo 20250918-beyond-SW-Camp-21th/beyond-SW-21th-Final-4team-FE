@@ -208,17 +208,17 @@ const handleRejectProposal = async (proposalId: string) => {
 </script>
 
 <template>
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-white">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-slate-900">
     <div
       class="mb-12"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0 }"
     >
-      <h1 class="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
+      <h1 class="mb-3 text-4xl font-bold tracking-tight text-slate-950">
         내 지원/제안
       </h1>
-      <p class="text-white/60">기업이 보낸 제안과 내가 보낸 지원서를 한눈에 확인하세요</p>
+      <p class="text-slate-500">기업이 보낸 제안과 내가 보낸 지원서를 한눈에 확인하세요</p>
     </div>
 
     <div
@@ -226,8 +226,8 @@ const handleRejectProposal = async (proposalId: string) => {
       class="mb-6 rounded-2xl border px-5 py-4 text-sm font-medium"
       :class="
         actionFeedback.type === 'success'
-          ? 'bg-green-500/10 border-green-500/30 text-green-300'
-          : 'bg-red-500/10 border-red-500/30 text-red-300'
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+          : 'bg-rose-50 border-rose-200 text-rose-700'
       "
     >
       {{ actionFeedback.message }}
@@ -235,7 +235,7 @@ const handleRejectProposal = async (proposalId: string) => {
 
     <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
       <div
-        class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all hover:translate-y-[-4px]"
+        class="fb-card p-6 transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
         v-motion
         :initial="{ opacity: 0, scale: 0.9 }"
         :enter="{ opacity: 1, scale: 1 }"
@@ -245,14 +245,14 @@ const handleRejectProposal = async (proposalId: string) => {
             <Inbox class="w-6 h-6 text-white" />
           </div>
           <div>
-            <div class="text-sm text-white/60">받은 제안</div>
-            <div class="text-3xl font-bold text-white">{{ stats.proposalCount }}</div>
+            <div class="text-sm text-slate-500">받은 제안</div>
+            <div class="text-3xl font-bold text-slate-950">{{ stats.proposalCount }}</div>
           </div>
         </div>
       </div>
 
       <div
-        class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all hover:translate-y-[-4px]"
+        class="fb-card p-6 transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
         v-motion
         :initial="{ opacity: 0, scale: 0.9 }"
         :enter="{ opacity: 1, scale: 1, transition: { delay: 100 } }"
@@ -262,14 +262,14 @@ const handleRejectProposal = async (proposalId: string) => {
             <Send class="w-6 h-6 text-white" />
           </div>
           <div>
-            <div class="text-sm text-white/60">보낸 지원</div>
-            <div class="text-3xl font-bold text-white">{{ stats.applicationCount }}</div>
+            <div class="text-sm text-slate-500">보낸 지원</div>
+            <div class="text-3xl font-bold text-slate-950">{{ stats.applicationCount }}</div>
           </div>
         </div>
       </div>
 
       <div
-        class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all hover:translate-y-[-4px]"
+        class="fb-card p-6 transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
         v-motion
         :initial="{ opacity: 0, scale: 0.9 }"
         :enter="{ opacity: 1, scale: 1, transition: { delay: 200 } }"
@@ -279,14 +279,14 @@ const handleRejectProposal = async (proposalId: string) => {
             <Clock class="w-6 h-6 text-white" />
           </div>
           <div>
-            <div class="text-sm text-white/60">검토중</div>
-            <div class="text-3xl font-bold text-white">{{ stats.pending }}</div>
+            <div class="text-sm text-slate-500">검토중</div>
+            <div class="text-3xl font-bold text-slate-950">{{ stats.pending }}</div>
           </div>
         </div>
       </div>
 
       <div
-        class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all hover:translate-y-[-4px]"
+        class="fb-card p-6 transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
         v-motion
         :initial="{ opacity: 0, scale: 0.9 }"
         :enter="{ opacity: 1, scale: 1, transition: { delay: 300 } }"
@@ -296,14 +296,14 @@ const handleRejectProposal = async (proposalId: string) => {
             <CheckCircle class="w-6 h-6 text-white" />
           </div>
           <div>
-            <div class="text-sm text-white/60">수락</div>
-            <div class="text-3xl font-bold text-white">{{ stats.accepted }}</div>
+            <div class="text-sm text-slate-500">수락</div>
+            <div class="text-3xl font-bold text-slate-950">{{ stats.accepted }}</div>
           </div>
         </div>
       </div>
 
       <div
-        class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all hover:translate-y-[-4px]"
+        class="fb-card p-6 transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
         v-motion
         :initial="{ opacity: 0, scale: 0.9 }"
         :enter="{ opacity: 1, scale: 1, transition: { delay: 400 } }"
@@ -313,8 +313,8 @@ const handleRejectProposal = async (proposalId: string) => {
             <XCircle class="w-6 h-6 text-white" />
           </div>
           <div>
-            <div class="text-sm text-white/60">거절</div>
-            <div class="text-3xl font-bold text-white">{{ stats.rejected }}</div>
+            <div class="text-sm text-slate-500">거절</div>
+            <div class="text-3xl font-bold text-slate-950">{{ stats.rejected }}</div>
           </div>
         </div>
       </div>
@@ -322,47 +322,47 @@ const handleRejectProposal = async (proposalId: string) => {
 
     <div
       v-if="myApplications.length === 0 && receivedProposals.length === 0"
-      class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 text-center"
+      class="fb-card p-16 text-center"
       v-motion
       :initial="{ opacity: 0, scale: 0.95 }"
       :enter="{ opacity: 1, scale: 1 }"
     >
       <div
-        class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6"
+        class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#e7f9fb]"
         v-motion
         :initial="{ scale: 0 }"
         :enter="{ scale: 1, transition: { type: 'spring', delay: 200 } }"
       >
-        <FileText class="w-10 h-10 text-white/60" />
+        <FileText class="h-10 w-10 text-[#21AFBF]" />
       </div>
-      <h3 class="text-2xl font-semibold mb-3 text-white">아직 받은 제안과 보낸 지원서가 없습니다</h3>
-      <p class="text-white/60">공고에 지원하거나 기업 제안을 기다려보세요</p>
+      <h3 class="mb-3 text-2xl font-semibold text-slate-950">아직 받은 제안과 보낸 지원서가 없습니다</h3>
+      <p class="text-slate-500">공고에 지원하거나 기업 제안을 기다려보세요</p>
     </div>
 
     <div v-else class="grid gap-8">
       <div
-        class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8"
+        class="fb-card p-8"
         v-motion
         :initial="{ opacity: 0, y: 20 }"
         :enter="{ opacity: 1, y: 0 }"
       >
         <div class="flex items-center gap-2 mb-6">
-          <Inbox class="w-5 h-5 text-blue-300" />
-          <h2 class="text-2xl font-bold">기업이 보낸 제안</h2>
+          <Inbox class="h-5 w-5 text-[#21AFBF]" />
+          <h2 class="text-2xl font-bold text-slate-950">기업이 보낸 제안</h2>
         </div>
 
-        <div v-if="freelancerStore.isFetchingProposals" class="text-center py-10 text-white/40">
+        <div v-if="freelancerStore.isFetchingProposals" class="py-10 text-center text-slate-400">
           제안 목록을 불러오는 중입니다.
         </div>
 
         <div
           v-else-if="freelancerStore.proposalFetchError"
-          class="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200"
+          class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700"
         >
           {{ freelancerStore.proposalFetchError }}
         </div>
 
-        <div v-else-if="receivedProposals.length === 0" class="text-center py-10 text-white/40">
+        <div v-else-if="receivedProposals.length === 0" class="py-10 text-center text-slate-400">
           아직 받은 제안이 없습니다.
         </div>
 
@@ -370,12 +370,12 @@ const handleRejectProposal = async (proposalId: string) => {
           <article
             v-for="proposal in receivedProposals"
             :key="proposal.id"
-            class="rounded-2xl border border-white/10 bg-slate-800/80 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
+            class="fb-card-soft p-6"
           >
             <div class="mb-5 flex flex-col items-start justify-between gap-6 lg:flex-row">
               <div class="flex-1">
                 <div class="mb-2 flex flex-wrap items-center gap-3">
-                  <h3 class="text-2xl font-bold text-white">{{ proposal.employerName }}</h3>
+                  <h3 class="text-2xl font-bold text-slate-950">{{ proposal.employerName }}</h3>
                   <div
                     class="flex items-center gap-2 rounded-full bg-gradient-to-r px-4 py-2 text-sm font-medium text-white shadow-lg"
                     :class="statusConfig[proposal.status].gradient"
@@ -384,19 +384,19 @@ const handleRejectProposal = async (proposalId: string) => {
                     {{ statusConfig[proposal.status].label }}
                   </div>
                 </div>
-                <div class="mb-2 flex items-center gap-2 text-white/80">
-                  <Sparkles class="h-4 w-4" />
+                <div class="mb-2 flex items-center gap-2 text-slate-500">
+                  <Sparkles class="h-4 w-4 text-[#21AFBF]" />
                   <span>{{ formatDate(proposal.createdAt) }} 제안</span>
                 </div>
-                <div v-if="proposal.jobId" class="text-sm text-white/85">
+                <div v-if="proposal.jobId" class="text-sm text-slate-600">
                   제안 프로젝트: {{ getJobTitle(proposal.jobId) }}
                 </div>
               </div>
             </div>
 
             <div class="mb-4">
-              <div class="mb-2 text-sm text-white/80">제안 메시지</div>
-              <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/95">
+              <div class="mb-2 text-sm text-slate-500">제안 메시지</div>
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                 {{ proposal.message }}
               </div>
             </div>
@@ -423,7 +423,7 @@ const handleRejectProposal = async (proposalId: string) => {
             <div class="mb-4">
               <button
                 type="button"
-                class="flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
+                class="flex items-center gap-1 text-sm font-medium text-sky-600 hover:text-sky-700"
                 @click="openEmployerProfile(proposal.employerId)"
               >
                 프로필 보기
@@ -432,23 +432,23 @@ const handleRejectProposal = async (proposalId: string) => {
 
             <div
               v-if="proposal.status === 'ACCEPTED'"
-              class="flex items-center gap-3 rounded-2xl border border-green-500/20 bg-green-500/10 p-4"
+              class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"
             >
-              <CheckCircle class="h-5 w-5 text-green-400" />
-              <span class="font-medium text-green-300">
+              <CheckCircle class="h-5 w-5 text-emerald-500" />
+              <span class="font-medium text-emerald-700">
                 제안이 수락되었습니다. 계약 진행 정보를 확인해주세요.
               </span>
             </div>
 
             <div
               v-if="proposal.status === 'REJECTED'"
-              class="rounded-2xl border border-red-500/20 bg-red-500/10 p-4"
+              class="rounded-2xl border border-rose-200 bg-rose-50 p-4"
             >
-              <div class="mb-2 flex items-center gap-2 font-medium text-red-300">
+              <div class="mb-2 flex items-center gap-2 font-medium text-rose-700">
                 <AlertCircle class="h-4 w-4" />
                 거절 사유
               </div>
-              <div class="text-sm text-red-200">
+              <div class="text-sm text-rose-600">
                 {{ proposal.rejectionReason || '사유가 입력되지 않았습니다.' }}
               </div>
             </div>
@@ -457,28 +457,28 @@ const handleRejectProposal = async (proposalId: string) => {
       </div>
 
       <div
-        class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8"
+        class="fb-card p-8"
         v-motion
         :initial="{ opacity: 0, y: 20 }"
         :enter="{ opacity: 1, y: 0, transition: { delay: 100 } }"
       >
         <div class="flex items-center gap-2 mb-6">
-          <Send class="w-5 h-5 text-purple-300" />
-          <h2 class="text-2xl font-bold">내가 보낸 지원서</h2>
+          <Send class="h-5 w-5 text-violet-500" />
+          <h2 class="text-2xl font-bold text-slate-950">내가 보낸 지원서</h2>
         </div>
 
-        <div v-if="jobStore.isFetchingApplications" class="text-center py-10 text-white/40">
+        <div v-if="jobStore.isFetchingApplications" class="py-10 text-center text-slate-400">
           지원 목록을 불러오는 중입니다.
         </div>
 
         <div
           v-else-if="jobStore.applicationFetchError"
-          class="mb-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-200"
+          class="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700"
         >
           {{ jobStore.applicationFetchError }}
         </div>
 
-        <div v-else-if="myApplications.length === 0" class="text-center py-10 text-white/40">
+        <div v-else-if="myApplications.length === 0" class="py-10 text-center text-slate-400">
           아직 보낸 지원서가 없습니다.
         </div>
 
@@ -486,12 +486,12 @@ const handleRejectProposal = async (proposalId: string) => {
           <article
             v-for="app in myApplications"
             :key="app.id"
-            class="rounded-2xl border border-white/10 bg-slate-800/80 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
+            class="fb-card-soft p-6"
           >
             <div class="mb-5 flex flex-col items-start justify-between gap-6 lg:flex-row">
               <div class="flex-1">
                 <div class="mb-2 flex flex-wrap items-center gap-3">
-                  <h3 class="text-2xl font-bold text-white">{{ getJobTitle(app.jobId) }}</h3>
+                  <h3 class="text-2xl font-bold text-slate-950">{{ getJobTitle(app.jobId) }}</h3>
                   <div
                     class="flex items-center gap-2 rounded-full bg-gradient-to-r px-4 py-2 text-sm font-medium text-white shadow-lg"
                     :class="statusConfig[app.status].gradient"
@@ -500,39 +500,39 @@ const handleRejectProposal = async (proposalId: string) => {
                     {{ statusConfig[app.status].label }}
                   </div>
                 </div>
-                <div class="mb-2 flex items-center gap-2 text-white/80">
-                  <Sparkles class="h-4 w-4" />
+                <div class="mb-2 flex items-center gap-2 text-slate-500">
+                  <Sparkles class="h-4 w-4 text-[#21AFBF]" />
                   <span>{{ formatDate(app.createdAt) }} 지원</span>
                 </div>
               </div>
             </div>
 
             <div class="mb-4">
-              <div class="mb-2 text-sm text-white/80">지원 메시지</div>
-              <div class="rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-white/95">
+              <div class="mb-2 text-sm text-slate-500">지원 메시지</div>
+              <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                 {{ app.message }}
               </div>
             </div>
 
             <div
               v-if="app.status === 'REJECTED' && app.rejectionReason"
-              class="rounded-2xl border border-red-500/20 bg-red-500/10 p-4"
+              class="rounded-2xl border border-rose-200 bg-rose-50 p-4"
             >
-              <div class="mb-2 flex items-center gap-2 font-medium text-red-300">
+              <div class="mb-2 flex items-center gap-2 font-medium text-rose-700">
                 <AlertCircle class="h-4 w-4" />
                 거절 사유
               </div>
-              <div class="text-sm text-red-200">
+              <div class="text-sm text-rose-600">
                 {{ app.rejectionReason }}
               </div>
             </div>
 
             <div
               v-if="app.status === 'ACCEPTED'"
-              class="flex items-center gap-3 rounded-2xl border border-green-500/20 bg-green-500/10 p-4"
+              class="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"
             >
-              <CheckCircle class="h-5 w-5 text-green-400" />
-              <span class="font-medium text-green-300">
+              <CheckCircle class="h-5 w-5 text-emerald-500" />
+              <span class="font-medium text-emerald-700">
                 축하합니다! 지원이 수락되었습니다. 곧 계약이 진행될 예정입니다.
               </span>
             </div>

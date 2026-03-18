@@ -153,7 +153,25 @@ body {
     .fb-page-shell [class*="bg-gray-900/95"][class*="border-white/10"],
     .fb-page-shell [class*="bg-[#1e293b]/50"][class*="border-white/10"],
     .fb-page-shell [class*="bg-[#1e293b]/60"][class*="border-white/10"],
-    .fb-page-shell [class*="bg-[#0F172A]"][class*="border-white/10"] {
+    .fb-page-shell [class*="bg-[#0F172A]"][class*="border-white/10"],
+    .fb-page-shell article[class*="bg-white/5"],
+    .fb-page-shell article[class*="bg-white/10"],
+    .fb-page-shell article[class*="bg-black/20"],
+    .fb-page-shell article[class*="bg-black/30"],
+    .fb-page-shell section[class*="bg-white/5"],
+    .fb-page-shell section[class*="bg-white/10"],
+    .fb-page-shell section[class*="bg-black/20"],
+    .fb-page-shell section[class*="bg-black/30"],
+    .fb-page-shell div[class*="bg-white/5"][class*="rounded"],
+    .fb-page-shell div[class*="bg-white/10"][class*="rounded"],
+    .fb-page-shell div[class*="bg-black/20"][class*="rounded"],
+    .fb-page-shell div[class*="bg-black/30"][class*="rounded"],
+    .fb-page-shell div[class*="bg-gray-900/95"][class*="rounded"],
+    .fb-page-shell div[class*="bg-[#1e293b]/50"][class*="rounded"],
+    .fb-page-shell div[class*="bg-[#1e293b]/60"][class*="rounded"],
+    .fb-page-shell div[class*="bg-[#0F172A]"][class*="rounded"],
+    .fb-page-shell [class*="bg-[linear-gradient(135deg,rgba(255,255,255,0.10)"],
+    .fb-page-shell [class*="bg-[linear-gradient(135deg,rgba(255,255,255,0.08)"] {
         background: rgba(255, 255, 255, 0.96) !important;
         border-color: rgba(35, 36, 42, 0.08) !important;
         color: var(--fb-text) !important;
@@ -185,8 +203,10 @@ body {
 
     .fb-page-shell input[class*="placeholder:text-white/30"]::placeholder,
     .fb-page-shell input[class*="placeholder:text-white/40"]::placeholder,
+    .fb-page-shell input[class*="placeholder:text-white/50"]::placeholder,
     .fb-page-shell textarea[class*="placeholder:text-white/30"]::placeholder,
-    .fb-page-shell textarea[class*="placeholder:text-white/40"]::placeholder {
+    .fb-page-shell textarea[class*="placeholder:text-white/40"]::placeholder,
+    .fb-page-shell textarea[class*="placeholder:text-white/50"]::placeholder {
         color: #94a3b8 !important;
     }
 
@@ -199,23 +219,74 @@ body {
         color: var(--fb-text) !important;
     }
 
+    .fb-page-shell p[class*="text-white/90"],
+    .fb-page-shell p[class*="text-white/95"],
+    .fb-page-shell p[class~="text-white"],
+    .fb-page-shell div[class*="text-white/90"],
+    .fb-page-shell div[class*="text-white/95"],
+    .fb-page-shell div[class~="text-white"],
+    .fb-page-shell span[class*="text-white/90"],
+    .fb-page-shell span[class*="text-white/95"],
+    .fb-page-shell span[class~="text-white"],
+    .fb-page-shell a[class*="text-white/90"],
+    .fb-page-shell a[class*="text-white/95"],
+    .fb-page-shell a[class~="text-white"],
+    .fb-page-shell li[class*="text-white/90"],
+    .fb-page-shell li[class*="text-white/95"],
+    .fb-page-shell li[class~="text-white"],
+    .fb-page-shell small[class*="text-white/90"],
+    .fb-page-shell small[class*="text-white/95"],
+    .fb-page-shell small[class~="text-white"] {
+        color: var(--fb-text) !important;
+    }
+
     .fb-page-shell p[class*="text-white/60"],
+    .fb-page-shell p[class*="text-white/50"],
     .fb-page-shell p[class*="text-white/70"],
     .fb-page-shell p[class*="text-white/80"],
+    .fb-page-shell p[class*="text-white/40"],
     .fb-page-shell div[class*="text-white/60"],
+    .fb-page-shell div[class*="text-white/50"],
     .fb-page-shell div[class*="text-white/70"],
     .fb-page-shell div[class*="text-white/80"],
+    .fb-page-shell div[class*="text-white/40"],
     .fb-page-shell span[class*="text-white/40"],
     .fb-page-shell span[class*="text-white/50"],
     .fb-page-shell span[class*="text-white/60"],
     .fb-page-shell span[class*="text-white/70"],
+    .fb-page-shell span[class*="text-white/80"],
+    .fb-page-shell a[class*="text-white/40"],
+    .fb-page-shell a[class*="text-white/50"],
+    .fb-page-shell a[class*="text-white/60"],
+    .fb-page-shell a[class*="text-white/70"],
+    .fb-page-shell a[class*="text-white/80"],
     .fb-page-shell label[class*="text-white/80"],
-    .fb-page-shell label[class*="text-white/70"] {
+    .fb-page-shell label[class*="text-white/70"],
+    .fb-page-shell label[class*="text-white/60"],
+    .fb-page-shell li[class*="text-white/40"],
+    .fb-page-shell li[class*="text-white/50"],
+    .fb-page-shell li[class*="text-white/60"],
+    .fb-page-shell li[class*="text-white/70"],
+    .fb-page-shell li[class*="text-white/80"],
+    .fb-page-shell small[class*="text-white/40"],
+    .fb-page-shell small[class*="text-white/50"],
+    .fb-page-shell small[class*="text-white/60"],
+    .fb-page-shell small[class*="text-white/70"],
+    .fb-page-shell small[class*="text-white/80"] {
         color: var(--fb-text-soft) !important;
     }
 
+    .fb-page-shell svg[class*="text-white/40"],
+    .fb-page-shell svg[class*="text-white/50"],
+    .fb-page-shell svg[class*="text-white/60"],
+    .fb-page-shell svg[class*="text-white/70"] {
+        color: #94a3b8 !important;
+    }
+
     .fb-page-shell [class*="border-t"][class*="border-white/10"],
-    .fb-page-shell [class*="border-b"][class*="border-white/10"] {
+    .fb-page-shell [class*="border-b"][class*="border-white/10"],
+    .fb-page-shell [class*="border-l"][class*="border-white/10"],
+    .fb-page-shell [class*="border-r"][class*="border-white/10"] {
         border-color: rgba(35, 36, 42, 0.08) !important;
     }
 }

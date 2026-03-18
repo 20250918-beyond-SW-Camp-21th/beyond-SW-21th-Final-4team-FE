@@ -215,7 +215,7 @@ const openFreelancerProfile = async (freelancerId: string | number) => {
 <template>
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-white">
     <div class="mb-12">
-      <h1 class="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent">
+      <h1 class="mb-3 text-4xl font-bold tracking-tight text-white">
         지원/제안 관리
       </h1>
       <p class="text-white/70">내가 보낸 제안과 내 공고에 들어온 지원서를 함께 관리하세요</p>
