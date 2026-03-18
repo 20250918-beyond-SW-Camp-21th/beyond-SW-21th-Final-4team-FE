@@ -227,7 +227,7 @@ const resetFilters = () => {
 </script>
 
 <template>
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-white">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-slate-900">
     <div
       class="mb-12"
       data-tour-freelancer="header"
@@ -236,12 +236,10 @@ const resetFilters = () => {
         enter: { opacity: 1, y: 0 }
       }"
     >
-      <h1
-        class="text-4xl font-bold mb-3 bg-gradient-to-r from-white to-white/50 bg-clip-text text-transparent"
-      >
+      <h1 class="mb-3 text-4xl font-bold tracking-tight text-slate-950">
         프로젝트
       </h1>
-      <p class="text-white/60">
+      <p class="text-slate-500">
         추천 공고와 전체 공고를 한 번에 확인하세요.
       </p>
     </div>
@@ -250,10 +248,10 @@ const resetFilters = () => {
       <div class="mb-6 flex items-start justify-between gap-4">
         <div>
           <div class="flex items-center gap-2">
-            <Sparkles class="w-7 h-7 text-yellow-400" />
-            <h2 class="text-2xl font-bold">추천 공고</h2>
+            <Sparkles class="w-7 h-7 text-amber-400" />
+            <h2 class="text-2xl font-bold text-slate-950">추천 공고</h2>
           </div>
-          <p class="mt-2 text-sm text-white/50">
+          <p class="mt-2 text-sm text-slate-500">
             <span v-if="isAiRecommendationLoading">
               AI가 맞춤 공고를 분석 중입니다.
             </span>
@@ -269,17 +267,17 @@ const resetFilters = () => {
 
       <div
         v-if="isAiRecommendationLoading"
-        class="bg-white/5 border border-white/10 rounded-3xl p-10 text-center text-white/50"
+        class="fb-card p-10 text-center text-slate-500"
       >
         <div
-          class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-b-2 border-white/60"
+          class="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-b-2 border-sky-500"
         ></div>
         AI 추천 공고를 불러오는 중입니다.
       </div>
 
       <div
         v-else-if="recommendedJobs.length === 0"
-        class="bg-white/5 border border-white/10 rounded-3xl p-10 text-center text-white/50"
+        class="fb-card p-10 text-center text-slate-500"
       >
         추천 공고가 없습니다.
       </div>
@@ -289,7 +287,7 @@ const resetFilters = () => {
           v-for="(job, index) in recommendedJobs"
           :key="`rec-${job.id}`"
           @click="selectedJob = job"
-          class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 hover:border-white/20 transition-all cursor-pointer group hover:translate-y-[-4px]"
+          class="fb-card cursor-pointer p-8 transition-all group hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
           v-motion
           :initial="{ opacity: 0, y: 20 }"
           :enter="{ opacity: 1, y: 0, transition: { delay: index * 50 } }"
@@ -298,7 +296,7 @@ const resetFilters = () => {
             <div class="flex-1">
               <div class="flex items-start gap-3 mb-3">
                 <h3
-                  class="text-2xl font-semibold text-white group-hover:text-blue-400 transition-colors flex-1"
+                  class="flex-1 text-2xl font-semibold text-slate-950 transition-colors group-hover:text-sky-700"
                 >
                   {{ job.title }}
                 </h3>
@@ -307,8 +305,8 @@ const resetFilters = () => {
                     class="px-3 py-1 text-xs font-bold rounded-full border flex items-center gap-1"
                     :class="
                       job.recommendationSource === 'ai'
-                        ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20'
-                        : 'bg-blue-500/10 text-blue-300 border-blue-500/20'
+                        ? 'bg-amber-50 text-amber-600 border-amber-200'
+                        : 'bg-sky-50 text-sky-600 border-sky-200'
                     "
                   >
                     <Sparkles
@@ -320,7 +318,7 @@ const resetFilters = () => {
                   </div>
                   <div
                     v-if="job.matchScore !== undefined"
-                    class="px-2 py-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-500/30 text-blue-300 text-xs font-bold flex items-center gap-1"
+                    class="flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2 py-1 text-xs font-bold text-sky-600"
                   >
                     <TrendingUp class="w-3 h-3" />
                     AI 매칭 {{ ((job.matchScore ?? 0) * 100).toFixed(0) }}%
@@ -328,7 +326,7 @@ const resetFilters = () => {
                 </div>
               </div>
 
-              <p class="text-white/70 mb-6 leading-relaxed line-clamp-2">
+              <p class="mb-6 line-clamp-2 leading-relaxed text-slate-500">
                 {{ job.description }}
               </p>
 
@@ -336,18 +334,18 @@ const resetFilters = () => {
                 <span
                   v-for="tech in job.techStack"
                   :key="tech"
-                  class="px-4 py-2 bg-blue-500/20 text-blue-300 text-sm rounded-full border border-blue-500/30 font-medium"
+                  class="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700"
                 >
                   {{ tech }}
                 </span>
               </div>
 
-              <div class="flex flex-wrap gap-6 text-white/60">
+              <div class="flex flex-wrap gap-6 text-slate-500">
                 <div class="flex items-center gap-2">
                   <div
-                    class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center"
+                    class="flex h-8 w-8 items-center justify-center rounded-full bg-[#eefbf7]"
                   >
-                    <DollarSign class="w-4 h-4 text-green-400" />
+                    <DollarSign class="w-4 h-4 text-emerald-500" />
                   </div>
                   <span class="font-medium">
                     예산 {{ job.budget.toLocaleString() }}원
@@ -355,17 +353,17 @@ const resetFilters = () => {
                 </div>
                 <div class="flex items-center gap-2">
                   <div
-                    class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center"
+                    class="flex h-8 w-8 items-center justify-center rounded-full bg-[#e7f9fb]"
                   >
-                    <Clock class="w-4 h-4 text-blue-400" />
+                    <Clock class="w-4 h-4 text-[#21AFBF]" />
                   </div>
                   <span class="font-medium">{{ job.duration }}개월</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <div
-                    class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center"
+                    class="flex h-8 w-8 items-center justify-center rounded-full bg-violet-50"
                   >
-                    <Briefcase class="w-4 h-4 text-purple-400" />
+                    <Briefcase class="w-4 h-4 text-violet-500" />
                   </div>
                   <span class="font-medium">{{ job.employerName }}</span>
                 </div>
@@ -376,8 +374,8 @@ const resetFilters = () => {
               class="ml-4 h-10 w-10 rounded-full border transition-all"
               :class="
                 isFavorite(job.id)
-                  ? 'bg-yellow-400/20 border-yellow-400/40 text-yellow-300'
-                  : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                  ? 'border-amber-200 bg-amber-50 text-amber-500'
+                  : 'border-slate-200 bg-white text-slate-400 hover:bg-slate-50'
               "
               @click.stop="toggleFavorite(job.id)"
             >
@@ -402,38 +400,38 @@ const resetFilters = () => {
       <div class="grid gap-4 lg:grid-cols-[1fr_auto_auto_auto]">
         <div class="relative">
           <Search
-            class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40"
+            class="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400"
           />
           <input
             v-model="searchTermInput"
             type="text"
             @keyup.enter="applyFilters"
             placeholder="프로젝트 제목, 설명, 기술 스택으로 검색하세요."
-            class="w-full pl-14 pr-6 py-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl focus:outline-none focus:border-white/30 transition-colors text-white placeholder:text-white/30"
+            class="fb-input w-full pl-14 pr-6 py-4"
           />
         </div>
         <label
-          class="px-4 py-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl inline-flex items-center gap-2 text-sm text-white/80 whitespace-nowrap"
+          class="inline-flex items-center gap-2 whitespace-nowrap rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600"
         >
-          <Filter class="w-4 h-4 text-white/60" />
+          <Filter class="h-4 w-4 text-slate-400" />
           <input
             v-model="favoriteOnlyInput"
             type="checkbox"
-            class="h-4 w-4 rounded border-white/20 bg-transparent"
+            class="h-4 w-4 rounded border-slate-300 bg-transparent text-[#21AFBF]"
           />
           즐겨찾기만 보기
         </label>
         <button
           type="button"
           @click="applyFilters"
-          class="px-6 py-4 bg-blue-500 text-white rounded-2xl font-semibold hover:bg-blue-400 transition-colors"
+          class="fb-button-primary px-6 py-4"
         >
           검색
         </button>
         <button
           type="button"
           @click="resetFilters"
-          class="px-6 py-4 bg-white/10 border border-white/15 text-white rounded-2xl font-semibold hover:bg-white/15 transition-colors"
+          class="fb-button-secondary px-6 py-4"
         >
           초기화
         </button>
@@ -448,35 +446,35 @@ const resetFilters = () => {
         enter: { opacity: 1, y: 0, transition: { delay: 200 } }
       }"
     >
-      <div class="flex items-center gap-2 text-white/60">
-        <TrendingUp class="w-5 h-5 text-green-400" />
+      <div class="flex items-center gap-2 text-slate-500">
+        <TrendingUp class="h-5 w-5 text-emerald-500" />
         <span class="font-medium">
-          전체 <span class="text-white">{{ filteredJobs.length }}</span>개 프로젝트
+          전체 <span class="text-slate-950">{{ filteredJobs.length }}</span>개 프로젝트
         </span>
       </div>
     </div>
 
     <div
       v-if="filteredJobs.length === 0"
-      class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 text-center"
+      class="fb-card p-16 text-center"
       v-motion="{
         initial: { opacity: 0, scale: 0.95 },
         enter: { opacity: 1, scale: 1 }
       }"
     >
       <div
-        class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6"
+        class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#e7f9fb]"
         v-motion="{
           initial: { scale: 0 },
           enter: { scale: 1, transition: { type: 'spring', delay: 200 } }
         }"
       >
-        <Briefcase class="w-10 h-10 text-white/60" />
+        <Briefcase class="h-10 w-10 text-[#21AFBF]" />
       </div>
-      <h3 class="text-2xl font-semibold mb-3 text-white">
+      <h3 class="mb-3 text-2xl font-semibold text-slate-950">
         조건에 맞는 프로젝트가 없습니다
       </h3>
-      <p class="text-white/60">
+      <p class="text-slate-500">
         검색 조건을 바꾸거나 필터를 초기화해 보세요.
       </p>
     </div>
@@ -486,7 +484,7 @@ const resetFilters = () => {
         v-for="(job, index) in filteredJobs"
         :key="job.id"
         @click="selectedJob = job"
-        class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 hover:border-white/20 transition-all cursor-pointer group hover:translate-y-[-4px]"
+        class="fb-card cursor-pointer p-8 transition-all group hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
         v-motion="{
           initial: { opacity: 0, y: 20 },
           enter: { opacity: 1, y: 0, transition: { delay: index * 50 } }
@@ -496,7 +494,7 @@ const resetFilters = () => {
           <div class="flex-1">
             <div class="flex items-start gap-3 mb-3">
               <h3
-                class="text-2xl font-semibold text-white group-hover:text-blue-400 transition-colors flex-1"
+                class="flex-1 text-2xl font-semibold text-slate-950 transition-colors group-hover:text-sky-700"
               >
                 {{ job.title }}
               </h3>
@@ -507,7 +505,7 @@ const resetFilters = () => {
               </div>
             </div>
 
-            <p class="text-white/70 mb-6 leading-relaxed line-clamp-2">
+            <p class="mb-6 line-clamp-2 leading-relaxed text-slate-500">
               {{ job.description }}
             </p>
 
@@ -515,18 +513,18 @@ const resetFilters = () => {
               <span
                 v-for="tech in job.techStack"
                 :key="tech"
-                class="px-4 py-2 bg-blue-500/20 text-blue-300 text-sm rounded-full border border-blue-500/30 font-medium"
+                class="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700"
               >
                 {{ tech }}
               </span>
             </div>
 
-            <div class="flex flex-wrap gap-6 text-white/60">
+            <div class="flex flex-wrap gap-6 text-slate-500">
               <div class="flex items-center gap-2">
                 <div
-                  class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center"
+                  class="flex h-8 w-8 items-center justify-center rounded-full bg-[#eefbf7]"
                 >
-                  <DollarSign class="w-4 h-4 text-green-400" />
+                  <DollarSign class="w-4 h-4 text-emerald-500" />
                 </div>
                 <span class="font-medium">
                   예산 {{ job.budget.toLocaleString() }}원
@@ -534,17 +532,17 @@ const resetFilters = () => {
               </div>
               <div class="flex items-center gap-2">
                 <div
-                  class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center"
+                  class="flex h-8 w-8 items-center justify-center rounded-full bg-[#e7f9fb]"
                 >
-                  <Clock class="w-4 h-4 text-blue-400" />
+                  <Clock class="w-4 h-4 text-[#21AFBF]" />
                 </div>
                 <span class="font-medium">{{ job.duration }}개월</span>
               </div>
               <div class="flex items-center gap-2">
                 <div
-                  class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center"
+                  class="flex h-8 w-8 items-center justify-center rounded-full bg-violet-50"
                 >
-                  <Briefcase class="w-4 h-4 text-purple-400" />
+                  <Briefcase class="w-4 h-4 text-violet-500" />
                 </div>
                 <span class="font-medium">{{ job.employerName }}</span>
               </div>
@@ -555,8 +553,8 @@ const resetFilters = () => {
             class="ml-4 h-10 w-10 rounded-full border transition-all"
             :class="
               isFavorite(job.id)
-                ? 'bg-yellow-400/20 border-yellow-400/40 text-yellow-300'
-                : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                ? 'border-amber-200 bg-amber-50 text-amber-500'
+                : 'border-slate-200 bg-white text-slate-400 hover:bg-slate-50'
             "
             @click.stop="toggleFavorite(job.id)"
           >
@@ -567,12 +565,12 @@ const resetFilters = () => {
           </button>
         </div>
 
-        <div class="pt-6 border-t border-white/10 flex items-center justify-between">
-          <div class="text-sm text-white/50">
+        <div class="flex items-center justify-between border-t border-slate-100 pt-6">
+          <div class="text-sm text-slate-400">
             {{ formatDate(job.createdAt) }} 등록
           </div>
           <div
-            class="px-4 py-2 bg-white/10 text-white rounded-full text-sm font-medium border border-white/20 transition-all group-hover:scale-105 group-hover:bg-white/20"
+            class="rounded-full border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-medium text-sky-700 transition-all group-hover:scale-105"
           >
             자세히 보기
           </div>
