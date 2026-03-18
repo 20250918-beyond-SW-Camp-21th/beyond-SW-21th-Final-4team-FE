@@ -58,6 +58,7 @@ const freelancerNavItems = [
 
 const navItems = computed(() => isEmployer.value ? employerNavItems : freelancerNavItems);
 const isChatRoute = computed(() => route.path.startsWith('/chat'));
+const CHAT_ROOM_POLL_INTERVAL_MS = 10000;
 
 const handleLogout = async () => {
   try {
@@ -94,6 +95,7 @@ const dismissAlert = (alertId: string) => {
 };
 
 let refreshChatRoomsPromise: Promise<void> | null = null;
+let chatRoomPollingTimer: ReturnType<typeof setInterval> | null = null;
 
 const refreshChatRooms = () => {
   if (!authStore.isAuthenticated) {
@@ -117,14 +119,41 @@ const refreshChatRooms = () => {
   return refreshChatRoomsPromise;
 };
 
+const stopChatRoomPolling = () => {
+  if (chatRoomPollingTimer !== null) {
+    clearInterval(chatRoomPollingTimer);
+    chatRoomPollingTimer = null;
+  }
+};
+
+const startChatRoomPolling = () => {
+  if (!authStore.isAuthenticated || !isChatRoute.value || chatRoomPollingTimer !== null) {
+    return;
+  }
+
+  chatRoomPollingTimer = window.setInterval(() => {
+    if (document.visibilityState !== 'visible') {
+      return;
+    }
+
+    void refreshChatRooms();
+  }, CHAT_ROOM_POLL_INTERVAL_MS);
+};
+
 const handleWindowFocus = async () => {
   await refreshChatRooms();
 };
 
 const handleVisibilityChange = async () => {
   if (document.visibilityState === 'visible') {
+    if (isChatRoute.value) {
+      startChatRoomPolling();
+    }
     await refreshChatRooms();
+    return;
   }
+
+  stopChatRoomPolling();
 };
 
 onMounted(async () => {
@@ -135,6 +164,7 @@ onMounted(async () => {
     try {
       await chatStore.connectWebSocket();
       await refreshChatRooms();
+      startChatRoomPolling();
     } catch (e) {
       console.error('Failed to initialize chat:', e);
     }
@@ -144,6 +174,7 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('focus', handleWindowFocus);
   document.removeEventListener('visibilitychange', handleVisibilityChange);
+  stopChatRoomPolling();
   chatStore.disconnectWebSocket();
 });
 
@@ -156,10 +187,12 @@ watch(
     chatStore.setMainChatVisible(isNowChatRoute);
 
     if (isNowChatRoute && authStore.isAuthenticated) {
+      startChatRoomPolling();
       refreshChatRooms();
     }
 
     if (wasChatRoute && !isNowChatRoute) {
+      stopChatRoomPolling();
       chatStore.resetDockedUIState();
     }
   },
