@@ -93,22 +93,9 @@ const moveToJobBoard = async () => {
     await router.push({ name: 'freelancer.jobs' });
 };
 
-const hashToken = (token: string) => {
-    let hash = 5381;
-    for (let i = 0; i < token.length; i += 1) {
-        hash = ((hash << 5) + hash) ^ token.charCodeAt(i);
-    }
-    return Math.abs(hash >>> 0).toString(16);
-};
-
-const tokenFingerprint = computed(() => {
-    const token = currentAccessToken.value;
-    return token ? hashToken(token) : null;
-});
-
 const getFreelancerCrmStorageKey = () => {
-    const fingerprint = tokenFingerprint.value;
-    return fingerprint ? `mypage-freelancer-crm:${fingerprint}` : null;
+    const userId = currentUserId.value;
+    return userId ? `mypage-freelancer-crm:${userId}` : null;
 };
 
 const loadSeenFreelancerCrmKeys = () => {
@@ -620,12 +607,6 @@ watch(currentUserId, () => {
     pinnedFreelancerCrmBannerKey.value = null;
     hideBurnoutAlert.value = false;
     hideChurnAlert.value = false;
-    loadSeenFreelancerCrmKeys();
-});
-
-watch(tokenFingerprint, () => {
-    dismissedFreelancerCrmKeys.value = [];
-    pinnedFreelancerCrmBannerKey.value = null;
     loadSeenFreelancerCrmKeys();
 });
 

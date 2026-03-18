@@ -70,7 +70,9 @@ const loadSeenTopCrmKeys = () => {
   try {
     const saved = sessionStorage.getItem(storageKey);
     const parsed = saved ? JSON.parse(saved) : [];
-    seenTopCrmKeys.value = Array.isArray(parsed) ? parsed : [];
+    seenTopCrmKeys.value = Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : [];
   } catch (error) {
     console.error('Failed to load employer crm session state:', error);
     seenTopCrmKeys.value = [];
@@ -865,7 +867,7 @@ const safeWebsiteUrl = computed(() => {
                     class="bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-slate-700/60 border border-white/10 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-center h-full shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur"
                 >
                     <div class="absolute right-4 top-4 z-20">
-                        <button @click="hideEmployerNoticeBanner = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white">
+                        <button type="button" aria-label="닫기" @click="hideEmployerNoticeBanner = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white">
                             <X class="h-4 w-4" />
                         </button>
                     </div>
