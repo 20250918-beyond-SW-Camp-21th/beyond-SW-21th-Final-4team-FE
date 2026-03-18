@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
@@ -60,9 +60,11 @@ const activeTab = ref('dashboard');
 const isConditionOpen = ref(false);
 const isPortfolioOpen = ref(false);
 
-const showOnboardingModal = ref(false);
-const showApplyEncouragementModal = ref(false);
-const hidePortfolioImproveAlert = ref(false);
+const showOnboardingBanner = ref(false);
+const showApplyEncouragementBanner = ref(false);
+const dismissedFreelancerCrmKeys = ref<string[]>([]);
+const seenFreelancerCrmKeys = ref<string[]>([]);
+const pinnedFreelancerCrmBannerKey = ref<string | null>(null);
 
 const toggleRestMode = () => {
     alertStore.open({
@@ -79,39 +81,54 @@ const viewRecommendedProjects = async () => {
 };
 
 const moveToProfileEdit = () => {
-    closeOnboardingModal();
+    showOnboardingBanner.value = false;
     activeTab.value = 'edit';
 };
 
 const moveToJobBoard = async () => {
-    closeApplyEncouragementModal();
+    showApplyEncouragementBanner.value = false;
     await router.push({ name: 'freelancer.jobs' });
 };
 
-const getCrmModalStorageKey = (type: 'onboarding' | 'apply') => {
+const getFreelancerCrmStorageKey = () => {
     const token = currentAccessToken.value;
-    return token ? `mypage-crm-modal:${type}:${token}` : null;
+    return token ? `mypage-freelancer-crm:${token}` : null;
 };
 
-const shouldOpenCrmModal = (type: 'onboarding' | 'apply', condition: boolean) => {
-    const storageKey = getCrmModalStorageKey(type);
-    if (!condition || !storageKey) {
-        return false;
+const loadSeenFreelancerCrmKeys = () => {
+    const storageKey = getFreelancerCrmStorageKey();
+    if (!storageKey) {
+        seenFreelancerCrmKeys.value = [];
+        return;
     }
-    const alreadyShown = localStorage.getItem(storageKey) === '1';
-    if (alreadyShown) {
-        return false;
+
+    try {
+        const saved = sessionStorage.getItem(storageKey);
+        seenFreelancerCrmKeys.value = saved ? JSON.parse(saved) : [];
+    } catch (error) {
+        console.error('Failed to load freelancer crm session state:', error);
+        seenFreelancerCrmKeys.value = [];
     }
-    localStorage.setItem(storageKey, '1');
-    return true;
 };
 
-const closeOnboardingModal = () => {
-    showOnboardingModal.value = false;
-};
+const markFreelancerCrmSeen = (key: string) => {
+    if (seenFreelancerCrmKeys.value.includes(key)) {
+        return;
+    }
 
-const closeApplyEncouragementModal = () => {
-    showApplyEncouragementModal.value = false;
+    const nextSeenKeys = [...seenFreelancerCrmKeys.value, key];
+    seenFreelancerCrmKeys.value = nextSeenKeys;
+
+    const storageKey = getFreelancerCrmStorageKey();
+    if (!storageKey) {
+        return;
+    }
+
+    try {
+        sessionStorage.setItem(storageKey, JSON.stringify(nextSeenKeys));
+    } catch (error) {
+        console.error('Failed to persist freelancer crm session state:', error);
+    }
 };
 
 const handleLegalNoticeClick = async () => {
@@ -187,18 +204,13 @@ const handleProfileUpdate = (updatedData: FreelancerProfileDashboard) => {
 };
 
 onMounted(async () => {
+    loadSeenFreelancerCrmKeys();
     if (currentUser.value?.id) {
         try {
             const data = await getFreelancerProfile(currentUser.value.id);
             profile.value = data;
-            showOnboardingModal.value = shouldOpenCrmModal(
-                'onboarding',
-                data.crmAlerts?.isOnboardingNeeded ?? false,
-            );
-            showApplyEncouragementModal.value = shouldOpenCrmModal(
-                'apply',
-                data.crmAlerts?.isApplyEncouraged ?? false,
-            );
+            showOnboardingBanner.value = data.crmAlerts?.isOnboardingNeeded ?? false;
+            showApplyEncouragementBanner.value = data.crmAlerts?.isApplyEncouraged ?? false;
 
             // authStore 이름/스킬 우선 반영
             if (currentUser.value.name) profile.value.name = currentUser.value.name;
@@ -260,9 +272,35 @@ onMounted(async () => {
         // 로그인 정보가 없을 때의 폴백 처리
         const data = await getFreelancerProfile('guest');
         profile.value = data;
-        showOnboardingModal.value = false;
-        showApplyEncouragementModal.value = false;
+        showOnboardingBanner.value = false;
+        showApplyEncouragementBanner.value = false;
     }
+});
+
+type FreelancerCrmBanner = {
+    key: string;
+    label: string;
+    title: string;
+    description: string;
+    cta: string;
+    icon: unknown;
+    wrapClass: string;
+    glowClass: string;
+    action: () => void | Promise<void>;
+};
+
+const dismissFreelancerCrmBanner = (key: string) => {
+    if (!dismissedFreelancerCrmKeys.value.includes(key)) {
+        dismissedFreelancerCrmKeys.value = [...dismissedFreelancerCrmKeys.value, key];
+    }
+    pinnedFreelancerCrmBannerKey.value = null;
+    if (key === 'onboarding') showOnboardingBanner.value = false;
+    if (key === 'apply') showApplyEncouragementBanner.value = false;
+};
+
+const hasActiveProjectSignal = computed(() => (profile.value.statInteresting ?? 0) > 0);
+const shouldShowBurnoutBanner = computed(() => {
+    return Boolean(profile.value.crmAlerts?.isBurnoutWarning) || (profile.value.statInteresting ?? 0) >= 3;
 });
 
 const menuItems = [
@@ -442,81 +480,134 @@ const downloadPortfolioTemplate = async () => {
         alert('포트폴리오 양식 다운로드에 실패했습니다.');
     }
 };
-const hideRateBumpAlert = ref(false);
-const hideBurnoutAlert = ref(false);
-const hideChurnAlert = ref(false);
+const allFreelancerCrmBanners = computed<FreelancerCrmBanner[]>(() => {
+    const alerts = profile.value.crmAlerts;
+    if (!alerts) return [];
+
+    const banners: FreelancerCrmBanner[] = [];
+
+    if (shouldShowBurnoutBanner.value) {
+        banners.push({
+            key: 'burnout',
+            label: 'Pace Check',
+            title: '조금 쉬어가도 괜찮아요',
+            description: '현재 진행 중인 계약이 많은 편입니다. 다음 일을 잡기 전에 페이스를 한 번 조절해보세요.',
+            cta: '쉬어가기',
+            icon: AlertTriangle,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(251,146,60,0.08),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(251,146,60,0.18),transparent_34%)]',
+            action: toggleRestMode,
+        });
+    }
+
+    if (showOnboardingBanner.value) {
+        banners.push({
+            key: 'onboarding',
+            label: 'Onboarding',
+            title: '프로필을 조금만 더 채워보세요',
+            description: '기본 정보와 소개, 포트폴리오가 채워지면 고용주에게 더 잘 노출될 수 있어요.',
+            cta: '프로필 채우기',
+            icon: Edit3,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(16,185,129,0.10),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.18),transparent_35%)]',
+            action: moveToProfileEdit,
+        });
+    }
+
+    if (showApplyEncouragementBanner.value && !hasActiveProjectSignal.value) {
+        banners.push({
+            key: 'apply',
+            label: 'Next Match',
+            title: '다음 프로젝트를 시작해볼까요?',
+            description: '프로필 준비는 충분합니다. 지금 열려 있는 공고를 확인하고 새로운 계약 기회를 잡아보세요.',
+            cta: '공고 보러 가기',
+            icon: Briefcase,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(96,165,250,0.10),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(96,165,250,0.18),transparent_35%)]',
+            action: moveToJobBoard,
+        });
+    }
+
+    if (alerts.isPortfolioImproveNeeded) {
+        banners.push({
+            key: 'portfolio-improve',
+            label: 'Portfolio Guide',
+            title: '포트폴리오 보강이 필요해요',
+            description: '지원은 꾸준하지만 계약 전환이 낮아요. 포트폴리오와 자기소개를 조금 더 구체적으로 보완해보세요.',
+            cta: '프로필 보완하기',
+            icon: Edit3,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.13),rgba(167,139,250,0.08),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(167,139,250,0.18),transparent_35%)]',
+            action: () => { activeTab.value = 'edit'; },
+        });
+    }
+
+    if (alerts.isRateBumpEligible) {
+        banners.push({
+            key: 'rate-bump',
+            label: 'Rate Upgrade',
+            title: '단가를 조정해볼 시점이에요',
+            description: '완료한 계약과 리뷰 평점이 충분히 쌓였습니다. 현재 성과에 맞게 희망 단가를 한 단계 높여보세요.',
+            cta: '단가 수정하기',
+            icon: TrendingUp,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(16,185,129,0.08),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(45,212,191,0.16),transparent_34%)]',
+            action: () => { activeTab.value = 'edit'; },
+        });
+    }
+
+    if (alerts.isChurnWarning && !hasActiveProjectSignal.value) {
+        banners.push({
+            key: 'churn',
+            label: 'Come Back',
+            title: '다시 매칭을 시작할 시점이에요',
+            description: '이전에 계약 경험은 있었지만 지금은 새 활동이 멈춰 있어요. 공고 페이지에서 다음 프로젝트를 확인해보세요.',
+            cta: '공고 보러 가기',
+            icon: Briefcase,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(96,165,250,0.08),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(96,165,250,0.16),transparent_34%)]',
+            action: viewRecommendedProjects,
+        });
+    }
+
+    return banners;
+});
+
+const freelancerCrmBanners = computed(() => {
+    return allFreelancerCrmBanners.value
+        .filter((banner) => !seenFreelancerCrmKeys.value.includes(banner.key))
+        .filter((banner) => !dismissedFreelancerCrmKeys.value.includes(banner.key));
+});
+
+const activeFreelancerCrmBanner = computed(() => {
+    if (pinnedFreelancerCrmBannerKey.value) {
+        return allFreelancerCrmBanners.value.find((banner) => banner.key === pinnedFreelancerCrmBannerKey.value) ?? null;
+    }
+
+    return freelancerCrmBanners.value[0] ?? null;
+});
+
+watch(currentAccessToken, () => {
+    dismissedFreelancerCrmKeys.value = [];
+    pinnedFreelancerCrmBannerKey.value = null;
+    loadSeenFreelancerCrmKeys();
+});
+
+watch(freelancerCrmBanners, (banners) => {
+    if (pinnedFreelancerCrmBannerKey.value && banners.some((banner) => banner.key === pinnedFreelancerCrmBannerKey.value)) {
+        return;
+    }
+
+    const nextBanner = banners[0] ?? null;
+    pinnedFreelancerCrmBannerKey.value = nextBanner?.key ?? null;
+    if (nextBanner) {
+        markFreelancerCrmSeen(nextBanner.key);
+    }
+}, { immediate: true });
 </script>
 
 <template>
   <div class="min-h-[calc(100vh-80px)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans">
-    <div
-      v-if="showOnboardingModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm"
-    >
-      <div class="w-full max-w-lg rounded-[28px] border border-white/10 bg-slate-950/95 p-8 shadow-[0_30px_90px_-50px_rgba(0,0,0,0.9)]">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-xs uppercase tracking-[0.24em] text-emerald-300/80">Onboarding</p>
-            <h3 class="mt-2 text-2xl font-semibold text-white">프로필을 조금만 더 채워보세요</h3>
-            <p class="mt-3 text-sm leading-relaxed text-white/65">
-              기본 정보와 소개, 포트폴리오가 채워지면 고용주에게 더 잘 노출될 수 있어요.
-            </p>
-          </div>
-          <button @click="closeOnboardingModal" class="text-white/45 transition-colors hover:text-white">
-            <X class="h-5 w-5" />
-          </button>
-        </div>
-        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <button
-            @click="closeOnboardingModal"
-            class="rounded-full border border-white/10 px-5 py-3 text-sm font-medium text-white/70 transition hover:bg-white/5"
-          >
-            나중에 할게요
-          </button>
-          <button
-            @click="moveToProfileEdit"
-            class="rounded-full bg-emerald-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
-          >
-            프로필 채우기
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div
-      v-if="showApplyEncouragementModal"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm"
-    >
-      <div class="w-full max-w-lg rounded-[28px] border border-white/10 bg-slate-950/95 p-8 shadow-[0_30px_90px_-50px_rgba(0,0,0,0.9)]">
-        <div class="flex items-start justify-between gap-4">
-          <div>
-            <p class="text-xs uppercase tracking-[0.24em] text-sky-300/80">Next Match</p>
-            <h3 class="mt-2 text-2xl font-semibold text-white">다음 프로젝트를 시작해볼까요?</h3>
-            <p class="mt-3 text-sm leading-relaxed text-white/65">
-              프로필 준비는 충분합니다. 지금 열려 있는 공고를 확인하고 새로운 계약 기회를 잡아보세요.
-            </p>
-          </div>
-          <button @click="closeApplyEncouragementModal" class="text-white/45 transition-colors hover:text-white">
-            <X class="h-5 w-5" />
-          </button>
-        </div>
-        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <button
-            @click="closeApplyEncouragementModal"
-            class="rounded-full border border-white/10 px-5 py-3 text-sm font-medium text-white/70 transition hover:bg-white/5"
-          >
-            닫기
-          </button>
-          <button
-            @click="moveToJobBoard"
-            class="rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
-          >
-            공고 보러 가기
-          </button>
-        </div>
-      </div>
-    </div>
-
     <div class="flex flex-col lg:flex-row h-full overflow-hidden lg:relative">
     <!-- Sidebar -->
     <aside class="hidden lg:flex fixed top-20 left-0 z-30 h-[calc(100vh-80px)] w-[17.5rem] flex-col bg-white/5 backdrop-blur-2xl border-r border-white/5 shadow-[inset_-1px_0_0_rgba(255,255,255,0.05)]">
@@ -545,8 +636,34 @@ const hideChurnAlert = ref(false);
     <!-- Main Content -->
     <main class="flex-1 overflow-y-auto lg:pl-[17.5rem]">
         <div v-if="activeTab === 'dashboard'" class="p-8 max-w-7xl mx-auto space-y-8" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1 }">
+            <div v-if="activeFreelancerCrmBanner" class="mb-2">
+                <div :class="['relative w-full overflow-hidden rounded-[32px] border border-white/10 px-7 py-6 shadow-[0_30px_80px_-52px_rgba(15,23,42,0.85)] backdrop-blur-2xl', activeFreelancerCrmBanner.wrapClass]">
+                    <div :class="['absolute inset-0', activeFreelancerCrmBanner.glowClass]"></div>
+                    <div class="absolute right-4 top-4 z-20">
+                        <button @click="dismissFreelancerCrmBanner(activeFreelancerCrmBanner.key)" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white">
+                            <X class="h-4 w-4" />
+                        </button>
+                    </div>
+                    <div class="relative z-10 flex flex-col gap-5 pr-12 md:flex-row md:items-center md:justify-between md:pr-0">
+                        <div class="flex items-start gap-4">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
+                                <component :is="activeFreelancerCrmBanner.icon" class="h-5 w-5 text-white/80" />
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70">{{ activeFreelancerCrmBanner.label }}</p>
+                                <h4 class="mt-2 text-lg font-semibold text-white">{{ activeFreelancerCrmBanner.title }}</h4>
+                                <p class="mt-2 text-sm leading-relaxed text-white/68">{{ activeFreelancerCrmBanner.description }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 md:pt-0 pt-1">
+                            <button @click="activeFreelancerCrmBanner.action()" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">{{ activeFreelancerCrmBanner.cta }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
              <!-- Greeting Header -->
-             <div class="pointer-events-none relative mb-2 flex select-none items-center justify-between overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(191,219,254,0.08),rgba(255,255,255,0.04))] px-7 py-6 shadow-[0_30px_80px_-52px_rgba(15,23,42,0.85)] backdrop-blur-2xl transition-none">
+             <div v-else class="pointer-events-none relative mb-2 flex select-none items-center justify-between overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(191,219,254,0.08),rgba(255,255,255,0.04))] px-7 py-6 shadow-[0_30px_80px_-52px_rgba(15,23,42,0.85)] backdrop-blur-2xl transition-none">
                 <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(191,219,254,0.16),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(244,114,182,0.08),transparent_32%)]"></div>
                 <div class="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
                 <div>
@@ -555,92 +672,6 @@ const hideChurnAlert = ref(false);
                         {{ profile.name }}님, 오늘도 프리브릿지가 응원합니다.
                     </h2>
                     <p class="text-sm text-white/50 mt-1">프로필을 최신 상태로 유지하면 추천 정확도가 올라갑니다.</p>
-                </div>
-            </div>
-
-            <!-- CRM Banners -->
-            <div class="space-y-4 mb-8">
-                <div v-if="profile.crmAlerts?.isPortfolioImproveNeeded && !hidePortfolioImproveAlert" class="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.13),rgba(167,139,250,0.08),rgba(255,255,255,0.05))] px-6 py-5 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.9)] backdrop-blur-2xl">
-                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(167,139,250,0.18),transparent_35%)]"></div>
-                    <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
-                                <Edit3 class="h-5 w-5 text-violet-200" />
-                            </div>
-                            <div>
-                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-200/70">Portfolio Guide</p>
-                                <h4 class="mt-2 text-lg font-semibold text-white">포트폴리오 보강이 필요해요</h4>
-                                <p class="mt-2 text-sm leading-relaxed text-white/68">지원은 꾸준하지만 계약 전환이 낮아요. 포트폴리오와 자기소개를 조금 더 구체적으로 보완해보세요.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <button @click="activeTab = 'edit'" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">프로필 보완하기</button>
-                            <button @click="hidePortfolioImproveAlert = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white"><X class="h-4 w-4" /></button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 1. Rate Bump Alert -->
-                <div v-if="profile.crmAlerts?.isRateBumpEligible && !hideRateBumpAlert" class="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(16,185,129,0.08),rgba(255,255,255,0.05))] px-6 py-5 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.9)] backdrop-blur-2xl">
-                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(45,212,191,0.16),transparent_34%)]"></div>
-                    <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
-                                <TrendingUp class="h-5 w-5 text-emerald-200" />
-                            </div>
-                            <div>
-                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200/75">Rate Upgrade</p>
-                                <h4 class="mt-2 text-lg font-semibold text-white">단가를 조정해볼 시점이에요</h4>
-                                <p class="mt-2 text-sm leading-relaxed text-white/68">완료한 계약과 리뷰 평점이 충분히 쌓였습니다. 현재 성과에 맞게 희망 단가를 한 단계 높여보세요.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <button @click="activeTab = 'edit'" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">단가 수정하기</button>
-                            <button @click="hideRateBumpAlert = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white"><X class="h-4 w-4" /></button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2. Burnout Alert -->
-                <div v-if="profile.crmAlerts?.isBurnoutWarning && !hideBurnoutAlert" class="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(251,146,60,0.08),rgba(255,255,255,0.05))] px-6 py-5 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.9)] backdrop-blur-2xl">
-                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(251,146,60,0.18),transparent_34%)]"></div>
-                    <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
-                                <AlertTriangle class="h-5 w-5 text-orange-200" />
-                            </div>
-                            <div>
-                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-orange-200/75">Pace Check</p>
-                                <h4 class="mt-2 text-lg font-semibold text-white">조금 쉬어가도 괜찮아요</h4>
-                                <p class="mt-2 text-sm leading-relaxed text-white/68">현재 진행 중인 계약이 많은 편입니다. 다음 일을 잡기 전에 페이스를 한 번 조절해보세요.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <button @click="toggleRestMode" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">쉬어가기</button>
-                            <button @click="hideBurnoutAlert = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white"><X class="h-4 w-4" /></button>
-                        </div>
-                    </div>
-                </div>
-
-                 <!-- 3. Churn Alert (Encouragement) -->
-                 <div v-if="profile.crmAlerts?.isChurnWarning && !hideChurnAlert" class="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(96,165,250,0.08),rgba(255,255,255,0.05))] px-6 py-5 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.9)] backdrop-blur-2xl">
-                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(96,165,250,0.16),transparent_34%)]"></div>
-                    <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                        <div class="flex items-start gap-4">
-                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
-                                <Briefcase class="h-5 w-5 text-sky-200" />
-                            </div>
-                            <div>
-                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-200/75">Come Back</p>
-                                <h4 class="mt-2 text-lg font-semibold text-white">다시 매칭을 시작할 시점이에요</h4>
-                                <p class="mt-2 text-sm leading-relaxed text-white/68">이전에 계약 경험은 있었지만 지금은 새 활동이 멈춰 있어요. 공고 페이지에서 다음 프로젝트를 확인해보세요.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 shrink-0">
-                            <button @click="viewRecommendedProjects" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">공고 보러 가기</button>
-                            <button @click="hideChurnAlert = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white"><X class="h-4 w-4" /></button>
-                        </div>
-                    </div>
                 </div>
             </div>
 
