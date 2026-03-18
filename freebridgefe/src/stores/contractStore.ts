@@ -218,7 +218,7 @@ export const useContractStore = defineStore('contract', () => {
 
     const employerSettlementsWithDetails = computed<EmployerSettlementWithDetails[]>(() => {
         return employerSettlements.value.map((settlement) => {
-            const contract = contracts.value.find((c) => c.id === settlement.contractId);
+            const contract = findContractByAnyId(settlement.contractId);
             return {
                 ...settlement,
                 projectName: contract?.projectName || 'Unknown Project',
@@ -233,7 +233,7 @@ export const useContractStore = defineStore('contract', () => {
 
     const freelancerSettlementsWithDetails = computed<FreelancerSettlementWithDetails[]>(() => {
         return freelancerSettlements.value.map((settlement) => {
-            const contract = contracts.value.find((c) => c.id === settlement.contractId);
+            const contract = findContractByAnyId(settlement.contractId);
             return {
                 ...settlement,
                 projectName: contract?.projectName || 'Unknown Project',
