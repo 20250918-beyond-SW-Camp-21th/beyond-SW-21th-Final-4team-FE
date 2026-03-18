@@ -146,76 +146,76 @@ body {
         color: var(--fb-text);
     }
 
-    body [class*="bg-white/5"][class*="border-white/10"],
-    body [class*="bg-white/10"][class*="border-white/10"],
-    body [class*="bg-black/20"][class*="border-white/10"],
-    body [class*="bg-black/30"][class*="border-white/10"],
-    body [class*="bg-gray-900/95"][class*="border-white/10"],
-    body [class*="bg-[#1e293b]/50"][class*="border-white/10"],
-    body [class*="bg-[#1e293b]/60"][class*="border-white/10"],
-    body [class*="bg-[#0F172A]"][class*="border-white/10"] {
+    .fb-page-shell [class*="bg-white/5"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-white/10"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-black/20"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-black/30"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-gray-900/95"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-[#1e293b]/50"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-[#1e293b]/60"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-[#0F172A]"][class*="border-white/10"] {
         background: rgba(255, 255, 255, 0.96) !important;
         border-color: rgba(35, 36, 42, 0.08) !important;
         color: var(--fb-text) !important;
         box-shadow: 0 16px 44px rgba(35, 36, 42, 0.08);
     }
 
-    body [class*="bg-black/60"][class*="backdrop-blur"],
-    body [class*="bg-black/70"][class*="backdrop-blur"] {
+    .fb-page-shell [class*="bg-black/60"][class*="backdrop-blur"],
+    .fb-page-shell [class*="bg-black/70"][class*="backdrop-blur"] {
         background: rgba(35, 36, 42, 0.22) !important;
     }
 
-    body input[class*="bg-white/5"],
-    body input[class*="bg-black/"],
-    body input[class*="bg-[#1e293b]"],
-    body input[class*="bg-[#0F172A]"],
-    body textarea[class*="bg-white/5"],
-    body textarea[class*="bg-black/"],
-    body textarea[class*="bg-[#1e293b]"],
-    body textarea[class*="bg-[#0F172A]"],
-    body select[class*="bg-white/5"],
-    body select[class*="bg-black/"],
-    body select[class*="bg-[#1e293b]"],
-    body select[class*="bg-[#0F172A]"] {
+    .fb-page-shell input[class*="bg-white/5"],
+    .fb-page-shell input[class*="bg-black/"],
+    .fb-page-shell input[class*="bg-[#1e293b]"],
+    .fb-page-shell input[class*="bg-[#0F172A]"],
+    .fb-page-shell textarea[class*="bg-white/5"],
+    .fb-page-shell textarea[class*="bg-black/"],
+    .fb-page-shell textarea[class*="bg-[#1e293b]"],
+    .fb-page-shell textarea[class*="bg-[#0F172A]"],
+    .fb-page-shell select[class*="bg-white/5"],
+    .fb-page-shell select[class*="bg-black/"],
+    .fb-page-shell select[class*="bg-[#1e293b]"],
+    .fb-page-shell select[class*="bg-[#0F172A]"] {
         background: #ffffff !important;
         border-color: rgba(35, 36, 42, 0.10) !important;
         color: var(--fb-text) !important;
         box-shadow: none !important;
     }
 
-    body input[class*="placeholder:text-white/30"]::placeholder,
-    body input[class*="placeholder:text-white/40"]::placeholder,
-    body textarea[class*="placeholder:text-white/30"]::placeholder,
-    body textarea[class*="placeholder:text-white/40"]::placeholder {
+    .fb-page-shell input[class*="placeholder:text-white/30"]::placeholder,
+    .fb-page-shell input[class*="placeholder:text-white/40"]::placeholder,
+    .fb-page-shell textarea[class*="placeholder:text-white/30"]::placeholder,
+    .fb-page-shell textarea[class*="placeholder:text-white/40"]::placeholder {
         color: #94a3b8 !important;
     }
 
-    body h1[class*="text-white"],
-    body h2[class*="text-white"],
-    body h3[class*="text-white"],
-    body h4[class*="text-white"],
-    body h5[class*="text-white"],
-    body h6[class*="text-white"] {
+    .fb-page-shell h1[class*="text-white"],
+    .fb-page-shell h2[class*="text-white"],
+    .fb-page-shell h3[class*="text-white"],
+    .fb-page-shell h4[class*="text-white"],
+    .fb-page-shell h5[class*="text-white"],
+    .fb-page-shell h6[class*="text-white"] {
         color: var(--fb-text) !important;
     }
 
-    body p[class*="text-white/60"],
-    body p[class*="text-white/70"],
-    body p[class*="text-white/80"],
-    body div[class*="text-white/60"],
-    body div[class*="text-white/70"],
-    body div[class*="text-white/80"],
-    body span[class*="text-white/40"],
-    body span[class*="text-white/50"],
-    body span[class*="text-white/60"],
-    body span[class*="text-white/70"],
-    body label[class*="text-white/80"],
-    body label[class*="text-white/70"] {
+    .fb-page-shell p[class*="text-white/60"],
+    .fb-page-shell p[class*="text-white/70"],
+    .fb-page-shell p[class*="text-white/80"],
+    .fb-page-shell div[class*="text-white/60"],
+    .fb-page-shell div[class*="text-white/70"],
+    .fb-page-shell div[class*="text-white/80"],
+    .fb-page-shell span[class*="text-white/40"],
+    .fb-page-shell span[class*="text-white/50"],
+    .fb-page-shell span[class*="text-white/60"],
+    .fb-page-shell span[class*="text-white/70"],
+    .fb-page-shell label[class*="text-white/80"],
+    .fb-page-shell label[class*="text-white/70"] {
         color: var(--fb-text-soft) !important;
     }
 
-    body [class*="border-t"][class*="border-white/10"],
-    body [class*="border-b"][class*="border-white/10"] {
+    .fb-page-shell [class*="border-t"][class*="border-white/10"],
+    .fb-page-shell [class*="border-b"][class*="border-white/10"] {
         border-color: rgba(35, 36, 42, 0.08) !important;
     }
 }
