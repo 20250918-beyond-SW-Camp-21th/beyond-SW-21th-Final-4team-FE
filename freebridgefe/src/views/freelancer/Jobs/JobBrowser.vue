@@ -136,8 +136,12 @@ const recommendedJobs = computed<RecommendedJob[]>(() => {
     !aiRecommendationError.value;
 
   if (canUseAiResults) {
-    return aiRecommendationResults.value.map((recommendation) => {
-      const matchedJob = jobsById.value.get(String(recommendation.id));
+    return aiRecommendationResults.value
+      .map((recommendation) => {
+        const matchedJob = jobsById.value.get(String(recommendation.id));
+        if (!matchedJob) {
+          return null;
+        }
       const fallbackDescription = `프로필과 잘 맞는 공고입니다. AI 매칭 점수 ${Math.round(
         (recommendation.matchScore ?? 0) * 100
       )}%.`;
@@ -166,7 +170,8 @@ const recommendedJobs = computed<RecommendedJob[]>(() => {
         matchScore: recommendation.matchScore,
         recommendationSource: 'ai',
       };
-    });
+      })
+      .filter((job): job is RecommendedJob => job !== null);
   }
 
   return fallbackRecommendedJobs.value;
