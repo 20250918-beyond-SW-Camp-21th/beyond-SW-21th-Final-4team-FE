@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useAlertStore } from '@/stores/alertStore';
 
 const alertStore = useAlertStore();
 const dialogTitleId = 'global-alert-modal-title';
 const dialogDescriptionId = 'global-alert-modal-description';
+const modalSurfaceRef = ref<HTMLElement | null>(null);
+const previouslyFocusedElement = ref<HTMLElement | null>(null);
 
 const handleBackdropClick = () => {
   if (alertStore.showCancel) {
@@ -27,6 +29,34 @@ const toneClass = computed(() => {
       return 'bg-[#e7f9fb] text-[#1c95a2] border-[#cdeff2]';
   }
 });
+
+const restoreFocus = () => {
+  if (previouslyFocusedElement.value?.isConnected) {
+    previouslyFocusedElement.value.focus({ preventScroll: true });
+  }
+  previouslyFocusedElement.value = null;
+};
+
+watch(
+  () => alertStore.isOpen,
+  async (isOpen, wasOpen) => {
+    if (isOpen) {
+      previouslyFocusedElement.value =
+        document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      await nextTick();
+      modalSurfaceRef.value?.focus();
+      return;
+    }
+
+    if (wasOpen) {
+      restoreFocus();
+    }
+  }
+);
+
+onBeforeUnmount(() => {
+  restoreFocus();
+});
 </script>
 
 <template>
@@ -37,9 +67,11 @@ const toneClass = computed(() => {
       @click.self="handleBackdropClick"
     >
       <div
+        ref="modalSurfaceRef"
         class="fb-modal-surface w-full max-w-md rounded-[28px] backdrop-blur-2xl"
         role="dialog"
         aria-modal="true"
+        tabindex="-1"
         :aria-labelledby="dialogTitleId"
         :aria-describedby="dialogDescriptionId"
       >
