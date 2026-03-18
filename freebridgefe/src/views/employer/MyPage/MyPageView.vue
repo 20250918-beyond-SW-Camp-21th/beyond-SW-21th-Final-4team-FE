@@ -46,9 +46,69 @@ const route = useRoute();
 const authStore = useAuthStore();
 const alertStore = useAlertStore();
 const contractStore = useContractStore();
+const currentUserId = computed(() => authStore.user?.id ?? null);
 
 const activeTab = ref('dashboard');
-const hideUpsellAlert = ref(false);
+const hideEmployerNoticeBanner = ref(false);
+const dismissedTopCrmKeys = ref<string[]>([]);
+const seenTopCrmKeys = ref<string[]>([]);
+const pinnedTopCrmBannerKey = ref<string | null>(null);
+const persistentTopCrmKeys = ['subscription', 'upsell-pro', 'upsell-prime', 'prime-upsell'];
+
+const getEmployerCrmStorageKey = () => {
+  const userId = currentUserId.value;
+  return userId ? `mypage-employer-crm:${userId}` : null;
+};
+
+const loadSeenTopCrmKeys = () => {
+  const storageKey = getEmployerCrmStorageKey();
+  if (!storageKey) {
+    seenTopCrmKeys.value = [];
+    return;
+  }
+
+  try {
+    const saved = sessionStorage.getItem(storageKey);
+    const parsed = saved ? JSON.parse(saved) : [];
+    seenTopCrmKeys.value = Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === 'string')
+      : [];
+  } catch (error) {
+    console.error('Failed to load employer crm session state:', error);
+    seenTopCrmKeys.value = [];
+  }
+};
+
+const markTopCrmBannerSeen = (key: string) => {
+  if (persistentTopCrmKeys.includes(key)) {
+    return;
+  }
+
+  if (seenTopCrmKeys.value.includes(key)) {
+    return;
+  }
+
+  const nextSeenKeys = [...seenTopCrmKeys.value, key];
+  seenTopCrmKeys.value = nextSeenKeys;
+
+  const storageKey = getEmployerCrmStorageKey();
+  if (!storageKey) {
+    return;
+  }
+
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify(nextSeenKeys));
+  } catch (error) {
+    console.error('Failed to persist employer crm session state:', error);
+  }
+};
+
+const dismissTopCrmBanner = (key: string) => {
+  if (!dismissedTopCrmKeys.value.includes(key)) {
+    dismissedTopCrmKeys.value = [...dismissedTopCrmKeys.value, key];
+  }
+  pinnedTopCrmBannerKey.value = null;
+};
 
 const updateTabFromQuery = () => {
     const tab = route.query.tab as string;
@@ -154,6 +214,41 @@ const handlePrimeUpsellClick = () => {
   activeTab.value = 'account';
   router.push({ query: { ...route.query, tab: 'account' } });
 };
+
+type CrmActionTarget = 'jobs' | 'projects' | 'account';
+type OperationalCrmCard = {
+  key: string;
+  title: string;
+  description: string;
+  cta: string;
+  target: CrmActionTarget;
+  icon: unknown;
+};
+
+type TopCrmBannerItem = {
+  key: string;
+  label: string;
+  title: string;
+  description: string;
+  cta: string;
+  target: CrmActionTarget;
+  icon: unknown;
+  wrapClass: string;
+  glowClass: string;
+  iconWrapClass: string;
+  ctaClass: string;
+  isTextDark: boolean;
+};
+
+const handleCrmAction = (target: CrmActionTarget) => {
+  if (target === 'jobs') {
+    router.push({ name: 'employer.jobs' });
+    return;
+  }
+  activeTab.value = target;
+  router.push({ query: { ...route.query, tab: target } });
+};
+
 const fetchProfile = async () => {
   try {
     const [profile, reviewSummary, projectStats, subscription] = await Promise.all([
@@ -193,36 +288,176 @@ const companySizeLabel = computed(() => {
 
 const formattedEmployerPhone = computed(() => formatPhoneNumber(employerProfile.value.phone));
 
-const topCrmBanner = computed(() => {
+const accountUpsellBanner = computed<TopCrmBannerItem | null>(() => {
   const alerts = employerProfile.value.crmAlerts;
   if (alerts?.upsellTarget === 'PRO' || alerts?.isPremiumUpsellEligible) {
     return {
+      key: 'upsell-pro',
       label: 'PRO 업그레이드',
       title: '수수료 할인과 추천 프리랜서로 매칭 효율을 높이세요',
-      description: 'PRO 플랜으로 업그레이드하고 추천 프리랜서 우선 노출과 수수료 할인 혜택을 받아보세요.'
+      description: 'PRO 플랜으로 업그레이드하고 추천 프리랜서 우선 노출과 수수료 할인 혜택을 받아보세요.',
+      cta: '요금제 업그레이드',
+      target: 'account',
+      icon: TrendingUp,
+      wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(59,130,246,0.08),rgba(255,255,255,0.05))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.16),transparent_34%)]',
+      iconWrapClass: 'bg-white/10',
+      ctaClass: 'bg-white text-slate-900 hover:bg-white/90',
+      isTextDark: true
     };
   }
   if (alerts?.upsellTarget === 'PRIME' || alerts?.isPrimeUpsellEligible) {
     return {
+      key: 'upsell-prime',
       label: 'PRIME 업그레이드',
       title: '전담 AI 컨설팅과 추가 혜택을 받아보세요',
-      description: 'PRIME 플랜으로 업그레이드하고 전담 AI 컨설팅과 대폭 수수료 할인을 누리세요.'
+      description: 'PRIME 플랜으로 업그레이드하고 전담 AI 컨설팅과 대폭 수수료 할인을 누리세요.',
+      cta: '요금제 업그레이드',
+      target: 'account',
+      icon: Crown,
+      wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(168,85,247,0.10),rgba(255,255,255,0.05))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.18),transparent_34%)]',
+      iconWrapClass: 'bg-white/10',
+      ctaClass: 'bg-white text-slate-900 hover:bg-white/90',
+      isTextDark: true
     };
   }
   return null;
 });
 
-const proPrimeBanner = computed(() => {
+const operationalCrmCards = computed<TopCrmBannerItem[]>(() => {
+  const alerts = employerProfile.value.crmAlerts;
+  if (!alerts) return [];
+
+  const cards: TopCrmBannerItem[] = [];
+
+  if (alerts.isFirstJobEncouraged && (employerProfile.value.activeProjects ?? 0) === 0) {
+    cards.push({
+      key: 'first-job',
+      label: '온보딩 CRM',
+      title: '첫 공고 등록을 시작해보세요',
+      description: '프로필 준비가 끝났다면 첫 공고를 올리고 지원자를 받아보는 단계로 넘어갈 수 있어요.',
+      cta: '공고 등록하러 가기',
+      target: 'jobs' as CrmActionTarget,
+      icon: Briefcase,
+      wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(59,130,246,0.08),rgba(255,255,255,0.05))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.16),transparent_34%)]',
+      iconWrapClass: 'bg-white/10',
+      ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
+    });
+  }
+
+  if (alerts.hasPendingApplicants) {
+    cards.push({
+      key: 'pending-applicants',
+      label: '지원자 관리',
+      title: '검토를 기다리는 지원자가 있어요',
+      description: '대기 중인 지원자를 빠르게 확인하면 계약 전환까지 이어질 가능성이 높아집니다.',
+      cta: '프로젝트 관리 열기',
+      target: 'projects' as CrmActionTarget,
+      icon: Users,
+      wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(16,185,129,0.08),rgba(255,255,255,0.05))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.18),transparent_34%)]',
+      iconWrapClass: 'bg-white/10',
+      ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
+    });
+  }
+
+  if (alerts.isContractConversionNeeded) {
+    cards.push({
+      key: 'contract-conversion',
+      label: '전환 유도',
+      title: '이제 계약 단계로 전환할 시점입니다',
+      description: '지원자는 충분하지만 계약이 이어지지 않고 있어요. 적합한 인재와 빠르게 협의를 시작해보세요.',
+      cta: '지원자 다시 보기',
+      target: 'projects' as CrmActionTarget,
+      icon: ClipboardList,
+      wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(245,158,11,0.08),rgba(255,255,255,0.05))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.18),transparent_34%)]',
+      iconWrapClass: 'bg-white/10',
+      ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
+    });
+  }
+
+  if (alerts.isRehiringRecommended) {
+    cards.push({
+      key: 'rehiring',
+      label: '재채용 추천',
+      title: '다음 채용을 준비해보세요',
+      description: '이전 프로젝트가 마무리된 만큼, 다음 공고를 열어 채용 흐름을 이어갈 수 있습니다.',
+      cta: '공고 페이지 이동',
+      target: 'jobs' as CrmActionTarget,
+      icon: Calendar,
+      wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(99,102,241,0.08),rgba(255,255,255,0.05))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.18),transparent_34%)]',
+      iconWrapClass: 'bg-white/10',
+      ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
+    });
+  }
+
+  if (alerts.isSubscriptionAttentionNeeded) {
+    cards.push({
+      key: 'subscription',
+      label: '구독 알림',
+      title: '구독 상태를 확인해주세요',
+      description: '예약된 플랜 변경이나 다음 결제 일정이 있어요. 혜택이 끊기지 않도록 미리 점검해보세요.',
+      cta: '구독 관리 열기',
+      target: 'account' as CrmActionTarget,
+      icon: Crown,
+      wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(244,114,182,0.08),rgba(255,255,255,0.05))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(244,114,182,0.18),transparent_34%)]',
+      iconWrapClass: 'bg-white/10',
+      ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
+    });
+  }
+
+  return cards;
+});
+
+const proPrimeBanner = computed<TopCrmBannerItem | null>(() => {
   const plan = (employerProfile.value.plan ?? '').toUpperCase();
   const totalProjects = employerProfile.value.activeProjects ?? 0;
   if (plan === 'PRO' && totalProjects >= 2) {
     return {
+      key: 'prime-upsell',
+      label: 'PRIME 제안',
       title: 'PRIME로 전환하고 계약 리스크를 줄이세요',
       description: '전담 AI 자문, 계약서 검토, 우선 매칭까지 PRIME 전용 혜택을 제공합니다.',
-      cta: 'PRIME 혜택 보기'
+      cta: 'PRIME 혜택 보기',
+      target: 'account',
+      icon: Crown,
+      wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(99,102,241,0.08),rgba(255,255,255,0.05))]',
+      glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.18),transparent_36%)]',
+      iconWrapClass: 'bg-white/10',
+      ctaClass: 'bg-white text-slate-900 hover:bg-white/90',
+      isTextDark: true
     };
   }
   return null;
+});
+
+const allTopCrmBanners = computed(() => {
+  return [proPrimeBanner.value, accountUpsellBanner.value, ...operationalCrmCards.value]
+    .filter((banner): banner is TopCrmBannerItem => Boolean(banner));
+});
+
+const topCrmBanners = computed(() => {
+  return allTopCrmBanners.value
+    .filter((banner) => persistentTopCrmKeys.includes(banner.key) || !seenTopCrmKeys.value.includes(banner.key))
+    .filter((banner) => !dismissedTopCrmKeys.value.includes(banner.key));
+});
+
+const activeTopCrmBanner = computed(() => {
+  if (pinnedTopCrmBannerKey.value) {
+    return allTopCrmBanners.value.find((banner) => banner.key === pinnedTopCrmBannerKey.value) ?? null;
+  }
+
+  return topCrmBanners.value[0] ?? null;
 });
 
 const normalizedPlanKey = computed<'FREE' | 'PRO' | 'PRIME'>(() => {
@@ -261,9 +496,32 @@ const subscriptionPlanTone = computed(() => {
 });
 
 onMounted(() => {
+  loadSeenTopCrmKeys();
   fetchProfile();
   updateTabFromQuery();
 });
+
+watch(currentUserId, () => {
+  dismissedTopCrmKeys.value = [];
+  pinnedTopCrmBannerKey.value = null;
+  loadSeenTopCrmKeys();
+});
+
+watch(topCrmBanners, (banners) => {
+  if (pinnedTopCrmBannerKey.value && banners.some((banner) => banner.key === pinnedTopCrmBannerKey.value)) {
+    return;
+  }
+
+  const nextBanner = banners[0] ?? null;
+  pinnedTopCrmBannerKey.value = nextBanner?.key ?? null;
+  if (nextBanner) {
+    setTimeout(() => {
+      if (pinnedTopCrmBannerKey.value === nextBanner.key) {
+        markTopCrmBannerSeen(nextBanner.key);
+      }
+    }, 0);
+  }
+}, { immediate: true });
 
 watch(activeTab, (newTab) => {
   if (newTab === 'dashboard') {
@@ -363,67 +621,42 @@ const safeWebsiteUrl = computed(() => {
             
             <!-- Dashboard View -->
             <div v-else-if="activeTab === 'dashboard'" class="space-y-8">
-              <!-- PRO → PRIME Upsell Banner (PRO + totalProjects >= 2) -->
               <div
-                  v-if="proPrimeBanner"
-                  class="relative overflow-hidden rounded-[28px] border border-violet-100 bg-gradient-to-br from-white via-violet-50 to-pink-50 p-6 shadow-[0_20px_60px_-35px_rgba(167,139,250,0.18)]"
+                  v-if="activeTopCrmBanner"
+                  class="relative overflow-hidden rounded-[28px] border border-sky-100 bg-gradient-to-r from-white via-sky-50 to-cyan-50 p-6 shadow-[0_20px_60px_-35px_rgba(56,189,248,0.16)]"
                   v-motion :initial="{ opacity: 0, y: -18 }" :enter="{ opacity: 1, y: 0 }"
               >
-                  <div class="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-violet-100 blur-3xl"></div>
-                  <div class="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-pink-100 blur-3xl"></div>
-                  <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                      <div class="space-y-2">
-                          <div class="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-violet-600">
-                              PRIME 제안
-                          </div>
-                          <h3 class="text-2xl font-semibold text-slate-950">{{ proPrimeBanner.title }}</h3>
-                          <p class="text-sm text-slate-600">{{ proPrimeBanner.description }}</p>
-                      </div>
-                      <button
-                          type="button"
-                          @click="handlePrimeUpsellClick"
-                          class="shrink-0 rounded-full bg-violet-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-violet-400"
-                      >
-                          {{ proPrimeBanner.cta }}
-                      </button>
-                  </div>
-              </div>
-              <!-- CRM Upsell Banner (Option A) -->
-              <div 
-                  v-if="topCrmBanner && !hideUpsellAlert" 
-                  class="relative overflow-hidden rounded-[28px] border border-sky-100 bg-gradient-to-r from-white via-sky-50 to-cyan-50 p-6 shadow-[0_20px_60px_-35px_rgba(56,189,248,0.16)]"
-                  v-motion :initial="{ opacity: 0, y: -20 }" :enter="{ opacity: 1, y: 0 }"
-              >
-                  <div class="absolute top-0 right-0 p-4">
-                      <button @click="hideUpsellAlert = true" class="text-slate-400 hover:text-slate-700 transition-colors">
+                  <div class="absolute top-0 right-0 z-20 p-4">
+                      <button type="button" aria-label="닫기" @click="dismissTopCrmBanner(activeTopCrmBanner.key)" class="text-slate-400 transition-colors hover:text-slate-700">
                           <X class="w-5 h-5" />
                       </button>
                   </div>
-                  
-                  <!-- Glow effects -->
-                  <div class="absolute -top-16 -left-16 w-40 h-40 bg-sky-100 rounded-full blur-3xl"></div>
-                  <div class="absolute -bottom-16 right-12 w-40 h-40 bg-cyan-100 rounded-full blur-3xl"></div>
-                  
+                  <div class="absolute -top-16 -left-16 h-40 w-40 rounded-full bg-sky-100 blur-3xl"></div>
+                  <div class="absolute -bottom-16 right-12 h-40 w-40 rounded-full bg-cyan-100 blur-3xl"></div>
                   <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                       <div class="flex items-start gap-4">
-                          <div class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shrink-0 shadow-[0_16px_40px_-28px_rgba(56,189,248,0.22)] border border-sky-100">
-                              <TrendingUp class="w-5 h-5 text-sky-600" />
+                          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-sky-100 bg-white shadow-[0_16px_40px_-28px_rgba(56,189,248,0.22)]">
+                              <component :is="activeTopCrmBanner.icon" class="w-5 h-5 text-sky-600" />
                           </div>
                           <div>
                               <div class="flex items-center gap-2 mb-1">
-                                  <h3 class="text-lg font-semibold text-slate-950">{{ topCrmBanner.title }}</h3>
-                                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white text-sky-700 uppercase tracking-[0.2em] border border-sky-100">
-                                      {{ topCrmBanner.label }}
+                                  <h3 class="text-lg font-semibold text-slate-950">{{ activeTopCrmBanner.title }}</h3>
+                                  <span class="rounded-full border border-sky-100 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-700">
+                                      {{ activeTopCrmBanner.label }}
                                   </span>
                               </div>
-                              <p class="text-sm text-slate-600 leading-relaxed">
-                                  {{ topCrmBanner.description }}
+                              <p class="text-sm leading-relaxed text-slate-600">
+                                  {{ activeTopCrmBanner.description }}
                               </p>
                           </div>
                       </div>
-                      <button @click="activeTab = 'account'" class="shrink-0 w-full md:w-auto px-6 py-3 bg-sky-500 text-white hover:bg-sky-400 font-semibold rounded-full transition-colors shadow-[0_18px_40px_-28px_rgba(56,189,248,0.4)] flex items-center justify-center gap-2">
-                          <Crown class="w-5 h-5 text-white" />
-                          요금제 업그레이드
+                      <button
+                          type="button"
+                          @click="handleCrmAction(activeTopCrmBanner.target)"
+                          class="flex w-full shrink-0 items-center justify-center gap-2 rounded-full bg-sky-500 px-6 py-3 font-semibold text-white transition-colors shadow-[0_18px_40px_-28px_rgba(56,189,248,0.4)] hover:bg-sky-400 md:w-auto"
+                      >
+                          <component :is="activeTopCrmBanner.icon" class="w-5 h-5 text-white" />
+                          {{ activeTopCrmBanner.cta }}
                       </button>
                   </div>
               </div>
@@ -630,7 +863,15 @@ const safeWebsiteUrl = computed(() => {
                 </div>
 
                 <!-- Notice / Banners -->
-                <div class="bg-gradient-to-br from-sky-50 via-cyan-50 to-white border border-sky-100 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-center h-full shadow-[0_16px_40px_rgba(56,189,248,0.12)]">
+                <div
+                    v-if="!hideEmployerNoticeBanner"
+                    class="relative flex h-full flex-col justify-center overflow-hidden rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 via-cyan-50 to-white p-6 shadow-[0_16px_40px_rgba(56,189,248,0.12)]"
+                >
+                    <div class="absolute right-4 top-4 z-20">
+                        <button type="button" aria-label="닫기" @click="hideEmployerNoticeBanner = true" class="rounded-full p-2 text-slate-400 transition-colors hover:bg-white/70 hover:text-slate-700">
+                            <X class="h-4 w-4" />
+                        </button>
+                    </div>
                     <div class="relative z-10 w-full h-full flex flex-col justify-center">
                         <div>
                             <span class="text-[10px] tracking-[0.2em] font-semibold text-sky-600 mb-3 inline-block">NOTICE</span>
