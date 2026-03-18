@@ -136,7 +136,7 @@ const recommendedJobs = computed<RecommendedJob[]>(() => {
     !aiRecommendationError.value;
 
   if (canUseAiResults) {
-    return aiRecommendationResults.value
+    const aiRecommendedJobs = aiRecommendationResults.value
       .map((recommendation) => {
         const matchedJob = jobsById.value.get(String(recommendation.id));
         if (!matchedJob) {
@@ -172,6 +172,10 @@ const recommendedJobs = computed<RecommendedJob[]>(() => {
       };
       })
       .filter((job): job is RecommendedJob => job !== null);
+
+    if (aiRecommendedJobs.length > 0) {
+      return aiRecommendedJobs;
+    }
   }
 
   return fallbackRecommendedJobs.value;
