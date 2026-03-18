@@ -154,6 +154,26 @@ const handlePrimeUpsellClick = () => {
   activeTab.value = 'account';
   router.push({ query: { ...route.query, tab: 'account' } });
 };
+
+type CrmActionTarget = 'jobs' | 'projects' | 'account';
+type OperationalCrmCard = {
+  key: string;
+  title: string;
+  description: string;
+  cta: string;
+  target: CrmActionTarget;
+  icon: unknown;
+};
+
+const handleCrmAction = (target: CrmActionTarget) => {
+  if (target === 'jobs') {
+    router.push({ name: 'employer.jobs' });
+    return;
+  }
+  activeTab.value = target;
+  router.push({ query: { ...route.query, tab: target } });
+};
+
 const fetchProfile = async () => {
   try {
     const [profile, reviewSummary, projectStats, subscription] = await Promise.all([
@@ -210,6 +230,70 @@ const topCrmBanner = computed(() => {
     };
   }
   return null;
+});
+
+const operationalCrmCards = computed(() => {
+  const alerts = employerProfile.value.crmAlerts;
+  if (!alerts) return [];
+
+  const cards: OperationalCrmCard[] = [];
+
+  if (alerts.isFirstJobEncouraged) {
+    cards.push({
+      key: 'first-job',
+      title: '첫 공고 등록을 시작해보세요',
+      description: '프로필 준비가 끝났다면 첫 공고를 올리고 지원자를 받아보는 단계로 넘어갈 수 있어요.',
+      cta: '공고 등록하러 가기',
+      target: 'jobs' as CrmActionTarget,
+      icon: Briefcase,
+    });
+  }
+
+  if (alerts.hasPendingApplicants) {
+    cards.push({
+      key: 'pending-applicants',
+      title: '검토를 기다리는 지원자가 있어요',
+      description: '대기 중인 지원자를 빠르게 확인하면 계약 전환까지 이어질 가능성이 높아집니다.',
+      cta: '프로젝트 관리 열기',
+      target: 'projects' as CrmActionTarget,
+      icon: Users,
+    });
+  }
+
+  if (alerts.isContractConversionNeeded) {
+    cards.push({
+      key: 'contract-conversion',
+      title: '이제 계약 단계로 전환할 시점입니다',
+      description: '지원자는 충분하지만 계약이 이어지지 않고 있어요. 적합한 인재와 빠르게 협의를 시작해보세요.',
+      cta: '지원자 다시 보기',
+      target: 'projects' as CrmActionTarget,
+      icon: ClipboardList,
+    });
+  }
+
+  if (alerts.isRehiringRecommended) {
+    cards.push({
+      key: 'rehiring',
+      title: '다음 채용을 준비해보세요',
+      description: '이전 프로젝트가 마무리된 만큼, 다음 공고를 열어 채용 흐름을 이어갈 수 있습니다.',
+      cta: '공고 페이지 이동',
+      target: 'jobs' as CrmActionTarget,
+      icon: Calendar,
+    });
+  }
+
+  if (alerts.isSubscriptionAttentionNeeded) {
+    cards.push({
+      key: 'subscription',
+      title: '구독 상태를 확인해주세요',
+      description: '예약된 플랜 변경이나 다음 결제 일정이 있어요. 혜택이 끊기지 않도록 미리 점검해보세요.',
+      cta: '구독 관리 열기',
+      target: 'account' as CrmActionTarget,
+      icon: Crown,
+    });
+  }
+
+  return cards;
 });
 
 const proPrimeBanner = computed(() => {
@@ -366,18 +450,17 @@ const safeWebsiteUrl = computed(() => {
               <!-- PRO → PRIME Upsell Banner (PRO + totalProjects >= 2) -->
               <div
                   v-if="proPrimeBanner"
-                  class="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-black p-6 shadow-[0_20px_60px_-35px_rgba(255,255,255,0.25)]"
+                  class="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(99,102,241,0.08),rgba(255,255,255,0.05))] p-7 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.95)] backdrop-blur-2xl"
                   v-motion :initial="{ opacity: 0, y: -18 }" :enter="{ opacity: 1, y: 0 }"
               >
-                  <div class="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-white/5 blur-3xl"></div>
-                  <div class="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-indigo-500/10 blur-3xl"></div>
+                  <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.18),transparent_36%)]"></div>
                   <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
                       <div class="space-y-2">
-                          <div class="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
+                          <div class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
                               PRIME 제안
                           </div>
                           <h3 class="text-2xl font-semibold text-white">{{ proPrimeBanner.title }}</h3>
-                          <p class="text-sm text-white/70">{{ proPrimeBanner.description }}</p>
+                          <p class="text-sm leading-relaxed text-white/68">{{ proPrimeBanner.description }}</p>
                       </div>
                       <button
                           type="button"
@@ -391,7 +474,7 @@ const safeWebsiteUrl = computed(() => {
               <!-- CRM Upsell Banner (Option A) -->
               <div 
                   v-if="topCrmBanner && !hideUpsellAlert" 
-                  class="relative overflow-hidden rounded-[28px] border border-white/20 bg-white/10 p-6 shadow-[0_20px_60px_-35px_rgba(255,255,255,0.25)]"
+                  class="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(59,130,246,0.08),rgba(255,255,255,0.05))] p-7 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.95)] backdrop-blur-2xl"
                   v-motion :initial="{ opacity: 0, y: -20 }" :enter="{ opacity: 1, y: 0 }"
               >
                   <div class="absolute top-0 right-0 p-4">
@@ -401,12 +484,11 @@ const safeWebsiteUrl = computed(() => {
                   </div>
                   
                   <!-- Glow effects -->
-                  <div class="absolute -top-16 -left-16 w-40 h-40 bg-white/20 rounded-full blur-3xl"></div>
-                  <div class="absolute -bottom-16 right-12 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+                  <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.16),transparent_34%)]"></div>
                   
                   <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                       <div class="flex items-start gap-4">
-                          <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.35)]">
+                          <div class="w-12 h-12 bg-white/10 rounded-2xl border border-white/10 flex items-center justify-center shrink-0 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.35)]">
                               <TrendingUp class="w-5 h-5 text-white/80" />
                           </div>
                           <div>
@@ -416,7 +498,7 @@ const safeWebsiteUrl = computed(() => {
                                       {{ topCrmBanner.label }}
                                   </span>
                               </div>
-                              <p class="text-sm text-white/70 leading-relaxed">
+                              <p class="text-sm text-white/68 leading-relaxed">
                                   {{ topCrmBanner.description }}
                               </p>
                           </div>
@@ -426,6 +508,32 @@ const safeWebsiteUrl = computed(() => {
                           요금제 업그레이드
                       </button>
                   </div>
+              </div>
+
+              <div v-if="operationalCrmCards.length > 0" class="grid gap-4 md:grid-cols-2">
+                <article
+                  v-for="card in operationalCrmCards"
+                  :key="card.key"
+                  class="rounded-[24px] border border-white/10 bg-white/[0.06] p-5 shadow-[0_20px_50px_-40px_rgba(255,255,255,0.35)] backdrop-blur-xl"
+                >
+                  <div class="flex items-start gap-4">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/10">
+                      <component :is="card.icon" class="h-5 w-5 text-white/80" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                      <h3 class="text-base font-semibold text-white">{{ card.title }}</h3>
+                      <p class="mt-2 text-sm leading-relaxed text-white/65">{{ card.description }}</p>
+                      <button
+                        type="button"
+                        @click="handleCrmAction(card.target)"
+                        class="mt-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/15"
+                      >
+                        {{ card.cta }}
+                        <ArrowRight class="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </article>
               </div>
 
               <!-- 1. Profile Section (Detailed) -->

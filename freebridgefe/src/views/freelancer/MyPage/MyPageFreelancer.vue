@@ -54,19 +54,63 @@ const authStore = useAuthStore();
 const alertStore = useAlertStore();
 const contractStore = useContractStore();
 const currentUser = computed(() => authStore.user);
+const currentAccessToken = computed(() => authStore.token ?? localStorage.getItem('access_token'));
 
 const activeTab = ref('dashboard');
 const isConditionOpen = ref(false);
 const isPortfolioOpen = ref(false);
+const showOnboardingModal = ref(false);
+const showApplyEncouragementModal = ref(false);
+const hidePortfolioImproveAlert = ref(false);
 
 const toggleRestMode = () => {
-    alert('휴식 모드로 전환했습니다.');
+    alertStore.open({
+        title: '휴식 권장',
+        message: '일정이 몰려 있어요. 다음 프로젝트를 잡기 전에 잠시 쉬어가는 것을 권장합니다.',
+        type: 'info',
+    });
     hideBurnoutAlert.value = true;
 };
 
-const viewRecommendedProjects = () => {
-    alert('추천 프로젝트 페이지로 이동합니다.');
+const viewRecommendedProjects = async () => {
     hideChurnAlert.value = true;
+    await router.push({ name: 'freelancer.jobs' });
+};
+
+const moveToProfileEdit = () => {
+    closeOnboardingModal();
+    activeTab.value = 'edit';
+};
+
+const moveToJobBoard = async () => {
+    closeApplyEncouragementModal();
+    await router.push({ name: 'freelancer.jobs' });
+};
+
+const getCrmModalStorageKey = (type: 'onboarding' | 'apply') => {
+    const token = currentAccessToken.value;
+    return token ? `mypage-crm-modal:${type}:${token}` : null;
+};
+
+const shouldOpenCrmModal = (type: 'onboarding' | 'apply', condition: boolean) => {
+    const storageKey = getCrmModalStorageKey(type);
+    if (!condition || !storageKey) {
+        return false;
+    }
+    const alreadyShown = localStorage.getItem(storageKey) === '1';
+    if (alreadyShown) {
+        return false;
+    }
+    localStorage.setItem(storageKey, '1');
+    return true;
+};
+
+const closeOnboardingModal = () => {
+    showOnboardingModal.value = false;
+};
+
+const closeApplyEncouragementModal = () => {
+    showApplyEncouragementModal.value = false;
 };
 
 const handleLegalNoticeClick = async () => {
@@ -146,6 +190,14 @@ onMounted(async () => {
         try {
             const data = await getFreelancerProfile(currentUser.value.id);
             profile.value = data;
+            showOnboardingModal.value = shouldOpenCrmModal(
+                'onboarding',
+                data.crmAlerts?.isOnboardingNeeded ?? false,
+            );
+            showApplyEncouragementModal.value = shouldOpenCrmModal(
+                'apply',
+                data.crmAlerts?.isApplyEncouraged ?? false,
+            );
 
             // authStore 이름/스킬 우선 반영
             if (currentUser.value.name) profile.value.name = currentUser.value.name;
@@ -207,6 +259,8 @@ onMounted(async () => {
         // 로그인 정보가 없을 때의 폴백 처리
         const data = await getFreelancerProfile('guest');
         profile.value = data;
+        showOnboardingModal.value = false;
+        showApplyEncouragementModal.value = false;
     }
 });
 
@@ -394,6 +448,74 @@ const hideChurnAlert = ref(false);
 
 <template>
   <div class="min-h-[calc(100vh-80px)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans">
+    <div
+      v-if="showOnboardingModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm"
+    >
+      <div class="w-full max-w-lg rounded-[28px] border border-white/10 bg-slate-950/95 p-8 shadow-[0_30px_90px_-50px_rgba(0,0,0,0.9)]">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.24em] text-emerald-300/80">Onboarding</p>
+            <h3 class="mt-2 text-2xl font-semibold text-white">프로필을 조금만 더 채워보세요</h3>
+            <p class="mt-3 text-sm leading-relaxed text-white/65">
+              기본 정보와 소개, 포트폴리오가 채워지면 고용주에게 더 잘 노출될 수 있어요.
+            </p>
+          </div>
+          <button @click="closeOnboardingModal" class="text-white/45 transition-colors hover:text-white">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            @click="closeOnboardingModal"
+            class="rounded-full border border-white/10 px-5 py-3 text-sm font-medium text-white/70 transition hover:bg-white/5"
+          >
+            나중에 할게요
+          </button>
+          <button
+            @click="moveToProfileEdit"
+            class="rounded-full bg-emerald-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-emerald-300"
+          >
+            프로필 채우기
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="showApplyEncouragementModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 px-4 backdrop-blur-sm"
+    >
+      <div class="w-full max-w-lg rounded-[28px] border border-white/10 bg-slate-950/95 p-8 shadow-[0_30px_90px_-50px_rgba(0,0,0,0.9)]">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs uppercase tracking-[0.24em] text-sky-300/80">Next Match</p>
+            <h3 class="mt-2 text-2xl font-semibold text-white">다음 프로젝트를 시작해볼까요?</h3>
+            <p class="mt-3 text-sm leading-relaxed text-white/65">
+              프로필 준비는 충분합니다. 지금 열려 있는 공고를 확인하고 새로운 계약 기회를 잡아보세요.
+            </p>
+          </div>
+          <button @click="closeApplyEncouragementModal" class="text-white/45 transition-colors hover:text-white">
+            <X class="h-5 w-5" />
+          </button>
+        </div>
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            @click="closeApplyEncouragementModal"
+            class="rounded-full border border-white/10 px-5 py-3 text-sm font-medium text-white/70 transition hover:bg-white/5"
+          >
+            닫기
+          </button>
+          <button
+            @click="moveToJobBoard"
+            class="rounded-full bg-sky-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-sky-300"
+          >
+            공고 보러 가기
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="flex flex-col lg:flex-row h-full overflow-hidden lg:relative">
     <!-- Sidebar -->
     <aside class="hidden lg:flex fixed top-20 left-0 z-30 h-[calc(100vh-80px)] w-[17.5rem] flex-col bg-white/5 backdrop-blur-2xl border-r border-white/5 shadow-[inset_-1px_0_0_rgba(255,255,255,0.05)]">
@@ -437,54 +559,86 @@ const hideChurnAlert = ref(false);
 
             <!-- CRM Banners -->
             <div class="space-y-4 mb-8">
-                <!-- 1. Rate Bump Alert -->
-                <div v-if="profile.crmAlerts?.isRateBumpEligible && !hideRateBumpAlert" class="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2 bg-emerald-500/20 rounded-full shrink-0">
-                            <TrendingUp class="w-6 h-6 text-emerald-400" />
+                <div v-if="profile.crmAlerts?.isPortfolioImproveNeeded && !hidePortfolioImproveAlert" class="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.13),rgba(167,139,250,0.08),rgba(255,255,255,0.05))] px-6 py-5 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.9)] backdrop-blur-2xl">
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(167,139,250,0.18),transparent_35%)]"></div>
+                    <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                        <div class="flex items-start gap-4">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
+                                <Edit3 class="h-5 w-5 text-violet-200" />
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-200/70">Portfolio Guide</p>
+                                <h4 class="mt-2 text-lg font-semibold text-white">포트폴리오 보강이 필요해요</h4>
+                                <p class="mt-2 text-sm leading-relaxed text-white/68">지원은 꾸준하지만 계약 전환이 낮아요. 포트폴리오와 자기소개를 조금 더 구체적으로 보완해보세요.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="text-white font-bold text-sm">월급 인상 최적기입니다!</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 3개 프로젝트에서 좋은 고용주 평가를 받으셨습니다. 이번 기회에 희망 월급을 10~15% 상향 조정해보세요.</p>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button @click="activeTab = 'edit'" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">프로필 보완하기</button>
+                            <button @click="hidePortfolioImproveAlert = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white"><X class="h-4 w-4" /></button>
                         </div>
                     </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <button @click="activeTab = 'edit'" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-emerald-900/20">월급 수정하러 가기</button>
-                        <button @click="hideRateBumpAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
+                </div>
+
+                <!-- 1. Rate Bump Alert -->
+                <div v-if="profile.crmAlerts?.isRateBumpEligible && !hideRateBumpAlert" class="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(16,185,129,0.08),rgba(255,255,255,0.05))] px-6 py-5 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.9)] backdrop-blur-2xl">
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(45,212,191,0.16),transparent_34%)]"></div>
+                    <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                        <div class="flex items-start gap-4">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
+                                <TrendingUp class="h-5 w-5 text-emerald-200" />
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200/75">Rate Upgrade</p>
+                                <h4 class="mt-2 text-lg font-semibold text-white">단가를 조정해볼 시점이에요</h4>
+                                <p class="mt-2 text-sm leading-relaxed text-white/68">완료한 계약과 리뷰 평점이 충분히 쌓였습니다. 현재 성과에 맞게 희망 단가를 한 단계 높여보세요.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button @click="activeTab = 'edit'" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">단가 수정하기</button>
+                            <button @click="hideRateBumpAlert = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white"><X class="h-4 w-4" /></button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- 2. Burnout Alert -->
-                <div v-if="profile.crmAlerts?.isBurnoutWarning && !hideBurnoutAlert" class="bg-gradient-to-r from-orange-900/40 to-red-900/40 border border-orange-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2 bg-orange-500/20 rounded-full shrink-0">
-                            <AlertTriangle class="w-6 h-6 text-orange-400" />
+                <div v-if="profile.crmAlerts?.isBurnoutWarning && !hideBurnoutAlert" class="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(251,146,60,0.08),rgba(255,255,255,0.05))] px-6 py-5 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.9)] backdrop-blur-2xl">
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(251,146,60,0.18),transparent_34%)]"></div>
+                    <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                        <div class="flex items-start gap-4">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
+                                <AlertTriangle class="h-5 w-5 text-orange-200" />
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-orange-200/75">Pace Check</p>
+                                <h4 class="mt-2 text-lg font-semibold text-white">조금 쉬어가도 괜찮아요</h4>
+                                <p class="mt-2 text-sm leading-relaxed text-white/68">현재 진행 중인 계약이 많은 편입니다. 다음 일을 잡기 전에 페이스를 한 번 조절해보세요.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="text-white font-bold text-sm">휴식이 필요한 시점입니다.</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 프로젝트 일정이 매우 타이트합니다. 컨디션 관리를 위해 잠시 휴식하는 것을 권장합니다.</p>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button @click="toggleRestMode" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">쉬어가기</button>
+                            <button @click="hideBurnoutAlert = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white"><X class="h-4 w-4" /></button>
                         </div>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <button @click="toggleRestMode" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors">휴식 모드 전환</button>
-                         <button @click="hideBurnoutAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
                     </div>
                 </div>
 
                  <!-- 3. Churn Alert (Encouragement) -->
-                 <div v-if="profile.crmAlerts?.isChurnWarning && !hideChurnAlert" class="bg-gradient-to-r from-indigo-900/40 to-blue-900/40 border border-indigo-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2 bg-indigo-500/20 rounded-full shrink-0">
-                            <Briefcase class="w-6 h-6 text-indigo-400" />
+                 <div v-if="profile.crmAlerts?.isChurnWarning && !hideChurnAlert" class="relative overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(96,165,250,0.08),rgba(255,255,255,0.05))] px-6 py-5 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.9)] backdrop-blur-2xl">
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(96,165,250,0.16),transparent_34%)]"></div>
+                    <div class="relative z-10 flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                        <div class="flex items-start gap-4">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
+                                <Briefcase class="h-5 w-5 text-sky-200" />
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-200/75">Come Back</p>
+                                <h4 class="mt-2 text-lg font-semibold text-white">다시 매칭을 시작할 시점이에요</h4>
+                                <p class="mt-2 text-sm leading-relaxed text-white/68">이전에 계약 경험은 있었지만 지금은 새 활동이 멈춰 있어요. 공고 페이지에서 다음 프로젝트를 확인해보세요.</p>
+                            </div>
                         </div>
-                        <div>
-                            <h4 class="text-white font-bold text-sm">포기하지 마세요! 딱 맞는 프로젝트가 기다리고 있습니다.</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 지원 결과가 아쉬우셨나요? 프리브릿지 AI가 {{ profile.name }}님의 전문성에 꼭 맞는 추천 프로젝트를 준비했습니다.</p>
+                        <div class="flex items-center gap-3 shrink-0">
+                            <button @click="viewRecommendedProjects" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">공고 보러 가기</button>
+                            <button @click="hideChurnAlert = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white"><X class="h-4 w-4" /></button>
                         </div>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <button @click="viewRecommendedProjects" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-indigo-900/20">추천 프로젝트 보기</button>
-                         <button @click="hideChurnAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
                     </div>
                 </div>
             </div>
