@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 
 import {
   DollarSign,
@@ -175,6 +175,10 @@ const handleDownload = (settlement: FreelancerSettlementWithDetails) => {
     // Mock download
     alert(`정산 내역서 다운로드: ${settlement.projectName}`);
 };
+
+watch([selectedStatus, searchQuery, selectedDateRange], () => {
+    currentPage.value = 1;
+});
 
 onMounted(async () => {
     try {
