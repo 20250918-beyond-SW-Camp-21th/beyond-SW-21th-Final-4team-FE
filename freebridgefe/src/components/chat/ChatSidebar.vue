@@ -1,11 +1,11 @@
 <template>
-    <div class="flex flex-col h-full bg-[#020617] border-r border-white/5 relative">
+    <div class="flex flex-col h-full bg-transparent border-r border-slate-200 relative">
         <!-- Header -->
-        <div class="px-4 py-4 flex items-center justify-between sticky top-0 bg-[#020617]/80 backdrop-blur-md z-20 border-b border-white/5">
-            <h2 class="text-lg font-bold text-white tracking-tight">메시지</h2>
-            <div class="relative flex gap-1 text-slate-400" ref="menuRoot">
+        <div class="px-4 py-4 flex items-center justify-between sticky top-0 bg-white/90 backdrop-blur-md z-20 border-b border-slate-200">
+            <h2 class="text-lg font-bold text-slate-950 tracking-tight">메시지</h2>
+            <div class="relative flex gap-1 text-slate-500" ref="menuRoot">
                 <button
-                    class="p-2 hover:bg-white/5 rounded-full transition-colors text-slate-400 hover:text-white"
+                    class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-900"
                     @click="toggleMenu"
                     title="대화 목록 메뉴"
                 >
@@ -13,32 +13,32 @@
                 </button>
                 <div
                     v-if="menuOpen"
-                    class="absolute right-0 top-11 w-52 bg-slate-900 border border-white/10 rounded-xl shadow-lg overflow-hidden z-30"
+                    class="absolute right-0 top-11 w-52 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-30"
                 >
                     <button
-                        class="w-full px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        class="w-full px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         :disabled="!chatStore.currentRoomId"
                         @click="togglePinCurrentRoom"
                     >
                         {{ isCurrentRoomPinned ? '현재 대화 상단 고정 해제' : '현재 대화 상단 고정' }}
                     </button>
                     <button
-                        class="w-full px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        class="w-full px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         :disabled="!chatStore.currentRoomId"
                         @click="toggleMuteCurrentRoom"
                     >
                         {{ isCurrentRoomMuted ? '현재 대화 알림 켜기' : '현재 대화 알림 끄기' }}
                     </button>
                     <button
-                        class="w-full px-3 py-2.5 text-left text-sm text-slate-200 hover:bg-white/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        class="w-full px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         :disabled="!chatStore.currentRoomId"
                         @click="hideCurrentRoom"
                     >
                         현재 대화 숨기기
                     </button>
-                    <div class="border-t border-white/10"></div>
+                    <div class="border-t border-slate-200"></div>
                     <button
-                        class="w-full px-3 py-2.5 text-left text-sm text-emerald-300 hover:bg-white/5 transition-colors"
+                        class="w-full px-3 py-2.5 text-left text-sm text-teal-600 hover:bg-slate-50 transition-colors"
                         @click="restoreHiddenRooms"
                     >
                         숨긴 대화 모두 복원
@@ -48,19 +48,19 @@
         </div>
 
         <!-- Search -->
-        <div class="px-4 pb-4 pt-2 bg-[#020617]">
+        <div class="px-4 pb-4 pt-2 bg-transparent">
             <div class="relative group">
-                <SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-500 transition-colors" />
+                <SearchIcon class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-teal-500 transition-colors" />
                 <input
                     type="text"
                     placeholder="대화 검색..."
-                    class="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-transparent rounded-full text-sm text-white focus:bg-slate-800 focus:ring-1 focus:ring-emerald-500/50 transition-all outline-none placeholder:text-slate-600"
+                    class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-full text-sm text-slate-900 focus:bg-white focus:ring-1 focus:ring-teal-500/30 transition-all outline-none placeholder:text-slate-400"
                 />
             </div>
         </div>
 
         <!-- Room List -->
-        <div class="flex-1 overflow-y-auto custom-scrollbar bg-[#020617] p-2 space-y-1">
+        <div class="flex-1 overflow-y-auto custom-scrollbar bg-transparent p-2 space-y-1">
             <div
                 v-for="room in displayedRooms"
                 :key="room.id"
@@ -68,8 +68,8 @@
                 :class="[
                     'p-3 rounded-xl cursor-pointer transition-all duration-200 flex gap-4 items-center group',
                     chatStore.currentRoomId === room.id
-                        ? 'bg-slate-800/80 shadow-md ring-1 ring-white/5'
-                        : 'hover:bg-slate-900/50 hover:shadow-sm'
+                        ? 'bg-sky-50 shadow-sm ring-1 ring-sky-100'
+                        : 'hover:bg-slate-50 hover:shadow-sm'
                 ]"
             >
                 <!-- Avatar -->
@@ -81,12 +81,12 @@
                         shape="circle"
                         size-class="w-12 h-12"
                         text-class="text-sm font-bold"
-                        ring-class="border border-white/5 ring-2 ring-[#020617] group-hover:ring-slate-800 transition-all"
+                        ring-class="border border-slate-200 ring-2 ring-white group-hover:ring-sky-100 transition-all"
                     />
                     <span
                         v-if="hasPresenceSignal(room)"
-                        class="absolute bottom-0 right-0 w-3 h-3 border-2 border-[#020617] rounded-full"
-                        :class="isOtherParticipantOnline(room) ? 'bg-emerald-500' : 'bg-slate-600'"
+                        class="absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full"
+                        :class="isOtherParticipantOnline(room) ? 'bg-emerald-500' : 'bg-slate-400'"
                     ></span>
                 </div>
 
@@ -94,7 +94,7 @@
                     <div class="flex justify-between items-center mb-0.5">
                         <h3
                             class="font-semibold text-sm truncate transition-colors"
-                            :class="chatStore.currentRoomId === room.id ? 'text-white' : 'text-slate-200 group-hover:text-white'"
+                            :class="chatStore.currentRoomId === room.id ? 'text-slate-950' : 'text-slate-700 group-hover:text-slate-950'"
                         >
                             {{ getOtherParticipantName(room) }}
                         </h3>
@@ -107,7 +107,7 @@
                         <p
                             :class="[
                                 'text-sm truncate max-w-[180px] leading-snug',
-                                getMyUnreadCount(room) > 0 ? 'font-medium text-slate-100' : 'text-slate-500 group-hover:text-slate-400'
+                                getMyUnreadCount(room) > 0 ? 'font-medium text-slate-800' : 'text-slate-500 group-hover:text-slate-700'
                             ]"
                         >
                             <span v-if="room.lastMessage?.senderId === chatStore.getCurrentChatParticipantId()" class="text-slate-600">나: </span>
@@ -123,9 +123,9 @@
             <!-- Empty State -->
             <div v-if="displayedRooms.length === 0" class="flex flex-col items-center justify-center p-8 text-center text-slate-500 mt-10">
                 <MessageSquareOffIcon class="w-16 h-16 mb-4 opacity-20" />
-                <h3 class="text-lg font-semibold text-slate-300 mb-2">대화 없음</h3>
+                <h3 class="text-lg font-semibold text-slate-800 mb-2">대화 없음</h3>
                 <p class="text-sm max-w-[220px] mb-6">숨김 처리했거나 진행 중인 계약 관련 대화가 없습니다.</p>
-                <button class="px-4 py-1.5 border border-slate-600 rounded-full text-slate-400 font-medium hover:bg-white/5 hover:text-white text-sm transition-colors" @click="restoreHiddenRooms">
+                <button class="px-4 py-1.5 border border-slate-200 rounded-full text-slate-500 font-medium hover:bg-slate-50 hover:text-slate-900 text-sm transition-colors" @click="restoreHiddenRooms">
                     숨긴 대화 복원
                 </button>
             </div>

@@ -1,30 +1,30 @@
 <template>
-  <div class="custom-scrollbar flex h-full flex-col overflow-y-auto border-l border-white/5 bg-slate-900">
-    <div class="border-b border-white/5 p-6 text-center">
+  <div class="custom-scrollbar flex h-full flex-col overflow-y-auto border-l border-slate-200 bg-white/95">
+    <div class="border-b border-slate-200 p-6 text-center">
       <ProfileIdentityAvatar
         :label="otherParticipantName"
         variant="neutral"
         shape="circle"
         size-class="mx-auto mb-4 h-24 w-24"
         text-class="text-3xl font-bold"
-        ring-class="border-4 border-slate-800 ring-2 ring-emerald-500/50"
+        ring-class="border-4 border-white ring-2 ring-teal-100"
       />
 
-      <h2 class="mb-1 text-xl font-bold text-white">{{ otherParticipantName }}</h2>
-      <p class="mb-4 text-sm text-slate-400">{{ otherParticipantSummary }}</p>
+      <h2 class="mb-1 text-xl font-bold text-slate-950">{{ otherParticipantName }}</h2>
+      <p class="mb-4 text-sm text-slate-500">{{ otherParticipantSummary }}</p>
 
       <button
         type="button"
         @click="handleProfileClick"
-        class="w-full rounded-lg border border-white/5 bg-slate-800 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-700"
+        class="w-full rounded-lg border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
       >
         프로필 보기
       </button>
     </div>
 
-    <div class="border-b border-white/5 p-6">
-      <h3 class="mb-4 text-sm font-bold uppercase tracking-wider text-white">현재 연결 프로젝트</h3>
-      <div class="rounded-xl border border-white/5 bg-slate-800/50 p-4 transition-colors hover:border-white/10">
+    <div class="border-b border-slate-200 p-6">
+      <h3 class="mb-4 text-sm font-bold uppercase tracking-wider text-slate-950">현재 연결 프로젝트</h3>
+      <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:border-slate-300">
         <div class="mb-2 flex items-start justify-between">
           <div class="rounded-lg bg-blue-500/10 p-2 text-blue-400">
             <CodeIcon class="h-5 w-5" />
@@ -34,13 +34,13 @@
           </span>
         </div>
 
-        <h4 class="mb-1 font-bold text-slate-200">{{ proposedProject.title }}</h4>
+        <h4 class="mb-1 font-bold text-slate-800">{{ proposedProject.title }}</h4>
         <p class="mb-4 text-xs text-slate-500">{{ proposedProject.summary }}</p>
 
         <button
           type="button"
           @click="handleProposalDetail"
-          class="w-full rounded-lg bg-slate-700/80 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-700"
+          class="w-full rounded-lg bg-white py-2 text-sm font-medium text-slate-700 border border-slate-200 transition-colors hover:bg-slate-100"
         >
           상세 보기
         </button>
@@ -48,26 +48,22 @@
     </div>
 
     <div class="p-6">
-      <h3 class="mb-4 text-sm font-bold uppercase tracking-wider text-white">공유 파일</h3>
-      <p class="mb-4 text-xs leading-relaxed text-slate-500">
-        {{ CHAT_SUPPORTED_FILE_DESCRIPTION }}
-      </p>
+      <h3 class="mb-4 text-sm font-bold uppercase tracking-wider text-slate-950">공유 파일</h3>
       <div class="space-y-3">
         <a
           v-for="file in sharedFiles"
           :key="file.id"
           :href="file.url || undefined"
-          :target="file.opensInNewTab ? '_blank' : undefined"
-          :rel="file.opensInNewTab ? 'noopener noreferrer' : undefined"
-          :download="file.url && !file.opensInNewTab ? file.name : undefined"
-          class="group flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-800/50"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="group flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-50"
           :class="file.url ? 'cursor-pointer' : 'cursor-default'"
         >
-          <div class="rounded bg-slate-800 p-2 text-slate-400 transition-colors group-hover:text-emerald-400">
+          <div class="rounded bg-slate-100 p-2 text-slate-400 transition-colors group-hover:text-teal-600">
             <FileTextIcon class="h-5 w-5" />
           </div>
           <div class="flex-1 overflow-hidden">
-            <p class="truncate text-sm font-medium text-slate-300 group-hover:text-white">{{ file.name }}</p>
+            <p class="truncate text-sm font-medium text-slate-700 group-hover:text-slate-950">{{ file.name }}</p>
             <p class="text-xs text-slate-500">{{ formatFileMeta(file) }}</p>
           </div>
         </a>
@@ -95,47 +91,47 @@
 
   <div
     v-if="isJobDetailOpen"
-    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/35 p-4 backdrop-blur-sm"
   >
-    <div class="w-full max-w-2xl rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 to-slate-950 p-6 text-white shadow-2xl">
+    <div class="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-6 text-slate-800 shadow-2xl">
       <div class="mb-6 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10 font-bold text-emerald-300">
             공
           </div>
           <div>
-            <h3 class="text-lg font-bold">공고 상세</h3>
-            <p class="text-xs text-slate-400">현재 연결된 제안 프로젝트 정보</p>
+            <h3 class="text-lg font-bold text-slate-950">공고 상세</h3>
+            <p class="text-xs text-slate-500">현재 연결된 제안 프로젝트 정보</p>
           </div>
         </div>
-        <button class="text-sm text-slate-400 hover:text-white" @click="isJobDetailOpen = false">닫기</button>
+        <button class="text-sm text-slate-500 hover:text-slate-900" @click="isJobDetailOpen = false">닫기</button>
       </div>
 
       <div class="space-y-5">
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <div class="mb-2 text-xs text-slate-400">프로젝트 제목</div>
-          <div class="text-xl font-semibold text-white">{{ jobDetail.title }}</div>
+          <div class="text-xl font-semibold text-slate-950">{{ jobDetail.title }}</div>
         </div>
 
-        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <div class="mb-2 text-xs text-slate-400">프로젝트 설명</div>
-          <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">{{ jobDetail.description }}</p>
+          <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-600">{{ jobDetail.description }}</p>
         </div>
 
         <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div class="mb-1 text-xs text-slate-400">기술 스택</div>
-            <div class="text-sm text-slate-200">
+            <div class="text-sm text-slate-700">
               {{ jobDetail.techStack.length ? jobDetail.techStack.join(', ') : '정보 없음' }}
             </div>
           </div>
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div class="mb-1 text-xs text-slate-400">예산</div>
-            <div class="text-sm text-slate-200">{{ jobDetail.budget }}</div>
+            <div class="text-sm text-slate-700">{{ jobDetail.budget }}</div>
           </div>
-          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <div class="mb-1 text-xs text-slate-400">기간</div>
-            <div class="text-sm text-slate-200">{{ jobDetail.duration }}</div>
+            <div class="text-sm text-slate-700">{{ jobDetail.duration }}</div>
           </div>
         </div>
       </div>

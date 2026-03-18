@@ -151,6 +151,10 @@ body {
     .fb-page-shell [class*="bg-black/20"][class*="border-white/10"],
     .fb-page-shell [class*="bg-black/30"][class*="border-white/10"],
     .fb-page-shell [class*="bg-gray-900/95"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-slate-950"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-slate-900"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-slate-800"][class*="border-white/10"],
+    .fb-page-shell [class*="bg-[#020617]"][class*="border-white/10"],
     .fb-page-shell [class*="bg-[#1e293b]/50"][class*="border-white/10"],
     .fb-page-shell [class*="bg-[#1e293b]/60"][class*="border-white/10"],
     .fb-page-shell [class*="bg-[#0F172A]"][class*="border-white/10"],
@@ -167,6 +171,10 @@ body {
     .fb-page-shell div[class*="bg-black/20"][class*="rounded"],
     .fb-page-shell div[class*="bg-black/30"][class*="rounded"],
     .fb-page-shell div[class*="bg-gray-900/95"][class*="rounded"],
+    .fb-page-shell div[class*="bg-slate-950"][class*="rounded"],
+    .fb-page-shell div[class*="bg-slate-900"][class*="rounded"],
+    .fb-page-shell div[class*="bg-slate-800"][class*="rounded"],
+    .fb-page-shell div[class*="bg-[#020617]"][class*="rounded"],
     .fb-page-shell div[class*="bg-[#1e293b]/50"][class*="rounded"],
     .fb-page-shell div[class*="bg-[#1e293b]/60"][class*="rounded"],
     .fb-page-shell div[class*="bg-[#0F172A]"][class*="rounded"],
@@ -179,20 +187,28 @@ body {
     }
 
     .fb-page-shell [class*="bg-black/60"][class*="backdrop-blur"],
-    .fb-page-shell [class*="bg-black/70"][class*="backdrop-blur"] {
+    .fb-page-shell [class*="bg-black/70"][class*="backdrop-blur"],
+    .fb-page-shell [class*="bg-slate-900/95"][class*="backdrop-blur"],
+    .fb-page-shell [class*="bg-[#020617]/80"][class*="backdrop-blur"] {
         background: rgba(35, 36, 42, 0.22) !important;
     }
 
     .fb-page-shell input[class*="bg-white/5"],
     .fb-page-shell input[class*="bg-black/"],
+    .fb-page-shell input[class*="bg-slate-900"],
+    .fb-page-shell input[class*="bg-slate-800"],
     .fb-page-shell input[class*="bg-[#1e293b]"],
     .fb-page-shell input[class*="bg-[#0F172A]"],
     .fb-page-shell textarea[class*="bg-white/5"],
     .fb-page-shell textarea[class*="bg-black/"],
+    .fb-page-shell textarea[class*="bg-slate-900"],
+    .fb-page-shell textarea[class*="bg-slate-800"],
     .fb-page-shell textarea[class*="bg-[#1e293b]"],
     .fb-page-shell textarea[class*="bg-[#0F172A]"],
     .fb-page-shell select[class*="bg-white/5"],
     .fb-page-shell select[class*="bg-black/"],
+    .fb-page-shell select[class*="bg-slate-900"],
+    .fb-page-shell select[class*="bg-slate-800"],
     .fb-page-shell select[class*="bg-[#1e293b]"],
     .fb-page-shell select[class*="bg-[#0F172A]"] {
         background: #ffffff !important;

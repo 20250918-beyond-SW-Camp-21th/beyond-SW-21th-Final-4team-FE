@@ -560,18 +560,18 @@ const safeWebsiteUrl = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-80px)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans">
+  <div class="fb-page-shell min-h-[calc(100vh-80px)] text-slate-800 font-sans">
     <div class="flex flex-col lg:flex-row h-full overflow-hidden lg:relative">
       <!-- Sidebar -->
       <div
-        class="w-full lg:w-72 bg-white/5 backdrop-blur-2xl border-b lg:border-b-0 lg:border-r border-white/5 shadow-[inset_-1px_0_0_rgba(255,255,255,0.05)] flex flex-col lg:fixed lg:top-0 lg:left-0 lg:h-screen"
+        class="w-full lg:w-72 bg-white/90 backdrop-blur-2xl border-b lg:border-b-0 lg:border-r border-slate-200 shadow-[inset_-1px_0_0_rgba(15,23,42,0.04)] flex flex-col lg:fixed lg:top-0 lg:left-0 lg:h-screen"
         v-motion
         :initial="{ x: -300 }"
         :enter="{ x: 0 }"
       >
-        <div class="p-6 border-b border-white/5">
-          <h1 class="text-lg font-semibold tracking-[0.12em] text-white/90">마이페이지</h1>
-          <p class="mt-2 text-xs text-white/40">Employer Console</p>
+        <div class="p-6 border-b border-slate-200">
+          <h1 class="text-lg font-semibold tracking-[0.12em] text-slate-950">마이페이지</h1>
+          <p class="mt-2 text-xs text-slate-500">Employer Console</p>
         </div>
 
         <nav class="flex-1 p-4 grid grid-cols-2 sm:grid-cols-3 gap-2 lg:flex lg:flex-col lg:space-y-2 overflow-y-auto">
@@ -590,8 +590,8 @@ const safeWebsiteUrl = computed(() => {
             class="w-full flex items-center justify-between px-4 py-3 text-sm rounded-2xl transition-all duration-200"
             :class="
               activeTab === item.id
-                ? 'text-white font-semibold bg-white/10 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                ? 'text-slate-950 font-semibold bg-sky-50 border border-sky-200 shadow-[inset_0_0_0_1px_rgba(14,165,233,0.12)]'
+                : 'text-slate-500 hover:text-slate-950 hover:bg-slate-50'
             "
           >
             <div class="flex items-center gap-3">
@@ -601,10 +601,10 @@ const safeWebsiteUrl = computed(() => {
           </button>
         </nav>
 
-        <div class="p-4 border-t border-white/10">
+        <div class="p-4 border-t border-slate-200">
           <button
             @click="router.push({ name: 'employer.jobs' })"
-            class="w-full py-2 text-sm text-slate-400 hover:text-white transition-colors"
+            class="w-full py-2 text-sm text-slate-500 hover:text-slate-950 transition-colors"
           >
             내 공고로 돌아가기
           </button>
