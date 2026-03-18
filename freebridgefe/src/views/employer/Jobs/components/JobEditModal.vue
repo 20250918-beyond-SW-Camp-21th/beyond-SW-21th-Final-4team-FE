@@ -112,7 +112,7 @@ const onTechInputKeydown = (e: KeyboardEvent) => {
         :enter="{ opacity: 1, scale: 1, y: 0 }"
         :leave="{ opacity: 0, scale: 0.95, y: 20 }"
     >
-      <div class="sticky top-0 bg-gradient-to-br from-gray-800/95 to-gray-900/95 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10">
+      <div class="fb-modal-header sticky top-0 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10">
         <h2 class="text-2xl font-bold text-white">프로젝트 공고 수정</h2>
         <button
           @click="onClose"

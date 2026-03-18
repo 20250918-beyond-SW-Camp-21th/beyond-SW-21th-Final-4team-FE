@@ -196,20 +196,20 @@ const handleAiAnalysis = async () => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 font-sans text-white">
+  <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 font-sans text-slate-800">
     <!-- Header -->
     <div class="flex items-center gap-4 mb-10">
       <button
         @click="$emit('back')"
-        class="p-2 hover:bg-white/5 rounded-full transition-colors"
+        class="p-2 hover:bg-slate-100 rounded-full transition-colors"
       >
-        <ArrowLeft class="w-6 h-6 text-white/80" />
+        <ArrowLeft class="w-6 h-6 text-sky-600" />
       </button>
       <div>
-        <h1 class="text-3xl font-bold text-white tracking-tight">
+        <h1 class="text-3xl font-bold text-slate-950 tracking-tight">
           받은 평가 관리
         </h1>
-        <p class="text-base text-slate-400 mt-1">
+        <p class="text-base text-slate-500 mt-1">
           프로젝트 종료 후 받은 고용주 평가를 확인하세요.
         </p>
       </div>
@@ -220,15 +220,15 @@ const handleAiAnalysis = async () => {
 
     <!-- Tabs -->
     <div
-      class="flex p-1 bg-white/5 rounded-xl mb-8 w-fit border border-white/10"
+      class="flex p-1 bg-white rounded-xl mb-8 w-fit border border-slate-200"
     >
       <button
         @click="activeTab = 'evaluation'"
         class="px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-300"
         :class="
           activeTab === 'evaluation'
-            ? 'bg-white text-black shadow-lg shadow-white/10'
-            : 'text-slate-400 hover:text-white'
+            ? 'bg-sky-50 text-sky-700 shadow-sm'
+            : 'text-slate-500 hover:text-slate-950'
         "
       >
         평가 분석
@@ -238,8 +238,8 @@ const handleAiAnalysis = async () => {
         class="px-6 py-2.5 text-sm font-bold rounded-lg transition-all duration-300"
         :class="
           activeTab === 'rejection'
-            ? 'bg-red-500 text-white shadow-lg shadow-red-500/20'
-            : 'text-slate-400 hover:text-white'
+            ? 'bg-rose-50 text-rose-700 shadow-sm'
+            : 'text-slate-500 hover:text-slate-950'
         "
       >
         거절 사유 모아보기
@@ -265,31 +265,31 @@ const handleAiAnalysis = async () => {
         <div class="min-h-[180px]">
           <div
             v-if="showAiAnalysis"
-            class="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-white/10 rounded-3xl p-8 relative overflow-hidden animate-fade-in"
+            class="bg-gradient-to-r from-white to-sky-50 border border-slate-200 rounded-3xl p-8 relative overflow-hidden animate-fade-in shadow-[0_24px_64px_-50px_rgba(14,165,233,0.14)]"
           >
             <div
               class="flex flex-col lg:flex-row gap-8 items-start lg:items-center justify-between mb-8"
             >
               <div class="flex-1 flex flex-col gap-4">
-                <div class="flex items-center gap-2 text-indigo-300">
+                <div class="flex items-center gap-2 text-sky-600">
                   <Sparkles class="w-5 h-5" />
                   <span class="text-sm font-bold uppercase tracking-wider"
                     >AI Insight</span
                   >
                 </div>
                 <div class="space-y-2">
-                  <h2 class="text-2xl font-bold text-white leading-tight">
+                  <h2 class="text-2xl font-bold text-slate-950 leading-tight">
                     AI 평판 분석 결과
                   </h2>
-                  <p class="text-slate-300 leading-relaxed max-w-3xl">
+                  <p class="text-slate-600 leading-relaxed max-w-3xl">
                     AI가 고용주들의 평가 데이터를 바탕으로 현재 당신의 평판 등급과
                     강점/보완점을 요약했습니다. 현재 등급은
-                    <strong class="text-indigo-300">{{
+                    <strong class="text-sky-700">{{
                       props.profile.aiSummary?.grade || "미정"
                     }}</strong>
                     입니다.
                   </p>
-                <p v-if="aiReport?.summary" class="text-slate-300 text-sm mt-3">
+                <p v-if="aiReport?.summary" class="text-slate-600 text-sm mt-3">
                   AI 요약: {{ aiReport.summary }}
                 </p>
                 </div>
@@ -297,41 +297,41 @@ const handleAiAnalysis = async () => {
 
               <div
                 v-if="positivityScore !== null"
-                class="flex-shrink-0 bg-white/5 border border-white/10 rounded-2xl p-6 flex items-center gap-6 shadow-xl shadow-black/20"
+                class="flex-shrink-0 bg-slate-50 border border-slate-200 rounded-2xl p-6 flex items-center gap-6"
               >
                 <div
-                  class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center p-1"
+                  class="w-20 h-20 rounded-full bg-gradient-to-br from-sky-200 to-cyan-200 flex items-center justify-center p-1"
                 >
                   <div
-                    class="w-full h-full bg-[#1e1b4b] rounded-full flex items-center justify-center"
+                    class="w-full h-full bg-white rounded-full flex items-center justify-center border border-sky-100"
                   >
                     <span
-                      class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300"
+                      class="text-3xl font-black text-sky-700"
                       >{{ positivityScore }}</span
                     >
                   </div>
                 </div>
                 <div>
                   <span
-                    class="text-indigo-300 text-sm font-bold flex items-center gap-2 mb-1"
+                    class="text-sky-700 text-sm font-bold flex items-center gap-2 mb-1"
                   >
                     <Activity class="w-4 h-4" />
                     평판 긍정 지수
                   </span>
-                  <span class="text-slate-400 text-xs">100점 만점 기준</span>
+                  <span class="text-slate-500 text-xs">100점 만점 기준</span>
                 </div>
               </div>
             </div>
 
             <div
-              class="mt-8 pt-4 flex items-center gap-2 text-xs text-slate-500 opacity-60 w-full justify-end"
+              class="mt-8 pt-4 flex items-center gap-2 text-xs text-slate-400 w-full justify-end"
             >
               <span>검증된 리뷰 {{ evaluations.length }}건 기준</span>
             </div>
 
             <div class="mt-6 grid grid-cols-1 gap-4 border-t border-white/10 pt-6 md:grid-cols-2">
-              <div class="rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-5">
-                <div class="mb-3 flex items-center gap-2 text-emerald-300">
+              <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                <div class="mb-3 flex items-center gap-2 text-emerald-700">
                   <TrendingUp class="h-4 w-4" />
                   <span class="text-sm font-bold">AI 강점 분석</span>
                 </div>
@@ -339,18 +339,18 @@ const handleAiAnalysis = async () => {
                   <span
                     v-for="(strength, idx) in strengthItems"
                     :key="`${strength}-${idx}`"
-                    class="rounded-full border border-emerald-300/20 bg-white/5 px-3 py-1.5 text-sm text-slate-200"
+                    class="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-sm text-slate-700"
                   >
                     {{ strength }}
                   </span>
                 </div>
-                <p v-else class="text-sm text-slate-400">
+                <p v-else class="text-sm text-slate-500">
                   아직 강조할 강점 키워드가 충분히 쌓이지 않았습니다.
                 </p>
               </div>
 
-              <div class="rounded-2xl border border-rose-400/15 bg-rose-400/5 p-5">
-                <div class="mb-3 flex items-center gap-2 text-rose-300">
+              <div class="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+                <div class="mb-3 flex items-center gap-2 text-rose-700">
                   <TrendingDown class="h-4 w-4" />
                   <span class="text-sm font-bold">AI 보완점 분석</span>
                 </div>
@@ -358,12 +358,12 @@ const handleAiAnalysis = async () => {
                   <span
                     v-for="(weakness, idx) in weaknessItems"
                     :key="`${weakness}-${idx}`"
-                    class="rounded-full border border-rose-300/20 bg-white/5 px-3 py-1.5 text-sm text-slate-200"
+                    class="rounded-full border border-rose-200 bg-white px-3 py-1.5 text-sm text-slate-700"
                   >
                     {{ weakness }}
                   </span>
                 </div>
-                <p v-else class="text-sm text-slate-400">
+                <p v-else class="text-sm text-slate-500">
                   현재는 뚜렷한 보완점 키워드가 감지되지 않았습니다.
                 </p>
               </div>

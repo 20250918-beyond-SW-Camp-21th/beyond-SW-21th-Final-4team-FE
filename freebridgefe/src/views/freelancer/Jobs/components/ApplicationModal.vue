@@ -59,7 +59,7 @@ const handleSubmit = async () => {
       :enter="{ opacity: 1, scale: 1, y: 0 }"
       :leave="{ opacity: 0, scale: 0.95, y: 20 }"
     >
-      <div class="sticky top-0 bg-gray-900/95 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10">
+      <div class="fb-modal-header sticky top-0 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10">
         <h2 class="text-2xl font-bold text-white">프로젝트 지원</h2>
         <button
           @click="$emit('close')"

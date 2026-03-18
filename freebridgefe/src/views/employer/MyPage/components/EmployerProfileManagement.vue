@@ -90,26 +90,26 @@ const handleSave = async () => {
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 md:px-10 py-10 text-white">
+  <div class="max-w-5xl mx-auto px-4 md:px-10 py-10 text-slate-800">
     <!-- Header -->
     <div class="flex items-center justify-between mb-10">
       <div class="flex items-center gap-4">
         <button
           @click="$emit('back')"
-          class="p-2 hover:bg-white/10 rounded-full transition-colors"
+          class="p-2 hover:bg-slate-100 rounded-full transition-colors"
         >
-          <ArrowLeft class="w-5 h-5 text-white/60" />
+          <ArrowLeft class="w-5 h-5 text-sky-600" />
         </button>
         <div>
-          <h1 class="text-2xl font-semibold tracking-tight">고용주 프로필 관리</h1>
-          <p class="text-sm text-white/40 mt-1">고용주 정보를 정리하고 최신 상태로 유지하세요.</p>
+          <h1 class="text-2xl font-semibold tracking-tight text-slate-950">고용주 프로필 관리</h1>
+          <p class="text-sm text-slate-500 mt-1">고용주 정보를 정리하고 최신 상태로 유지하세요.</p>
         </div>
       </div>
       <div class="flex gap-2">
         <button
           @click="handleSave"
           :disabled="isSaving"
-          class="px-5 py-2.5 bg-white text-slate-900 hover:bg-white/90 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-5 py-2.5 bg-sky-500 text-white hover:bg-sky-400 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_18px_40px_-24px_rgba(56,189,248,0.35)]"
         >
           <Loader2 v-if="isSaving" class="w-4 h-4 animate-spin" />
           <Save v-else class="w-4 h-4" />
@@ -120,7 +120,7 @@ const handleSave = async () => {
 
     <!-- Profile Content -->
     <div
-      class="bg-white/5 rounded-[28px] border border-white/10 p-8 md:p-10 shadow-[0_25px_70px_-55px_rgba(255,255,255,0.25)] backdrop-blur-2xl"
+      class="bg-white rounded-[28px] border border-slate-200 p-8 md:p-10 shadow-[0_25px_70px_-55px_rgba(15,23,42,0.12)]"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0 }"
@@ -128,54 +128,54 @@ const handleSave = async () => {
       <div class="space-y-8">
         <!-- Company Name -->
         <div>
-          <label class="text-xs text-white/50 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
-            <Building2 class="w-4 h-4" />
+          <label class="text-xs text-slate-500 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
+            <Building2 class="w-4 h-4 text-sky-500" />
             고용주명
           </label>
           <input
             type="text"
             v-model="profileData.companyName"
-            class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition"
+            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-slate-950 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 transition"
           />
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Subscription Plan -->
           <div>
-            <label class="text-xs text-white/50 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
-              <Crown class="w-4 h-4" />
+            <label class="text-xs text-slate-500 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
+              <Crown class="w-4 h-4 text-amber-500" />
               구독 등급
             </label>
-            <div class="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-semibold bg-white/10 text-white/80 border border-white/10">
+            <div class="inline-flex items-center px-3 py-1.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-100">
               {{ subscriptionPlanText }}
             </div>
-            <p class="text-[11px] text-white/40 mt-2">등급 변경은 계정 관리 메뉴에서 가능합니다.</p>
+            <p class="text-[11px] text-slate-400 mt-2">등급 변경은 계정 관리 메뉴에서 가능합니다.</p>
           </div>
 
           <!-- Industry -->
           <div>
-            <label class="text-xs text-white/50 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
-              <Briefcase class="w-4 h-4" />
+            <label class="text-xs text-slate-500 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
+              <Briefcase class="w-4 h-4 text-sky-500" />
               업종
             </label>
             <input
               v-if="isEditing"
               type="text"
               v-model="profileData.industry"
-              class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-slate-950 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 transition"
             />
             <div v-else class="text-white/80">{{ profileData.industry }}</div>
           </div>
 
           <!-- Company Size -->
           <div>
-            <label class="text-xs text-white/50 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
-              <Users class="w-4 h-4" />
+            <label class="text-xs text-slate-500 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
+              <Users class="w-4 h-4 text-sky-500" />
               고용주 규모
             </label>
             <select
               v-model="profileData.size"
-              class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition appearance-none"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-slate-950 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 transition appearance-none"
             >
             <option v-for="option in companySizeOptions" :key="option.value" :value="option.value">
               {{ option.label }}
@@ -186,42 +186,42 @@ const handleSave = async () => {
 
         <!-- Location -->
         <div>
-          <label class="text-xs text-white/50 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
-            <MapPin class="w-4 h-4" />
+          <label class="text-xs text-slate-500 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
+            <MapPin class="w-4 h-4 text-sky-500" />
             위치
           </label>
           <input
             type="text"
             v-model="profileData.location"
-            class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition"
+            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-slate-950 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 transition"
           />
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- Website -->
           <div>
-            <label class="text-xs text-white/50 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
-              <Globe class="w-4 h-4" />
+            <label class="text-xs text-slate-500 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
+              <Globe class="w-4 h-4 text-sky-500" />
               웹사이트
             </label>
             <input
               type="url"
               v-model="profileData.website"
-              class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition"
+              class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-slate-950 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 transition"
             />
           </div>
 
         <!-- Email (read-only) -->
         <div>
-          <label class="text-xs text-white/50 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
-            <Mail class="w-4 h-4" />
+          <label class="text-xs text-slate-500 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
+            <Mail class="w-4 h-4 text-sky-500" />
             이메일
             <span class="text-[11px] text-slate-400">(계정 관리 페이지에서 수정해주세요)</span>
           </label>
           <input
             type="email"
             v-model="profileData.email"
-            class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white/70 outline-none"
+            class="w-full bg-slate-100 border border-slate-200 rounded-2xl px-5 py-3.5 text-slate-500 outline-none"
             disabled
           />
         </div>
@@ -229,26 +229,26 @@ const handleSave = async () => {
 
       <!-- Phone (read-only) -->
       <div>
-        <label class="text-xs text-white/50 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
-          <Phone class="w-4 h-4" />
+        <label class="text-xs text-slate-500 mb-2 block flex items-center gap-2 uppercase tracking-[0.2em]">
+          <Phone class="w-4 h-4 text-sky-500" />
           연락처
           <span class="text-[11px] text-slate-400">(계정 관리 페이지에서 수정해주세요)</span>
         </label>
         <input
           type="tel"
           :value="formattedProfilePhone"
-          class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white/70 outline-none"
+          class="w-full bg-slate-100 border border-slate-200 rounded-2xl px-5 py-3.5 text-slate-500 outline-none"
           disabled
         />
       </div>
 
       <!-- Description -->
       <div>
-        <label class="text-xs text-white/50 mb-2 block uppercase tracking-[0.2em]">고용주 소개</label>
+        <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">고용주 소개</label>
         <textarea
           v-model="profileData.description"
             rows="4"
-            class="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 text-white outline-none focus:border-white/30 focus:ring-2 focus:ring-white/10 transition resize-none"
+            class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3.5 text-slate-950 outline-none focus:border-sky-300 focus:ring-2 focus:ring-sky-100 transition resize-none"
           ></textarea>
         </div>
       </div>

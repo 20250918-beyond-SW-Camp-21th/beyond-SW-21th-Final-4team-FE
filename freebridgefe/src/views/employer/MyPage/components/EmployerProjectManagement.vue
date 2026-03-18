@@ -54,11 +54,11 @@ const isLoading = ref(false);
 const getStatusConfig = (status: ProjectStatus) => {
   switch (status) {
     case 'BEFORE_START':
-      return { label: '시작 전', color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20', icon: Clock };
+      return { label: '시작 전', color: 'text-sky-700', bg: 'bg-sky-50', border: 'border-sky-200', icon: Clock };
     case 'IN_PROGRESS':
-      return { label: '진행 중', color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20', icon: Briefcase };
+      return { label: '진행 중', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: Briefcase };
     case 'COMPLETED':
-      return { label: '종료', color: 'text-slate-400', bg: 'bg-slate-400/10', border: 'border-slate-400/20', icon: CheckCircle };
+      return { label: '종료', color: 'text-slate-700', bg: 'bg-slate-100', border: 'border-slate-200', icon: CheckCircle };
   }
 };
 
@@ -172,19 +172,19 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 md:px-8 py-8 text-white">
+  <div class="max-w-7xl mx-auto px-4 md:px-8 py-8 text-slate-800">
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div class="flex items-center gap-4">
         <button
           @click="$emit('back')"
-          class="p-2 hover:bg-white/5 rounded-lg transition-colors"
+          class="p-2 hover:bg-slate-100 rounded-lg transition-colors"
         >
-          <ArrowLeft class="w-5 h-5 text-white/60" />
+          <ArrowLeft class="w-5 h-5 text-sky-600" />
         </button>
         <div>
-          <h1 class="text-2xl font-bold">프로젝트 관리</h1>
-          <p class="text-sm text-white/40 mt-1">등록된 프로젝트 진행 현황을 확인하세요.</p>
+          <h1 class="text-2xl font-bold text-slate-950">프로젝트 관리</h1>
+          <p class="text-sm text-slate-500 mt-1">등록된 프로젝트 진행 현황을 확인하세요.</p>
         </div>
       </div>
     </div>
@@ -192,13 +192,13 @@ onMounted(() => {
     <!-- Filters -->
     <div class="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
          <!-- Status Tabs -->
-        <div class="bg-white/5 p-1 rounded-xl flex gap-1">
+        <div class="bg-white p-1 rounded-xl flex gap-1 border border-slate-200">
             <button
                 v-for="status in ['ALL', 'BEFORE_START', 'IN_PROGRESS', 'COMPLETED']"
                 :key="status"
                 @click="statusFilter = status as any"
                 class="px-4 py-2 rounded-lg text-xs font-bold transition-all"
-                :class="statusFilter === status ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5'"
+                :class="statusFilter === status ? 'bg-sky-50 text-sky-700 shadow-sm' : 'text-slate-500 hover:text-slate-950 hover:bg-slate-50'"
             >
                 {{ status === 'ALL' ? '전체' : status === 'BEFORE_START' ? '착수 예정' : status === 'IN_PROGRESS' ? '진행 중' : '종료' }}
             </button>
@@ -211,23 +211,23 @@ onMounted(() => {
               type="text"
               placeholder="프로젝트명 검색..."
               v-model="searchTerm"
-              class="w-full pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-blue-500 transition-colors text-xs"
+              class="w-full pl-9 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-950 placeholder-slate-400 outline-none focus:border-sky-400 transition-colors text-xs"
             />
         </div>
         <button
           type="button"
           @click="resetFilters"
-          class="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white text-xs font-bold hover:bg-white/10 transition-colors"
+          class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
         >
           초기화
         </button>
     </div>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="py-16 text-center text-slate-400">로딩 중...</div>
+    <div v-if="isLoading" class="py-16 text-center text-slate-500">로딩 중...</div>
 
     <!-- Empty State -->
-    <div v-else-if="filteredProjects.length === 0" class="py-16 text-center text-slate-400">
+    <div v-else-if="filteredProjects.length === 0" class="py-16 text-center text-slate-500">
       프로젝트가 없습니다.
     </div>
 
@@ -237,12 +237,12 @@ onMounted(() => {
             v-for="(project, index) in filteredProjects"
             :key="project.id"
             @click="openModal(project)"
-            class="group rounded-[28px] border border-white/10 p-6 backdrop-blur-2xl shadow-[0_24px_70px_-55px_rgba(255,255,255,0.25)] transition-all duration-300 flex flex-col aspect-[4/4] relative overflow-hidden cursor-pointer"
+            class="group rounded-[28px] border border-slate-200 p-6 shadow-[0_24px_70px_-55px_rgba(15,23,42,0.12)] transition-all duration-300 flex flex-col aspect-[4/4] relative overflow-hidden cursor-pointer bg-white"
             :class="project.status === 'IN_PROGRESS'
-              ? 'bg-emerald-500/10 hover:bg-emerald-500/15 border-emerald-300/20'
+              ? 'hover:bg-emerald-50 border-emerald-100'
               : project.status === 'COMPLETED'
-                ? 'bg-slate-500/10 hover:bg-slate-500/15 border-white/10'
-                : 'bg-blue-500/10 hover:bg-blue-500/15 border-blue-300/20'
+                ? 'hover:bg-slate-50 border-slate-200'
+                : 'hover:bg-sky-50 border-sky-100'
             "
             v-motion
             :initial="{ opacity: 0, scale: 0.95 }"
@@ -251,8 +251,8 @@ onMounted(() => {
              <!-- Header: Status & Title -->
              <div class="mb-5">
                  <div class="flex justify-between items-start mb-2">
-                     <span class="px-3 py-1.5 rounded-full text-[11px] font-semibold border flex items-center gap-1.5 bg-white/10 border-white/15 text-white/80"
-                        :class="`${getStatusConfig(project.status).border}`"
+                     <span class="px-3 py-1.5 rounded-full text-[11px] font-semibold border flex items-center gap-1.5"
+                        :class="`${getStatusConfig(project.status).bg} ${getStatusConfig(project.status).border} ${getStatusConfig(project.status).color}`"
                      >
                         <component :is="getStatusConfig(project.status).icon" class="w-3.5 h-3.5" />
                         {{ getStatusConfig(project.status).label }}
@@ -261,42 +261,42 @@ onMounted(() => {
                         {{ project.startDate }} ~ {{ project.endDate }}
                      </span>
                  </div>
-                 <h3 class="font-semibold text-white text-lg leading-snug tracking-tight">
+                 <h3 class="font-semibold text-slate-950 text-lg leading-snug tracking-tight">
                     {{ project.title }}
                 </h3>
              </div>
 
             <!-- Project Simple Info -->
             <div class="flex-1 flex flex-col gap-4 mb-4">
-                 <p class="text-sm text-slate-300 leading-relaxed line-clamp-3">
+                 <p class="text-sm text-slate-600 leading-relaxed line-clamp-3">
                     {{ project.description }}
                  </p>
 
-                 <div class="mt-auto pt-4 border-t border-white/10">
+                 <div class="mt-auto pt-4 border-t border-slate-200">
                      <div class="grid grid-cols-2 gap-4">
                          <div>
                             <div class="text-[10px] text-slate-500 mb-1 uppercase tracking-[0.18em]">월급</div>
-                             <div class="text-sm font-semibold text-white">{{ project.budget }}</div>
+                             <div class="text-sm font-semibold text-slate-950">{{ project.budget }}</div>
                          </div>
                          <div>
                              <div class="text-[10px] text-slate-500 mb-1 uppercase tracking-[0.18em]">종료일</div>
-                             <div class="text-sm font-semibold text-white">{{ project.endDate }}</div>
+                             <div class="text-sm font-semibold text-slate-950">{{ project.endDate }}</div>
                          </div>
                      </div>
                  </div>
             </div>
 
             <!-- Footer: Stats -->
-            <div class="border-t border-white/5 pt-4 w-full">
+            <div class="border-t border-slate-200 pt-4 w-full">
                 <div v-if="project.status === 'IN_PROGRESS'" class="w-full">
                     <div class="flex justify-between items-end mb-2">
-                        <span class="text-xs font-semibold flex items-center gap-1 text-white/70">
-                            <Zap class="w-3.5 h-3.5 text-white/60" />
+                        <span class="text-xs font-semibold flex items-center gap-1 text-slate-600">
+                            <Zap class="w-3.5 h-3.5 text-emerald-500" />
                             진행 중
                         </span>
-                        <span class="text-sm font-semibold text-white">{{ project.progress }}%</span>
+                        <span class="text-sm font-semibold text-slate-950">{{ project.progress }}%</span>
                     </div>
-                    <div class="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                    <div class="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
                         <div class="h-full bg-gradient-to-r rounded-full transition-all duration-1000 ease-out"
                              :class="`${getProgressColor(project.progress).bar}`"
                              :style="{ width: `${project.progress}%` }">
@@ -304,14 +304,14 @@ onMounted(() => {
                     </div>
                 </div>
                  <div v-else-if="project.status === 'COMPLETED'" class="w-full flex justify-end">
-                    <span class="px-3 py-1.5 bg-white/5 rounded-full text-xs font-semibold text-white/70 flex items-center gap-1.5 border border-white/10">
-                        <CheckCircle class="w-4 h-4 text-white/40" />
+                    <span class="px-3 py-1.5 bg-slate-100 rounded-full text-xs font-semibold text-slate-600 flex items-center gap-1.5 border border-slate-200">
+                        <CheckCircle class="w-4 h-4 text-slate-400" />
                         프로젝트 종료
                     </span>
                 </div>
                  <div v-else class="w-full flex justify-end">
-                    <span class="px-3 py-1.5 bg-white/5 rounded-full text-xs font-semibold text-white/70 flex items-center gap-1.5 border border-white/10">
-                        <Clock class="w-4 h-4 text-white/50" />
+                    <span class="px-3 py-1.5 bg-sky-50 rounded-full text-xs font-semibold text-sky-700 flex items-center gap-1.5 border border-sky-200">
+                        <Clock class="w-4 h-4 text-sky-500" />
                         시작 대기
                     </span>
                 </div>

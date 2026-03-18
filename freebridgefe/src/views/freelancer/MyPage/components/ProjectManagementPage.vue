@@ -157,20 +157,20 @@ const getStageConfig = (stage: Exclude<ProjectStage, 'ALL'>) => {
   switch (stage) {
     case 'BEFORE_START':
       return {
-        labelClass: 'bg-sky-500/10 text-sky-300 border-sky-400/20',
-        cardClass: 'bg-sky-500/10 border-sky-400/20 hover:bg-sky-500/15 hover:border-sky-300/30',
+        labelClass: 'bg-sky-50 text-sky-700 border-sky-200',
+        cardClass: 'bg-white border-slate-200 hover:bg-sky-50/70 hover:border-sky-200 shadow-[0_20px_60px_-46px_rgba(14,165,233,0.16)]',
         icon: Clock3,
       };
     case 'IN_PROGRESS':
       return {
-        labelClass: 'bg-amber-500/10 text-amber-300 border-amber-400/20',
-        cardClass: 'bg-amber-500/10 border-amber-400/20 hover:bg-amber-500/15 hover:border-amber-300/30',
+        labelClass: 'bg-amber-50 text-amber-700 border-amber-200',
+        cardClass: 'bg-white border-slate-200 hover:bg-amber-50/70 hover:border-amber-200 shadow-[0_20px_60px_-46px_rgba(245,158,11,0.14)]',
         icon: Briefcase,
       };
     case 'COMPLETED':
       return {
-        labelClass: 'bg-emerald-500/10 text-emerald-300 border-emerald-400/20',
-        cardClass: 'bg-emerald-500/10 border-emerald-400/20 hover:bg-emerald-500/15 hover:border-emerald-300/30',
+        labelClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        cardClass: 'bg-white border-slate-200 hover:bg-emerald-50/70 hover:border-emerald-200 shadow-[0_20px_60px_-46px_rgba(16,185,129,0.14)]',
         icon: CheckCircle2,
       };
   }
@@ -246,18 +246,18 @@ const openDetailModal = (contractId: number) => {
 </script>
 
 <template>
-  <div class="p-8 max-w-7xl mx-auto h-full flex flex-col animate-fade-in-up">
+  <div class="p-8 max-w-7xl mx-auto h-full flex flex-col animate-fade-in-up text-slate-800">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
       <div class="flex items-center gap-4">
         <button
           @click="$emit('back')"
-          class="p-2 hover:bg-white/5 rounded-lg transition-colors"
+          class="p-2 hover:bg-slate-100 rounded-lg transition-colors"
         >
-          <ArrowLeft class="w-5 h-5 text-white/60" />
+          <ArrowLeft class="w-5 h-5 text-slate-500" />
         </button>
         <div>
-          <h2 class="text-2xl font-bold text-white mb-2">프로젝트 관리</h2>
-          <p class="text-slate-400 text-sm">계약된 프로젝트를 상태별 카드로 확인해보세요.</p>
+          <h2 class="text-2xl font-bold text-slate-950 mb-2">프로젝트 관리</h2>
+          <p class="text-slate-500 text-sm">계약된 프로젝트를 상태별 카드로 확인해보세요.</p>
         </div>
       </div>
 
@@ -268,29 +268,29 @@ const openDetailModal = (contractId: number) => {
             v-model="searchQuery"
             type="text"
             placeholder="프로젝트명 또는 고용주 검색"
-            class="bg-[#1e293b] border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 w-72"
+            class="bg-white border border-slate-200 rounded-lg pl-10 pr-4 py-2 text-sm text-slate-950 focus:outline-none focus:border-sky-400 w-72"
           />
         </div>
       </div>
     </div>
 
-    <div class="flex gap-2 mb-8 border-b border-white/10">
+    <div class="flex gap-2 mb-8 border-b border-slate-200">
       <button
         v-for="tab in tabs"
         :key="tab.id"
         @click="activeTab = tab.id"
         class="px-6 py-3 text-sm font-medium transition-all relative"
-        :class="activeTab === tab.id ? 'text-blue-400' : 'text-slate-400 hover:text-white'"
+        :class="activeTab === tab.id ? 'text-sky-600' : 'text-slate-500 hover:text-slate-950'"
       >
         {{ tab.label }}
         <div
           v-if="activeTab === tab.id"
-          class="absolute bottom-0 left-0 w-full h-0.5 bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.5)]"
+          class="absolute bottom-0 left-0 w-full h-0.5 bg-sky-500"
         ></div>
       </button>
     </div>
 
-    <div v-if="isLoading" class="flex-1 flex items-center justify-center text-slate-400">
+    <div v-if="isLoading" class="flex-1 flex items-center justify-center text-slate-500">
       계약 프로젝트를 불러오는 중입니다.
     </div>
 
@@ -315,7 +315,7 @@ const openDetailModal = (contractId: number) => {
               <component :is="getStageConfig(project.stage).icon" class="w-3.5 h-3.5" />
               {{ project.stageLabel }}
             </div>
-            <div class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300">
+            <div class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-medium text-slate-600">
               {{ project.statusLabel }}
             </div>
           </div>
@@ -324,40 +324,40 @@ const openDetailModal = (contractId: number) => {
 
         <div class="flex-1 space-y-4">
           <div>
-            <h3 class="text-lg font-bold text-white mb-2 line-clamp-2">
+            <h3 class="text-lg font-bold text-slate-950 mb-2 line-clamp-2">
               {{ project.title }}
             </h3>
-            <div class="flex items-center gap-2 text-sm text-slate-300">
+            <div class="flex items-center gap-2 text-sm text-slate-600">
               <UserIcon class="w-4 h-4 text-slate-400" />
               <span>{{ project.employerName }}</span>
             </div>
           </div>
 
-          <div class="rounded-xl border border-white/10 bg-black/10 p-4 space-y-3">
+          <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-3">
             <div class="flex items-center justify-between text-sm">
               <div class="flex items-center gap-2 text-slate-400">
                 <Calendar class="w-4 h-4" />
                 <span>계약 기간</span>
               </div>
-              <span class="text-slate-200">{{ project.startDate }} ~ {{ project.endDate }}</span>
+              <span class="text-slate-700">{{ project.startDate }} ~ {{ project.endDate }}</span>
             </div>
             <div class="flex items-center justify-between text-sm">
               <div class="flex items-center gap-2 text-slate-400">
                 <DollarSign class="w-4 h-4" />
                 <span>계약 금액</span>
               </div>
-              <span class="text-white font-semibold">{{ formatBudget(project.budget) }}</span>
+              <span class="text-slate-950 font-semibold">{{ formatBudget(project.budget) }}</span>
             </div>
             <div class="flex items-center justify-between text-sm">
               <span class="text-slate-400">프로젝트 상태</span>
-              <span class="text-white">{{ project.stageDescription }}</span>
+              <span class="text-slate-700">{{ project.stageDescription }}</span>
             </div>
             <div class="space-y-2 pt-1">
               <div class="flex items-center justify-between text-xs">
                 <span class="text-slate-400">진행률</span>
-                <span class="text-white font-semibold">{{ project.progress }}%</span>
+                <span class="text-slate-950 font-semibold">{{ project.progress }}%</span>
               </div>
-              <div class="h-2 overflow-hidden rounded-full bg-white/10">
+              <div class="h-2 overflow-hidden rounded-full bg-slate-200">
                 <div
                   class="h-full rounded-full bg-gradient-to-r from-sky-400 via-blue-400 to-emerald-400 transition-all duration-500"
                   :style="{ width: `${project.progress}%` }"
@@ -367,24 +367,24 @@ const openDetailModal = (contractId: number) => {
           </div>
         </div>
 
-        <div class="pt-4 mt-4 border-t border-white/10 flex items-center justify-between text-xs">
+        <div class="pt-4 mt-4 border-t border-slate-200 flex items-center justify-between text-xs">
           <span class="text-slate-400">계약 상태</span>
-          <span class="text-slate-200">{{ project.statusLabel }}</span>
+          <span class="text-slate-700">{{ project.statusLabel }}</span>
         </div>
       </div>
     </div>
 
     <div v-else-if="loadError" class="flex-1 flex items-center justify-center">
-      <div class="text-center max-w-md rounded-3xl border border-red-400/20 bg-red-500/10 px-8 py-10">
-        <Briefcase class="w-16 h-16 text-red-300 mx-auto mb-4" />
-        <h3 class="text-xl font-semibold text-white mb-2">프로젝트를 불러오지 못했습니다.</h3>
-        <p class="text-slate-300 leading-relaxed mb-5">
+      <div class="text-center max-w-md rounded-3xl border border-red-200 bg-red-50 px-8 py-10">
+        <Briefcase class="w-16 h-16 text-red-400 mx-auto mb-4" />
+        <h3 class="text-xl font-semibold text-slate-950 mb-2">프로젝트를 불러오지 못했습니다.</h3>
+        <p class="text-slate-600 leading-relaxed mb-5">
           요청을 처리하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.
         </p>
         <button
           type="button"
           @click="loadProjects"
-          class="rounded-xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/15"
+          class="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
         >
           다시 불러오기
         </button>
@@ -392,10 +392,10 @@ const openDetailModal = (contractId: number) => {
     </div>
 
     <div v-else class="flex-1 flex items-center justify-center">
-      <div class="text-center max-w-md rounded-3xl border border-white/10 bg-slate-900/60 px-8 py-10">
-        <Briefcase class="w-16 h-16 text-slate-600 mx-auto mb-4" />
-        <h3 class="text-xl font-semibold text-white mb-2">진행할 프로젝트가 없습니다</h3>
-        <p class="text-slate-400 leading-relaxed">
+      <div class="text-center max-w-md rounded-3xl border border-slate-200 bg-white px-8 py-10">
+        <Briefcase class="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <h3 class="text-xl font-semibold text-slate-950 mb-2">진행할 프로젝트가 없습니다</h3>
+        <p class="text-slate-500 leading-relaxed">
           아직 연결된 계약 프로젝트가 없거나, 현재 필터 조건에 맞는 프로젝트가 없습니다.
         </p>
       </div>

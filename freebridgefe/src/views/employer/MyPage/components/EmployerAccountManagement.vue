@@ -336,29 +336,29 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto px-4 md:px-10 py-10 text-white">
+  <div class="max-w-6xl mx-auto px-4 md:px-10 py-10 text-slate-800">
     <div class="flex items-center gap-4 mb-10">
-      <button @click="$emit('back')" class="p-2 hover:bg-white/10 rounded-full transition-colors" aria-label="뒤로가기" title="뒤로가기">
-        <ArrowLeft class="w-5 h-5 text-white/60" />
+      <button @click="$emit('back')" class="p-2 hover:bg-slate-100 rounded-full transition-colors" aria-label="뒤로가기" title="뒤로가기">
+        <ArrowLeft class="w-5 h-5 text-sky-600" />
       </button>
       <div>
-        <h1 class="text-2xl font-semibold tracking-tight">고용주 계정 관리</h1>
-        <p class="text-sm text-white/40 mt-1">구독과 계정 정보를 관리해보세요</p>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-950">고용주 계정 관리</h1>
+        <p class="text-sm text-slate-500 mt-1">구독과 계정 정보를 관리해보세요</p>
       </div>
     </div>
 
-    <div class="mb-6 inline-flex bg-white/5 border border-white/10 rounded-full p-1">
+    <div class="mb-6 inline-flex bg-white border border-slate-200 rounded-full p-1">
       <button
         @click="activeSection = 'subscription'"
         class="px-4 py-2 text-sm font-semibold rounded-full transition-colors"
-        :class="activeSection === 'subscription' ? 'bg-white text-slate-900' : 'text-slate-300 hover:text-white'"
+        :class="activeSection === 'subscription' ? 'bg-sky-50 text-sky-700' : 'text-slate-500 hover:text-slate-950'"
       >
         구독
       </button>
       <button
         @click="activeSection = 'profile'; resetProfileVerification()"
         class="px-4 py-2 text-sm font-semibold rounded-full transition-colors"
-        :class="activeSection === 'profile' ? 'bg-white text-slate-900' : 'text-slate-300 hover:text-white'"
+        :class="activeSection === 'profile' ? 'bg-sky-50 text-sky-700' : 'text-slate-500 hover:text-slate-950'"
       >
         회원정보
       </button>
@@ -366,13 +366,13 @@ onMounted(() => {
 
     <div
       v-if="activeSection === 'subscription'"
-      class="bg-white/5 rounded-[28px] border border-white/10 p-8 md:p-10 shadow-[0_25px_70px_-55px_rgba(255,255,255,0.25)] backdrop-blur-2xl"
+      class="bg-white rounded-[28px] border border-slate-200 p-8 md:p-10 shadow-[0_25px_70px_-55px_rgba(15,23,42,0.12)]"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0 }"
     >
-      <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
-        <Crown class="w-5 h-5 text-white/70" />
+      <h2 class="text-lg font-semibold mb-6 flex items-center gap-2 text-slate-950">
+        <Crown class="w-5 h-5 text-amber-500" />
         구독 플랜
       </h2>
 
@@ -381,33 +381,33 @@ onMounted(() => {
           v-for="(plan, planKey) in plans"
           :key="planKey"
           class="relative rounded-[24px] p-6 border transition-all flex flex-col h-full"
-          :class="currentPlan === planKey ? 'border-sky-400/40 bg-sky-500/15' : 'border-white/10 bg-white/5 hover:bg-white/10'"
+          :class="currentPlan === planKey ? 'border-sky-200 bg-sky-50' : 'border-slate-200 bg-white hover:bg-slate-50'"
           v-motion
           :initial="{ opacity: 0, scale: 0.9 }"
           :enter="{ opacity: 1, scale: 1 }"
         >
           <div v-if="currentPlan === planKey" class="absolute top-4 right-4">
-            <div class="bg-sky-400/20 text-sky-100 text-xs px-2 py-1 rounded-full font-semibold">현재 플랜</div>
+            <div class="bg-sky-100 text-sky-700 text-xs px-2 py-1 rounded-full font-semibold border border-sky-200">현재 플랜</div>
           </div>
 
           <div class="text-4xl mb-4">{{ plan.icon }}</div>
-          <h3 class="text-xl font-semibold mb-1">{{ plan.name }}</h3>
-          <p class="text-sm text-white/50 mb-4">{{ plan.description }}</p>
+          <h3 class="text-xl font-semibold mb-1 text-slate-950">{{ plan.name }}</h3>
+          <p class="text-sm text-slate-500 mb-4">{{ plan.description }}</p>
 
           <div class="mb-4">
             <div>
-              <span class="text-3xl font-semibold text-white">{{ plan.price }}</span>
-              <span v-if="plan.period" class="text-sm text-white/50">/{{ plan.period }}</span>
+              <span class="text-3xl font-semibold text-slate-950">{{ plan.price }}</span>
+              <span v-if="plan.period" class="text-sm text-slate-500">/{{ plan.period }}</span>
             </div>
             <div class="mt-1">
-              <span class="text-sm font-semibold text-sky-100/90">{{ plan.fee }}</span>
-              <span class="text-xs text-white/40 ml-1">수수료</span>
+              <span class="text-sm font-semibold text-sky-700">{{ plan.fee }}</span>
+              <span class="text-xs text-slate-400 ml-1">수수료</span>
             </div>
           </div>
 
           <ul class="space-y-3 mb-8 flex-1">
-            <li v-for="(feature, idx) in plan.features" :key="idx" class="flex items-start gap-2 text-sm text-white/80">
-              <Check class="w-4 h-4 text-white/60 flex-shrink-0 mt-0.5" />
+            <li v-for="(feature, idx) in plan.features" :key="idx" class="flex items-start gap-2 text-sm text-slate-700">
+              <Check class="w-4 h-4 text-sky-500 flex-shrink-0 mt-0.5" />
               <span>{{ feature }}</span>
             </li>
           </ul>
@@ -416,7 +416,7 @@ onMounted(() => {
             @click="handlePlanChange(planKey as PlanType)"
             :disabled="currentPlan === planKey || isLoading"
             class="w-full py-3 rounded-full font-semibold transition-all mt-auto disabled:opacity-60 disabled:cursor-not-allowed"
-            :class="currentPlan === planKey ? 'bg-white text-slate-900 cursor-default' : 'bg-white/10 text-white hover:bg-white/20'"
+            :class="currentPlan === planKey ? 'bg-slate-100 text-slate-700 cursor-default border border-slate-200' : 'bg-sky-500 text-white hover:bg-sky-400 shadow-[0_18px_40px_-24px_rgba(56,189,248,0.35)]'"
           >
             {{ currentPlan === planKey ? '사용 중' : '변경하기' }}
           </button>
@@ -426,27 +426,27 @@ onMounted(() => {
 
     <div
       v-else
-      class="bg-white/5 rounded-[28px] border border-white/10 p-8 md:p-10 shadow-[0_25px_70px_-55px_rgba(255,255,255,0.25)] backdrop-blur-2xl"
+      class="bg-white rounded-[28px] border border-slate-200 p-8 md:p-10 shadow-[0_25px_70px_-55px_rgba(15,23,42,0.12)]"
       v-motion
       :initial="{ opacity: 0, y: 20 }"
       :enter="{ opacity: 1, y: 0 }"
     >
-      <h2 class="text-lg font-semibold mb-6 flex items-center gap-2">
-        <User class="w-5 h-5 text-white/70" />
+      <h2 class="text-lg font-semibold mb-6 flex items-center gap-2 text-slate-950">
+        <User class="w-5 h-5 text-sky-500" />
         회원정보
       </h2>
 
       <div v-if="!isProfileVerified" class="max-w-lg">
-        <p class="text-sm text-slate-300 mb-4">
+        <p class="text-sm text-slate-600 mb-4">
           보안을 위해 비밀번호를 먼저 확인합니다.
         </p>
-        <label class="text-xs text-white/50 mb-2 block uppercase tracking-[0.2em]">비밀번호 확인</label>
-        <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
-          <Lock class="w-4 h-4 text-white/50" />
+        <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">비밀번호 확인</label>
+        <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+          <Lock class="w-4 h-4 text-slate-400" />
           <input
             type="password"
             v-model="verificationPassword"
-            class="bg-transparent border-none outline-none w-full text-white text-sm"
+            class="bg-transparent border-none outline-none w-full text-slate-950 text-sm"
             placeholder="비밀번호를 입력해 주세요"
             @keyup.enter="handleVerifyIdentity"
           />
@@ -455,7 +455,7 @@ onMounted(() => {
         <button
           @click="handleVerifyIdentity"
           :disabled="isVerifying"
-          class="mt-4 px-5 py-2.5 bg-white text-slate-900 hover:bg-white/90 rounded-full text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          class="mt-4 px-5 py-2.5 bg-sky-500 text-white hover:bg-sky-400 rounded-full text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {{ isVerifying ? '확인 중...' : '확인' }}
         </button>
@@ -463,34 +463,34 @@ onMounted(() => {
 
       <div v-else>
         <div class="flex items-center justify-between mb-6">
-          <p class="text-sm text-white/70">비밀번호 확인이 완료되었습니다. 회원정보를 수정할 수 있습니다.</p>
-          <button @click="resetProfileVerification" class="text-xs text-white/50 hover:text-white transition-colors">
+          <p class="text-sm text-slate-600">비밀번호 확인이 완료되었습니다. 회원정보를 수정할 수 있습니다.</p>
+          <button @click="resetProfileVerification" class="text-xs text-slate-500 hover:text-slate-950 transition-colors">
             다시 인증하기
           </button>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="text-xs text-white/50 mb-2 block uppercase tracking-[0.2em]">이름</label>
-            <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
-              <User class="w-4 h-4 text-white/50" />
-              <input type="text" v-model="accountInfo.name" class="bg-transparent border-none outline-none w-full text-white text-sm" />
+            <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">이름</label>
+            <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+              <User class="w-4 h-4 text-slate-400" />
+              <input type="text" v-model="accountInfo.name" class="bg-transparent border-none outline-none w-full text-slate-950 text-sm" />
             </div>
           </div>
 
           <div>
-            <label class="text-xs text-white/50 mb-2 block uppercase tracking-[0.2em]">이메일</label>
-            <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
-              <Mail class="w-4 h-4 text-white/50" />
-              <input type="email" v-model="accountInfo.email" class="bg-transparent border-none outline-none w-full text-white text-sm" />
+            <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">이메일</label>
+            <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+              <Mail class="w-4 h-4 text-slate-400" />
+              <input type="email" v-model="accountInfo.email" class="bg-transparent border-none outline-none w-full text-slate-950 text-sm" />
             </div>
           </div>
 
           <div class="md:col-span-2">
-            <label class="text-xs text-white/50 mb-2 block uppercase tracking-[0.2em]">휴대폰 번호</label>
-            <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
-              <Phone class="w-4 h-4 text-white/50" />
-              <input type="tel" v-model="formattedAccountPhone" class="bg-transparent border-none outline-none w-full text-white text-sm" />
+            <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">휴대폰 번호</label>
+            <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+              <Phone class="w-4 h-4 text-slate-400" />
+              <input type="tel" v-model="formattedAccountPhone" class="bg-transparent border-none outline-none w-full text-slate-950 text-sm" />
             </div>
           </div>
         </div>
@@ -498,47 +498,47 @@ onMounted(() => {
         <button
           @click="handleSaveAccountInfo"
           :disabled="isSaving || isLoading"
-          class="mt-6 px-5 py-2.5 bg-white text-slate-900 hover:bg-white/90 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+          class="mt-6 px-5 py-2.5 bg-sky-500 text-white hover:bg-sky-400 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_18px_40px_-24px_rgba(56,189,248,0.35)]"
         >
           <Save class="w-4 h-4" />
           {{ isSaving ? '저장 중...' : '정보 저장' }}
         </button>
 
-        <div class="mt-10 pt-8 border-t border-white/10">
-          <h3 class="text-base font-semibold mb-4">비밀번호 변경</h3>
+        <div class="mt-10 pt-8 border-t border-slate-200">
+          <h3 class="text-base font-semibold mb-4 text-slate-950">비밀번호 변경</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label class="text-xs text-white/50 mb-2 block uppercase tracking-[0.2em]">현재 비밀번호</label>
-              <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
-                <Lock class="w-4 h-4 text-white/50" />
+              <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">현재 비밀번호</label>
+              <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                <Lock class="w-4 h-4 text-slate-400" />
                 <input
                   type="password"
                   v-model="passwordForm.current"
-                  class="bg-transparent border-none outline-none w-full text-white text-sm"
+                  class="bg-transparent border-none outline-none w-full text-slate-950 text-sm"
                   placeholder="현재 비밀번호"
                 />
               </div>
             </div>
             <div>
-              <label class="text-xs text-white/50 mb-2 block uppercase tracking-[0.2em]">새 비밀번호</label>
-              <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
-                <Lock class="w-4 h-4 text-white/50" />
+              <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">새 비밀번호</label>
+              <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                <Lock class="w-4 h-4 text-slate-400" />
                 <input
                   type="password"
                   v-model="passwordForm.new"
-                  class="bg-transparent border-none outline-none w-full text-white text-sm"
+                  class="bg-transparent border-none outline-none w-full text-slate-950 text-sm"
                   placeholder="8자 이상"
                 />
               </div>
             </div>
             <div class="md:col-span-2">
-              <label class="text-xs text-white/50 mb-2 block uppercase tracking-[0.2em]">새 비밀번호 확인</label>
-              <div class="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
-                <Lock class="w-4 h-4 text-white/50" />
+              <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">새 비밀번호 확인</label>
+              <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
+                <Lock class="w-4 h-4 text-slate-400" />
                 <input
                   type="password"
                   v-model="passwordForm.confirm"
-                  class="bg-transparent border-none outline-none w-full text-white text-sm"
+                  class="bg-transparent border-none outline-none w-full text-slate-950 text-sm"
                   placeholder="새 비밀번호 확인"
                 />
               </div>
@@ -550,7 +550,7 @@ onMounted(() => {
           <button
             @click="handleChangePassword"
             :disabled="isPasswordSaving"
-            class="mt-4 px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            class="mt-4 px-5 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_18px_40px_-24px_rgba(168,85,247,0.3)]"
           >
             {{ isPasswordSaving ? '변경 중...' : '비밀번호 변경' }}
           </button>

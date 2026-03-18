@@ -146,6 +146,12 @@ body {
         color: var(--fb-text);
     }
 
+    .fb-modal-header {
+        background: linear-gradient(135deg, #4f8df6 0%, #33c4de 55%, #21afbf 100%) !important;
+        border-bottom-color: rgba(255, 255, 255, 0.22) !important;
+        color: #ffffff;
+    }
+
     .fb-page-shell [class*="bg-white/5"][class*="border-white/10"],
     .fb-page-shell [class*="bg-white/10"][class*="border-white/10"],
     .fb-page-shell [class*="bg-black/20"][class*="border-white/10"],
