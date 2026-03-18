@@ -1,29 +1,29 @@
 <template>
     <div class="flex flex-col h-full relative">
         <!-- Chat Header -->
-        <div class="h-20 px-6 flex items-center justify-between bg-[#0f172a]/95 backdrop-blur-sm border-b border-white/5 shrink-0 z-20">
+        <div class="h-20 px-6 flex items-center justify-between bg-white/90 backdrop-blur-sm border-b border-slate-200 shrink-0 z-20">
             <div class="flex items-center gap-4">
                 <div class="relative">
-                    <div class="w-11 h-11 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 text-lg font-bold border border-white/10 ring-2 ring-slate-900">
+                    <div class="w-11 h-11 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 text-lg font-bold border border-slate-200 ring-2 ring-white">
                         {{ otherParticipantName.charAt(0) }}
                     </div>
                 </div>
                 <div>
-                    <h2 class="font-bold text-lg text-white leading-tight">{{ otherParticipantName }}</h2>
+                    <h2 class="font-bold text-lg text-slate-950 leading-tight">{{ otherParticipantName }}</h2>
                 </div>
             </div>
 
             <!-- Tabs Switcher (Pill Style) -->
-            <div class="flex bg-slate-900 p-1 rounded-full border border-white/5">
+            <div class="flex bg-slate-100 p-1 rounded-full border border-slate-200">
                 <button 
                     @click="activeTab = 'CHAT'"
-                    :class="['px-5 py-2 text-sm font-medium rounded-full transition-all', activeTab === 'CHAT' ? 'bg-slate-800 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200']"
+                    :class="['px-5 py-2 text-sm font-medium rounded-full transition-all', activeTab === 'CHAT' ? 'bg-white text-slate-950 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800']"
                 >
                     채팅
                 </button>
                 <button 
                     @click="activeTab = 'CONTRACT'"
-                    :class="['px-5 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-2', activeTab === 'CONTRACT' ? 'bg-slate-800 text-emerald-400 shadow-sm' : 'text-slate-400 hover:text-slate-200']"
+                    :class="['px-5 py-2 text-sm font-medium rounded-full transition-all flex items-center gap-2', activeTab === 'CONTRACT' ? 'bg-white text-teal-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-800']"
                 >
                     <FileTextIcon class="w-4 h-4" /> 계약
                     <span v-if="contractNeedsAttention" class="w-2 h-2 bg-red-500 rounded-full"></span>
@@ -34,7 +34,7 @@
                  <button
                     @click="handleLeaveRoom"
                     :disabled="isLeavingRoom"
-                    class="w-10 h-10 rounded-full bg-[#111827] text-slate-300 hover:text-white hover:bg-[#0f172a] transition-colors border border-white/5 flex items-center justify-center"
+                    class="w-10 h-10 rounded-full bg-white text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors border border-slate-200 flex items-center justify-center"
                     :class="isLeavingRoom ? 'opacity-50 cursor-not-allowed' : ''"
                     title="대화 나가기"
                  >
@@ -44,7 +44,7 @@
         </div>
 
         <!-- Main Content Area -->
-        <div class="flex-1 min-h-0 overflow-hidden relative bg-slate-900">
+        <div class="flex-1 min-h-0 overflow-hidden relative bg-transparent">
             <!-- Tab: CHAT -->
             <div v-show="activeTab === 'CHAT'" class="h-full flex flex-col min-h-0">
                 <!-- Messages List -->
@@ -57,7 +57,7 @@
                     </div>
                     <div
                         v-else-if="isReadOnly"
-                        class="mb-4 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-xs text-slate-300"
+                        class="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600"
                     >
                         상대방이 채팅방을 나갔습니다. 이 채팅은 읽기 전용입니다.
                     </div>
@@ -70,12 +70,12 @@
                 </div>
 
                 <!-- Floating Input Area (Instagram Style) -->
-                <div class="p-4 bg-slate-900/95 backdrop-blur-sm border-t border-white/5 shrink-0">
+                <div class="p-4 bg-white/90 backdrop-blur-sm border-t border-slate-200 shrink-0">
                     <div class="max-w-4xl mx-auto flex items-center gap-2">
                         <!-- Quick Actions (Left) -->
                         <label
-                            class="p-2.5 rounded-full bg-slate-800 text-slate-400 transition-colors"
-                            :class="isReadOnly || isUploadingFile ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'hover:text-white hover:bg-slate-700 cursor-pointer'"
+                            class="p-2.5 rounded-full bg-slate-100 text-slate-500 transition-colors"
+                            :class="isReadOnly || isUploadingFile ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'hover:text-slate-900 hover:bg-slate-200 cursor-pointer'"
                         >
                             <PlusIcon class="w-6 h-6" />
                             <input
@@ -87,7 +87,7 @@
                         </label>
 
                         <!-- Input Container (Pill) -->
-                        <div class="flex-1 relative bg-slate-800 rounded-full border border-white/5 transition-colors flex items-center px-4 py-1.5 focus-within:bg-slate-700/50">
+                        <div class="flex-1 relative bg-white rounded-full border border-slate-200 transition-colors flex items-center px-4 py-1.5 focus-within:bg-white">
                             <textarea
                                 :value="newMessage"
                                 @input="handleMessageInput"
@@ -96,7 +96,7 @@
                                 @keydown.enter.exact.prevent="handleMessageEnter"
                                 rows="1"
                                 placeholder="메시지를 입력하세요..."
-                                class="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-2.5 h-[44px] max-h-[44px] min-h-[44px] overflow-y-auto text-white placeholder-slate-500 leading-relaxed custom-scrollbar text-[15px]"
+                                class="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-2.5 h-[44px] max-h-[44px] min-h-[44px] overflow-y-auto text-slate-900 placeholder-slate-400 leading-relaxed custom-scrollbar text-[15px]"
                                 :disabled="isReadOnly"
                             ></textarea>
                             

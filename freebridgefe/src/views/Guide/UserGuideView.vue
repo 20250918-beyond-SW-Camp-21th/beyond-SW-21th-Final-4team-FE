@@ -164,12 +164,12 @@ const handleReturnToService = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-900 text-white font-sans">
+  <div class="fb-page-shell min-h-screen text-slate-800 font-sans">
     <!-- 헤더 섹션 -->
     <div class="relative py-20 px-4 md:px-8 overflow-hidden">
       <div class="max-w-5xl mx-auto relative z-10 text-center">
         <h1 
-          class="text-4xl md:text-5xl font-bold mb-6 text-white pb-4 leading-relaxed"
+          class="text-4xl md:text-5xl font-bold mb-6 text-slate-950 pb-4 leading-relaxed"
           v-motion="{
             initial: { opacity: 0, y: 20 },
             enter: { opacity: 1, y: 0 }
@@ -178,7 +178,7 @@ const handleReturnToService = () => {
           FreeBridge 100% 활용하기
         </h1>
         <p 
-          class="text-xl text-white/60 mb-10 max-w-2xl mx-auto"
+          class="text-xl text-slate-500 mb-10 max-w-2xl mx-auto"
           v-motion="{
             initial: { opacity: 0, y: 20 },
             enter: { opacity: 1, y: 0, transition: { delay: 100 } }
@@ -190,7 +190,7 @@ const handleReturnToService = () => {
 
         <!-- 탭 전환 -->
         <div 
-          class="inline-flex bg-white/10 p-1 rounded-full backdrop-blur-xl border border-white/10"
+          class="inline-flex bg-white/95 p-1 rounded-full backdrop-blur-xl border border-slate-200 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.16)]"
           v-motion="{
             initial: { opacity: 0, scale: 0.9 },
             enter: { opacity: 1, scale: 1, transition: { delay: 200 } }
@@ -199,14 +199,14 @@ const handleReturnToService = () => {
           <button
             @click="activeTab = 'EMPLOYER'"
             class="px-8 py-3 rounded-full text-sm font-bold transition-all duration-300"
-            :class="activeTab === 'EMPLOYER' ? 'bg-white text-blue-600 shadow-lg' : 'text-white/60 hover:text-white'"
+            :class="activeTab === 'EMPLOYER' ? 'bg-sky-50 text-sky-700 shadow-md border border-sky-100' : 'text-slate-500 hover:text-slate-900'"
           >
             기업 회원 (고용주)
           </button>
           <button
             @click="activeTab = 'FREELANCER'"
             class="px-8 py-3 rounded-full text-sm font-bold transition-all duration-300"
-            :class="activeTab === 'FREELANCER' ? 'bg-white text-purple-600 shadow-lg' : 'text-white/60 hover:text-white'"
+            :class="activeTab === 'FREELANCER' ? 'bg-teal-50 text-teal-700 shadow-md border border-teal-100' : 'text-slate-500 hover:text-slate-900'"
           >
             프리랜서
           </button>
@@ -215,8 +215,8 @@ const handleReturnToService = () => {
 
       <!-- 배경 장식 -->
       <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-[100px]"></div>
-        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-[100px]"></div>
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-sky-200/50 rounded-full blur-[110px]"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-100/70 rounded-full blur-[110px]"></div>
       </div>
     </div>
 
@@ -229,7 +229,7 @@ const handleReturnToService = () => {
         <div
           v-for="(guide, index) in currentGuides"
           :key="guide.title"
-          class="group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden hover:border-white/30 transition-all duration-300 hover:transform hover:scale-[1.02] hover:shadow-2xl hover:shadow-blue-500/10"
+          class="group fb-card overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_60px_-28px_rgba(14,165,233,0.18)]"
           v-motion="{
             initial: { opacity: 0, y: 30 },
             enter: { opacity: 1, y: 0, transition: { delay: 300 + (index * 100) } }
@@ -239,33 +239,33 @@ const handleReturnToService = () => {
           <div class="p-8 h-full flex flex-col">
             <div class="mb-6 flex items-center justify-between">
               <div 
-                class="w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white shadow-lg"
-                :class="activeTab === 'EMPLOYER' ? 'from-blue-500 to-blue-600' : 'from-purple-500 to-purple-600'"
+                class="w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white shadow-[0_18px_32px_-18px_rgba(14,165,233,0.35)]"
+                :class="activeTab === 'EMPLOYER' ? 'from-sky-500 to-cyan-500' : 'from-teal-500 to-cyan-500'"
               >
                 <component :is="guide.icon" class="w-7 h-7" />
               </div>
-              <div class="text-xs font-bold px-3 py-1 rounded-full bg-white/10 text-white/70 border border-white/10">
+              <div class="text-xs font-bold px-3 py-1 rounded-full bg-slate-50 text-slate-500 border border-slate-200">
                 0{{ index + 1 }}
               </div>
             </div>
 
-            <h3 class="text-2xl font-bold mb-3 text-white group-hover:text-amber-300 transition-colors">
+            <h3 class="text-2xl font-bold mb-3 text-slate-950 transition-colors">
               {{ guide.title }}
             </h3>
             
-            <p class="text-white/60 mb-8 leading-relaxed min-h-[3.5rem]">
+            <p class="text-slate-500 mb-8 leading-relaxed min-h-[3.5rem]">
               {{ guide.description }}
             </p>
 
             <div class="mt-auto">
-              <h4 class="text-sm font-semibold text-white/40 mb-4 uppercase tracking-wider">주요 기능</h4>
+              <h4 class="text-sm font-semibold text-slate-400 mb-4 uppercase tracking-wider">주요 기능</h4>
               <ul class="space-y-3">
                 <li 
                   v-for="feature in guide.features" 
                   :key="feature" 
-                  class="flex items-start gap-3 text-sm text-white/80"
+                  class="flex items-start gap-3 text-sm text-slate-700"
                 >
-                  <CheckCircle class="w-5 h-5 text-green-400 shrink-0" />
+                  <CheckCircle class="w-5 h-5 text-emerald-500 shrink-0" />
                   <span>{{ feature }}</span>
                 </li>
               </ul>
@@ -278,7 +278,7 @@ const handleReturnToService = () => {
       <div class="mt-20 text-center">
         <button
           @click="handleReturnToService"
-          class="inline-flex items-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 rounded-full font-bold text-white transition-all backdrop-blur-md border border-white/10"
+          class="fb-button-primary inline-flex items-center gap-2 px-8 py-4 rounded-full font-bold transition-all"
         >
           <span>서비스로 돌아가기</span>
           <ArrowRight class="w-5 h-5" />

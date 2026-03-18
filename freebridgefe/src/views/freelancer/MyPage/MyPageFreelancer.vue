@@ -393,13 +393,13 @@ const hideChurnAlert = ref(false);
 </script>
 
 <template>
-  <div class="min-h-[calc(100vh-80px)] bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white font-sans">
+  <div class="fb-page-shell min-h-[calc(100vh-80px)] text-slate-800 font-sans">
     <div class="flex flex-col lg:flex-row h-full overflow-hidden lg:relative">
     <!-- Sidebar -->
-    <aside class="hidden lg:flex fixed top-20 left-0 z-30 h-[calc(100vh-80px)] w-[17.5rem] flex-col bg-white/5 backdrop-blur-2xl border-r border-white/5 shadow-[inset_-1px_0_0_rgba(255,255,255,0.05)]">
+    <aside class="hidden lg:flex fixed top-20 left-0 z-30 h-[calc(100vh-80px)] w-[17.5rem] flex-col bg-white/90 backdrop-blur-2xl border-r border-slate-200 shadow-[inset_-1px_0_0_rgba(15,23,42,0.04)]">
         <div class="px-6 pt-8 pb-6 border-b border-white/5">
-            <h1 class="text-xl font-semibold tracking-tight text-white cursor-pointer" @click="activeTab = 'dashboard'">마이페이지</h1>
-            <p class="mt-2 text-xs text-white/45 leading-relaxed">프로필과 프로젝트, 계정 정보를 한 곳에서 관리합니다.</p>
+            <h1 class="text-xl font-semibold tracking-tight text-slate-950 cursor-pointer" @click="activeTab = 'dashboard'">마이페이지</h1>
+            <p class="mt-2 text-xs text-slate-500 leading-relaxed">프로필과 프로젝트, 계정 정보를 한 곳에서 관리합니다.</p>
         </div>
 
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
@@ -408,13 +408,13 @@ const hideChurnAlert = ref(false);
                 :key="item.id"
                 @click="item.action ? item.action() : null"
                 class="w-full flex items-center justify-between px-4 py-3 text-sm transition-all duration-200 rounded-2xl border"
-                :class="activeTab === item.id ? 'text-white font-semibold bg-white/10 border-white/10 shadow-[0_12px_30px_-22px_rgba(255,255,255,0.18)]' : 'text-slate-300 border-transparent hover:text-white hover:bg-white/[0.06] hover:border-white/6'"
+                :class="activeTab === item.id ? 'text-slate-950 font-semibold bg-sky-50 border-sky-200 shadow-[0_12px_30px_-22px_rgba(14,165,233,0.18)]' : 'text-slate-500 border-transparent hover:text-slate-950 hover:bg-slate-50 hover:border-slate-200'"
             >
                 <div class="flex items-center gap-3">
                     <component :is="item.icon" class="w-4 h-4" />
                     <span>{{ item.label }}</span>
                 </div>
-                <div v-if="activeTab === item.id" class="w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_12px_rgba(255,255,255,0.45)]" />
+                <div v-if="activeTab === item.id" class="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.35)]" />
             </button>
         </nav>
     </aside>
