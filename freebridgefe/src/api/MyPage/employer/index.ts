@@ -28,6 +28,11 @@ export interface EmployerProfileData {
         completed: number;
     };
     crmAlerts?: {
+        isFirstJobEncouraged?: boolean;
+        hasPendingApplicants?: boolean;
+        isContractConversionNeeded?: boolean;
+        isRehiringRecommended?: boolean;
+        isSubscriptionAttentionNeeded?: boolean;
         isPremiumUpsellEligible: boolean;
         isPrimeUpsellEligible?: boolean;
         upsellTarget?: 'PRO' | 'PRIME';
@@ -53,6 +58,11 @@ interface EmployerProfileDto {
 }
 
 interface CrmAlertsResponseDto {
+    isFirstJobEncouraged: boolean;
+    hasPendingApplicants: boolean;
+    isContractConversionNeeded: boolean;
+    isRehiringRecommended: boolean;
+    isSubscriptionAttentionNeeded: boolean;
     isPremiumUpsellEligible: boolean;
     isPrimeUpsellEligible?: boolean;
     upsellTarget?: 'PRO' | 'PRIME';

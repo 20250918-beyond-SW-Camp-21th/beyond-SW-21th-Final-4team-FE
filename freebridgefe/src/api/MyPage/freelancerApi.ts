@@ -42,6 +42,9 @@ interface FreelancerProfileResponseDto {
       lastUpdated?: string | null;
     } | null;
     crmAlerts?: {
+      isOnboardingNeeded?: boolean | null;
+      isApplyEncouraged?: boolean | null;
+      isPortfolioImproveNeeded?: boolean | null;
       isRateBumpEligible?: boolean | null;
       isBurnoutWarning?: boolean | null;
       isChurnWarning?: boolean | null;
@@ -98,6 +101,9 @@ export interface FreelancerProfileDashboard {
     weaknesses: string[];
   };
   crmAlerts?: {
+    isOnboardingNeeded: boolean;
+    isApplyEncouraged: boolean;
+    isPortfolioImproveNeeded: boolean;
     isRateBumpEligible: boolean;
     isBurnoutWarning: boolean;
     isChurnWarning: boolean;
@@ -239,6 +245,9 @@ export const getFreelancerProfile = async (
       lastUpdated: basic.portfolio?.lastUpdated ?? "",
     },
     crmAlerts: {
+      isOnboardingNeeded: basic.crmAlerts?.isOnboardingNeeded ?? false,
+      isApplyEncouraged: basic.crmAlerts?.isApplyEncouraged ?? false,
+      isPortfolioImproveNeeded: basic.crmAlerts?.isPortfolioImproveNeeded ?? false,
       isRateBumpEligible: basic.crmAlerts?.isRateBumpEligible ?? false,
       isBurnoutWarning: basic.crmAlerts?.isBurnoutWarning ?? false,
       isChurnWarning: basic.crmAlerts?.isChurnWarning ?? false,

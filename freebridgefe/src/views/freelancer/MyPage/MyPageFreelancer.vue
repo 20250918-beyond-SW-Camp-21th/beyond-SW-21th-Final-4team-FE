@@ -1,5 +1,5 @@
 ﻿<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMotion } from '@vueuse/motion';
 import {
@@ -54,19 +54,90 @@ const authStore = useAuthStore();
 const alertStore = useAlertStore();
 const contractStore = useContractStore();
 const currentUser = computed(() => authStore.user);
+const currentAccessToken = computed(() => authStore.token ?? localStorage.getItem('access_token'));
+const currentUserId = computed(() => authStore.user?.id ?? null);
 
 const activeTab = ref('dashboard');
 const isConditionOpen = ref(false);
 const isPortfolioOpen = ref(false);
 
+const showOnboardingBanner = ref(false);
+const showApplyEncouragementBanner = ref(false);
+const dismissedFreelancerCrmKeys = ref<string[]>([]);
+const seenFreelancerCrmKeys = ref<string[]>([]);
+const pinnedFreelancerCrmBannerKey = ref<string | null>(null);
+const hideBurnoutAlert = ref(false);
+const hideChurnAlert = ref(false);
+
 const toggleRestMode = () => {
-    alert('휴식 모드로 전환했습니다.');
+    alertStore.open({
+        title: '휴식 권장',
+        message: '일정이 몰려 있어요. 다음 프로젝트를 잡기 전에 잠시 쉬어가는 것을 권장합니다.',
+        type: 'info',
+    });
     hideBurnoutAlert.value = true;
 };
 
-const viewRecommendedProjects = () => {
-    alert('추천 프로젝트 페이지로 이동합니다.');
+const viewRecommendedProjects = async () => {
     hideChurnAlert.value = true;
+    await router.push({ name: 'freelancer.jobs' });
+};
+
+const moveToProfileEdit = () => {
+    showOnboardingBanner.value = false;
+    activeTab.value = 'edit';
+};
+
+const moveToJobBoard = async () => {
+    showApplyEncouragementBanner.value = false;
+    await router.push({ name: 'freelancer.jobs' });
+};
+
+const getFreelancerCrmStorageKey = () => {
+    const userId = currentUserId.value;
+    return userId ? `mypage-freelancer-crm:${userId}` : null;
+};
+
+const loadSeenFreelancerCrmKeys = () => {
+    const storageKey = getFreelancerCrmStorageKey();
+    if (!storageKey) {
+        seenFreelancerCrmKeys.value = [];
+        return;
+    }
+
+    try {
+        const saved = sessionStorage.getItem(storageKey);
+        const parsed = saved ? JSON.parse(saved) : [];
+        if (Array.isArray(parsed)) {
+            seenFreelancerCrmKeys.value = parsed;
+        } else {
+            console.warn('Invalid freelancer crm session state. Resetting to an empty array.');
+            seenFreelancerCrmKeys.value = [];
+        }
+    } catch (error) {
+        console.error('Failed to load freelancer crm session state:', error);
+        seenFreelancerCrmKeys.value = [];
+    }
+};
+
+const markFreelancerCrmSeen = (key: string) => {
+    if (seenFreelancerCrmKeys.value.includes(key)) {
+        return;
+    }
+
+    const nextSeenKeys = [...seenFreelancerCrmKeys.value, key];
+    seenFreelancerCrmKeys.value = nextSeenKeys;
+
+    const storageKey = getFreelancerCrmStorageKey();
+    if (!storageKey) {
+        return;
+    }
+
+    try {
+        sessionStorage.setItem(storageKey, JSON.stringify(nextSeenKeys));
+    } catch (error) {
+        console.error('Failed to persist freelancer crm session state:', error);
+    }
 };
 
 const handleLegalNoticeClick = async () => {
@@ -142,10 +213,13 @@ const handleProfileUpdate = (updatedData: FreelancerProfileDashboard) => {
 };
 
 onMounted(async () => {
+    loadSeenFreelancerCrmKeys();
     if (currentUser.value?.id) {
         try {
             const data = await getFreelancerProfile(currentUser.value.id);
             profile.value = data;
+            showOnboardingBanner.value = data.crmAlerts?.isOnboardingNeeded ?? false;
+            showApplyEncouragementBanner.value = data.crmAlerts?.isApplyEncouraged ?? false;
 
             // authStore 이름/스킬 우선 반영
             if (currentUser.value.name) profile.value.name = currentUser.value.name;
@@ -207,7 +281,41 @@ onMounted(async () => {
         // 로그인 정보가 없을 때의 폴백 처리
         const data = await getFreelancerProfile('guest');
         profile.value = data;
+        showOnboardingBanner.value = false;
+        showApplyEncouragementBanner.value = false;
     }
+});
+
+type FreelancerCrmBanner = {
+    key: string;
+    label: string;
+    title: string;
+    description: string;
+    cta: string;
+    icon: unknown;
+    wrapClass: string;
+    glowClass: string;
+    action: () => void | Promise<void>;
+};
+
+const dismissFreelancerCrmBanner = (key: string) => {
+    markFreelancerCrmSeen(key);
+    if (!dismissedFreelancerCrmKeys.value.includes(key)) {
+        dismissedFreelancerCrmKeys.value = [...dismissedFreelancerCrmKeys.value, key];
+    }
+    pinnedFreelancerCrmBannerKey.value = null;
+    if (key === 'onboarding') showOnboardingBanner.value = false;
+    if (key === 'apply') showApplyEncouragementBanner.value = false;
+};
+
+const handleFreelancerCrmAction = async (banner: FreelancerCrmBanner) => {
+    markFreelancerCrmSeen(banner.key);
+    await banner.action();
+};
+
+const hasActiveProjectSignal = computed(() => (profile.value.statInteresting ?? 0) > 0);
+const shouldShowBurnoutBanner = computed(() => {
+    return Boolean(profile.value.crmAlerts?.isBurnoutWarning) || (profile.value.statInteresting ?? 0) >= 3;
 });
 
 const menuItems = [
@@ -387,9 +495,129 @@ const downloadPortfolioTemplate = async () => {
         alert('포트폴리오 양식 다운로드에 실패했습니다.');
     }
 };
-const hideRateBumpAlert = ref(false);
-const hideBurnoutAlert = ref(false);
-const hideChurnAlert = ref(false);
+const allFreelancerCrmBanners = computed<FreelancerCrmBanner[]>(() => {
+    const alerts = profile.value.crmAlerts;
+    if (!alerts) return [];
+
+    const banners: FreelancerCrmBanner[] = [];
+
+    if (shouldShowBurnoutBanner.value && !hideBurnoutAlert.value) {
+        banners.push({
+            key: 'burnout',
+            label: 'Pace Check',
+            title: '조금 쉬어가도 괜찮아요',
+            description: '현재 진행 중인 계약이 많은 편입니다. 다음 일을 잡기 전에 페이스를 한 번 조절해보세요.',
+            cta: '쉬어가기',
+            icon: AlertTriangle,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(251,146,60,0.08),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(251,146,60,0.18),transparent_34%)]',
+            action: toggleRestMode,
+        });
+    }
+
+    if (showOnboardingBanner.value) {
+        banners.push({
+            key: 'onboarding',
+            label: 'Onboarding',
+            title: '프로필을 조금만 더 채워보세요',
+            description: '기본 정보와 소개, 포트폴리오가 채워지면 고용주에게 더 잘 노출될 수 있어요.',
+            cta: '프로필 채우기',
+            icon: Edit3,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(16,185,129,0.10),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.18),transparent_35%)]',
+            action: moveToProfileEdit,
+        });
+    }
+
+    if (showApplyEncouragementBanner.value && !hasActiveProjectSignal.value) {
+        banners.push({
+            key: 'apply',
+            label: 'Next Match',
+            title: '다음 프로젝트를 시작해볼까요?',
+            description: '프로필 준비는 충분합니다. 지금 열려 있는 공고를 확인하고 새로운 계약 기회를 잡아보세요.',
+            cta: '공고 보러 가기',
+            icon: Briefcase,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(96,165,250,0.10),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(96,165,250,0.18),transparent_35%)]',
+            action: moveToJobBoard,
+        });
+    }
+
+    if (alerts.isPortfolioImproveNeeded) {
+        banners.push({
+            key: 'portfolio-improve',
+            label: 'Portfolio Guide',
+            title: '포트폴리오 보강이 필요해요',
+            description: '지원은 꾸준하지만 계약 전환이 낮아요. 포트폴리오와 자기소개를 조금 더 구체적으로 보완해보세요.',
+            cta: '프로필 보완하기',
+            icon: Edit3,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.13),rgba(167,139,250,0.08),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(167,139,250,0.18),transparent_35%)]',
+            action: () => { activeTab.value = 'edit'; },
+        });
+    }
+
+    if (alerts.isRateBumpEligible) {
+        banners.push({
+            key: 'rate-bump',
+            label: 'Rate Upgrade',
+            title: '단가를 조정해볼 시점이에요',
+            description: '완료한 계약과 리뷰 평점이 충분히 쌓였습니다. 현재 성과에 맞게 희망 단가를 한 단계 높여보세요.',
+            cta: '단가 수정하기',
+            icon: TrendingUp,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(16,185,129,0.08),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(45,212,191,0.16),transparent_34%)]',
+            action: () => { activeTab.value = 'edit'; },
+        });
+    }
+
+    if (alerts.isChurnWarning && !hasActiveProjectSignal.value && !hideChurnAlert.value) {
+        banners.push({
+            key: 'churn',
+            label: 'Come Back',
+            title: '다시 매칭을 시작할 시점이에요',
+            description: '이전에 계약 경험은 있었지만 지금은 새 활동이 멈춰 있어요. 공고 페이지에서 다음 프로젝트를 확인해보세요.',
+            cta: '공고 보러 가기',
+            icon: Briefcase,
+            wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(96,165,250,0.08),rgba(255,255,255,0.05))]',
+            glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(96,165,250,0.16),transparent_34%)]',
+            action: viewRecommendedProjects,
+        });
+    }
+
+    return banners;
+});
+
+const freelancerCrmBanners = computed(() => {
+    return allFreelancerCrmBanners.value
+        .filter((banner) => !seenFreelancerCrmKeys.value.includes(banner.key))
+        .filter((banner) => !dismissedFreelancerCrmKeys.value.includes(banner.key));
+});
+
+const activeFreelancerCrmBanner = computed(() => {
+    if (pinnedFreelancerCrmBannerKey.value) {
+        return allFreelancerCrmBanners.value.find((banner) => banner.key === pinnedFreelancerCrmBannerKey.value) ?? null;
+    }
+
+    return freelancerCrmBanners.value[0] ?? null;
+});
+
+watch(currentUserId, () => {
+    dismissedFreelancerCrmKeys.value = [];
+    pinnedFreelancerCrmBannerKey.value = null;
+    hideBurnoutAlert.value = false;
+    hideChurnAlert.value = false;
+    loadSeenFreelancerCrmKeys();
+});
+
+watch(freelancerCrmBanners, (banners) => {
+    if (pinnedFreelancerCrmBannerKey.value && banners.some((banner) => banner.key === pinnedFreelancerCrmBannerKey.value)) {
+        return;
+    }
+
+    const nextBanner = banners[0] ?? null;
+    pinnedFreelancerCrmBannerKey.value = nextBanner?.key ?? null;
+}, { immediate: true });
 </script>
 
 <template>
@@ -422,8 +650,34 @@ const hideChurnAlert = ref(false);
     <!-- Main Content -->
     <main class="flex-1 overflow-y-auto lg:pl-[17.5rem]">
         <div v-if="activeTab === 'dashboard'" class="p-8 max-w-7xl mx-auto space-y-8" v-motion :initial="{ opacity: 0 }" :enter="{ opacity: 1 }">
+            <div v-if="activeFreelancerCrmBanner" class="mb-2">
+                <div :class="['relative w-full overflow-hidden rounded-[32px] border border-white/10 px-7 py-6 shadow-[0_30px_80px_-52px_rgba(15,23,42,0.85)] backdrop-blur-2xl', activeFreelancerCrmBanner.wrapClass]">
+                    <div :class="['absolute inset-0', activeFreelancerCrmBanner.glowClass]"></div>
+                    <div class="absolute right-4 top-4 z-20">
+                        <button type="button" aria-label="닫기" @click="dismissFreelancerCrmBanner(activeFreelancerCrmBanner.key)" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white">
+                            <X class="h-4 w-4" />
+                        </button>
+                    </div>
+                    <div class="relative z-10 flex flex-col gap-5 pr-12 md:flex-row md:items-center md:justify-between md:pr-0">
+                        <div class="flex items-start gap-4">
+                            <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/10 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.45)]">
+                                <component :is="activeFreelancerCrmBanner.icon" class="h-5 w-5 text-white/80" />
+                            </div>
+                            <div>
+                                <p class="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/70">{{ activeFreelancerCrmBanner.label }}</p>
+                                <h4 class="mt-2 text-lg font-semibold text-white">{{ activeFreelancerCrmBanner.title }}</h4>
+                                <p class="mt-2 text-sm leading-relaxed text-white/68">{{ activeFreelancerCrmBanner.description }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0 md:pt-0 pt-1">
+                            <button @click="handleFreelancerCrmAction(activeFreelancerCrmBanner)" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">{{ activeFreelancerCrmBanner.cta }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
              <!-- Greeting Header -->
-             <div class="pointer-events-none relative mb-2 flex select-none items-center justify-between overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(191,219,254,0.08),rgba(255,255,255,0.04))] px-7 py-6 shadow-[0_30px_80px_-52px_rgba(15,23,42,0.85)] backdrop-blur-2xl transition-none">
+             <div v-else class="pointer-events-none relative mb-2 flex select-none items-center justify-between overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.1),rgba(191,219,254,0.08),rgba(255,255,255,0.04))] px-7 py-6 shadow-[0_30px_80px_-52px_rgba(15,23,42,0.85)] backdrop-blur-2xl transition-none">
                 <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(191,219,254,0.16),transparent_36%),radial-gradient(circle_at_bottom_left,rgba(244,114,182,0.08),transparent_32%)]"></div>
                 <div class="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
                 <div>
@@ -432,60 +686,6 @@ const hideChurnAlert = ref(false);
                         {{ profile.name }}님, 오늘도 프리브릿지가 응원합니다.
                     </h2>
                     <p class="text-sm text-white/50 mt-1">프로필을 최신 상태로 유지하면 추천 정확도가 올라갑니다.</p>
-                </div>
-            </div>
-
-            <!-- CRM Banners -->
-            <div class="space-y-4 mb-8">
-                <!-- 1. Rate Bump Alert -->
-                <div v-if="profile.crmAlerts?.isRateBumpEligible && !hideRateBumpAlert" class="bg-gradient-to-r from-emerald-900/40 to-teal-900/40 border border-emerald-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2 bg-emerald-500/20 rounded-full shrink-0">
-                            <TrendingUp class="w-6 h-6 text-emerald-400" />
-                        </div>
-                        <div>
-                            <h4 class="text-white font-bold text-sm">월급 인상 최적기입니다!</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 3개 프로젝트에서 좋은 고용주 평가를 받으셨습니다. 이번 기회에 희망 월급을 10~15% 상향 조정해보세요.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <button @click="activeTab = 'edit'" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-emerald-900/20">월급 수정하러 가기</button>
-                        <button @click="hideRateBumpAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
-                    </div>
-                </div>
-
-                <!-- 2. Burnout Alert -->
-                <div v-if="profile.crmAlerts?.isBurnoutWarning && !hideBurnoutAlert" class="bg-gradient-to-r from-orange-900/40 to-red-900/40 border border-orange-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2 bg-orange-500/20 rounded-full shrink-0">
-                            <AlertTriangle class="w-6 h-6 text-orange-400" />
-                        </div>
-                        <div>
-                            <h4 class="text-white font-bold text-sm">휴식이 필요한 시점입니다.</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 프로젝트 일정이 매우 타이트합니다. 컨디션 관리를 위해 잠시 휴식하는 것을 권장합니다.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <button @click="toggleRestMode" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-lg border border-white/10 transition-colors">휴식 모드 전환</button>
-                         <button @click="hideBurnoutAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
-                    </div>
-                </div>
-
-                 <!-- 3. Churn Alert (Encouragement) -->
-                 <div v-if="profile.crmAlerts?.isChurnWarning && !hideChurnAlert" class="bg-gradient-to-r from-indigo-900/40 to-blue-900/40 border border-indigo-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up">
-                    <div class="flex items-center gap-4">
-                        <div class="p-2 bg-indigo-500/20 rounded-full shrink-0">
-                            <Briefcase class="w-6 h-6 text-indigo-400" />
-                        </div>
-                        <div>
-                            <h4 class="text-white font-bold text-sm">포기하지 마세요! 딱 맞는 프로젝트가 기다리고 있습니다.</h4>
-                            <p class="text-slate-300 text-xs mt-1 leading-relaxed">최근 지원 결과가 아쉬우셨나요? 프리브릿지 AI가 {{ profile.name }}님의 전문성에 꼭 맞는 추천 프로젝트를 준비했습니다.</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <button @click="viewRecommendedProjects" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors shadow-lg shadow-indigo-900/20">추천 프로젝트 보기</button>
-                         <button @click="hideChurnAlert = true" class="text-slate-400 hover:text-white transition-colors p-1"><X class="w-4 h-4" /></button>
-                    </div>
                 </div>
             </div>
 
