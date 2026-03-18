@@ -447,23 +447,37 @@ onMounted(async () => {
                     빠른 작업
                 </h2>
                 <div class="space-y-3">
-                    <button class="flex w-full items-center gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-left transition-all group hover:bg-sky-100/70">
-                         <div class="rounded-lg bg-sky-100 p-2 text-sky-600 transition-transform group-hover:scale-110">
+                    <button
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        title="준비 중"
+                        class="group flex w-full cursor-not-allowed items-center gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-left opacity-70 transition-all"
+                    >
+                         <div class="rounded-lg bg-sky-100 p-2 text-sky-600">
                              <Download class="w-5 h-5" />
                          </div>
-                         <div>
+                         <div class="flex-1">
                              <div class="text-sm font-bold text-slate-900">내역 다운로드</div>
                              <div class="text-xs text-slate-500">PDF/Excel 형식 지원</div>
                          </div>
+                         <span class="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-slate-400 ring-1 ring-slate-200">준비 중</span>
                     </button>
-                    <button class="flex w-full items-center gap-3 rounded-2xl border border-teal-100 bg-teal-50/70 p-4 text-left transition-all group hover:bg-teal-100/70">
-                         <div class="rounded-lg bg-teal-100 p-2 text-teal-600 transition-transform group-hover:scale-110">
+                    <button
+                        type="button"
+                        disabled
+                        aria-disabled="true"
+                        title="준비 중"
+                        class="group flex w-full cursor-not-allowed items-center gap-3 rounded-2xl border border-teal-100 bg-teal-50/70 p-4 text-left opacity-70 transition-all"
+                    >
+                         <div class="rounded-lg bg-teal-100 p-2 text-teal-600">
                              <Award class="w-5 h-5" />
                          </div>
-                         <div>
+                         <div class="flex-1">
                              <div class="text-sm font-bold text-slate-900">세금계산서 발행</div>
                              <div class="text-xs text-slate-500">전자세금계산서 신청</div>
                          </div>
+                         <span class="rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-slate-400 ring-1 ring-slate-200">준비 중</span>
                     </button>
                 </div>
             </div>
