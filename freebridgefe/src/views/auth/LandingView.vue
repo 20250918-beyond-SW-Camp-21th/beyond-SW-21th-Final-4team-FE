@@ -93,20 +93,6 @@ const stats = [
         class="relative z-10 max-w-5xl mx-auto px-6 text-center"
         :style="{ opacity: heroOpacity, transform: `scale(${heroScale})` }"
       >
-        <!-- Badge -->
-        <div
-          v-motion
-          :initial="{ opacity: 0, y: 20 }"
-          :enter="{ opacity: 1, y: 0, transition: { duration: 800, delay: 200 } }"
-          class="inline-block mb-8"
-        >
-          <div class="px-6 py-3 rounded-full bg-white/10 backdrop-blur-xl border border-white/20">
-            <p class="text-sm font-medium text-white/90">
-               AI 기반 프리랜서,고용주 양방향 매칭 플랫폼 📝
-            </p>
-          </div>
-        </div>
-
         <!-- Main Heading -->
         <h1
           v-motion
