@@ -54,8 +54,9 @@
           v-for="file in sharedFiles"
           :key="file.id"
           :href="file.url || undefined"
-          target="_blank"
-          rel="noopener noreferrer"
+          :target="file.opensInNewTab ? '_blank' : undefined"
+          :rel="file.opensInNewTab ? 'noopener noreferrer' : undefined"
+          :download="file.url && !file.opensInNewTab ? file.name : undefined"
           class="group flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-800/50"
           :class="file.url ? 'cursor-pointer' : 'cursor-default'"
         >
@@ -150,6 +151,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import { useJobStore } from '@/stores/jobStore';
+import { isInlinePreviewableChatFile } from '@/utils/chatFile';
 
 const props = defineProps<{
   roomId: string;
@@ -239,6 +241,7 @@ const sharedFiles = computed(() => {
       name: msg.metadata?.fileName || msg.content || '파일',
       size: msg.metadata?.fileSize,
       url: typeof msg.metadata?.fileUrl === 'string' ? msg.metadata.fileUrl : null,
+      opensInNewTab: isInlinePreviewableChatFile(msg.metadata?.contentType),
       createdAt: msg.createdAt,
     }))
     .reverse();
