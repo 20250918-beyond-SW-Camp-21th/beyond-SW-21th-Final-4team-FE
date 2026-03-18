@@ -388,6 +388,7 @@ onMounted(async () => {
                         <button
                             @click="selectedSettlement = settlement"
                             class="rounded-lg p-2 transition-colors hover:bg-sky-50"
+                            aria-label="상세보기"
                             title="상세보기"
                         >
                             <Eye class="w-5 h-5 text-slate-400" />
