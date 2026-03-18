@@ -150,6 +150,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import { useJobStore } from '@/stores/jobStore';
+import { CHAT_SUPPORTED_FILE_DESCRIPTION } from '@/api/chatApi';
+import { isInlinePreviewableChatFile } from '@/utils/chatFile';
 
 const props = defineProps<{
   roomId: string;
@@ -239,6 +241,7 @@ const sharedFiles = computed(() => {
       name: msg.metadata?.fileName || msg.content || '파일',
       size: msg.metadata?.fileSize,
       url: typeof msg.metadata?.fileUrl === 'string' ? msg.metadata.fileUrl : null,
+      opensInNewTab: isInlinePreviewableChatFile(msg.metadata?.contentType),
       createdAt: msg.createdAt,
     }))
     .reverse();

@@ -69,8 +69,9 @@
                             <template v-if="msg.type === 'FILE' && getFileUrl(msg)">
                                 <a
                                     :href="getFileUrl(msg)"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    :target="shouldOpenFileInNewTab(msg) ? '_blank' : undefined"
+                                    :rel="shouldOpenFileInNewTab(msg) ? 'noopener noreferrer' : undefined"
+                                    :download="!shouldOpenFileInNewTab(msg) ? getFileName(msg) : undefined"
                                     class="underline underline-offset-2"
                                 >
                                     {{ getFileName(msg) }}
@@ -136,6 +137,7 @@ import {
 } from 'lucide-vue-next';
 import { format } from 'date-fns';
 import type { ChatMessage } from '@/types';
+import { isInlinePreviewableChatFile } from '@/utils/chatFile';
 
 const props = defineProps<{
     roomId: string;
@@ -178,6 +180,10 @@ function getFileName(message: ChatMessage) {
         return fileName;
     }
     return message.content || '파일';
+}
+
+function shouldOpenFileInNewTab(message: ChatMessage) {
+    return isInlinePreviewableChatFile(message.metadata?.contentType);
 }
 
 const windowRef = ref<HTMLElement | null>(null);

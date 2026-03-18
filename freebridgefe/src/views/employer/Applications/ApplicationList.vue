@@ -295,7 +295,7 @@ const openFreelancerProfile = async (freelancerId: string | number) => {
                 class="flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
                 @click="openFreelancerProfile(proposal.freelancerId)"
               >
-                ?꾨줈??蹂닿린
+                프로필 보기
               </button>
             </div>
 

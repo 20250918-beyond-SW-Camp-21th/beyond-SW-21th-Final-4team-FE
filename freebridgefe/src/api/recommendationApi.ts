@@ -28,7 +28,7 @@ export const getFreelancerRecommendations = async (
     ApiResponse<AiRecommendationResponseDTO[]>
   >(`/api/v1/employer/jobs/${encodedJobPostingId}/recommendations`, {
     signal,
-    timeout: 30000,
+    timeout: 120000,
   });
 
   if (!response.data.success) {
@@ -48,7 +48,7 @@ export const getJobRecommendationsForFreelancer = async (): Promise<
   const response = await apiClient.get<
     ApiResponse<AiRecommendationResponseDTO[]>
   >("/api/v1/freelancer/jobs/recommendations", {
-    timeout: 30000,
+    timeout: 120000,
   });
 
   if (!response.data.success) {
