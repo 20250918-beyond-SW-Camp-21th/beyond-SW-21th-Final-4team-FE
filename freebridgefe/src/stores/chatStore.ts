@@ -8,6 +8,7 @@ import {
     getMyChatRooms,
     getChatMessages,
     createChatRoom as apiCreateRoom,
+    sendChatFileMessage as apiSendChatFileMessage,
     leaveChatRoom as apiLeaveRoom,
     markChatRoomAsRead as apiMarkChatRoomAsRead,
     updateChatRoomContract as apiUpdateChatRoomContract
@@ -707,6 +708,54 @@ export const useChatStore = defineStore('chat', () => {
         // 영구적인 상태 불일치를 방지합니다.
     }
 
+    function upsertMessageInRoom(roomId: string, msg: ChatMessage) {
+        if (!messages.value[roomId]) {
+            messages.value[roomId] = [];
+        }
+
+        const optimisticIdx = messages.value[roomId].findIndex(
+            (message) =>
+                message.id.startsWith('m-local-') &&
+                message.roomId === msg.roomId &&
+                message.content === msg.content &&
+                message.type === msg.type &&
+                message.senderId === msg.senderId
+        );
+
+        if (optimisticIdx !== -1) {
+            messages.value[roomId][optimisticIdx] = msg;
+        } else {
+            const existingIdx = messages.value[roomId].findIndex((message) => message.id === msg.id);
+            if (existingIdx !== -1) {
+                messages.value[roomId][existingIdx] = msg;
+            } else {
+                messages.value[roomId].push(msg);
+            }
+        }
+
+        const roomIndex = rooms.value.findIndex((room) => room.id === roomId);
+        if (roomIndex !== -1) {
+            rooms.value[roomIndex].lastMessage = msg;
+            const currentUpdatedAt = new Date(rooms.value[roomIndex].updatedAt).getTime();
+            const nextUpdatedAt = new Date(msg.createdAt).getTime();
+            if (!Number.isFinite(currentUpdatedAt) || nextUpdatedAt >= currentUpdatedAt) {
+                rooms.value[roomIndex].updatedAt = msg.createdAt;
+            }
+        }
+    }
+
+    async function sendFileMessage(file: File, roomId?: string) {
+        const targetRoomId = roomId ?? currentRoomId.value;
+        if (!targetRoomId) return null;
+
+        if (isRoomReadOnly(targetRoomId)) return null;
+        if (!authStore.user) return null;
+
+        const sentMessage = await apiSendChatFileMessage(targetRoomId, file);
+        upsertMessageInRoom(targetRoomId, sentMessage);
+        return sentMessage;
+    }
+
     function sendSystemMessage(roomId: string, content: string, type: ChatMessage['type'] = 'SYSTEM') {
         sendMessage(content, type, undefined, roomId);
     }
@@ -948,6 +997,7 @@ export const useChatStore = defineStore('chat', () => {
         currentRoom,
         selectRoom,
         sendMessage,
+        sendFileMessage,
         sendSystemMessage,
         createRoom,
         ensureContractRoomFromSourceRoom,

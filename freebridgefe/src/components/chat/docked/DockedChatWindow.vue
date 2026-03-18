@@ -66,7 +66,22 @@
                                     : 'bg-[#1e293b] text-slate-100 border border-white/10 rounded-bl-none'
                             ]"
                         >
-                            {{ msg.content }}
+                            <template v-if="msg.type === 'FILE' && getFileUrl(msg)">
+                                <a
+                                    :href="getFileUrl(msg)"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="underline underline-offset-2"
+                                >
+                                    {{ getFileName(msg) }}
+                                </a>
+                            </template>
+                            <template v-else-if="msg.type === 'FILE'">
+                                {{ getFileName(msg) }}
+                            </template>
+                            <template v-else>
+                                {{ msg.content }}
+                            </template>
                             <span class="text-[9px] opacity-70 block text-right mt-1">
                                 {{ formatTime(msg.createdAt) }}
                             </span>
@@ -149,6 +164,19 @@ function isMyMessage(msg: ChatMessage) {
 
 function formatTime(date: Date) {
     return format(new Date(date), 'h:mm a');
+}
+
+function getFileUrl(message: ChatMessage) {
+    const url = message.metadata?.fileUrl;
+    return typeof url === 'string' && url.trim() ? url : '';
+}
+
+function getFileName(message: ChatMessage) {
+    const fileName = message.metadata?.fileName;
+    if (typeof fileName === 'string' && fileName.trim()) {
+        return fileName;
+    }
+    return message.content || '파일';
 }
 
 const windowRef = ref<HTMLElement | null>(null);

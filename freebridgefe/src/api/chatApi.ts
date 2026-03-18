@@ -156,3 +156,15 @@ export async function updateChatRoomContract(
     return mapToChatRoom(res.data);
 }
 
+/**
+ * 채팅 파일 업로드 및 FILE 메시지 생성
+ * POST /api/chat/rooms/{roomId}/files
+ */
+export async function sendChatFileMessage(roomId: string, file: File): Promise<ChatMessage> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await apiClient.post<BackendChatMessageResponse>(`/api/chat/rooms/${roomId}/files`, formData);
+    return mapToChatMessage(res.data);
+}
+

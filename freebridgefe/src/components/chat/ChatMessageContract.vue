@@ -32,14 +32,14 @@
             </div>
 
             <p class="text-xs text-slate-400 leading-relaxed">
-                채팅에서는 계약 조작을 하지 않습니다. 상세 확인과 서명은 계약 화면에서 진행하세요.
+                채팅에서는 계약 상태만 볼수 있습니다. 상세 확인과 서명은 계약 기능에서 진행하세요.
             </p>
 
             <button
                 class="w-full py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors shadow-lg shadow-emerald-900/20"
                 @click="openContractPage"
             >
-                계약 화면으로 이동
+                계약으로 이동
             </button>
         </div>
     </div>
