@@ -90,8 +90,10 @@
                         <div class="flex-1 relative bg-slate-800 rounded-full border border-white/5 transition-colors flex items-center px-4 py-1.5 focus-within:bg-slate-700/50">
                             <textarea
                                 :value="newMessage"
-                                @input="(e) => newMessage = (e.target as HTMLInputElement).value"
-                                @keydown.enter.exact.prevent="sendMessage"
+                                @input="handleMessageInput"
+                                @compositionstart="isComposing = true"
+                                @compositionend="handleCompositionEnd"
+                                @keydown.enter.exact.prevent="handleMessageEnter"
                                 rows="1"
                                 placeholder="메시지를 입력하세요..."
                                 class="flex-1 bg-transparent border-none focus:ring-0 outline-none resize-none py-2.5 h-[44px] max-h-[44px] min-h-[44px] overflow-y-auto text-white placeholder-slate-500 leading-relaxed custom-scrollbar text-[15px]"
@@ -149,6 +151,7 @@ const router = useRouter();
 
 const activeTab = ref<'CHAT' | 'CONTRACT'>('CHAT');
 const newMessage = ref('');
+const isComposing = ref(false);
 const isLeavingRoom = ref(false);
 const isUploadingFile = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
@@ -219,9 +222,27 @@ function getSenderName(senderId: string) {
     return chatStore.getParticipantName(currentRoom.value, senderId) || '알 수 없음';
 }
 
+function handleMessageInput(event: Event) {
+    newMessage.value = (event.target as HTMLTextAreaElement).value;
+}
+
+function handleCompositionEnd(event: CompositionEvent) {
+    isComposing.value = false;
+    handleMessageInput(event);
+}
+
+function handleMessageEnter(event: KeyboardEvent) {
+    if (event.isComposing || isComposing.value) {
+        return;
+    }
+    sendMessage();
+}
+
 function sendMessage() {
-    if (!newMessage.value.trim()) return;
-    chatStore.sendMessage(newMessage.value, 'TEXT', undefined, props.roomId);
+    const content = newMessage.value.trim();
+    if (!content) return;
+
+    chatStore.sendMessage(content, 'TEXT', undefined, props.roomId);
     newMessage.value = '';
     scrollToBottom();
 }

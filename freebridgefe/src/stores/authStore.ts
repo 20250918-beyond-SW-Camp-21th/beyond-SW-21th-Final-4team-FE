@@ -2,6 +2,12 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { User } from '@/types';
 import { authApi } from '@/api/authApi';
+import {
+    AUTH_SESSION_CLEARED_EVENT,
+    AUTH_SESSION_UPDATED_EVENT,
+    clearStoredAuthData,
+    setTokens
+} from '@/api/axiosInstance';
 
 function maskEmail(email: string): string {
     if (!email || !email.includes('@')) return '***';
@@ -34,18 +40,30 @@ export const useAuthStore = defineStore('auth', () => {
 
     const isAuthenticated = computed(() => !!user.value && !!token.value);
 
-    function setAuth(userData: User, accessToken: string) {
+    if (typeof window !== 'undefined') {
+        window.addEventListener(AUTH_SESSION_UPDATED_EVENT, ((event: Event) => {
+            const customEvent = event as CustomEvent<{ accessToken?: string }>;
+            token.value = customEvent.detail?.accessToken ?? localStorage.getItem('access_token');
+        }) as EventListener);
+
+        window.addEventListener(AUTH_SESSION_CLEARED_EVENT, (() => {
+            user.value = null;
+            token.value = null;
+        }) as EventListener);
+    }
+
+    function setAuth(userData: User, accessToken: string, refreshToken?: string) {
         user.value = userData;
         token.value = accessToken;
         localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('access_token', accessToken);
+        setTokens(accessToken, refreshToken);
     }
 
     async function login(credentials: any) {
         isLoading.value = true;
         try {
             const data = await authApi.login(credentials);
-            setAuth(data.user, data.accessToken);
+            setAuth(data.user, data.accessToken, data.refreshToken);
             return data;
         } catch (error) {
             console.error('Login failed:', error);
@@ -55,11 +73,16 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
-    function logout() {
-        user.value = null;
-        token.value = null;
-        localStorage.removeItem('user');
-        localStorage.removeItem('access_token');
+    async function logout() {
+        try {
+            await authApi.logout();
+        } catch (error) {
+            console.warn('Logout request failed, clearing local session anyway.', error);
+        } finally {
+            user.value = null;
+            token.value = null;
+            clearStoredAuthData();
+        }
     }
 
     async function checkEmailDuplicate(email: string): Promise<boolean> {

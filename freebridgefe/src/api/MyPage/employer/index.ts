@@ -201,12 +201,7 @@ export const uploadEmployerLogo = async (file: File): Promise<string> => {
     form.append('file', file);
     const response = await apiClient.post<ApiResponse<string>>(
         '/api/employer/mypage/profile/logo',
-        form,
-        {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        }
+        form
     );
     return response.data.data;
 };
