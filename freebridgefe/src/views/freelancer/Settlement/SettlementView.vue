@@ -62,12 +62,7 @@ const getStatusMeta = (status: string) => {
 // Base Data
 const mySettlements = computed(() => {
   if (!authStore.user) return [];
-  const settlements = contractStore.freelancerSettlementsWithDetails || [];
-  // Filter settlements by finding contracts where freelancerId matches current user
-  return settlements.filter((settlement) => {
-    const contract = contractStore.contracts.find((c) => c.id === settlement.contractId);
-    return contract && contract.freelancerId === Number(authStore.user!.id);
-  });
+  return contractStore.freelancerSettlementsWithDetails || [];
 });
 
 // Filtered Data
