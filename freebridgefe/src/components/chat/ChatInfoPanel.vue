@@ -49,13 +49,17 @@
 
     <div class="p-6">
       <h3 class="mb-4 text-sm font-bold uppercase tracking-wider text-white">공유 파일</h3>
+      <p class="mb-4 text-xs leading-relaxed text-slate-500">
+        {{ CHAT_SUPPORTED_FILE_DESCRIPTION }}
+      </p>
       <div class="space-y-3">
         <a
           v-for="file in sharedFiles"
           :key="file.id"
           :href="file.url || undefined"
-          target="_blank"
-          rel="noopener noreferrer"
+          :target="file.opensInNewTab ? '_blank' : undefined"
+          :rel="file.opensInNewTab ? 'noopener noreferrer' : undefined"
+          :download="file.url && !file.opensInNewTab ? file.name : undefined"
           class="group flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-800/50"
           :class="file.url ? 'cursor-pointer' : 'cursor-default'"
         >
@@ -150,6 +154,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import { useJobStore } from '@/stores/jobStore';
+import { CHAT_SUPPORTED_FILE_DESCRIPTION } from '@/api/chatApi';
+import { isInlinePreviewableChatFile } from '@/utils/chatFile';
 
 const props = defineProps<{
   roomId: string;
@@ -239,6 +245,7 @@ const sharedFiles = computed(() => {
       name: msg.metadata?.fileName || msg.content || '파일',
       size: msg.metadata?.fileSize,
       url: typeof msg.metadata?.fileUrl === 'string' ? msg.metadata.fileUrl : null,
+      opensInNewTab: isInlinePreviewableChatFile(msg.metadata?.contentType),
       createdAt: msg.createdAt,
     }))
     .reverse();

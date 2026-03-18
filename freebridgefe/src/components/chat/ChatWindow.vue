@@ -76,11 +76,13 @@
                         <label
                             class="p-2.5 rounded-full bg-slate-800 text-slate-400 transition-colors"
                             :class="isReadOnly || isUploadingFile ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'hover:text-white hover:bg-slate-700 cursor-pointer'"
+                            :title="CHAT_SUPPORTED_FILE_DESCRIPTION"
                         >
                             <PlusIcon class="w-6 h-6" />
                             <input
                                 type="file"
                                 class="hidden"
+                                :accept="CHAT_FILE_INPUT_ACCEPT"
                                 :disabled="isReadOnly || isUploadingFile"
                                 @change="handleFileUpload"
                             />
@@ -128,9 +130,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import { AxiosError } from 'axios';
 import { useChatStore } from '@/stores/chatStore';
 import { useContractStore } from '@/stores/contractStore';
 import { useAuthStore } from '@/stores/authStore';
+import { CHAT_FILE_INPUT_ACCEPT, CHAT_SUPPORTED_FILE_DESCRIPTION, validateChatUploadFile } from '@/api/chatApi';
 import MessageBubble from './MessageBubble.vue';
 import ContractTab from './ContractTab.vue';
 import { 
@@ -253,17 +257,35 @@ async function handleFileUpload(event: Event) {
     const file = input.files?.[0];
     if (!file) return;
 
+    const validationMessage = validateChatUploadFile(file);
+    if (validationMessage) {
+        alert(validationMessage);
+        input.value = '';
+        return;
+    }
+
     isUploadingFile.value = true;
     try {
         await chatStore.sendFileMessage(file, props.roomId);
         scrollToBottom();
     } catch (error) {
         console.error('Failed to upload chat file:', error);
-        alert('파일 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        alert(resolveChatUploadErrorMessage(error));
     } finally {
         input.value = '';
         isUploadingFile.value = false;
     }
+}
+
+function resolveChatUploadErrorMessage(error: unknown) {
+    const axiosError = error as AxiosError<{ error?: string; message?: string }>;
+    const serverMessage = axiosError.response?.data?.error || axiosError.response?.data?.message;
+
+    if (typeof serverMessage === 'string' && serverMessage.trim()) {
+        return serverMessage;
+    }
+
+    return `파일 업로드에 실패했습니다. ${CHAT_SUPPORTED_FILE_DESCRIPTION}`;
 }
 
 function scrollToBottom() {

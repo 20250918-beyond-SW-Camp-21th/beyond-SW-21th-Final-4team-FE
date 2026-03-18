@@ -29,8 +29,9 @@
                     :is="fileUrl ? 'a' : 'div'"
                     v-else-if="message.type === 'FILE'"
                     :href="fileUrl || undefined"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    :target="opensFileInNewTab ? '_blank' : undefined"
+                    :rel="opensFileInNewTab ? 'noopener noreferrer' : undefined"
+                    :download="fileUrl && !opensFileInNewTab ? fileName : undefined"
                     class="flex min-w-[240px] items-center gap-3 px-4 py-3 text-[14px] shadow-md transition-all hover:shadow-lg"
                     :class="[
                         isMine
@@ -84,6 +85,7 @@ import type { ChatMessage } from '@/types';
 import { format } from 'date-fns';
 import { Download as DownloadIcon, Paperclip as PaperclipIcon } from 'lucide-vue-next';
 import ChatMessageContract from './ChatMessageContract.vue';
+import { isInlinePreviewableChatFile } from '@/utils/chatFile';
 
 const props = defineProps<{
     message: ChatMessage;
@@ -104,6 +106,10 @@ const fileUrl = computed(() => {
     const url = props.message.metadata?.fileUrl;
     return typeof url === 'string' && url.trim() ? url : '';
 });
+
+const opensFileInNewTab = computed(() =>
+    isInlinePreviewableChatFile(props.message.metadata?.contentType)
+);
 
 const fileName = computed(() => {
     const name = props.message.metadata?.fileName;

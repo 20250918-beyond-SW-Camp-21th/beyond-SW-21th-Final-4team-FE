@@ -3,6 +3,52 @@ import type { ChatRoom, ChatMessage } from '@/types';
 
 // ─── Response Mapping Types ──────────────────────────────────────────────────
 
+const CHAT_UPLOAD_MAX_BYTES = 20 * 1024 * 1024;
+const CHAT_ALLOWED_UPLOAD_MIME_TYPES = new Set([
+    'text/plain',
+    'application/pdf',
+    'application/zip',
+    'application/x-zip-compressed',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+]);
+const CHAT_ALLOWED_UPLOAD_EXTENSIONS = [
+    '.txt',
+    '.pdf',
+    '.zip',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+    '.ppt',
+    '.pptx',
+    '.jpg',
+    '.jpeg',
+    '.png',
+    '.gif',
+    '.webp'
+];
+
+export const CHAT_FILE_INPUT_ACCEPT = [
+    'image/*',
+    '.txt',
+    '.pdf',
+    '.zip',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+    '.ppt',
+    '.pptx'
+].join(',');
+
+export const CHAT_SUPPORTED_FILE_DESCRIPTION =
+    '지원 형식: 이미지, txt, pdf, zip, doc/docx, xls/xlsx, ppt/pptx (최대 20MB)';
+
 export interface BackendChatRoomResponse {
     roomId: string;
     participants: string[];
@@ -68,6 +114,30 @@ function mapToChatMessage(m: BackendChatMessageResponse): ChatMessage {
         createdAt: new Date(m.createdAt),
         readBy: m.readBy ?? []
     };
+}
+
+export function validateChatUploadFile(file: File): string | null {
+    if (!file || file.size <= 0) {
+        return '업로드할 파일이 없습니다.';
+    }
+
+    if (file.size > CHAT_UPLOAD_MAX_BYTES) {
+        return '채팅 파일은 20MB 이하만 업로드할 수 있습니다.';
+    }
+
+    const normalizedType = file.type.toLowerCase();
+    const normalizedName = file.name.toLowerCase();
+    const hasAllowedExtension = CHAT_ALLOWED_UPLOAD_EXTENSIONS.some((extension) =>
+        normalizedName.endsWith(extension)
+    );
+    const isAllowedMimeType =
+        normalizedType.startsWith('image/') || CHAT_ALLOWED_UPLOAD_MIME_TYPES.has(normalizedType);
+
+    if (!isAllowedMimeType && !hasAllowedExtension) {
+        return CHAT_SUPPORTED_FILE_DESCRIPTION;
+    }
+
+    return null;
 }
 
 // ─── API Functions ────────────────────────────────────────────────────────────
