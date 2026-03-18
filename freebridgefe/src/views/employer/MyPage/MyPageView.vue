@@ -28,6 +28,7 @@ import {
 } from 'lucide-vue-next';
 import { useAuthStore } from '@/stores/authStore';
 import { useAlertStore } from '@/stores/alertStore';
+import { useContractStore } from '@/stores/contractStore';
 import { getEmployerProfile, uploadEmployerLogo, type EmployerProfileData } from '@/api/MyPage/employer';
 import { PLAN_LABELS } from '@/constants/planLabels';
 import { getEmployerReviewSummary } from '@/api/MyPage/evaluationApi';
@@ -44,6 +45,7 @@ const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const alertStore = useAlertStore();
+const contractStore = useContractStore();
 
 const activeTab = ref('dashboard');
 const hideUpsellAlert = ref(false);
@@ -125,19 +127,27 @@ const handleLogoUpdate = async (event: Event) => {
     }
 };
 
-const handleNoticeClick = () => {
-  const plan = (employerProfile.value.plan ?? 'FREE').toUpperCase();
-  console.log('[Notice] plan:', plan);
-  if (plan === 'BASIC') {
-    activeTab.value = 'account';
-    router.push({ query: { ...route.query, tab: 'account' } });
-    return;
+const handleNoticeClick = async () => {
+  try {
+    await contractStore.fetchContracts();
+    const latestContract = [...contractStore.contractsWithDetails]
+      .sort((left, right) => Number(right.contractId ?? right.id) - Number(left.contractId ?? left.id))[0];
+
+    await router.push({
+      name: 'employer.contracts',
+      query: latestContract
+        ? {
+            contractId: String(latestContract.contractId ?? latestContract.id),
+            contractTab: 'ai-advice',
+          }
+        : {
+            contractTab: 'ai-advice',
+          },
+    });
+  } catch (error) {
+    console.error('Failed to open employer legal ai guide:', error);
+    alertStore.open({ message: '법률 자문 AI 화면으로 이동하지 못했습니다.', type: 'error' });
   }
-  if (plan === 'PRO' || plan === 'PRIME') {
-    alertStore.open({ message: '해당 기능이 구현중입니다', type: 'info' });
-    return;
-  }
-  alertStore.open({ message: '해당 기능이 구현중입니다', type: 'info' });
 };
 
 const handlePrimeUpsellClick = () => {

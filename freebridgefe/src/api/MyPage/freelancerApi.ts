@@ -360,3 +360,43 @@ export const uploadFreelancerPortfolio = async (
     lastUpdated,
   };
 };
+
+export const getFreelancerPortfolioDownloadUrl = async (): Promise<string> => {
+  const response = await apiClient.get<ApiResponse<string>>("/api/freelancer/mypage/portfolio/download");
+  if (!response.data.success || !response.data.data) {
+    const message = response.data.message ?? "Unknown error";
+    throw new Error(`getFreelancerPortfolioDownloadUrl failed (/api/freelancer/mypage/portfolio/download): ${message}`);
+  }
+  return response.data.data;
+};
+
+export const deleteFreelancerPortfolio = async (): Promise<void> => {
+  const response = await apiClient.delete<ApiResponse<null>>("/api/freelancer/mypage/portfolio");
+  if (!response.data.success) {
+    const message = response.data.message ?? "Unknown error";
+    throw new Error(`deleteFreelancerPortfolio failed (/api/freelancer/mypage/portfolio): ${message}`);
+  }
+};
+
+export const downloadFreelancerPortfolioTemplate = async (): Promise<{ blob: Blob; fileName: string }> => {
+  const response = await apiClient.get("/api/freelancer/mypage/portfolio/template", {
+    responseType: "blob",
+  });
+  const contentDisposition = response.headers["content-disposition"] as string | undefined;
+  const contentType = response.headers["content-type"] as string | undefined;
+  const utf8Match = contentDisposition?.match(/filename\*=UTF-8''([^;]+)/i);
+  const basicMatch = contentDisposition?.match(/filename=\"?([^\";]+)\"?/i);
+  const fallbackFileName = contentType?.includes(
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  )
+    ? "freelancer-portfolio-template.docx"
+    : "freelancer-portfolio-template.pdf";
+  const fileName = utf8Match
+    ? decodeURIComponent(utf8Match[1])
+    : basicMatch?.[1] ?? fallbackFileName;
+
+  return {
+    blob: response.data as Blob,
+    fileName,
+  };
+};

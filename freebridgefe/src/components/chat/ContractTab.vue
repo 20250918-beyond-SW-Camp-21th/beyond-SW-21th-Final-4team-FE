@@ -34,13 +34,22 @@
                         {{ emptyStateDescription }}
                     </p>
                 </div>
-                <button
-                    @click="openContractPage"
-                    class="mt-2 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-950/30"
-                >
-                    {{ primaryActionLabel }}
-                    <ArrowRightIcon class="w-4 h-4" />
-                </button>
+                <div class="mt-2 flex flex-col gap-3">
+                    <button
+                        @click="openContractPage"
+                        class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-950/30"
+                    >
+                        {{ primaryActionLabel }}
+                        <ArrowRightIcon class="w-4 h-4" />
+                    </button>
+                    <button
+                        @click="openLegalAdvicePage"
+                        class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-sky-400/20 bg-sky-500/10 text-sky-100 font-semibold hover:bg-sky-500/20 transition-colors"
+                    >
+                        <ScaleIcon class="w-4 h-4" />
+                        법률 자문 AI 보기
+                    </button>
+                </div>
             </div>
 
             <div v-else class="space-y-6">
@@ -195,6 +204,15 @@
             </div>
         </div>
     </div>
+
+    <ContractDetailModal
+        v-if="selectedLegalAdviceContract"
+        :contract="selectedLegalAdviceContract"
+        :is-freelancer="!isEmployer"
+        initial-tab="ai-advice"
+        @close="selectedLegalAdviceContract = null"
+    />
+
 </template>
 
 <script setup lang="ts">
@@ -202,7 +220,8 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
-import { useContractStore } from '@/stores/contractStore';
+import { useContractStore, type ContractWithDetails } from '@/stores/contractStore';
+import ContractDetailModal from '@/views/employer/Contracts/components/ContractDetailModal.vue';
 import {
     AlertCircle as AlertCircleIcon,
     ArrowRight as ArrowRightIcon,
@@ -224,6 +243,7 @@ const authStore = useAuthStore();
 const chatStore = useChatStore();
 const contractStore = useContractStore();
 const router = useRouter();
+const selectedLegalAdviceContract = ref<ContractWithDetails | null>(null);
 
 const currentRoom = computed(() => chatStore.rooms.find((room) => room.id === props.roomId));
 const isEmployer = computed(() => authStore.user?.role === 'EMPLOYER');
@@ -333,9 +353,8 @@ const displayContract = computed(() => {
 const hasContractCandidates = computed(() => {
     return contractCandidates.value.length > 0;
 });
-
 const isContractLookupPending = computed(() => {
-    return contractStore.isContractsLoading && !displayContract.value;
+    return contractStore.isContractsLoading && !displayContract.value && !hasContractCandidates.value;
 });
 
 watch(
@@ -484,31 +503,13 @@ function openContractPage() {
 }
 
 function openLegalAdvicePage() {
-    if (!displayContract.value && !currentRoom.value?.contractId) {
-        openContractPage();
+    const contractToOpen = displayContract.value || linkedContract.value || autoConnectableContract.value || null;
+
+    if (!contractToOpen) {
+        window.alert('채팅과 바로 연결된 계약이 없어 법률 자문 모달을 열 수 없습니다. 계약 목록에서 먼저 계약을 확인해 주세요.');
         return;
     }
 
-    const query: Record<string, string> = {
-        roomId: props.roomId,
-        contractTab: 'ai-advice',
-    };
-
-    if (currentRoom.value?.relatedJobId) {
-        query.jobId = String(currentRoom.value.relatedJobId);
-    }
-    if (currentRoom.value?.relatedProposalId) {
-        query.proposalId = String(currentRoom.value.relatedProposalId);
-    }
-    if (displayContract.value?.contractId) {
-        query.contractId = String(displayContract.value.contractId);
-    } else if (currentRoom.value?.contractId) {
-        query.contractId = String(currentRoom.value.contractId);
-    }
-
-    router.push({
-        name: isEmployer.value ? 'employer.contracts' : 'freelancer.contracts',
-        query,
-    });
+    selectedLegalAdviceContract.value = contractToOpen;
 }
 </script>

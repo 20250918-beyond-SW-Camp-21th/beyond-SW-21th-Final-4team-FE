@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { X, FileText, Calendar, DollarSign, CheckCircle, User, PenTool, Clock, MapPin, Briefcase, Shield, ScrollText, Loader2, Scale, Sparkles } from 'lucide-vue-next';
 import type { ContractWithDetails } from '@/stores/contractStore';
 import ContractPreview from '@/components/contract/ContractPreview.vue';
-import { getContract } from '@/api/contractApi';
+import { getContract, requestAiLegalReview } from '@/api/contractApi';
 import { getUserById } from '@/api/authApi';
 
 type ViewTab = 'details' | 'contract' | 'ai-advice';
@@ -30,6 +30,8 @@ const statusLabels: Record<string, string> = {
 // Full contract detail (fetched on open; falls back to prop if fetch fails)
 const fullContract = ref<ContractWithDetails>(props.contract);
 const isLoadingDetail = ref(false);
+const isRequestingAiLegalReview = ref(false);
+const hasRequestedAiLegalReview = ref(false);
 const route = useRoute();
 
 const placeholderPattern = /(user|사용자)\s*#\s*\d+/i;
@@ -66,7 +68,7 @@ const resolveUserName = async (userId?: number, currentName?: string | null) => 
     }
 };
 
-onMounted(async () => {
+const loadContractDetail = async () => {
     isLoadingDetail.value = true;
     try {
         const detail = await getContract(props.contract.contractId);
@@ -85,7 +87,7 @@ onMounted(async () => {
     } finally {
         isLoadingDetail.value = false;
     }
-});
+};
 
 // Use employerSigned / freelancerSigned from API response (available in both list & detail)
 const canSign = computed(() => {
@@ -121,6 +123,36 @@ const activeTab = ref<ViewTab>(
     props.initialTab ||
         (route.query.contractTab === 'ai-advice' ? 'ai-advice' : 'details'),
 );
+
+const ensureAiLegalReviewRequested = async () => {
+    if (activeTab.value !== 'ai-advice') return;
+    if (isRequestingAiLegalReview.value || hasRequestedAiLegalReview.value) return;
+    if (fullContract.value.aiLegalAdvice?.trim()) return;
+
+    isRequestingAiLegalReview.value = true;
+    try {
+        const response = await requestAiLegalReview(props.contract.contractId);
+        fullContract.value = {
+            ...fullContract.value,
+            ...response,
+        };
+        hasRequestedAiLegalReview.value = true;
+    } catch {
+        // keep the current advice state if the request fails
+    } finally {
+        isRequestingAiLegalReview.value = false;
+    }
+};
+
+onMounted(async () => {
+    await loadContractDetail();
+    await ensureAiLegalReviewRequested();
+});
+
+watch(activeTab, (tab) => {
+    if (tab !== 'ai-advice') return;
+    void ensureAiLegalReviewRequested();
+});
 </script>
 
 <template>
