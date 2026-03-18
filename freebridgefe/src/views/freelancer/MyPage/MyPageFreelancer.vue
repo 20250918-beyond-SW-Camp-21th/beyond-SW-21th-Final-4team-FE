@@ -54,6 +54,7 @@ const authStore = useAuthStore();
 const alertStore = useAlertStore();
 const contractStore = useContractStore();
 const currentUser = computed(() => authStore.user);
+const currentAccessToken = computed(() => authStore.token ?? localStorage.getItem('access_token'));
 const currentUserId = computed(() => authStore.user?.id ?? null);
 
 const activeTab = ref('dashboard');
@@ -92,9 +93,22 @@ const moveToJobBoard = async () => {
     await router.push({ name: 'freelancer.jobs' });
 };
 
+const hashToken = (token: string) => {
+    let hash = 5381;
+    for (let i = 0; i < token.length; i += 1) {
+        hash = ((hash << 5) + hash) ^ token.charCodeAt(i);
+    }
+    return Math.abs(hash >>> 0).toString(16);
+};
+
+const tokenFingerprint = computed(() => {
+    const token = currentAccessToken.value;
+    return token ? hashToken(token) : null;
+});
+
 const getFreelancerCrmStorageKey = () => {
-    const userId = currentUserId.value;
-    return userId ? `mypage-freelancer-crm:${userId}` : null;
+    const fingerprint = tokenFingerprint.value;
+    return fingerprint ? `mypage-freelancer-crm:${fingerprint}` : null;
 };
 
 const loadSeenFreelancerCrmKeys = () => {
@@ -107,7 +121,12 @@ const loadSeenFreelancerCrmKeys = () => {
     try {
         const saved = sessionStorage.getItem(storageKey);
         const parsed = saved ? JSON.parse(saved) : [];
-        seenFreelancerCrmKeys.value = Array.isArray(parsed) ? parsed : [];
+        if (Array.isArray(parsed)) {
+            seenFreelancerCrmKeys.value = parsed;
+        } else {
+            console.warn('Invalid freelancer crm session state. Resetting to an empty array.');
+            seenFreelancerCrmKeys.value = [];
+        }
     } catch (error) {
         console.error('Failed to load freelancer crm session state:', error);
         seenFreelancerCrmKeys.value = [];
@@ -599,6 +618,14 @@ const activeFreelancerCrmBanner = computed(() => {
 watch(currentUserId, () => {
     dismissedFreelancerCrmKeys.value = [];
     pinnedFreelancerCrmBannerKey.value = null;
+    hideBurnoutAlert.value = false;
+    hideChurnAlert.value = false;
+    loadSeenFreelancerCrmKeys();
+});
+
+watch(tokenFingerprint, () => {
+    dismissedFreelancerCrmKeys.value = [];
+    pinnedFreelancerCrmBannerKey.value = null;
     loadSeenFreelancerCrmKeys();
 });
 
@@ -646,7 +673,7 @@ watch(freelancerCrmBanners, (banners) => {
                 <div :class="['relative w-full overflow-hidden rounded-[32px] border border-white/10 px-7 py-6 shadow-[0_30px_80px_-52px_rgba(15,23,42,0.85)] backdrop-blur-2xl', activeFreelancerCrmBanner.wrapClass]">
                     <div :class="['absolute inset-0', activeFreelancerCrmBanner.glowClass]"></div>
                     <div class="absolute right-4 top-4 z-20">
-                        <button @click="dismissFreelancerCrmBanner(activeFreelancerCrmBanner.key)" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white">
+                        <button type="button" aria-label="닫기" @click="dismissFreelancerCrmBanner(activeFreelancerCrmBanner.key)" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white">
                             <X class="h-4 w-4" />
                         </button>
                     </div>

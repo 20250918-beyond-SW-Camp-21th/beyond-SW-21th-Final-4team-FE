@@ -513,7 +513,11 @@ watch(topCrmBanners, (banners) => {
   const nextBanner = banners[0] ?? null;
   pinnedTopCrmBannerKey.value = nextBanner?.key ?? null;
   if (nextBanner) {
-    markTopCrmBannerSeen(nextBanner.key);
+    setTimeout(() => {
+      if (pinnedTopCrmBannerKey.value === nextBanner.key) {
+        markTopCrmBannerSeen(nextBanner.key);
+      }
+    }, 0);
   }
 }, { immediate: true });
 
@@ -621,7 +625,7 @@ const safeWebsiteUrl = computed(() => {
                   v-motion :initial="{ opacity: 0, y: -18 }" :enter="{ opacity: 1, y: 0 }"
               >
                   <div class="absolute top-0 right-0 z-20 p-4">
-                      <button @click="dismissTopCrmBanner(activeTopCrmBanner.key)" class="text-white/50 hover:text-white transition-colors">
+                      <button type="button" aria-label="닫기" @click="dismissTopCrmBanner(activeTopCrmBanner.key)" class="text-white/50 hover:text-white transition-colors">
                           <X class="w-5 h-5" />
                       </button>
                   </div>
