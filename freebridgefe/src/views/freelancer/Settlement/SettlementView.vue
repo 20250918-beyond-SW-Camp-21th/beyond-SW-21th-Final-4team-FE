@@ -50,9 +50,9 @@ const statusFilters = [
 ];
 
 const statusConfig: Record<string, { label: string; color: string; bg: string; badgeBg: string; icon: any }> = {
-    PENDING: { label: '지급 예정', color: 'text-blue-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-blue-500/20 border border-blue-500/30 text-blue-400', icon: Calendar },
-    PAID: { label: '지급 완료', color: 'text-green-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-green-500/20 border border-green-500/30 text-green-400', icon: CheckCircle },
-    CANCELLED: { label: '취소됨', color: 'text-rose-400', bg: 'bg-white/5 border-white/10', badgeBg: 'bg-rose-500/20 border border-rose-500/30 text-rose-400', icon: AlertCircle },
+    PENDING: { label: '지급 예정', color: 'text-sky-600', bg: 'bg-sky-50 border-sky-100', badgeBg: 'bg-sky-50 border border-sky-100 text-sky-700', icon: Calendar },
+    PAID: { label: '지급 완료', color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-100', badgeBg: 'bg-emerald-50 border border-emerald-100 text-emerald-700', icon: CheckCircle },
+    CANCELLED: { label: '취소됨', color: 'text-rose-600', bg: 'bg-rose-50 border-rose-100', badgeBg: 'bg-rose-50 border border-rose-100 text-rose-700', icon: AlertCircle },
 };
 
 const getStatusMeta = (status: string) => {
@@ -190,7 +190,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-white">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-slate-900">
     <!-- Header -->
     <div
       class="mb-12"
@@ -200,50 +200,52 @@ onMounted(async () => {
       :enter="{ opacity: 1, y: 0 }"
     >
       <div class="mb-3">
-             <h1 class="text-4xl font-bold text-white flex items-center gap-3 mb-2">
-                <Wallet class="w-10 h-10 text-white" />
+             <h1 class="mb-2 flex items-center gap-4 text-4xl font-bold tracking-tight text-slate-950">
+                <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-400 text-white shadow-lg shadow-sky-200">
+                  <Wallet class="w-7 h-7" />
+                </span>
                 정산 관리
              </h1>
-             <p class="text-white/60">수입 내역과 정산을 손쉽게 관리하세요</p>
+             <p class="text-slate-500">수입 내역과 정산을 손쉽게 관리하세요</p>
       </div>
     </div>
 
     <!-- Summary Stats Section -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div
-            class="bg-[#1e293b]/50 backdrop-blur-sm rounded-3xl p-8 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all"
+            class="fb-card relative overflow-hidden p-8 group transition-all"
             v-motion
             :initial="{ opacity: 0, x: 20 }"
             :enter="{ opacity: 1, x: 0, transition: { delay: 200 } }"
         >
             <div class="flex justify-between items-start mb-4">
-                <div class="flex items-center gap-2 text-white/60 text-lg font-medium">
+                <div class="flex items-center gap-2 text-lg font-medium text-slate-500">
                     <Calendar class="w-5 h-5 text-blue-400" />
                     지급 예정
                 </div>
-                <div class="p-2 bg-blue-500/10 rounded-lg text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                <div class="rounded-xl bg-sky-50 p-2 text-sky-500 transition-colors group-hover:bg-sky-100">
                     <TrendingUp class="w-5 h-5" />
                 </div>
             </div>
-            <div class="text-4xl font-bold text-white mb-1">{{ pendingAmountDisplay.toLocaleString() }}<span class="text-xl text-white/40 ml-1">원</span></div>
+            <div class="mb-1 text-4xl font-bold text-slate-950">{{ pendingAmountDisplay.toLocaleString() }}<span class="ml-1 text-xl text-slate-400">원</span></div>
         </div>
 
         <div
-            class="bg-[#1e293b]/50 backdrop-blur-sm rounded-3xl p-8 border border-white/5 relative overflow-hidden group hover:border-white/20 transition-all"
+            class="fb-card relative overflow-hidden p-8 group transition-all"
             v-motion
             :initial="{ opacity: 0, x: 20 }"
             :enter="{ opacity: 1, x: 0, transition: { delay: 300 } }"
         >
             <div class="flex justify-between items-start mb-4">
-                    <div class="flex items-center gap-2 text-white/60 text-lg font-medium">
+                    <div class="flex items-center gap-2 text-lg font-medium text-slate-500">
                         <CheckCircle class="w-5 h-5 text-green-500" />
                     총 지급 완료
                 </div>
-                <div class="p-2 bg-green-500/10 rounded-lg text-green-500 group-hover:bg-green-500/20 transition-colors">
+                <div class="rounded-xl bg-emerald-50 p-2 text-emerald-500 transition-colors group-hover:bg-emerald-100">
                     <Award class="w-5 h-5" />
                 </div>
             </div>
-                <div class="text-4xl font-bold text-white mb-1">{{ paidAmountDisplay.toLocaleString() }}<span class="text-xl text-white/40 ml-1">원</span></div>
+                <div class="mb-1 text-4xl font-bold text-slate-950">{{ paidAmountDisplay.toLocaleString() }}<span class="ml-1 text-xl text-slate-400">원</span></div>
         </div>
     </div>
     
@@ -252,17 +254,17 @@ onMounted(async () => {
     <div class="grid lg:grid-cols-3 gap-6">
         <!-- Settlement History -->
         <div
-            class="lg:col-span-2 bg-[#1e293b]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-8"
+            class="fb-card lg:col-span-2 p-8"
             v-motion
             :initial="{ opacity: 0, y: 20 }"
             :enter="{ opacity: 1, y: 0, transition: { delay: 500 } }"
         >
             <div class="flex items-center justify-between mb-8">
-                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <h2 class="flex items-center gap-2 text-xl font-bold text-slate-950">
                     <Clock class="w-5 h-5 text-blue-400" />
                     정산 내역
                 </h2>
-                <div class="text-white/60 text-sm">
+                <div class="text-sm text-slate-400">
                     {{ filteredSettlements.length }}건의 내역
                 </div>
             </div>
@@ -272,17 +274,17 @@ onMounted(async () => {
                 <div class="flex items-center gap-4 w-full md:w-auto">
                     <!-- Search Bar -->
                     <div class="relative flex-1 md:flex-initial">
-                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                        <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             v-model="searchQuery"
                             type="text"
                             placeholder="프로젝트 검색"
-                            class="w-full md:w-64 pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
+                            class="fb-input w-full md:w-64 pl-10 pr-4 py-2.5"
                         />
                     </div>
 
                     <!-- Date Range Filter -->
-                    <div class="hidden md:flex bg-white/5 p-1 rounded-xl border border-white/10">
+                    <div class="hidden rounded-2xl border border-sky-100 bg-sky-50/70 p-1 md:flex">
                         <button
                             v-for="option in dateRangeOptions"
                             :key="option.value"
@@ -290,8 +292,8 @@ onMounted(async () => {
                             class="px-3 py-1 text-sm rounded-lg transition-colors"
                             :class="
                                 selectedDateRange === option.value
-                                    ? 'bg-blue-600 text-white shadow-lg'
-                                    : 'text-white/60 hover:text-white hover:bg-white/5'
+                                    ? 'bg-gradient-to-r from-sky-500 to-cyan-400 text-white shadow-lg'
+                                    : 'text-slate-500 hover:text-slate-900 hover:bg-white'
                             "
                         >
                             {{ option.label }}
@@ -301,7 +303,7 @@ onMounted(async () => {
                     <button
                         type="button"
                         @click="resetFilters"
-                        class="px-3 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 transition-colors"
+                        class="fb-button-secondary px-3 py-2 text-sm text-slate-600"
                     >
                         초기화
                     </button>
@@ -311,7 +313,7 @@ onMounted(async () => {
                 <div class="relative z-30 w-full md:w-auto">
                     <button
                         @click="isDropdownOpen = !isDropdownOpen"
-                        class="flex items-center justify-between w-full md:w-auto gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors min-w-[140px]"
+                        class="fb-input flex min-w-[140px] w-full items-center justify-between gap-2 px-4 py-2 md:w-auto"
                     >
                         <span>{{ currentStatusLabel }}</span>
                         <ChevronDown
@@ -321,14 +323,14 @@ onMounted(async () => {
                     </button>
                     <div
                         v-if="isDropdownOpen"
-                        class="absolute top-full mt-2 right-0 w-full md:w-48 bg-gray-900 border border-white/10 rounded-xl overflow-hidden shadow-xl z-50"
+                        class="absolute right-0 top-full z-50 mt-2 w-full overflow-hidden rounded-2xl border border-sky-100 bg-white shadow-xl md:w-48"
                     >
                         <button
                             v-for="filter in statusFilters"
                             :key="filter.value"
                             @click="selectStatusFilter(filter.value)"
-                            class="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-colors text-sm"
-                            :class="{ 'bg-white/5': selectedStatus === filter.value }"
+                            class="w-full px-4 py-3 text-left text-sm text-slate-600 transition-colors hover:bg-sky-50 hover:text-slate-900"
+                            :class="{ 'bg-sky-50 text-slate-900': selectedStatus === filter.value }"
                         >
                             {{ filter.label }}
                         </button>
@@ -338,17 +340,17 @@ onMounted(async () => {
 
             <!-- List -->
             <div v-if="paginatedSettlements.length === 0" class="text-center py-20">
-                <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <DollarSign class="w-8 h-8 text-white/20" />
+                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-sky-50">
+                    <DollarSign class="w-8 h-8 text-sky-300" />
                 </div>
-                <p class="text-white/40">정산 내역이 없습니다</p>
+                <p class="text-slate-400">정산 내역이 없습니다</p>
             </div>
 
             <div v-else class="space-y-3">
                 <div
                     v-for="settlement in paginatedSettlements"
                     :key="settlement.id"
-                    class="group bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 hover:border-white/10 transition-all flex items-center justify-between"
+                    class="fb-card-soft group flex items-center justify-between p-5 transition-all"
                 >
                     <div class="flex items-center gap-4">
                         <div
@@ -358,10 +360,10 @@ onMounted(async () => {
                              <component :is="getStatusMeta(settlement.status).icon" class="w-5 h-5" :class="getStatusMeta(settlement.status).color" />
                         </div>
                         <div>
-                            <div class="font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">
+                            <div class="mb-1 font-bold text-slate-900 transition-colors group-hover:text-sky-700">
                                 {{ settlement.projectName }}
                             </div>
-                            <div class="text-xs text-white/40">
+                            <div class="text-xs text-slate-400">
                                 {{ settlement.installmentNumber }}차 정산
                                 <span v-if="settlement.paidDate"> · {{ formatDate(settlement.paidDate) }}</span>
                             </div>
@@ -369,8 +371,8 @@ onMounted(async () => {
                     </div>
                     <div class="flex items-center gap-4">
                         <div class="text-right">
-                             <div class="text-lg font-bold text-white">{{ settlement.netAmount.toLocaleString() }}원</div>
-                             <div class="text-xs text-white/40">실 수령액</div>
+                             <div class="text-lg font-bold text-slate-900">{{ settlement.netAmount.toLocaleString() }}원</div>
+                             <div class="text-xs text-slate-400">실 수령액</div>
                         </div>
                         <!-- Status Badge -->
                         <div
@@ -381,10 +383,10 @@ onMounted(async () => {
                         </div>
                         <button
                             @click="selectedSettlement = settlement"
-                            class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            class="rounded-lg p-2 transition-colors hover:bg-sky-50"
                             title="상세보기"
                         >
-                            <Eye class="w-5 h-5 text-white/60" />
+                            <Eye class="w-5 h-5 text-slate-400" />
                         </button>
                     </div>
                 </div>
@@ -398,9 +400,9 @@ onMounted(async () => {
                 <button
                     @click="goToPage(currentPage - 1)"
                     :disabled="currentPage === 1"
-                    class="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    class="rounded-xl border border-sky-100 bg-white p-2 transition-colors hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                    <ChevronLeft class="w-5 h-5 text-white" />
+                    <ChevronLeft class="w-5 h-5 text-slate-700" />
                 </button>
 
                 <template v-for="page in totalPages" :key="page">
@@ -409,8 +411,8 @@ onMounted(async () => {
                         class="w-10 h-10 rounded-lg font-medium transition-colors"
                         :class="
                             currentPage === page
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                ? 'bg-gradient-to-r from-sky-500 to-cyan-400 text-white shadow-md'
+                                : 'border border-sky-100 bg-white text-slate-500 hover:bg-sky-50'
                         "
                     >
                         {{ page }}
@@ -420,9 +422,9 @@ onMounted(async () => {
                 <button
                     @click="goToPage(currentPage + 1)"
                     :disabled="currentPage === totalPages"
-                    class="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    class="rounded-xl border border-sky-100 bg-white p-2 transition-colors hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                    <ChevronRight class="w-5 h-5 text-white" />
+                    <ChevronRight class="w-5 h-5 text-slate-700" />
                 </button>
             </div>
         </div>
@@ -430,32 +432,32 @@ onMounted(async () => {
         <!-- Right Column Actions -->
         <div class="space-y-6">
             <div
-                class="bg-[#1e293b]/50 backdrop-blur-xl border border-white/10 rounded-3xl p-6"
+                class="fb-card p-6"
                 v-motion
                 :initial="{ opacity: 0, x: 20 }"
                 :enter="{ opacity: 1, x: 0, transition: { delay: 600 } }"
             >
-                <h2 class="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                    <Zap class="w-5 h-5 text-yellow-400" />
+                <h2 class="mb-6 flex items-center gap-2 text-lg font-bold text-slate-950">
+                    <Zap class="w-5 h-5 text-amber-500" />
                     빠른 작업
                 </h2>
                 <div class="space-y-3">
-                    <button class="w-full p-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl flex items-center gap-3 transition-all text-left group">
-                         <div class="p-2 bg-blue-500/20 rounded-lg text-blue-400 group-hover:scale-110 transition-transform">
+                    <button class="flex w-full items-center gap-3 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 text-left transition-all group hover:bg-sky-100/70">
+                         <div class="rounded-lg bg-sky-100 p-2 text-sky-600 transition-transform group-hover:scale-110">
                              <Download class="w-5 h-5" />
                          </div>
                          <div>
-                             <div class="font-bold text-white text-sm">내역 다운로드</div>
-                             <div class="text-xs text-white/40">PDF/Excel 형식 지원</div>
+                             <div class="text-sm font-bold text-slate-900">내역 다운로드</div>
+                             <div class="text-xs text-slate-500">PDF/Excel 형식 지원</div>
                          </div>
                     </button>
-                    <button class="w-full p-4 bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 rounded-2xl flex items-center gap-3 transition-all text-left group">
-                         <div class="p-2 bg-purple-500/20 rounded-lg text-purple-400 group-hover:scale-110 transition-transform">
+                    <button class="flex w-full items-center gap-3 rounded-2xl border border-teal-100 bg-teal-50/70 p-4 text-left transition-all group hover:bg-teal-100/70">
+                         <div class="rounded-lg bg-teal-100 p-2 text-teal-600 transition-transform group-hover:scale-110">
                              <Award class="w-5 h-5" />
                          </div>
                          <div>
-                             <div class="font-bold text-white text-sm">세금계산서 발행</div>
-                             <div class="text-xs text-white/40">전자세금계산서 신청</div>
+                             <div class="text-sm font-bold text-slate-900">세금계산서 발행</div>
+                             <div class="text-xs text-slate-500">전자세금계산서 신청</div>
                          </div>
                     </button>
                 </div>

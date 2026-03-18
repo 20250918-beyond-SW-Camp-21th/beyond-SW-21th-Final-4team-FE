@@ -408,43 +408,45 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white">
+    <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-slate-900">
         <template v-if="subscriptionMode">
             <div class="max-w-3xl mx-auto">
                 <button
                     @click="goBackFromSubscriptionPayment"
-                    class="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                    class="fb-button-secondary mb-6 gap-2"
                 >
                     <ArrowLeft class="w-4 h-4" />
                     구독 관리로 돌아가기
                 </button>
 
-                <div class="bg-[#1e293b]/60 border border-white/10 rounded-[28px] p-8 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.75)]">
+                <div class="fb-card p-8 md:p-10">
                     <div class="flex items-center gap-3 mb-4">
-                        <CreditCard class="w-8 h-8 text-sky-300" />
+                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-400 text-white shadow-lg shadow-sky-200">
+                            <CreditCard class="w-7 h-7" />
+                        </div>
                         <div>
-                            <h1 class="text-3xl font-bold">구독 결제</h1>
-                            <p class="text-white/60 text-sm mt-1">최상의 경험을 제공하기 위해 최선의 선택을 제공합니다.</p>
+                            <h1 class="text-3xl font-bold text-slate-950">구독 결제</h1>
+                            <p class="text-sm mt-1 text-slate-500">플랜 변경과 카드 결제를 한 화면에서 간결하게 진행할 수 있습니다.</p>
                         </div>
                     </div>
 
-                    <div v-if="requestedSubscriptionPlan" class="rounded-2xl bg-white/5 border border-white/10 p-6 mb-6">
+                    <div v-if="requestedSubscriptionPlan" class="fb-panel-tint p-6 mb-6">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <div class="text-sm text-white/50 mb-2">선택한 플랜</div>
-                                <div class="text-2xl font-bold">{{ subscriptionPlanMeta[requestedSubscriptionPlan].label }}</div>
-                                <p class="text-sm text-white/60 mt-2">{{ subscriptionPlanMeta[requestedSubscriptionPlan].description }}</p>
+                                <div class="text-sm text-slate-500 mb-2">선택한 플랜</div>
+                                <div class="text-2xl font-bold text-slate-950">{{ subscriptionPlanMeta[requestedSubscriptionPlan].label }}</div>
+                                <p class="text-sm text-slate-500 mt-2">{{ subscriptionPlanMeta[requestedSubscriptionPlan].description }}</p>
                             </div>
                             <div class="text-right">
-                                <div class="text-sm text-white/50 mb-2">즉시 결제 금액</div>
-                                <div class="text-3xl font-bold">{{ formatCurrency(subscriptionPlanMeta[requestedSubscriptionPlan].price) }}</div>
+                                <div class="text-sm text-slate-500 mb-2">즉시 결제 금액</div>
+                                <div class="text-3xl font-bold text-slate-950">{{ formatCurrency(subscriptionPlanMeta[requestedSubscriptionPlan].price) }}</div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="rounded-2xl bg-sky-500/10 border border-sky-400/20 p-5 text-sm text-sky-100 mb-6">
+                    <div class="mb-6 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 to-cyan-50 p-5 text-sm text-sky-900">
                         <div class="font-semibold mb-2">결제 전 확인</div>
-                        <ul class="space-y-2 text-sky-50/85">
+                        <ul class="space-y-2 text-slate-600">
                             <li>카드 정보를 등록하면 선택한 구독 플랜으로 즉시 변경됩니다.</li>
                             <li>결제가 실패하면 플랜 변경도 적용되지 않습니다.</li>
                         </ul>
@@ -452,7 +454,7 @@ onBeforeUnmount(() => {
 
                     <div
                         v-if="subscriptionError"
-                        class="mb-4 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 flex items-start gap-2"
+                        class="mb-4 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-700"
                     >
                         <AlertCircle class="w-5 h-5 mt-0.5" />
                         <span>{{ subscriptionError }}</span>
@@ -460,12 +462,12 @@ onBeforeUnmount(() => {
 
                     <div
                         v-if="subscriptionSuccess"
-                        class="mb-4 p-4 rounded-xl border border-green-500/40 bg-green-500/10 text-green-200 flex items-start gap-2"
+                        class="mb-4 flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700"
                     >
                         <CheckCircle2 class="w-5 h-5 mt-0.5" />
                         <div>
                             <div>{{ subscriptionSuccess }}</div>
-                            <div v-if="subscriptionRedirectCountdown !== null" class="text-xs text-green-100/80 mt-1">
+                            <div v-if="subscriptionRedirectCountdown !== null" class="mt-1 text-xs text-emerald-600/80">
                                 {{ subscriptionRedirectCountdown }}초 후 내 계정 관리로 이동합니다.
                             </div>
                         </div>
@@ -474,7 +476,7 @@ onBeforeUnmount(() => {
                     <div class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-end">
                         <button
                             @click="goBackFromSubscriptionPayment"
-                            class="px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+                            class="fb-button-secondary"
                         >
                             취소
                         </button>
@@ -482,7 +484,7 @@ onBeforeUnmount(() => {
                             v-if="!subscriptionSuccess"
                             @click="handleSubscriptionPayment"
                             :disabled="isSubscriptionProcessing || !requestedSubscriptionPlan"
-                            class="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-60 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 min-w-[180px]"
+                            class="fb-button-primary min-w-[180px] disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             <Loader2 v-if="isSubscriptionProcessing" class="w-4 h-4 animate-spin" />
                             <CreditCard v-else class="w-4 h-4" />
@@ -491,7 +493,7 @@ onBeforeUnmount(() => {
                         <button
                             v-else
                             @click="goBackFromSubscriptionPayment"
-                            class="px-5 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 font-semibold flex items-center justify-center gap-2 min-w-[180px]"
+                            class="fb-button-primary min-w-[180px]"
                         >
                             내 계정 관리로 돌아가기
                         </button>
@@ -503,13 +505,15 @@ onBeforeUnmount(() => {
         <template v-else>
         <div class="mb-8">
             <div class="flex items-center gap-3 mb-3">
-                <CreditCard class="w-10 h-10 text-white" />
-                <h1 class="text-4xl font-bold">결제 관리</h1>
+                <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-400 text-white shadow-lg shadow-sky-200">
+                    <CreditCard class="w-7 h-7" />
+                </div>
+                <h1 class="text-4xl font-bold tracking-tight text-slate-950">결제 관리</h1>
             </div>
-            <p class="text-white/60">진행 중인 계약의 선결제를 진행하고 정산 생성을 시작하세요.</p>
+            <p class="mt-3 max-w-2xl text-base text-slate-500">진행 중인 계약의 선결제를 진행하고 정산 생성을 시작하세요.</p>
             <div
                 v-if="isDev"
-                class="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs bg-yellow-500/10 border border-yellow-500/30 text-yellow-300"
+                class="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-700"
             >
                 <span>DEBUG</span>
                 <span>storeId={{ debugPortOneInfo.storeId }}</span>
@@ -518,37 +522,37 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div class="bg-[#1e293b]/50 border border-white/10 rounded-2xl p-6">
-                <div class="text-sm text-white/60 mb-2 flex items-center gap-2">
-                    <Wallet class="w-4 h-4" />
+            <div class="fb-card p-7">
+                <div class="mb-3 flex items-center gap-2 text-sm font-medium text-slate-500">
+                    <Wallet class="w-4 h-4 text-sky-500" />
                     결제 가능 계약
                 </div>
-                <div class="text-3xl font-bold">{{ paymentSummary.payableCount }}건</div>
+                <div class="text-4xl font-bold text-slate-950">{{ paymentSummary.payableCount }}건</div>
             </div>
-            <div class="bg-[#1e293b]/50 border border-white/10 rounded-2xl p-6">
-                <div class="text-sm text-white/60 mb-2 flex items-center gap-2">
-                    <CircleDollarSign class="w-4 h-4" />
+            <div class="fb-card p-7">
+                <div class="mb-3 flex items-center gap-2 text-sm font-medium text-slate-500">
+                    <CircleDollarSign class="w-4 h-4 text-cyan-500" />
                     총 결제 예정 금액
                 </div>
-                <div class="text-3xl font-bold">{{ formatCurrency(paymentSummary.totalAmount) }}</div>
+                <div class="text-4xl font-bold text-slate-950">{{ formatCurrency(paymentSummary.totalAmount) }}</div>
             </div>
         </div>
 
-        <div class="bg-[#1e293b]/50 border border-white/10 rounded-2xl p-5 mb-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+        <div class="fb-card mb-6 flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
             <div class="relative w-full md:max-w-sm">
-                <Search class="w-4 h-4 text-white/40 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                     v-model="searchQuery"
                     type="text"
                     placeholder="프로젝트명 또는 프리랜서 검색"
-                    class="w-full pl-10 pr-3 py-2 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:border-blue-500"
+                    class="fb-input w-full pl-10 pr-3 py-2.5"
                 />
             </div>
-            <div class="flex items-center gap-2 text-sm">
-                <Filter class="w-4 h-4 text-white/60" />
+            <div class="flex items-center gap-2 text-sm text-slate-500">
+                <Filter class="w-4 h-4 text-sky-500" />
                 <select
                     v-model="selectedSort"
-                    class="bg-white/5 border border-white/10 rounded-xl px-3 py-2 focus:outline-none"
+                    class="fb-input px-3 py-2"
                 >
                     <option value="due_soon">종료일 빠른순</option>
                     <option value="amount_desc">금액 높은순</option>
@@ -557,17 +561,17 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
-        <div v-if="paymentError" class="mb-4 p-4 rounded-xl border border-red-500/40 bg-red-500/10 text-red-200 flex items-start gap-2">
+        <div v-if="paymentError" class="mb-4 flex items-start gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-700 shadow-sm">
             <AlertCircle class="w-5 h-5 mt-0.5" />
             <span>{{ paymentError }}</span>
         </div>
 
-        <div v-if="paymentSuccess" class="mb-4 p-4 rounded-xl border border-green-500/40 bg-green-500/10 text-green-200 flex items-start gap-2">
+        <div v-if="paymentSuccess" class="mb-4 flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-700 shadow-sm">
             <CheckCircle2 class="w-5 h-5 mt-0.5" />
             <span>{{ paymentSuccess }}</span>
         </div>
 
-        <div v-if="payableContracts.length === 0" class="bg-white/5 border border-white/10 rounded-3xl p-12 text-center text-white/70">
+        <div v-if="payableContracts.length === 0" class="fb-card p-12 text-center text-slate-500">
             결제 가능한 진행 중 계약이 없습니다.
         </div>
 
@@ -575,21 +579,21 @@ onBeforeUnmount(() => {
             <div
                 v-for="contract in payableContracts"
                 :key="contract.id"
-                class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col lg:flex-row lg:items-center gap-4 justify-between"
+                class="fb-card-soft flex flex-col justify-between gap-4 p-6 lg:flex-row lg:items-center"
             >
                 <div class="flex-1">
-                    <div class="font-bold text-xl mb-2">{{ contract.projectName }}</div>
-                    <div class="text-white/60 text-sm mb-1">프리랜서: {{ contract.freelancerName }}</div>
-                    <div class="text-white/60 text-sm flex items-center gap-2">
-                        <Calendar class="w-4 h-4" />
+                    <div class="mb-2 text-2xl font-bold text-slate-950">{{ contract.projectName }}</div>
+                    <div class="mb-1 text-sm text-slate-500">프리랜서: {{ contract.freelancerName }}</div>
+                    <div class="flex items-center gap-2 text-sm text-slate-500">
+                        <Calendar class="w-4 h-4 text-sky-500" />
                         {{ formatDate(contract.startDate) }} ~ {{ formatDate(contract.endDate) }}
                     </div>
                 </div>
 
                 <div class="text-left lg:text-right min-w-[200px]">
-                    <div class="text-sm text-white/50">예상 총 결제 금액</div>
-                    <div class="text-2xl font-bold">{{ formatCurrency(calculateTotalAmount(contract)) }}</div>
-                    <div class="text-xs text-white/40 mt-1">
+                    <div class="text-sm font-medium text-slate-400">예상 총 결제 금액</div>
+                    <div class="text-3xl font-bold text-slate-950">{{ formatCurrency(calculateTotalAmount(contract)) }}</div>
+                    <div class="mt-1 text-xs text-slate-400">
                         월 {{ formatCurrency(contract.budget) }} · 수수료 {{ ((contract.commissionRate ?? 0.05) * 100).toFixed(1) }}%
                     </div>
                 </div>
@@ -597,7 +601,7 @@ onBeforeUnmount(() => {
                 <button
                     @click="handlePayContract(contract)"
                     :disabled="payingContractId === contract.id"
-                    class="px-5 py-3 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:opacity-60 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2 min-w-[140px]"
+                    class="fb-button-primary min-w-[148px] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                     <Loader2 v-if="payingContractId === contract.id" class="w-4 h-4 animate-spin" />
                     <CreditCard v-else class="w-4 h-4" />

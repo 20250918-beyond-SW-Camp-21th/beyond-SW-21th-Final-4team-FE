@@ -22,11 +22,11 @@ onMounted(async () => {
   }
 });
 
-const statusConfig: Record<JobStatus, { label: string; gradient: string }> = {
-  OPEN: { label: '모집중', gradient: 'from-green-500 to-emerald-500' },
-  IN_PROGRESS: { label: '진행중', gradient: 'from-blue-500 to-cyan-500' },
-  CONTRACTED: { label: '계약완료', gradient: 'from-purple-500 to-pink-500' },
-  CLOSED: { label: '마감', gradient: 'from-gray-500 to-gray-600' },
+const statusConfig: Record<JobStatus, { label: string; badge: string }> = {
+  OPEN: { label: '모집중', badge: 'bg-[#eefbf7] text-[#1f8f6b] border border-[#d5f3e8]' },
+  IN_PROGRESS: { label: '진행중', badge: 'bg-[#e7f9fb] text-[#1c95a2] border border-[#cdeff2]' },
+  CONTRACTED: { label: '계약완료', badge: 'bg-[#f4f0ff] text-[#7a58c1] border border-[#e4dbff]' },
+  CLOSED: { label: '마감', badge: 'bg-slate-100 text-slate-700 border border-slate-200' },
 };
 
 const handleDelete = async (job: JobPosting) => {
@@ -55,7 +55,7 @@ const getApplications = (jobId: string) => {
 </script>
 
 <template>
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans">
+  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-slate-900">
     <!-- Header -->
     <div 
         class="flex flex-col md:flex-row items-start md:items-center justify-between mb-12 gap-4"
@@ -64,14 +64,14 @@ const getApplications = (jobId: string) => {
         :enter="{ opacity: 1, y: 0 }"
     >
       <div>
-        <h1 class="text-4xl font-bold mb-3 text-white">
+        <h1 class="mb-3 text-4xl font-bold tracking-tight text-slate-950">
           내 프로젝트 공고
         </h1>
-        <p class="text-white/60">등록한 프로젝트를 관리하세요</p>
+        <p class="text-slate-500">등록한 프로젝트를 관리하세요</p>
       </div>
       <button
         @click="showCreateModal = true"
-        class="px-6 py-3 bg-white text-black rounded-full font-semibold flex items-center gap-2 shadow-lg transition-transform hover:scale-105 active:scale-95"
+        class="fb-button-primary gap-2 rounded-full px-6"
       >
         <Plus class="w-5 h-5" />
         새 공고 등록
@@ -79,22 +79,22 @@ const getApplications = (jobId: string) => {
     </div>
 
     <div v-if="myJobs.length === 0" 
-        class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 text-center"
+        class="fb-card p-16 text-center"
         v-motion
         :initial="{ opacity: 0, scale: 0.95 }"
         :enter="{ opacity: 1, scale: 1 }"
     >
         <div 
-            class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6"
+            class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#e7f9fb]"
             v-motion
             :initial="{ scale: 0 }"
             :enter="{ scale: 1, transition: { type: 'spring', delay: 200 } }"
         >
-            <AlertCircle class="w-10 h-10 text-white/60" />
+            <AlertCircle class="w-10 h-10 text-[#21AFBF]" />
         </div>
-        <h3 class="text-2xl font-semibold mb-3 text-white">등록된 공고가 없습니다</h3>
-        <p class="text-white/60 mb-8">첫 프로젝트 공고를 등록해보세요</p>
-        <div class="text-xs text-white/50">
+        <h3 class="mb-3 text-2xl font-semibold text-slate-950">등록된 공고가 없습니다</h3>
+        <p class="mb-8 text-slate-500">첫 프로젝트 공고를 등록해보세요</p>
+        <div class="text-xs text-slate-400">
             오른쪽 상단의 공고 등록 버튼을 사용하세요
         </div>
     </div>
@@ -113,53 +113,53 @@ const getApplications = (jobId: string) => {
           <div
             v-for="(job, index) in myJobs"
             :key="job.id"
-            class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 hover:border-white/20 transition-all hover:translate-y-[-4px]"
+            class="fb-card p-8 transition-all hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
             :style="{ transitionDelay: `${index * 50}ms` }"
           >
             <div class="flex flex-col lg:flex-row items-start justify-between gap-6">
                 <div class="flex-1 w-full">
                     <!-- Title & Status -->
                     <div class="flex items-start gap-3 mb-4 flex-wrap">
-                        <h3 class="text-2xl font-semibold text-white flex-1">{{ job.title }}</h3>
+                        <h3 class="flex-1 text-2xl font-semibold text-slate-950">{{ job.title }}</h3>
                         <div
-                            class="px-4 py-2 rounded-full bg-gradient-to-r text-white text-sm font-medium shadow-lg"
-                            :class="statusConfig[job.status].gradient"
+                            class="rounded-full px-4 py-2 text-sm font-medium"
+                            :class="statusConfig[job.status].badge"
                         >
                             {{ statusConfig[job.status].label }}
                         </div>
                     </div>
 
                     <!-- Description -->
-                    <p class="text-white/70 mb-6 leading-relaxed">{{ job.description }}</p>
+                    <p class="mb-6 leading-relaxed text-slate-600">{{ job.description }}</p>
 
                     <!-- Tech Stack -->
                     <div class="flex flex-wrap gap-2 mb-6">
                         <span
                             v-for="tech in job.techStack"
                             :key="tech"
-                            class="px-4 py-2 bg-white/10 text-white rounded-full text-sm font-medium border border-white/10"
+                            class="rounded-full border border-[#e5ecef] bg-[#f8fbfc] px-4 py-2 text-sm font-medium text-slate-600"
                         >
                             {{ tech }}
                         </span>
                     </div>
 
                     <!-- Stats -->
-                    <div class="flex flex-wrap gap-6 text-white/60">
+                    <div class="flex flex-wrap gap-6 text-slate-500">
                         <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                                <DollarSign class="w-4 h-4 text-green-400" />
+                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#eefbf7]">
+                                <DollarSign class="w-4 h-4 text-emerald-500" />
                             </div>
                             <span class="font-medium">월급 {{ job.budget.toLocaleString() }}원</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
-                                <Clock class="w-4 h-4 text-blue-400" />
+                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-[#e7f9fb]">
+                                <Clock class="w-4 h-4 text-[#21AFBF]" />
                             </div>
                             <span class="font-medium">{{ job.duration }}개월</span>
                         </div>
                          <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
-                                <Users class="w-4 h-4 text-purple-400" />
+                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-violet-50">
+                                <Users class="w-4 h-4 text-violet-500" />
                             </div>
                             <span class="font-medium">지원자 {{ getApplications(job.id).length }}명</span>
                         </div>
@@ -170,37 +170,37 @@ const getApplications = (jobId: string) => {
                 <div class="flex lg:flex-col gap-2">
                     <button
                         @click="editingJob = job"
-                        class="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all border border-white/10 hover:scale-110 active:scale-90"
+                        class="rounded-2xl border border-[#cdeff2] bg-[#e7f9fb] p-3 transition-all hover:scale-105 hover:bg-[#d9f5f8] active:scale-95"
                         title="수정"
                     >
-                        <Edit class="w-5 h-5 text-blue-400" />
+                        <Edit class="w-5 h-5 text-[#21AFBF]" />
                     </button>
                     <button
                         @click="handleDelete(job)"
-                        class="p-3 bg-red-500/10 hover:bg-red-500/20 rounded-2xl transition-all border border-red-500/20 hover:scale-110 active:scale-90"
+                        class="rounded-2xl border border-rose-100 bg-rose-50 p-3 transition-all hover:scale-105 hover:bg-rose-100 active:scale-95"
                         title="삭제"
                     >
-                        <Trash2 class="w-5 h-5 text-red-400" />
+                        <Trash2 class="w-5 h-5 text-rose-500" />
                     </button>
                 </div>
             </div>
 
             <!-- Applicants -->
-            <div v-if="getApplications(job.id).length > 0" class="mt-6 pt-6 border-t border-white/10">
-                <div class="text-sm text-white/60 mb-3 flex items-center gap-2">
-                    <Sparkles class="w-4 h-4" />
+            <div v-if="getApplications(job.id).length > 0" class="mt-6 border-t border-slate-100 pt-6">
+                <div class="mb-3 flex items-center gap-2 text-sm text-slate-500">
+                    <Sparkles class="w-4 h-4 text-[#21AFBF]" />
                     최근 지원자
                 </div>
                 <div class="flex -space-x-3">
                     <div
                         v-for="(app, index) in getApplications(job.id).slice(0, 5)"
                         :key="app.id"
-                        class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 border-2 border-black flex items-center justify-center text-white font-semibold shadow-lg hover:scale-125 hover:z-10 transition-transform cursor-default"
+                        class="flex h-10 w-10 cursor-default items-center justify-center rounded-full border-2 border-white bg-gradient-to-br from-[#21AFBF] to-[#00D4DA] font-semibold text-white shadow-md transition-transform hover:z-10 hover:scale-110"
                         :title="app.freelancerName"
                     >
                         {{ app.freelancerName[0] }}
                     </div>
-                    <div v-if="getApplications(job.id).length > 5" class="w-10 h-10 rounded-full bg-white/10 border-2 border-black flex items-center justify-center text-sm text-white font-semibold">
+                    <div v-if="getApplications(job.id).length > 5" class="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-sm font-semibold text-slate-600">
                         +{{ getApplications(job.id).length - 5 }}
                     </div>
                 </div>
