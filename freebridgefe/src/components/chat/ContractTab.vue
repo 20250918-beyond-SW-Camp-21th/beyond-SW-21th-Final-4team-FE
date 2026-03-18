@@ -63,7 +63,7 @@
                             {{ contractCandidates.length > 1 ? '이 대화와 연결된 계약들' : '이 대화와 연결된 계약' }}
                         </h3>
                         <p class="text-sm text-slate-400 mt-1">
-                            {{ contractCandidates.length > 1 ? '여러 계약이 있어 채팅 안에서 바로 확인할 수 있도록 모두 보여줍니다.' : '현재 대화 상대와 연결된 계약입니다.' }}
+                            {{ contractCandidates.length > 1 ? '여러 계약이 있어 목록 중에 계약을 선택하여 확인할 수 있습니다.' : '현재 대화 상대와 연결된 계약입니다.' }}
                         </p>
                     </div>
 
@@ -107,7 +107,7 @@
                     class="rounded-2xl border border-white/5 bg-slate-900 px-6 py-10 text-center"
                 >
                     <p class="text-base font-semibold text-white">확인할 계약을 선택하세요</p>
-                    <p class="text-sm text-slate-400 mt-2">위 목록에서 계약을 선택하면 이 탭에서 상세 상태를 바로 볼 수 있습니다.</p>
+                    <p class="text-sm text-slate-400 mt-2">위 목록에서 계약을 선택하시면 이 탭에서 계약 정보를 바로 확인할 수 있습니다.</p>
                 </div>
 
                 <div v-if="displayContract" class="bg-slate-900 rounded-2xl border border-white/5 overflow-hidden shadow-lg">
@@ -449,12 +449,12 @@ const primaryActionLabel = computed(() => {
 
 const emptyStateDescription = computed(() => {
     if (hasContractCandidates.value) {
-        return '계약은 계약별 채팅방에 따로 연결됩니다. 이 대화방은 일반 대화방이므로 계약 상태는 해당 계약 채팅방이나 계약 화면에서 확인하세요.';
+        return '계약은 계약별 채팅방에 따로 연결됩니다. 이 대화방은 일반 대화방이므로 계약 상태는 해당 계약 채팅방이나 계약 탭에서 확인하세요.';
     }
     if (isEmployer.value) {
-        return '채팅에서는 계약서를 작성하지 않습니다. 계약서 생성은 계약 화면에서 진행하고, 생성된 상태만 이 탭에서 확인합니다.';
+        return '채팅에서는 계약서를 작성하지 않습니다. 계약서 생성은 계약 탭에서 진행하고, 생성된 상태만 이 탭에서 확인합니다.';
     }
-    return '채팅에서는 계약 요청이나 서명을 진행하지 않습니다. 계약 상태 확인과 서명은 계약 화면에서 진행하세요.';
+    return '채팅에서는 계약 요청이나 서명을 진행하지 않습니다. 계약 상태 확인과 서명은 계약 탭에서 진행하세요.';
 });
 
 function formatCurrency(amount: number) {

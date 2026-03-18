@@ -59,6 +59,7 @@ const currentAccessToken = computed(() => authStore.token ?? localStorage.getIte
 const activeTab = ref('dashboard');
 const isConditionOpen = ref(false);
 const isPortfolioOpen = ref(false);
+
 const showOnboardingModal = ref(false);
 const showApplyEncouragementModal = ref(false);
 const hidePortfolioImproveAlert = ref(false);

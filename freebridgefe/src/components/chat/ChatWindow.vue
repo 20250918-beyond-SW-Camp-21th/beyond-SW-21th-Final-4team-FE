@@ -75,13 +75,13 @@
                         <!-- Quick Actions (Left) -->
                         <label
                             class="p-2.5 rounded-full bg-slate-800 text-slate-400 transition-colors"
-                            :class="isReadOnly ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'hover:text-white hover:bg-slate-700 cursor-pointer'"
+                            :class="isReadOnly || isUploadingFile ? 'cursor-not-allowed opacity-50 pointer-events-none' : 'hover:text-white hover:bg-slate-700 cursor-pointer'"
                         >
                             <PlusIcon class="w-6 h-6" />
                             <input
                                 type="file"
                                 class="hidden"
-                                :disabled="isReadOnly"
+                                :disabled="isReadOnly || isUploadingFile"
                                 @change="handleFileUpload"
                             />
                         </label>
@@ -150,6 +150,7 @@ const router = useRouter();
 const activeTab = ref<'CHAT' | 'CONTRACT'>('CHAT');
 const newMessage = ref('');
 const isLeavingRoom = ref(false);
+const isUploadingFile = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
 
 const currentRoom = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
@@ -225,21 +226,23 @@ function sendMessage() {
     scrollToBottom();
 }
 
-function handleFileUpload(event: Event) {
+async function handleFileUpload(event: Event) {
     if (isReadOnly.value) return;
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
 
-    chatStore.sendMessage(
-        file.name,
-        'FILE',
-        { fileName: file.name, fileSize: file.size, fileType: file.type },
-        props.roomId
-    );
-
-    input.value = '';
-    scrollToBottom();
+    isUploadingFile.value = true;
+    try {
+        await chatStore.sendFileMessage(file, props.roomId);
+        scrollToBottom();
+    } catch (error) {
+        console.error('Failed to upload chat file:', error);
+        alert('파일 업로드에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+        input.value = '';
+        isUploadingFile.value = false;
+    }
 }
 
 function scrollToBottom() {

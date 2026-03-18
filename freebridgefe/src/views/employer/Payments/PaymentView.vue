@@ -87,7 +87,12 @@ const redirectedErrorMessage = computed(() =>
 const myContracts = computed(() => {
     if (!authStore.user) return [];
     return contractStore.contractsWithDetails.filter((contract) => {
-        return contract.employerId === Number(authStore.user!.id) && contract.status === 'IN_PROGRESS';
+        const employerSigned = contract.employerSigned ?? Boolean(contract.employerSignedDate);
+        const freelancerSigned = contract.freelancerSigned ?? Boolean(contract.freelancerSignedDate);
+        return contract.employerId === Number(authStore.user!.id)
+            && contract.status === 'IN_PROGRESS'
+            && employerSigned
+            && freelancerSigned;
     });
 });
 
@@ -99,8 +104,10 @@ const paidContractIds = computed(() => {
     );
 });
 
+const getBusinessContractId = (contract: ContractWithDetails) => contract.contractId ?? contract.id;
+
 const payableContracts = computed(() => {
-    let result = myContracts.value.filter((contract) => !paidContractIds.value.has(contract.id));
+    let result = myContracts.value.filter((contract) => !paidContractIds.value.has(getBusinessContractId(contract)));
 
     if (searchQuery.value.trim()) {
         const query = searchQuery.value.toLowerCase().trim();
@@ -298,11 +305,10 @@ const handlePayContract = async (contract: ContractWithDetails) => {
                 fullName: authStore.user?.name,
                 email: authStore.user?.email,
             },
-            // Backend expects a JSON string in customData during webhook verification flow.
-            customData: JSON.stringify({
-                contractId: contract.id,
+            customData: {
+                contractId: getBusinessContractId(contract),
                 employerId: Number(authStore.user?.id || 0),
-            }) as unknown as Record<string, any>,
+            },
         });
 
         if (!response) {
@@ -315,7 +321,10 @@ const handlePayContract = async (contract: ContractWithDetails) => {
             return;
         }
 
-        const verifyResult = await contractStore.verifyEmployerSettlementPayment(response.paymentId, contract.id);
+        const verifyResult = await contractStore.verifyEmployerSettlementPayment(
+            response.paymentId,
+            getBusinessContractId(contract)
+        );
         paymentSuccess.value = `${contract.projectName} 결제가 완료되었습니다. (${verifyResult.installmentsCreated}건 정산 생성)`;
     } catch (error: any) {
         const apiErrorCode = error?.response?.data?.errorCode
@@ -329,7 +338,7 @@ const handlePayContract = async (contract: ContractWithDetails) => {
         console.error('Payment verify failed:', {
             status: error?.response?.status,
             data: error?.response?.data,
-            contractId: contract.id,
+            contractId: getBusinessContractId(contract),
             paymentId,
             requestedAmount: totalAmount,
             budget: contract.budget,

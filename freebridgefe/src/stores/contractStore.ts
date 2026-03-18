@@ -116,6 +116,23 @@ const getPagedItems = <T>(payload: { content?: T[]; items?: T[] } | undefined | 
     return [];
 };
 
+const normalizeContract = <T extends ContractWithDetails | Contract>(contract: T): T => {
+    const employerSigned =
+        contract.employerSigned ??
+        (Boolean(contract.employerSignedDate) ||
+            Boolean(contract.employerSignature && contract.employerSignature.trim()));
+    const freelancerSigned =
+        contract.freelancerSigned ??
+        (Boolean(contract.freelancerSignedDate) ||
+            Boolean(contract.freelancerSignature && contract.freelancerSignature.trim()));
+
+    return {
+        ...contract,
+        employerSigned,
+        freelancerSigned,
+    };
+};
+
 const isDefaultContractListRequest = (params?: ContractListParams) => {
     if (!params) return true;
 
@@ -207,18 +224,18 @@ export const useContractStore = defineStore('contract', () => {
     }
 
     async function setResolvedContracts(items: ContractWithDetails[], isDefaultRequest: boolean) {
-        contracts.value = items;
+        contracts.value = items.map(normalizeContract);
         if (isDefaultRequest) {
             hasFetchedContracts.value = true;
         }
-        contracts.value = await resolveContractNames(items);
+        contracts.value = (await resolveContractNames(items)).map(normalizeContract);
     }
 
     const contractsWithDetails = computed<ContractWithDetails[]>(() => contracts.value);
 
     const employerSettlementsWithDetails = computed<EmployerSettlementWithDetails[]>(() => {
         return employerSettlements.value.map((settlement) => {
-            const contract = contracts.value.find((c) => c.id === settlement.contractId);
+            const contract = findContractByAnyId(settlement.contractId);
             return {
                 ...settlement,
                 projectName: contract?.projectName || 'Unknown Project',
@@ -233,7 +250,7 @@ export const useContractStore = defineStore('contract', () => {
 
     const freelancerSettlementsWithDetails = computed<FreelancerSettlementWithDetails[]>(() => {
         return freelancerSettlements.value.map((settlement) => {
-            const contract = contracts.value.find((c) => c.id === settlement.contractId);
+            const contract = findContractByAnyId(settlement.contractId);
             return {
                 ...settlement,
                 projectName: contract?.projectName || 'Unknown Project',
@@ -325,7 +342,7 @@ export const useContractStore = defineStore('contract', () => {
             isContractsLoading.value = true;
             try {
                 const data = await listContracts(params);
-                const items = (data.items || []) as ContractWithDetails[];
+                const items = ((data.items || []) as ContractWithDetails[]).map(normalizeContract);
                 contracts.value = items;
                 if (isDefaultRequest) {
                     hasFetchedContracts.value = true;
@@ -389,11 +406,11 @@ export const useContractStore = defineStore('contract', () => {
                     const resolvedFreelancer = idToName.get(Number(contract.freelancerId));
                     const resolvedEmployer = idToName.get(Number(contract.employerId));
                     if (!resolvedFreelancer && !resolvedEmployer) return contract;
-                    return {
+                    return normalizeContract({
                         ...contract,
                         freelancerName: resolvedFreelancer ?? contract.freelancerName,
                         employerName: resolvedEmployer ?? contract.employerName,
-                    };
+                    });
                 });
             } finally {
                 isContractsLoading.value = false;

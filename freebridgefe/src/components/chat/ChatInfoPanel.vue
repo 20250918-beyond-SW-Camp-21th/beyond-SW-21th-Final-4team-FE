@@ -50,10 +50,14 @@
     <div class="p-6">
       <h3 class="mb-4 text-sm font-bold uppercase tracking-wider text-white">공유 파일</h3>
       <div class="space-y-3">
-        <div
+        <a
           v-for="file in sharedFiles"
           :key="file.id"
-          class="group flex cursor-pointer items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-800/50"
+          :href="file.url || undefined"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="group flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-slate-800/50"
+          :class="file.url ? 'cursor-pointer' : 'cursor-default'"
         >
           <div class="rounded bg-slate-800 p-2 text-slate-400 transition-colors group-hover:text-emerald-400">
             <FileTextIcon class="h-5 w-5" />
@@ -62,7 +66,7 @@
             <p class="truncate text-sm font-medium text-slate-300 group-hover:text-white">{{ file.name }}</p>
             <p class="text-xs text-slate-500">{{ formatFileMeta(file) }}</p>
           </div>
-        </div>
+        </a>
 
         <div v-if="sharedFiles.length === 0" class="text-xs text-slate-500">
           아직 공유된 파일이 없습니다.
@@ -234,6 +238,7 @@ const sharedFiles = computed(() => {
       id: msg.id,
       name: msg.metadata?.fileName || msg.content || '파일',
       size: msg.metadata?.fileSize,
+      url: typeof msg.metadata?.fileUrl === 'string' ? msg.metadata.fileUrl : null,
       createdAt: msg.createdAt,
     }))
     .reverse();
