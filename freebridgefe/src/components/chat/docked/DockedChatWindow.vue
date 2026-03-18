@@ -95,7 +95,9 @@
                 <div class="flex items-end gap-2 bg-[#1e293b] p-1.5 rounded-lg border border-white/10">
                     <textarea 
                         v-model="newMessage"
-                        @keydown.enter.prevent="sendMessage"
+                        @compositionstart="isComposing = true"
+                        @compositionend="handleCompositionEnd"
+                        @keydown.enter.exact.prevent="handleMessageEnter"
                         rows="1"
                         class="flex-1 bg-transparent border-none focus:ring-0 resize-none text-sm max-h-20 text-white placeholder-slate-500"
                         placeholder="Write a message..."
@@ -145,6 +147,7 @@ const props = defineProps<{
 const chatStore = useChatStore();
 const authStore = useAuthStore();
 const newMessage = ref('');
+const isComposing = ref(false);
 const messagesContainer = ref<HTMLElement | null>(null);
 
 const room = computed(() => chatStore.rooms.find(r => r.id === props.roomId));
@@ -239,10 +242,22 @@ function closeWindow() {
     chatStore.closeDockedRoom(props.roomId);
 }
 
+function handleCompositionEnd() {
+    isComposing.value = false;
+}
+
+function handleMessageEnter(event: KeyboardEvent) {
+    if (event.isComposing || isComposing.value) {
+        return;
+    }
+    sendMessage();
+}
+
 function sendMessage() {
-    if (!newMessage.value.trim()) return;
-    
-    chatStore.sendMessage(newMessage.value, 'TEXT', undefined, props.roomId);
+    const content = newMessage.value.trim();
+    if (!content) return;
+
+    chatStore.sendMessage(content, 'TEXT', undefined, props.roomId);
     newMessage.value = '';
     scrollToBottom();
 }
