@@ -99,7 +99,7 @@ const jobsById = computed(() => {
 
 const fallbackRecommendedJobs = computed<RecommendedJob[]>(() => {
   const limit = authStore.user ? 5 : 3;
-  if (!authStore.user || !authStore.user.skills) {
+  if (!authStore.user || !authStore.user.skills?.length) {
     return openJobs.value.slice(0, limit).map((job) => ({
       ...job,
       recommendationSource: 'fallback',
@@ -126,11 +126,16 @@ const fallbackRecommendedJobs = computed<RecommendedJob[]>(() => {
 });
 
 const recommendedJobs = computed<RecommendedJob[]>(() => {
-  if (!hasLoadedAiRecommendations.value && !aiRecommendationError.value) {
+  if (!hasLoadedAiRecommendations.value && authStore.user?.role === 'FREELANCER') {
     return [];
   }
 
-  if (hasLoadedAiRecommendations.value && !aiRecommendationError.value) {
+  const canUseAiResults =
+    authStore.user?.role === 'FREELANCER' &&
+    hasLoadedAiRecommendations.value &&
+    !aiRecommendationError.value;
+
+  if (canUseAiResults) {
     return aiRecommendationResults.value.map((recommendation) => {
       const matchedJob = jobsById.value.get(String(recommendation.id));
       const fallbackDescription = `프로필과 잘 맞는 공고입니다. AI 매칭 점수 ${Math.round(
