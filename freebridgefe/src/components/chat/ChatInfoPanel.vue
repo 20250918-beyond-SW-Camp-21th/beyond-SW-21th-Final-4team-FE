@@ -49,6 +49,9 @@
 
     <div class="p-6">
       <h3 class="mb-4 text-sm font-bold uppercase tracking-wider text-white">공유 파일</h3>
+      <p class="mb-4 text-xs leading-relaxed text-slate-500">
+        {{ CHAT_SUPPORTED_FILE_DESCRIPTION }}
+      </p>
       <div class="space-y-3">
         <a
           v-for="file in sharedFiles"
@@ -151,6 +154,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useFreelancerStore } from '@/stores/freelancerStore';
 import { useJobStore } from '@/stores/jobStore';
+import { CHAT_SUPPORTED_FILE_DESCRIPTION } from '@/api/chatApi';
 import { isInlinePreviewableChatFile } from '@/utils/chatFile';
 
 const props = defineProps<{
