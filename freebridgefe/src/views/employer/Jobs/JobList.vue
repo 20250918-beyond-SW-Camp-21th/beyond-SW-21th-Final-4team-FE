@@ -170,6 +170,7 @@ const getApplications = (jobId: string) => {
                 <div class="flex lg:flex-col gap-2">
                     <button
                         @click="editingJob = job"
+                        aria-label="수정"
                         class="rounded-2xl border border-[#cdeff2] bg-[#e7f9fb] p-3 transition-all hover:scale-105 hover:bg-[#d9f5f8] active:scale-95"
                         title="수정"
                     >
@@ -177,6 +178,7 @@ const getApplications = (jobId: string) => {
                     </button>
                     <button
                         @click="handleDelete(job)"
+                        aria-label="삭제"
                         class="rounded-2xl border border-rose-100 bg-rose-50 p-3 transition-all hover:scale-105 hover:bg-rose-100 active:scale-95"
                         title="삭제"
                     >
