@@ -150,7 +150,7 @@ onMounted(() => {
   <div class="max-w-[1100px] mx-auto px-4 md:px-8 py-12 font-sans text-white">
     <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-10 gap-4">
       <div>
-        <h1 class="mb-3 text-4xl font-bold tracking-tight text-slate-950">
+        <h1 class="mb-3 text-4xl font-bold tracking-tight text-white">
           거절 사유 작성
         </h1>
         <p class="text-white/60">지원을 거절하기 전에 사유를 남겨 추후 관리와 조회에 활용하세요</p>

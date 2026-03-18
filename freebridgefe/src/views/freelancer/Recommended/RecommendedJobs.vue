@@ -79,7 +79,7 @@ const toggleFavorite = (id: string) => {
       <div class="flex items-center gap-2 mb-3">
         <Sparkles class="w-8 h-8 text-yellow-400" />
         <h1
-          class="text-4xl font-bold tracking-tight text-slate-950"
+          class="text-4xl font-bold tracking-tight text-white"
         >
           AI 추천 프로젝트
         </h1>

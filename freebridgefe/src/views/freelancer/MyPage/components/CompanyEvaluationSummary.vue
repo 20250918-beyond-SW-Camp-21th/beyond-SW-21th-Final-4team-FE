@@ -96,7 +96,7 @@ const overallRating = computed(() => {
         :initial="{ opacity: 0, y: 20 }"
         :enter="{ opacity: 1, y: 0 }"
     >
-        <h1 class="mb-4 text-4xl font-bold tracking-tight text-slate-950">
+        <h1 class="mb-4 text-4xl font-bold tracking-tight text-white">
             고용주 평가
         </h1>
         <p class="text-white/60">

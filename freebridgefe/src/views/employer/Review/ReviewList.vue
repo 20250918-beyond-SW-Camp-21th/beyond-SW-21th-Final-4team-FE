@@ -133,7 +133,7 @@ onMounted(() => {
       :enter="{ opacity: 1, y: 0 }"
     >
       <div>
-        <h1 class="mb-3 text-4xl font-bold tracking-tight text-slate-950">
+        <h1 class="mb-3 text-4xl font-bold tracking-tight text-white">
           내 리뷰
         </h1>
         <p class="text-white/60">내가 남긴 후기와 프리랜서가 남긴 피드백을 확인하세요</p>

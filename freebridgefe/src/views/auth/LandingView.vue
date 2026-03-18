@@ -260,7 +260,7 @@ const stats = [
       <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
         <!-- Brand Info -->
         <div class="text-center md:text-left">
-          <h3 class="mb-2 text-2xl font-bold text-slate-950">
+          <h3 class="mb-2 text-2xl font-bold text-white">
             FreeBridge
           </h3>
           <p class="text-white/50 text-sm">
