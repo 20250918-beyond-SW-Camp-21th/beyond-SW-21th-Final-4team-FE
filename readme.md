@@ -7,6 +7,12 @@
 
 ---
 
+## 🔗Github Links
+### <a href="https://github.com/20250918-beyond-SW-Camp-21th/beyond-SW-21th-Final-4team-BE">BackEnd Repository Link</a>
+### <a href="https://github.com/20250918-beyond-SW-Camp-21th/beyond-SW-21th-Final-4team-Manifest-file">Manifest Repository Link</a>
+
+---
+
 ## 🚀 프로젝트 개요
 
 ### 1. 배경 및 문제 의식
