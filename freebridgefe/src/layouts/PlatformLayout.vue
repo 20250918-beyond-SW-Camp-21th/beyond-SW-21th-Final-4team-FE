@@ -59,9 +59,14 @@ const freelancerNavItems = [
 const navItems = computed(() => isEmployer.value ? employerNavItems : freelancerNavItems);
 const isChatRoute = computed(() => route.path.startsWith('/chat'));
 
-const handleLogout = () => {
-  authStore.logout();
-  router.push('/login');
+const handleLogout = async () => {
+  try {
+    await authStore.logout();
+  } catch (error) {
+    console.error('Failed to complete logout:', error);
+  } finally {
+    await router.push('/login');
+  }
 };
 
 const handleOpenGuide = () => {

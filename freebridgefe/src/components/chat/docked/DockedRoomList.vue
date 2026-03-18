@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, onMounted, type CSSProperties } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useAuthStore } from '@/stores/authStore';
 import { 
@@ -148,7 +148,7 @@ onMounted(() => {
     }
 });
 
-const dragStyle = computed(() => {
+const dragStyle = computed<CSSProperties>(() => {
     if (isDocked.value) return {};
     return {
         position: 'fixed',

@@ -1,4 +1,5 @@
-import apiClient, { setTokens, clearTokens } from './axiosInstance.ts';
+import apiClient from './axiosInstance.ts';
+import type { UserRole } from '@/types';
 
 export interface LoginRequest {
     email: string;
@@ -14,11 +15,12 @@ export interface ApiResponse<T> {
 
 export interface LoginData {
     accessToken: string;
+    refreshToken: string;
     user: {
         id: number;
         email: string;
         name: string;
-        role: string;
+        role: UserRole;
         termsAgreed: boolean;
         privacyAgreed: boolean;
         emailVerified: boolean;
@@ -53,11 +55,6 @@ export interface RegisterData {
  */
 export const login = async (credentials: LoginRequest): Promise<LoginData> => {
     const response = await apiClient.post<ApiResponse<LoginData>>('/api/users/login', credentials);
-    const { accessToken } = response.data.data;
-
-    // Store token (backend only returns accessToken, no refresh token)
-    setTokens(accessToken);
-
     return response.data.data;
 };
 
@@ -179,8 +176,7 @@ export const getUsers = async (params?: { role?: string }): Promise<any[]> => {
  * Logout user
  */
 export const logout = async (): Promise<void> => {
-    // Backend doesn't have logout endpoint, just clear tokens
-    clearTokens();
+    await apiClient.post('/api/users/logout');
 };
 
 /**

@@ -164,7 +164,10 @@ export async function sendChatFileMessage(roomId: string, file: File): Promise<C
     const formData = new FormData();
     formData.append('file', file);
 
-    const res = await apiClient.post<BackendChatMessageResponse>(`/api/chat/rooms/${roomId}/files`, formData);
+    const res = await apiClient.post<BackendChatMessageResponse>(
+        `/api/chat/rooms/${roomId}/files`,
+        formData
+    );
     return mapToChatMessage(res.data);
 }
 
