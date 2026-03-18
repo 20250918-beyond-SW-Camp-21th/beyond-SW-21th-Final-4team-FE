@@ -87,7 +87,12 @@ const redirectedErrorMessage = computed(() =>
 const myContracts = computed(() => {
     if (!authStore.user) return [];
     return contractStore.contractsWithDetails.filter((contract) => {
-        return contract.employerId === Number(authStore.user!.id) && contract.status === 'IN_PROGRESS';
+        const employerSigned = contract.employerSigned ?? Boolean(contract.employerSignedDate);
+        const freelancerSigned = contract.freelancerSigned ?? Boolean(contract.freelancerSignedDate);
+        return contract.employerId === Number(authStore.user!.id)
+            && contract.status === 'IN_PROGRESS'
+            && employerSigned
+            && freelancerSigned;
     });
 });
 
@@ -300,11 +305,10 @@ const handlePayContract = async (contract: ContractWithDetails) => {
                 fullName: authStore.user?.name,
                 email: authStore.user?.email,
             },
-            // Backend expects a JSON string in customData during webhook verification flow.
-            customData: JSON.stringify({
+            customData: {
                 contractId: getBusinessContractId(contract),
                 employerId: Number(authStore.user?.id || 0),
-            }) as unknown as Record<string, any>,
+            },
         });
 
         if (!response) {
