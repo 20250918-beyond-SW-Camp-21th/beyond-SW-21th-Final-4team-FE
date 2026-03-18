@@ -158,6 +158,13 @@ export async function getContract(contractId: number): Promise<ContractResponseD
   return response.data.data;
 }
 
+export async function requestAiLegalReview(contractId: number): Promise<ContractResponseDto> {
+  const response = await apiClient.post<ApiResponse<ContractResponseDto>>(
+    `/api/contracts/${contractId}/ai-review`,
+  );
+  return response.data.data;
+}
+
 export async function getContractPdfUrl(contractId: number): Promise<string> {
   const response = await apiClient.get<ApiResponse<string>>(`/api/contracts/${contractId}/pdf`);
   return response.data.data;
