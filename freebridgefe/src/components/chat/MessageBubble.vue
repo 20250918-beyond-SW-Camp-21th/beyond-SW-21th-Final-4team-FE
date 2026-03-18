@@ -25,6 +25,32 @@
                     class="mb-1"
                 />
 
+                <component
+                    :is="fileUrl ? 'a' : 'div'"
+                    v-else-if="message.type === 'FILE'"
+                    :href="fileUrl || undefined"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="flex min-w-[240px] items-center gap-3 px-4 py-3 text-[14px] shadow-md transition-all hover:shadow-lg"
+                    :class="[
+                        isMine
+                            ? 'bg-gradient-to-br from-violet-600 to-blue-600 text-white rounded-[22px] rounded-tr-sm'
+                            : 'bg-slate-800 border border-white/5 text-slate-200 rounded-[22px] rounded-tl-sm'
+                    ]"
+                >
+                    <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                        :class="isMine ? 'bg-white/15' : 'bg-slate-700/80'"
+                    >
+                        <PaperclipIcon class="h-4 w-4" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-medium">{{ fileName }}</p>
+                        <p class="text-[11px] opacity-80">{{ fileDescription }}</p>
+                    </div>
+                    <DownloadIcon v-if="fileUrl" class="h-4 w-4 shrink-0 opacity-80" />
+                </component>
+
                 <!-- Standard Text Message -->
                 <div 
                     v-else
@@ -56,6 +82,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
 import type { ChatMessage } from '@/types';
 import { format } from 'date-fns';
+import { Download as DownloadIcon, Paperclip as PaperclipIcon } from 'lucide-vue-next';
 import ChatMessageContract from './ChatMessageContract.vue';
 
 const props = defineProps<{
@@ -73,8 +100,42 @@ const isMine = computed(() => {
     return chatStore.getMyParticipantIds().includes(props.message.senderId);
 });
 
+const fileUrl = computed(() => {
+    const url = props.message.metadata?.fileUrl;
+    return typeof url === 'string' && url.trim() ? url : '';
+});
+
+const fileName = computed(() => {
+    const name = props.message.metadata?.fileName;
+    if (typeof name === 'string' && name.trim()) {
+        return name;
+    }
+    return props.message.content || '파일';
+});
+
+const fileDescription = computed(() => {
+    const parts: string[] = [];
+    const contentType = props.message.metadata?.contentType;
+    const fileSize = Number(props.message.metadata?.fileSize);
+
+    if (typeof contentType === 'string' && contentType.trim()) {
+        parts.push(contentType);
+    }
+    if (Number.isFinite(fileSize) && fileSize > 0) {
+        parts.push(formatFileSize(fileSize));
+    }
+
+    return parts.join(' · ') || '파일 첨부';
+});
+
 function formatTime(date: Date) {
     if (!date) return '';
     return format(new Date(date), 'HH:mm');
+}
+
+function formatFileSize(bytes: number) {
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 </script>
