@@ -265,6 +265,7 @@ watch(
           </button>
           <button
             @click="handleLogout"
+            aria-label="로그아웃"
             class="rounded-full border border-transparent p-2.5 transition-colors hover:border-[#d8eff1] hover:bg-[#f5fbfc]"
             title="로그아웃"
             v-motion="{
@@ -290,6 +291,8 @@ watch(
           </div>
           <button
             @click="isMobileMenuOpen = !isMobileMenuOpen"
+            :aria-label="isMobileMenuOpen ? '모바일 메뉴 닫기' : '모바일 메뉴 열기'"
+            :aria-expanded="isMobileMenuOpen"
             class="rounded-full p-2 transition-colors hover:bg-[#f5fbfc]"
           >
             <X v-if="isMobileMenuOpen" class="w-6 h-6 text-slate-700" />
@@ -379,6 +382,7 @@ watch(
           <button
             class="p-1 text-slate-400 hover:text-slate-900"
             @click="dismissAlert(alert.id)"
+            aria-label="알림 닫기"
             title="닫기"
           >
             <X class="w-4 h-4" />
