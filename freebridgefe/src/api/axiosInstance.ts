@@ -154,6 +154,14 @@ function handleExpiredSession(message?: string) {
 // Request interceptor - Add JWT token to requests
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+      if (typeof config.headers.setContentType === "function") {
+        config.headers.setContentType(undefined);
+      } else {
+        delete config.headers["Content-Type"];
+      }
+    }
+
     const token = getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
