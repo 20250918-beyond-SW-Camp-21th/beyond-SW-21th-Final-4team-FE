@@ -59,8 +59,8 @@ const freelancerNavItems = [
 const navItems = computed(() => isEmployer.value ? employerNavItems : freelancerNavItems);
 const isChatRoute = computed(() => route.path.startsWith('/chat'));
 
-const handleLogout = () => {
-  authStore.logout();
+const handleLogout = async () => {
+  await authStore.logout();
   router.push('/login');
 };
 

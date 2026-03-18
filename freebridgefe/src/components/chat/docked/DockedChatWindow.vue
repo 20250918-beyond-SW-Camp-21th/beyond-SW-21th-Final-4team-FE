@@ -124,14 +124,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { ref, computed, onMounted, nextTick, watch, type CSSProperties } from 'vue';
 import { useChatStore } from '@/stores/chatStore';
 import { useAuthStore } from '@/stores/authStore';
 import { 
     X as XIcon, 
     Minus as MinusIcon, 
-    Video as VideoIcon, 
-    Phone as PhoneIcon,
     Image as ImageIcon,
     Paperclip as PaperclipIcon,
     Send as SendIcon
@@ -220,7 +218,7 @@ watch(isDragging, (newVal) => {
     }
 });
 
-const dragStyle = computed(() => {
+const dragStyle = computed<CSSProperties>(() => {
     if (isDocked.value) return {};
     return {
         position: 'fixed',
@@ -240,6 +238,10 @@ function toggleMinimize() {
 
 function closeWindow() {
     chatStore.closeDockedRoom(props.roomId);
+}
+
+function onPointerDown() {
+    wasDragged.value = false;
 }
 
 function handleCompositionEnd() {
