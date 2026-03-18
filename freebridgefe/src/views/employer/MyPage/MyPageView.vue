@@ -46,7 +46,7 @@ const route = useRoute();
 const authStore = useAuthStore();
 const alertStore = useAlertStore();
 const contractStore = useContractStore();
-const currentAccessToken = computed(() => authStore.token ?? localStorage.getItem('access_token'));
+const currentUserId = computed(() => authStore.user?.id ?? null);
 
 const activeTab = ref('dashboard');
 const hideEmployerNoticeBanner = ref(false);
@@ -56,8 +56,8 @@ const pinnedTopCrmBannerKey = ref<string | null>(null);
 const persistentTopCrmKeys = ['subscription', 'upsell-pro', 'upsell-prime', 'prime-upsell'];
 
 const getEmployerCrmStorageKey = () => {
-  const token = currentAccessToken.value;
-  return token ? `mypage-employer-crm:${token}` : null;
+  const userId = currentUserId.value;
+  return userId ? `mypage-employer-crm:${userId}` : null;
 };
 
 const loadSeenTopCrmKeys = () => {
@@ -69,7 +69,8 @@ const loadSeenTopCrmKeys = () => {
 
   try {
     const saved = sessionStorage.getItem(storageKey);
-    seenTopCrmKeys.value = saved ? JSON.parse(saved) : [];
+    const parsed = saved ? JSON.parse(saved) : [];
+    seenTopCrmKeys.value = Array.isArray(parsed) ? parsed : [];
   } catch (error) {
     console.error('Failed to load employer crm session state:', error);
     seenTopCrmKeys.value = [];
@@ -234,6 +235,7 @@ type TopCrmBannerItem = {
   glowClass: string;
   iconWrapClass: string;
   ctaClass: string;
+  isTextDark: boolean;
 };
 
 const handleCrmAction = (target: CrmActionTarget) => {
@@ -298,7 +300,8 @@ const accountUpsellBanner = computed<TopCrmBannerItem | null>(() => {
       wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(59,130,246,0.08),rgba(255,255,255,0.05))]',
       glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.16),transparent_34%)]',
       iconWrapClass: 'bg-white/10',
-      ctaClass: 'bg-white text-slate-900 hover:bg-white/90'
+      ctaClass: 'bg-white text-slate-900 hover:bg-white/90',
+      isTextDark: true
     };
   }
   if (alerts?.upsellTarget === 'PRIME' || alerts?.isPrimeUpsellEligible) {
@@ -313,7 +316,8 @@ const accountUpsellBanner = computed<TopCrmBannerItem | null>(() => {
       wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(168,85,247,0.10),rgba(255,255,255,0.05))]',
       glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(168,85,247,0.18),transparent_34%)]',
       iconWrapClass: 'bg-white/10',
-      ctaClass: 'bg-white text-slate-900 hover:bg-white/90'
+      ctaClass: 'bg-white text-slate-900 hover:bg-white/90',
+      isTextDark: true
     };
   }
   return null;
@@ -338,6 +342,7 @@ const operationalCrmCards = computed<TopCrmBannerItem[]>(() => {
       glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(59,130,246,0.16),transparent_34%)]',
       iconWrapClass: 'bg-white/10',
       ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
     });
   }
 
@@ -354,6 +359,7 @@ const operationalCrmCards = computed<TopCrmBannerItem[]>(() => {
       glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.18),transparent_34%)]',
       iconWrapClass: 'bg-white/10',
       ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
     });
   }
 
@@ -370,6 +376,7 @@ const operationalCrmCards = computed<TopCrmBannerItem[]>(() => {
       glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(245,158,11,0.18),transparent_34%)]',
       iconWrapClass: 'bg-white/10',
       ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
     });
   }
 
@@ -386,6 +393,7 @@ const operationalCrmCards = computed<TopCrmBannerItem[]>(() => {
       glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.18),transparent_34%)]',
       iconWrapClass: 'bg-white/10',
       ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
     });
   }
 
@@ -402,6 +410,7 @@ const operationalCrmCards = computed<TopCrmBannerItem[]>(() => {
       glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(244,114,182,0.18),transparent_34%)]',
       iconWrapClass: 'bg-white/10',
       ctaClass: 'bg-white/10 text-white hover:bg-white/15',
+      isTextDark: false,
     });
   }
 
@@ -423,7 +432,8 @@ const proPrimeBanner = computed<TopCrmBannerItem | null>(() => {
       wrapClass: 'bg-[linear-gradient(135deg,rgba(255,255,255,0.14),rgba(99,102,241,0.08),rgba(255,255,255,0.05))]',
       glowClass: 'bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(99,102,241,0.18),transparent_36%)]',
       iconWrapClass: 'bg-white/10',
-      ctaClass: 'bg-white text-slate-900 hover:bg-white/90'
+      ctaClass: 'bg-white text-slate-900 hover:bg-white/90',
+      isTextDark: true
     };
   }
   return null;
@@ -489,7 +499,7 @@ onMounted(() => {
   updateTabFromQuery();
 });
 
-watch(currentAccessToken, () => {
+watch(currentUserId, () => {
   dismissedTopCrmKeys.value = [];
   pinnedTopCrmBannerKey.value = null;
   loadSeenTopCrmKeys();
@@ -638,7 +648,7 @@ const safeWebsiteUrl = computed(() => {
                           @click="handleCrmAction(activeTopCrmBanner.target)"
                           :class="['shrink-0 w-full md:w-auto px-6 py-3 font-semibold rounded-full transition-colors shadow-[0_18px_40px_-28px_rgba(255,255,255,0.45)] flex items-center justify-center gap-2', activeTopCrmBanner.ctaClass]"
                       >
-                          <component :is="activeTopCrmBanner.icon" class="w-5 h-5" :class="activeTopCrmBanner.ctaClass.includes('text-slate-900') ? 'text-slate-900' : 'text-white'" />
+                          <component :is="activeTopCrmBanner.icon" class="w-5 h-5" :class="activeTopCrmBanner.isTextDark ? 'text-slate-900' : 'text-white'" />
                           {{ activeTopCrmBanner.cta }}
                       </button>
                   </div>

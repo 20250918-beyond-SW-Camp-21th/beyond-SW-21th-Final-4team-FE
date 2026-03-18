@@ -54,7 +54,7 @@ const authStore = useAuthStore();
 const alertStore = useAlertStore();
 const contractStore = useContractStore();
 const currentUser = computed(() => authStore.user);
-const currentAccessToken = computed(() => authStore.token ?? localStorage.getItem('access_token'));
+const currentUserId = computed(() => authStore.user?.id ?? null);
 
 const activeTab = ref('dashboard');
 const isConditionOpen = ref(false);
@@ -65,6 +65,8 @@ const showApplyEncouragementBanner = ref(false);
 const dismissedFreelancerCrmKeys = ref<string[]>([]);
 const seenFreelancerCrmKeys = ref<string[]>([]);
 const pinnedFreelancerCrmBannerKey = ref<string | null>(null);
+const hideBurnoutAlert = ref(false);
+const hideChurnAlert = ref(false);
 
 const toggleRestMode = () => {
     alertStore.open({
@@ -91,8 +93,8 @@ const moveToJobBoard = async () => {
 };
 
 const getFreelancerCrmStorageKey = () => {
-    const token = currentAccessToken.value;
-    return token ? `mypage-freelancer-crm:${token}` : null;
+    const userId = currentUserId.value;
+    return userId ? `mypage-freelancer-crm:${userId}` : null;
 };
 
 const loadSeenFreelancerCrmKeys = () => {
@@ -104,7 +106,8 @@ const loadSeenFreelancerCrmKeys = () => {
 
     try {
         const saved = sessionStorage.getItem(storageKey);
-        seenFreelancerCrmKeys.value = saved ? JSON.parse(saved) : [];
+        const parsed = saved ? JSON.parse(saved) : [];
+        seenFreelancerCrmKeys.value = Array.isArray(parsed) ? parsed : [];
     } catch (error) {
         console.error('Failed to load freelancer crm session state:', error);
         seenFreelancerCrmKeys.value = [];
@@ -290,12 +293,18 @@ type FreelancerCrmBanner = {
 };
 
 const dismissFreelancerCrmBanner = (key: string) => {
+    markFreelancerCrmSeen(key);
     if (!dismissedFreelancerCrmKeys.value.includes(key)) {
         dismissedFreelancerCrmKeys.value = [...dismissedFreelancerCrmKeys.value, key];
     }
     pinnedFreelancerCrmBannerKey.value = null;
     if (key === 'onboarding') showOnboardingBanner.value = false;
     if (key === 'apply') showApplyEncouragementBanner.value = false;
+};
+
+const handleFreelancerCrmAction = async (banner: FreelancerCrmBanner) => {
+    markFreelancerCrmSeen(banner.key);
+    await banner.action();
 };
 
 const hasActiveProjectSignal = computed(() => (profile.value.statInteresting ?? 0) > 0);
@@ -486,7 +495,7 @@ const allFreelancerCrmBanners = computed<FreelancerCrmBanner[]>(() => {
 
     const banners: FreelancerCrmBanner[] = [];
 
-    if (shouldShowBurnoutBanner.value) {
+    if (shouldShowBurnoutBanner.value && !hideBurnoutAlert.value) {
         banners.push({
             key: 'burnout',
             label: 'Pace Check',
@@ -556,7 +565,7 @@ const allFreelancerCrmBanners = computed<FreelancerCrmBanner[]>(() => {
         });
     }
 
-    if (alerts.isChurnWarning && !hasActiveProjectSignal.value) {
+    if (alerts.isChurnWarning && !hasActiveProjectSignal.value && !hideChurnAlert.value) {
         banners.push({
             key: 'churn',
             label: 'Come Back',
@@ -587,7 +596,7 @@ const activeFreelancerCrmBanner = computed(() => {
     return freelancerCrmBanners.value[0] ?? null;
 });
 
-watch(currentAccessToken, () => {
+watch(currentUserId, () => {
     dismissedFreelancerCrmKeys.value = [];
     pinnedFreelancerCrmBannerKey.value = null;
     loadSeenFreelancerCrmKeys();
@@ -600,9 +609,6 @@ watch(freelancerCrmBanners, (banners) => {
 
     const nextBanner = banners[0] ?? null;
     pinnedFreelancerCrmBannerKey.value = nextBanner?.key ?? null;
-    if (nextBanner) {
-        markFreelancerCrmSeen(nextBanner.key);
-    }
 }, { immediate: true });
 </script>
 
@@ -656,7 +662,7 @@ watch(freelancerCrmBanners, (banners) => {
                             </div>
                         </div>
                         <div class="flex items-center gap-3 shrink-0 md:pt-0 pt-1">
-                            <button @click="activeFreelancerCrmBanner.action()" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">{{ activeFreelancerCrmBanner.cta }}</button>
+                            <button @click="handleFreelancerCrmAction(activeFreelancerCrmBanner)" class="rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-900 transition hover:bg-white/90">{{ activeFreelancerCrmBanner.cta }}</button>
                         </div>
                     </div>
                 </div>
