@@ -225,7 +225,7 @@ onMounted(() => {
                 {{ item.label }} <span class="text-white font-medium ml-1">{{ review[item.key] }}</span>
               </div>
             </div>
-            <p class="text-white/80 leading-relaxed bg-black/20 rounded-xl p-4">
+            <p class="rounded-xl border border-slate-200 bg-slate-50 p-4 leading-relaxed text-slate-700">
               {{ review.comment }}
             </p>
 
@@ -349,7 +349,7 @@ onMounted(() => {
                 {{ item.label }} <span class="text-white font-medium ml-1">{{ review[item.key] }}</span>
               </div>
             </div>
-            <p class="text-white/80 leading-relaxed bg-black/20 rounded-xl p-4">
+            <p class="rounded-xl border border-slate-200 bg-slate-50 p-4 leading-relaxed text-slate-700">
               {{ review.comment }}
             </p>
           </div>

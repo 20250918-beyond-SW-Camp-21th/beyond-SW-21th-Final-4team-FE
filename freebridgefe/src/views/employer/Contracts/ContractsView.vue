@@ -93,26 +93,26 @@ const filteredAndSortedContracts = computed(() => {
 
 const statusConfig: Record<
     string,
-    { label: string; bgColor: string; icon: typeof CheckCircle }
+    { label: string; badgeClass: string; icon: typeof CheckCircle }
 > = {
     WAITING_SIGNATURE: {
         label: '서명 대기',
-        bgColor: 'bg-orange-500',
+        badgeClass: 'border border-orange-200/80 bg-orange-50 text-slate-700',
         icon: Clock,
     },
     IN_PROGRESS: {
         label: '진행 중',
-        bgColor: 'bg-blue-500',
+        badgeClass: 'border border-sky-200/80 bg-sky-50 text-slate-700',
         icon: TrendingUp,
     },
     COMPLETED: {
         label: '완료',
-        bgColor: 'bg-green-500',
+        badgeClass: 'border border-emerald-200/80 bg-emerald-50 text-slate-700',
         icon: CheckCircle,
     },
     REJECTED: {
         label: '거절됨',
-        bgColor: 'bg-rose-500',
+        badgeClass: 'border border-rose-200/80 bg-rose-50 text-slate-700',
         icon: Clock,
     },
 };
@@ -358,11 +358,11 @@ watch(
             >
                 <!-- Header -->
                 <div class="mb-8">
-                    <div class="flex items-center gap-3 mb-3 flex-wrap">
+                    <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
                         <div
                             v-if="statusConfig[contract.status]"
-                            :class="`px-4 py-2 rounded-full ${statusConfig[contract.status].bgColor} text-white text-sm font-medium shadow-lg flex items-center gap-2`"
+                            :class="`ml-auto flex items-center gap-2 self-end rounded-full px-4 py-2 text-sm font-medium shadow-sm ${statusConfig[contract.status].badgeClass}`"
                         >
                             <component
                                 :is="statusConfig[contract.status].icon"
