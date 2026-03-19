@@ -185,6 +185,7 @@ onMounted(() => {
       <div class="flex items-center gap-4">
         <button
           @click="$emit('back')"
+          aria-label="이전으로"
           class="p-2 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <ArrowLeft class="w-5 h-5 text-sky-600" />
