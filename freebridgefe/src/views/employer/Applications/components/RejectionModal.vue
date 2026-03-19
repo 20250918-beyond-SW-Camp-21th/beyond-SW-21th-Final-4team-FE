@@ -56,7 +56,7 @@ const handleSubmit = async (e: Event) => {
         :enter="{ opacity: 1, scale: 1, y: 0 }"
         :leave="{ opacity: 0, scale: 0.95, y: 20 }"
     >
-      <div class="border-b border-white/10 p-6 flex items-center justify-between">
+      <div class="fb-modal-header border-b border-white/10 p-6 flex items-center justify-between">
         <h2 class="text-2xl font-bold text-white">지원 거절</h2>
         <button
           @click="onClose"

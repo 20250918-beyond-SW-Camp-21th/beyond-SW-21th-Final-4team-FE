@@ -64,7 +64,7 @@ const handleBackdropClick = () => {
         >
             <!-- Header -->
             <div
-                class="sticky top-0 bg-gradient-to-br from-gray-800/95 to-gray-900/95 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10"
+                class="fb-modal-header sticky top-0 backdrop-blur-xl border-b border-white/10 p-6 flex items-center justify-between z-10"
             >
                 <div class="flex items-center gap-3">
                     <div

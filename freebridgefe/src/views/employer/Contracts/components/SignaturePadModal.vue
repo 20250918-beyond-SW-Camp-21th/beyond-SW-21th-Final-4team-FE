@@ -63,7 +63,7 @@ const handleBackdropClick = (e: MouseEvent) => {
             :leave="{ opacity: 0, scale: 0.95, y: 20 }"
         >
             <!-- Header -->
-            <div class="flex items-center justify-between p-6 border-b border-white/10">
+            <div class="fb-modal-header flex items-center justify-between p-6 border-b border-white/10">
                 <div class="flex items-center gap-3">
                     <div
                         class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center"

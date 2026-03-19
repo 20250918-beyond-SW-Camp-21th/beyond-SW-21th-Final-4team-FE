@@ -360,19 +360,19 @@ const saveEditCertification = async () => {
 </script>
 
 <template>
-    <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 font-sans text-white">
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-10 font-sans text-slate-800">
         <!-- Header -->
         <div class="mb-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div class="flex items-center gap-4">
                 <button
                     @click="$emit('back')"
-                    class="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-xl transition-all hover:bg-white/10 hover:border-white/20"
+                    class="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white transition-all hover:bg-slate-50 hover:border-slate-300"
                 >
-                    <ArrowLeft class="w-6 h-6 text-white/80" />
+                    <ArrowLeft class="w-6 h-6 text-sky-600" />
                 </button>
                 <div>
-                    <h1 class="text-3xl font-bold text-white tracking-tight">이력서 상세 관리</h1>
-                    <p class="text-base text-slate-400 mt-1">기본 정보와 학력/경력/자격증을 관리하세요.</p>
+                    <h1 class="text-3xl font-bold text-slate-950 tracking-tight">이력서 상세 관리</h1>
+                    <p class="text-base text-slate-500 mt-1">기본 정보와 학력/경력/자격증을 관리하세요.</p>
                 </div>
             </div>
             <button
@@ -388,18 +388,18 @@ const saveEditCertification = async () => {
 
         <!-- Loading State -->
         <div v-if="isLoading" class="flex justify-center py-40">
-            <Loader2 class="w-10 h-10 animate-spin text-white/50" />
+            <Loader2 class="w-10 h-10 animate-spin text-sky-500" />
         </div>
 
         <div v-else class="space-y-8 animate-fade-in-up">
-            <div class="rounded-[28px] border border-white/12 bg-gradient-to-r from-white/10 via-sky-200/10 to-cyan-200/10 p-5 shadow-[0_20px_60px_-36px_rgba(255,255,255,0.55)] backdrop-blur-2xl">
+            <div class="rounded-[28px] border border-sky-100 bg-gradient-to-r from-white via-sky-50 to-cyan-50 p-5 shadow-[0_20px_60px_-36px_rgba(56,189,248,0.18)]">
                 <div class="flex items-start gap-3">
-                    <div class="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-sky-200/20 text-sky-100">
+                    <div class="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-sky-100 text-sky-600">
                         <Check class="w-4 h-4" />
                     </div>
                     <div>
-                        <p class="text-sm font-semibold tracking-wide text-sky-100/90">저장 안내</p>
-                        <p class="mt-1 text-sm leading-relaxed text-slate-200/90">
+                        <p class="text-sm font-semibold tracking-wide text-sky-700">저장 안내</p>
+                        <p class="mt-1 text-sm leading-relaxed text-slate-700">
                             항목을 추가하거나 삭제한 뒤에는 반드시 우측 상단의 저장하기 버튼을 눌러 최종 반영해 주세요.
                         </p>
                     </div>

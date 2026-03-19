@@ -230,7 +230,7 @@ const resetProfileVerification = () => {
 
     <!-- Identity Verification (Shown when not verified) -->
     <div v-if="!isProfileVerified" class="max-w-md mx-auto mt-20" v-motion :initial="{ opacity: 0, scale: 0.95 }" :enter="{ opacity: 1, scale: 1 }">
-        <div class="rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04))] p-8 text-center shadow-[0_28px_90px_-54px_rgba(15,23,42,0.95)] backdrop-blur-2xl">
+        <div class="rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.10),rgba(255,255,255,0.04))] p-8 text-center backdrop-blur-2xl">
             <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-blue-300/15 bg-blue-300/10 shadow-[0_12px_36px_-24px_rgba(96,165,250,0.9)]">
                 <ShieldCheck class="w-10 h-10 text-blue-400" />
             </div>
@@ -278,7 +278,7 @@ const resetProfileVerification = () => {
         <!-- Left Column: Basic Info -->
         <div class="lg:col-span-7 space-y-8">
             <!-- Basic Info Card -->
-            <section class="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(15,23,42,0.16))] p-8 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.95)] backdrop-blur-2xl">
+            <section class="relative overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(15,23,42,0.16))] p-8 backdrop-blur-2xl">
                 <div class="flex items-center justify-between mb-8">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
                         <div class="p-2 bg-blue-500/10 rounded-lg">
@@ -337,7 +337,7 @@ const resetProfileVerification = () => {
             </section>
 
              <!-- Notification Settings -->
-            <section class="rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(15,23,42,0.16))] p-8 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.95)] backdrop-blur-2xl">
+            <section class="rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(15,23,42,0.16))] p-8 backdrop-blur-2xl">
                 <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
                     <div class="p-2 bg-yellow-500/10 rounded-lg">
                         <Bell class="w-5 h-5 text-yellow-400" />
@@ -377,7 +377,7 @@ const resetProfileVerification = () => {
         <!-- Right Column: Password & Security -->
         <div class="lg:col-span-5 space-y-8">
             <!-- Password Change -->
-            <section class="flex h-full flex-col rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(15,23,42,0.16))] p-8 shadow-[0_28px_90px_-54px_rgba(15,23,42,0.95)] backdrop-blur-2xl">
+            <section class="flex h-full flex-col rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(15,23,42,0.16))] p-8 backdrop-blur-2xl">
                 <div class="flex items-center justify-between mb-8">
                     <h2 class="text-xl font-bold text-white flex items-center gap-2">
                         <div class="p-2 bg-purple-500/10 rounded-lg">

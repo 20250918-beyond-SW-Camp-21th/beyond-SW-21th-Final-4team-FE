@@ -55,16 +55,16 @@ watch(
         <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="$emit('close')"></div>
 
         <!-- Modal Content -->
-        <div class="relative bg-slate-900 border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-fade-in-up">
+        <div class="relative bg-white border border-slate-200 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-[0_30px_90px_-52px_rgba(15,23,42,0.22)] animate-fade-in-up">
             
             <!-- Header -->
-            <div class="flex justify-between items-start p-6 border-b border-white/10 bg-[#1e293b]/50">
+            <div class="fb-modal-header flex justify-between items-start p-6 border-b border-white/10">
                 <div v-if="project">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="px-2 py-0.5 text-xs font-bold rounded border bg-blue-500/10 text-blue-400 border-blue-500/20">
                             {{ project.status === 'ongoing' ? '진행 중' : project.status === 'scheduled' ? '진행 예정' : '완료' }}
                         </span>
-                        <span class="text-slate-400 text-xs font-mono flex items-center gap-1">
+                        <span class="text-white/80 text-xs font-mono flex items-center gap-1">
                             <Calendar class="w-3 h-3" /> {{ project.period }}
                         </span>
                     </div>
@@ -82,7 +82,7 @@ watch(
                 </div>
                 <div v-else class="h-16 w-48 bg-white/5 rounded animate-pulse"></div>
 
-                <button @click="$emit('close')" class="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors">
+                <button @click="$emit('close')" class="p-2 hover:bg-white/20 rounded-full text-white transition-colors">
                     <X class="w-6 h-6" />
                 </button>
             </div>
@@ -99,35 +99,35 @@ watch(
                     <!-- Detail Info -->
                     <div class="space-y-6">
                         <div class="space-y-2">
-                            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-slate-950 flex items-center gap-2">
                                 <FileText class="w-5 h-5 text-blue-400" />
                                 프로젝트 소개
                             </h3>
-                            <p class="text-slate-300 leading-relaxed bg-white/5 p-5 rounded-xl border border-white/5 whitespace-pre-wrap">
+                            <p class="text-slate-700 leading-relaxed bg-slate-50 p-5 rounded-xl border border-slate-200 whitespace-pre-wrap">
                                 {{ project.description }}
                             </p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold text-white">기술 스택</h3>
+                                <h3 class="text-lg font-bold text-slate-950">기술 스택</h3>
                                 <div class="flex flex-wrap gap-2">
-                                    <span v-for="tech in project.techStack" :key="tech" class="px-3 py-1.5 bg-blue-500/10 text-blue-300 rounded-lg text-sm border border-blue-500/20">
+                                    <span v-for="tech in project.techStack" :key="tech" class="px-3 py-1.5 bg-sky-50 text-sky-700 rounded-lg text-sm border border-sky-200">
                                         {{ tech }}
                                     </span>
                                 </div>
                             </div>
                             
                             <div class="space-y-3">
-                                <h3 class="text-lg font-bold text-white">일정 정보</h3>
-                                <div class="bg-[#1e293b]/50 rounded-xl p-4 border border-white/5 space-y-3">
+                                <h3 class="text-lg font-bold text-slate-950">일정 정보</h3>
+                                <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
                                     <div class="flex justify-between items-center text-sm">
                                         <span class="text-slate-400">프로젝트 기간</span>
-                                        <span class="text-white font-mono">{{ project.period }}</span>
+                                        <span class="text-slate-950 font-mono">{{ project.period }}</span>
                                     </div>
                                     <div class="flex justify-between items-center text-sm">
                                         <span class="text-slate-400">D-Day</span>
-                                        <span class="text-white font-bold bg-white/10 px-2 py-0.5 rounded">{{ project.dDay }}</span>
+                                        <span class="text-slate-950 font-bold bg-white px-2 py-0.5 rounded border border-slate-200">{{ project.dDay }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -141,8 +141,8 @@ watch(
             </div>
 
             <!-- Footer -->
-            <div class="p-4 border-t border-white/10 bg-[#1e293b]/30 flex justify-end gap-3">
-                <button @click="$emit('close')" class="px-3 md:px-4 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition-colors">
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+                <button @click="$emit('close')" class="px-3 md:px-4 py-2 rounded-lg text-slate-600 hover:text-slate-950 hover:bg-white transition-colors">
                     닫기
                 </button>
             </div>

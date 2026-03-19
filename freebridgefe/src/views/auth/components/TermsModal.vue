@@ -46,7 +46,7 @@ onUnmounted(() => {
         :enter="{ opacity: 1, scale: 1 }"
       >
         <!-- Header -->
-        <div class="flex items-center justify-between p-5 border-b border-white/10 bg-white/5">
+        <div class="fb-modal-header flex items-center justify-between p-5 border-b border-white/10">
           <h3 id="terms-modal-title" class="text-xl font-bold text-white">{{ title }}</h3>
           <button
             @click="$emit('close')"

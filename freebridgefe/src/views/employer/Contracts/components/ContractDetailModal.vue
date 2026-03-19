@@ -168,12 +168,12 @@ watch(activeTab, (tab) => {
         >
             <!-- Header -->
             <div
-                class="sticky top-0 bg-gradient-to-br from-gray-800/95 to-gray-900/95 backdrop-blur-xl border-b border-white/10 z-10"
+                class="sticky top-0 bg-gradient-to-r from-sky-500 via-cyan-500 to-teal-500 backdrop-blur-xl border-b border-sky-200/60 z-10"
             >
                 <div class="p-6 flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div
-                            class="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center"
+                            class="w-12 h-12 rounded-xl bg-white/20 border border-white/35 flex items-center justify-center shadow-[0_16px_32px_-18px_rgba(255,255,255,0.5)]"
                         >
                             <FileText class="w-6 h-6 text-white" />
                         </div>
@@ -183,7 +183,7 @@ watch(activeTab, (tab) => {
                     </div>
                     <button
                         @click="$emit('close')"
-                        class="p-2 hover:bg-white/10 rounded-xl transition-colors"
+                        class="p-2 hover:bg-white/15 rounded-xl transition-colors"
                         v-motion
                         :hover="{ scale: 1.1, rotate: 90 }"
                         :tap="{ scale: 0.9 }"
@@ -198,8 +198,8 @@ watch(activeTab, (tab) => {
                         @click="activeTab = 'details'"
                         class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
                         :class="activeTab === 'details'
-                            ? 'bg-white/10 text-white'
-                            : 'text-white/50 hover:text-white hover:bg-white/5'"
+                            ? 'bg-white text-sky-700 shadow-md'
+                            : 'text-white/80 hover:text-white hover:bg-white/10'"
                     >
                         <Briefcase class="w-4 h-4" />
                         상세 정보
@@ -208,8 +208,8 @@ watch(activeTab, (tab) => {
                         @click="activeTab = 'contract'"
                         class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
                         :class="activeTab === 'contract'
-                            ? 'bg-white/10 text-white'
-                            : 'text-white/50 hover:text-white hover:bg-white/5'"
+                            ? 'bg-white text-sky-700 shadow-md'
+                            : 'text-white/80 hover:text-white hover:bg-white/10'"
                     >
                         <ScrollText class="w-4 h-4" />
                         계약서 보기
@@ -218,8 +218,8 @@ watch(activeTab, (tab) => {
                         @click="activeTab = 'ai-advice'"
                         class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
                         :class="activeTab === 'ai-advice'
-                            ? 'bg-white/10 text-white'
-                            : 'text-white/50 hover:text-white hover:bg-white/5'"
+                            ? 'bg-white text-sky-700 shadow-md'
+                            : 'text-white/80 hover:text-white hover:bg-white/10'"
                     >
                         <Scale class="w-4 h-4" />
                         법률 자문 AI

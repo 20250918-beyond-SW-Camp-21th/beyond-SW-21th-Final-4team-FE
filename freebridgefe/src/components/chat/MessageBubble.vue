@@ -35,7 +35,7 @@
                     class="flex min-w-[240px] items-center gap-3 px-4 py-3 text-[14px] shadow-md transition-all hover:shadow-lg"
                     :class="[
                         isMine
-                            ? 'bg-gradient-to-br from-violet-600 to-blue-600 text-white rounded-[22px] rounded-tr-sm'
+                            ? 'bg-gradient-to-br from-sky-700 to-cyan-700 text-white rounded-[22px] rounded-tr-sm'
                             : 'bg-slate-800 border border-white/5 text-slate-200 rounded-[22px] rounded-tl-sm'
                     ]"
                 >
@@ -58,7 +58,7 @@
                     class="px-4 py-2 text-[14px] relative shadow-md transition-all hover:shadow-lg"
                     :class="[
                         isMine 
-                            ? 'bg-gradient-to-br from-violet-600 to-blue-600 text-white rounded-[22px] rounded-tr-sm' 
+                            ? 'bg-gradient-to-br from-sky-700 to-cyan-700 text-white rounded-[22px] rounded-tr-sm' 
                             : 'bg-slate-800 border border-white/5 text-slate-200 rounded-[22px] rounded-tl-sm'
                     ]"
                 >

@@ -471,27 +471,27 @@ const normalizedPlanKey = computed<'FREE' | 'PRO' | 'PRIME'>(() => {
 const subscriptionPlanTone = computed(() => {
   if (normalizedPlanKey.value === 'PRO') {
     return {
-      wrap: 'border-yellow-400/40 bg-yellow-500/15',
-      icon: 'text-yellow-300',
-      label: 'text-yellow-200/80',
-      value: 'text-yellow-100',
+      wrap: 'border-amber-200 bg-amber-50',
+      icon: 'text-amber-600',
+      label: 'text-amber-600',
+      value: 'text-amber-700',
     };
   }
 
   if (normalizedPlanKey.value === 'PRIME') {
     return {
-      wrap: 'border-red-400/40 bg-red-500/15',
-      icon: 'text-red-300',
-      label: 'text-red-200/80',
-      value: 'text-red-100',
+      wrap: 'border-rose-200 bg-rose-50',
+      icon: 'text-rose-600',
+      label: 'text-rose-600',
+      value: 'text-rose-700',
     };
   }
 
   return {
-    wrap: 'border-blue-400/40 bg-blue-500/15',
-    icon: 'text-blue-300',
-    label: 'text-blue-200/80',
-    value: 'text-blue-100',
+    wrap: 'border-sky-200 bg-sky-50',
+    icon: 'text-sky-600',
+    label: 'text-sky-600',
+    value: 'text-sky-700',
   };
 });
 
@@ -623,28 +623,29 @@ const safeWebsiteUrl = computed(() => {
             <div v-else-if="activeTab === 'dashboard'" class="space-y-8">
               <div
                   v-if="activeTopCrmBanner"
-                  :class="['relative overflow-hidden rounded-[32px] border border-white/10 p-7 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.95)] backdrop-blur-2xl', activeTopCrmBanner.wrapClass]"
+                  class="relative overflow-hidden rounded-[28px] border border-sky-100 bg-gradient-to-r from-white via-sky-50 to-cyan-50 p-6 shadow-[0_20px_60px_-35px_rgba(56,189,248,0.16)]"
                   v-motion :initial="{ opacity: 0, y: -18 }" :enter="{ opacity: 1, y: 0 }"
               >
                   <div class="absolute top-0 right-0 z-20 p-4">
-                      <button type="button" aria-label="닫기" @click="dismissTopCrmBanner(activeTopCrmBanner.key)" class="text-white/50 hover:text-white transition-colors">
+                      <button type="button" aria-label="닫기" @click="dismissTopCrmBanner(activeTopCrmBanner.key)" class="text-slate-400 transition-colors hover:text-slate-700">
                           <X class="w-5 h-5" />
                       </button>
                   </div>
-                  <div :class="['absolute inset-0', activeTopCrmBanner.glowClass]"></div>
+                  <div class="absolute -top-16 -left-16 h-40 w-40 rounded-full bg-sky-100 blur-3xl"></div>
+                  <div class="absolute -bottom-16 right-12 h-40 w-40 rounded-full bg-cyan-100 blur-3xl"></div>
                   <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                       <div class="flex items-start gap-4">
-                          <div :class="['w-12 h-12 rounded-2xl border border-white/10 flex items-center justify-center shrink-0 shadow-[0_16px_40px_-28px_rgba(255,255,255,0.35)]', activeTopCrmBanner.iconWrapClass]">
-                              <component :is="activeTopCrmBanner.icon" class="w-5 h-5 text-white/80" />
+                          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-sky-100 bg-white shadow-[0_16px_40px_-28px_rgba(56,189,248,0.22)]">
+                              <component :is="activeTopCrmBanner.icon" class="w-5 h-5 text-sky-600" />
                           </div>
                           <div>
                               <div class="flex items-center gap-2 mb-1">
-                                  <h3 class="text-lg font-semibold text-white">{{ activeTopCrmBanner.title }}</h3>
-                                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-white/70 uppercase tracking-[0.2em] border border-white/10">
+                                  <h3 class="text-lg font-semibold text-slate-950">{{ activeTopCrmBanner.title }}</h3>
+                                  <span class="rounded-full border border-sky-100 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-700">
                                       {{ activeTopCrmBanner.label }}
                                   </span>
                               </div>
-                              <p class="text-sm text-white/68 leading-relaxed">
+                              <p class="text-sm leading-relaxed text-slate-600">
                                   {{ activeTopCrmBanner.description }}
                               </p>
                           </div>
@@ -652,9 +653,9 @@ const safeWebsiteUrl = computed(() => {
                       <button
                           type="button"
                           @click="handleCrmAction(activeTopCrmBanner.target)"
-                          :class="['shrink-0 w-full md:w-auto px-6 py-3 font-semibold rounded-full transition-colors shadow-[0_18px_40px_-28px_rgba(255,255,255,0.45)] flex items-center justify-center gap-2', activeTopCrmBanner.ctaClass]"
+                          class="flex w-full shrink-0 items-center justify-center gap-2 rounded-full bg-sky-500 px-6 py-3 font-semibold text-white transition-colors shadow-[0_18px_40px_-28px_rgba(56,189,248,0.4)] hover:bg-sky-400 md:w-auto"
                       >
-                          <component :is="activeTopCrmBanner.icon" class="w-5 h-5" :class="activeTopCrmBanner.isTextDark ? 'text-slate-900' : 'text-white'" />
+                          <component :is="activeTopCrmBanner.icon" class="w-5 h-5 text-white" />
                           {{ activeTopCrmBanner.cta }}
                       </button>
                   </div>
@@ -662,7 +663,7 @@ const safeWebsiteUrl = computed(() => {
 
               <!-- 1. Profile Section (Detailed) -->
               <div 
-                class="bg-white/5 border border-white/10 rounded-[28px] p-8 md:p-10 shadow-[0_25px_70px_-55px_rgba(255,255,255,0.25)] backdrop-blur-2xl"
+                class="bg-white border border-slate-200 rounded-[28px] p-8 md:p-10 shadow-[0_25px_70px_-55px_rgba(15,23,42,0.12)]"
                 v-motion
                 :initial="{ opacity: 0, y: -20 }"
                 :enter="{ opacity: 1, y: 0 }"
@@ -679,12 +680,12 @@ const safeWebsiteUrl = computed(() => {
                                   shape="square"
                                   size-class="w-32 h-32"
                                   text-class="text-4xl font-bold"
-                                  ring-class="border border-white/15 shadow-[0_20px_40px_-28px_rgba(0,0,0,0.6)]"
+                                  ring-class="border border-sky-100 bg-white"
                               />
                               
                               <!-- Hover Overlay -->
-                              <div class="absolute inset-0 bg-black/50 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <div class="flex flex-col items-center text-white text-xs">
+                              <div class="absolute inset-0 bg-sky-900/10 rounded-3xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div class="flex flex-col items-center text-sky-700 text-xs">
                                       <Camera class="w-6 h-6 mb-1" />
                                       <span>변경</span>
                                   </div>
@@ -692,9 +693,9 @@ const safeWebsiteUrl = computed(() => {
                               <input type="file" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" accept="image/*" @change="handleLogoUpdate" />
                           </div>
 
-                          <h2 class="text-xl md:text-2xl font-semibold tracking-tight mb-2">{{ employerProfile.companyName }}</h2>
+                          <h2 class="text-xl md:text-2xl font-semibold tracking-tight mb-2 text-slate-950">{{ employerProfile.companyName }}</h2>
                           <div
-                              class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 backdrop-blur-xl px-3 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.25)]"
+                              class="mb-5 inline-flex items-center gap-2 rounded-full border px-3 py-1.5"
                               :class="subscriptionPlanTone.wrap"
                           >
                               <Crown class="w-3.5 h-3.5" :class="subscriptionPlanTone.icon" />
@@ -703,22 +704,22 @@ const safeWebsiteUrl = computed(() => {
                           </div>
 
                            <!-- Core Stats -->
-                          <div class="w-full flex flex-wrap items-center justify-center gap-2 text-sm text-slate-300">
-                              <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs">
-                                  <span class="text-white/40">•</span>
-                                  진행 프로젝트 <strong class="text-white">{{ employerProfile.activeProjects }}</strong>
+                          <div class="w-full flex flex-wrap items-center justify-center gap-2 text-sm text-slate-500">
+                              <span class="px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-xs">
+                                  <span class="text-slate-300">•</span>
+                                  진행 프로젝트 <strong class="text-slate-950">{{ employerProfile.activeProjects }}</strong>
                               </span>
-                              <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs">
-                                  <span class="text-white/40">•</span>
-                                  총 지원자 <strong class="text-white">{{ employerProfile.totalApplicants }}</strong>
+                              <span class="px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-xs">
+                                  <span class="text-slate-300">•</span>
+                                  총 지원자 <strong class="text-slate-950">{{ employerProfile.totalApplicants }}</strong>
                               </span>
-                              <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs">
-                                  <span class="text-white/40">•</span>
-                                  연락된 지원자 <strong class="text-white">{{ employerProfile.contractedFreelancers }}</strong>
+                              <span class="px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-xs">
+                                  <span class="text-slate-300">•</span>
+                                  연락된 지원자 <strong class="text-slate-950">{{ employerProfile.contractedFreelancers }}</strong>
                               </span>
-                              <span class="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs">
-                                  <span class="text-white/40">•</span>
-                                  평균 평점 <strong class="text-yellow-300">{{ employerProfile.avgRating }}</strong>
+                              <span class="px-3 py-1 rounded-full bg-amber-50 border border-amber-100 text-xs">
+                                  <span class="text-amber-300">•</span>
+                                  평균 평점 <strong class="text-amber-700">{{ employerProfile.avgRating }}</strong>
                               </span>
                           </div>
                       </div>
@@ -726,13 +727,13 @@ const safeWebsiteUrl = computed(() => {
                       <!-- Right: Detailed Info -->
                       <div class="w-full md:w-2/3 space-y-6">
                           <div class="flex items-center justify-between mb-4">
-                              <h3 class="text-base md:text-lg font-semibold flex items-center gap-2">
-                                  <Building2 class="w-5 h-5 text-white/70" />
+                              <h3 class="text-base md:text-lg font-semibold flex items-center gap-2 text-slate-950">
+                                  <Building2 class="w-5 h-5 text-sky-500" />
                                   기업 정보
                               </h3>
                               <button 
                                    @click="activeTab = 'profile'"
-                                   class="text-xs text-slate-300 hover:text-white flex items-center gap-1 bg-white/5 px-3 py-1.5 rounded-full border border-white/10"
+                                   class="text-xs text-slate-600 hover:text-slate-950 flex items-center gap-1 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200"
                               >
                                   <Settings class="w-3 h-3" />
                                   정보 수정
@@ -743,29 +744,29 @@ const safeWebsiteUrl = computed(() => {
                               <div class="space-y-4">
                                   <div class="group">
                                       <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">업종</label>
-                                      <div class="flex items-center gap-2 text-sm">
-                                          <Briefcase class="w-4 h-4 text-slate-400" />
+                                      <div class="flex items-center gap-2 text-sm text-slate-950">
+                                          <Briefcase class="w-4 h-4 text-sky-500" />
                                           {{ employerProfile.industry }}
                                       </div>
                                   </div>
                                   <div class="group">
                                       <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">규모</label>
-                                      <div class="flex items-center gap-2 text-sm">
-                                          <Users class="w-4 h-4 text-slate-400" />
+                                      <div class="flex items-center gap-2 text-sm text-slate-950">
+                                          <Users class="w-4 h-4 text-sky-500" />
                                           {{ companySizeLabel }}
                                       </div>
                                   </div>
                                   <div class="group">
                                       <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">위치</label>
-                                      <div class="flex items-center gap-2 text-sm">
-                                          <MapPin class="w-4 h-4 text-slate-400" />
+                                      <div class="flex items-center gap-2 text-sm text-slate-950">
+                                          <MapPin class="w-4 h-4 text-sky-500" />
                                           {{ employerProfile.location }}
                                       </div>
                                   </div>
                                   <div class="group">
                                       <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">웹사이트</label>
                                       <div class="flex items-center gap-2 text-sm truncate">
-                                          <Globe class="w-4 h-4 text-slate-400" />
+                                          <Globe class="w-4 h-4 text-sky-500" />
                                         <a v-if="safeWebsiteUrl !== '#'" :href="safeWebsiteUrl" target="_blank" rel="noopener noreferrer" class="hover:underline hover:text-blue-400 truncate">{{ employerProfile.website }}</a>
                                         <span v-else class="text-slate-500">미등록</span>
                                       </div>
@@ -774,21 +775,21 @@ const safeWebsiteUrl = computed(() => {
                               <div class="space-y-4">
                                   <div class="group">
                                       <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">이메일</label>
-                                      <div class="flex items-center gap-2 text-sm">
-                                          <Mail class="w-4 h-4 text-slate-400" />
+                                      <div class="flex items-center gap-2 text-sm text-slate-950">
+                                          <Mail class="w-4 h-4 text-sky-500" />
                                           {{ employerProfile.email }}
                                       </div>
                                   </div>
                                   <div class="group">
                                       <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">연락처</label>
-                                      <div class="flex items-center gap-2 text-sm">
-                                          <Phone class="w-4 h-4 text-slate-400" />
+                                      <div class="flex items-center gap-2 text-sm text-slate-950">
+                                          <Phone class="w-4 h-4 text-sky-500" />
                                           {{ formattedEmployerPhone || employerProfile.phone }}
                                       </div>
                                   </div>
                                   <div class="group">
                                       <label class="text-[11px] text-slate-500 mb-1 block group-hover:text-white/70 transition-colors">기업 소개</label>
-                                      <p class="text-xs text-slate-300 bg-white/5 p-3 rounded-2xl border border-white/10 leading-relaxed">
+                                      <p class="text-xs text-slate-700 bg-slate-50 p-3 rounded-2xl border border-slate-200 leading-relaxed">
                                         {{ employerProfile.description }}
                                       </p>
                                   </div>
@@ -802,60 +803,60 @@ const safeWebsiteUrl = computed(() => {
               <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Detailed Ratings -->
                  <div 
-                   class="lg:col-span-2 bg-white/5 rounded-[28px] border border-white/10 p-6 md:p-8 shadow-[0_24px_70px_-55px_rgba(255,255,255,0.25)] backdrop-blur-2xl flex flex-col justify-center h-full relative"
+                   class="lg:col-span-2 bg-white rounded-[28px] border border-slate-200 p-6 md:p-8 shadow-[0_24px_70px_-55px_rgba(15,23,42,0.12)] flex flex-col justify-center h-full relative"
                    v-motion
                    :initial="{ opacity: 0, y: 20 }"
                    :enter="{ opacity: 1, y: 0, transition: { delay: 0.2 } }"
                  >
                     <div class="flex items-center justify-between mb-6">
-                       <h3 class="text-base md:text-lg font-semibold flex items-center gap-2">
-                           <Star class="w-5 h-5 text-white/70" />
+                       <h3 class="text-base md:text-lg font-semibold flex items-center gap-2 text-slate-950">
+                           <Star class="w-5 h-5 text-amber-500" />
                            프리랜서 평점
                        </h3>
                        <div class="flex flex-col sm:flex-row items-end sm:items-center gap-4">
-                           <div class="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
-                               <span class="text-xs text-white/60 font-semibold whitespace-nowrap tracking-[0.12em] uppercase">Total</span>
-                               <Star class="w-4 h-4 text-yellow-300 fill-yellow-300" />
-                               <span class="text-lg font-semibold text-white">{{ employerProfile.avgRating }}</span>
-                               <span class="text-xs text-white/40">/ 5.0</span>
+                           <div class="flex items-center gap-2 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-100">
+                               <span class="text-xs text-slate-500 font-semibold whitespace-nowrap tracking-[0.12em] uppercase">Total</span>
+                               <Star class="w-4 h-4 text-amber-500 fill-amber-500" />
+                               <span class="text-lg font-semibold text-slate-950">{{ employerProfile.avgRating }}</span>
+                               <span class="text-xs text-slate-400">/ 5.0</span>
                            </div>
                        </div>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-auto">
                        <!-- Rating Items -->
-                       <div class="bg-blue-500/10 rounded-2xl p-4 border border-blue-400/20">
+                       <div class="bg-sky-50 rounded-2xl p-4 border border-sky-100">
                            <div class="flex justify-between items-center mb-2">
-                               <span class="text-sm text-white/60">사내 분위기</span>
-                               <span class="font-semibold">{{ employerProfile.ratingDetails?.atmosphere }}</span>
+                               <span class="text-sm text-slate-500">사내 분위기</span>
+                               <span class="font-semibold text-slate-950">{{ employerProfile.ratingDetails?.atmosphere }}</span>
                            </div>
-                           <div class="h-1.5 bg-blue-100/10 rounded-full overflow-hidden">
-                                <div class="h-full bg-blue-300/70 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.atmosphere || 0) * 20}%` }"></div>
+                           <div class="h-1.5 bg-sky-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-sky-400 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.atmosphere || 0) * 20}%` }"></div>
                            </div>
                        </div>
-                       <div class="bg-amber-400/10 rounded-2xl p-4 border border-amber-300/20">
+                       <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
                            <div class="flex justify-between items-center mb-2">
-                               <span class="text-sm text-white/60">급여 만족도</span>
-                               <span class="font-semibold">{{ employerProfile.ratingDetails?.requirementsDetail }}</span>
+                               <span class="text-sm text-slate-500">급여 만족도</span>
+                               <span class="font-semibold text-slate-950">{{ employerProfile.ratingDetails?.requirementsDetail }}</span>
                            </div>
-                           <div class="h-1.5 bg-amber-100/10 rounded-full overflow-hidden">
-                                <div class="h-full bg-amber-200/80 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.requirementsDetail || 0) * 20}%` }"></div>
+                           <div class="h-1.5 bg-amber-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-amber-400 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.requirementsDetail || 0) * 20}%` }"></div>
                            </div>
                        </div>
-                       <div class="bg-emerald-400/10 rounded-2xl p-4 border border-emerald-300/20">
+                       <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
                            <div class="flex justify-between items-center mb-2">
-                               <span class="text-sm text-white/60">일정 준수</span>
-                               <span class="font-semibold">{{ employerProfile.ratingDetails?.scheduleAdherence }}</span>
+                               <span class="text-sm text-slate-500">일정 준수</span>
+                               <span class="font-semibold text-slate-950">{{ employerProfile.ratingDetails?.scheduleAdherence }}</span>
                            </div>
-                           <div class="h-1.5 bg-emerald-100/10 rounded-full overflow-hidden">
-                                <div class="h-full bg-emerald-200/80 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.scheduleAdherence || 0) * 20}%` }"></div>
+                           <div class="h-1.5 bg-emerald-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-emerald-400 rounded-full" :style="{ width: `${(employerProfile.ratingDetails?.scheduleAdherence || 0) * 20}%` }"></div>
                            </div>
                        </div>
                     </div>
                     <div
                       v-if="!hasReviewData"
-                      class="absolute inset-0 flex items-center justify-center rounded-[28px] bg-slate-950/40 backdrop-blur-sm text-center px-6"
+                      class="absolute inset-0 flex items-center justify-center rounded-[28px] bg-white/55 backdrop-blur-[2px] text-center px-6"
                     >
-                      <p class="text-sm text-white/80">
+                      <p class="text-sm font-medium text-slate-800">
                         프로젝트를 진행하시면 평점을 받아 확인할 수 있습니다
                       </p>
                     </div>
@@ -864,26 +865,26 @@ const safeWebsiteUrl = computed(() => {
                 <!-- Notice / Banners -->
                 <div
                     v-if="!hideEmployerNoticeBanner"
-                    class="bg-gradient-to-br from-slate-900/80 via-slate-800/70 to-slate-700/60 border border-white/10 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-center h-full shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur"
+                    class="relative flex h-full flex-col justify-center overflow-hidden rounded-2xl border border-sky-100 bg-gradient-to-br from-sky-50 via-cyan-50 to-white p-6 shadow-[0_16px_40px_rgba(56,189,248,0.12)]"
                 >
                     <div class="absolute right-4 top-4 z-20">
-                        <button type="button" aria-label="닫기" @click="hideEmployerNoticeBanner = true" class="rounded-full border border-white/10 p-2 text-white/45 transition-colors hover:bg-white/5 hover:text-white">
+                        <button type="button" aria-label="닫기" @click="hideEmployerNoticeBanner = true" class="rounded-full p-2 text-slate-400 transition-colors hover:bg-white/70 hover:text-slate-700">
                             <X class="h-4 w-4" />
                         </button>
                     </div>
                     <div class="relative z-10 w-full h-full flex flex-col justify-center">
                         <div>
-                            <span class="text-[10px] tracking-[0.2em] font-semibold text-slate-300 mb-3 inline-block">NOTICE</span>
-                            <h4 class="font-semibold text-white text-lg mb-2">프리랜서 계약 시 <br/>법률 자문 AI Agent 제공</h4>
+                            <span class="text-[10px] tracking-[0.2em] font-semibold text-sky-600 mb-3 inline-block">NOTICE</span>
+                            <h4 class="font-semibold text-slate-950 text-lg mb-2">프리랜서 계약 시 <br/>법률 자문 AI Agent 제공</h4>
                         </div>
-                        <p class="text-xs text-slate-300/80 mb-6">표준계약서 작성부터 리스크 점검까지<br/>법률 자문 AI Agent 가이드를 확인하세요.</p>
-                        <button type="button" @click="handleNoticeClick" class="text-xs font-semibold text-slate-200 hover:text-white flex items-center gap-1 mt-auto pointer-events-auto">
+                        <p class="text-xs text-slate-600 mb-6">표준계약서 작성부터 리스크 점검까지<br/>법률 자문 AI Agent 가이드를 확인하세요.</p>
+                        <button type="button" @click="handleNoticeClick" class="text-xs font-semibold text-sky-700 hover:text-sky-800 flex items-center gap-1 mt-auto pointer-events-auto">
                             자세히 보기 <ArrowRight class="w-3 h-3" />
                         </button>
                     </div>
                     <!-- Decorative circles -->
-                    <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none"></div>
-                    <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
+                    <div class="absolute -bottom-6 -right-6 w-24 h-24 bg-sky-100 rounded-full blur-xl pointer-events-none"></div>
+                    <div class="absolute top-0 right-0 w-40 h-40 bg-cyan-100 rounded-full blur-2xl pointer-events-none"></div>
                 </div>
               </div>
 
