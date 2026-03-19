@@ -248,7 +248,7 @@ onMounted(() => {
             @keydown="handleProjectCardKeydown($event, project)"
             tabindex="0"
             role="button"
-            :aria-label="`${project.title} 상세 열기`"
+            :aria-label="project.title ? `${project.title} 상세 열기` : '프로젝트 상세 열기'"
             class="group relative flex aspect-[4/4] cursor-pointer flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_-55px_rgba(15,23,42,0.12)] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
             :class="project.status === 'IN_PROGRESS'
               ? 'hover:bg-emerald-50 border-emerald-100'
