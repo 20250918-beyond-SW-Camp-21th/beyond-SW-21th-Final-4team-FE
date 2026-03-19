@@ -372,7 +372,7 @@ export const useChatStore = defineStore('chat', () => {
                     client.connectHeaders = latestToken
                         ? { Authorization: `Bearer ${latestToken}` }
                         : {};
-                    client.reconnectDelay = latestToken ? STOMP_RECONNECT_DELAY_MS : 0;
+                    client.reconnectDelay = STOMP_RECONNECT_DELAY_MS;
                 },
                 reconnectDelay: STOMP_RECONNECT_DELAY_MS,
                 onConnect: () => {
