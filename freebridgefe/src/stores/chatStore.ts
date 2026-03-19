@@ -18,6 +18,7 @@ import { CHAT_MUTED_ROOMS_KEY } from '@/constants/chatUi';
 
 export const useChatStore = defineStore('chat', () => {
     const authStore = useAuthStore();
+    const STOMP_RECONNECT_DELAY_MS = 5000;
 
     type OutboundChatMessagePayload = {
         roomId: string;
@@ -366,7 +367,14 @@ export const useChatStore = defineStore('chat', () => {
                 connectHeaders: {
                     Authorization: `Bearer ${token}`
                 },
-                reconnectDelay: 5000,
+                beforeConnect: (client) => {
+                    const latestToken = getAccessToken();
+                    client.connectHeaders = latestToken
+                        ? { Authorization: `Bearer ${latestToken}` }
+                        : {};
+                    client.reconnectDelay = latestToken ? STOMP_RECONNECT_DELAY_MS : 0;
+                },
+                reconnectDelay: STOMP_RECONNECT_DELAY_MS,
                 onConnect: () => {
                     console.log('[STOMP] Connected');
                     if (currentRoomId.value) {
