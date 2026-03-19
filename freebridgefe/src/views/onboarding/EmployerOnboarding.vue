@@ -186,7 +186,7 @@ const nextStep = () => {
                         <select 
                             :value="store.employerData.size"
                             @change="e => store.updateEmployerData({ size: (e.target as HTMLSelectElement).value as any })"
-                            class="block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/50 focus:border-transparent sm:text-sm py-4 px-4 text-white transition-all duration-300 hover:bg-white/10 [&>option]:bg-[#1a1a1a]"
+                            class="block w-full bg-white/5 border border-white/10 rounded-2xl shadow-sm focus:ring-2 focus:ring-blue-500/50 focus:border-transparent sm:text-sm py-4 px-4 text-white transition-all duration-300 hover:bg-white/10 [&>option]:bg-white [&>option]:text-slate-900"
                         >
                             <option value="S1_4">1-4명</option>
                             <option value="S5_9">5-9명</option>

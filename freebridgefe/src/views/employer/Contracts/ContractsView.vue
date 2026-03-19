@@ -218,28 +218,28 @@ watch(
 </script>
 
 <template>
-    <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white">
+    <div class="max-w-[1400px] mx-auto px-4 py-12 text-slate-900 md:px-8">
         <!-- Header -->
         <div v-motion :initial="{ opacity: 0, y: 20 }" :enter="{ opacity: 1, y: 0 }" class="mb-8">
             <div class="flex items-center justify-between flex-wrap gap-4 mb-3">
                 <div class="flex items-center gap-3">
-                    <FileText class="w-10 h-10 text-white" />
-                    <h1 class="text-4xl font-bold text-white">
+                    <FileText class="h-10 w-10 text-[#21AFBF]" />
+                    <h1 class="text-4xl font-bold text-slate-950">
                         계약서
                     </h1>
                 </div>
                 <button
                     @click="navigateToCreateContract"
-                    class="px-5 py-3 bg-blue-500 rounded-xl text-white font-semibold flex items-center gap-2 shadow-lg"
+                    class="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-5 py-3 font-semibold text-slate-900 shadow-lg"
                     v-motion
                     :hover="{ scale: 1.05 }"
                     :tap="{ scale: 0.95 }"
                 >
-                    <FilePlus class="w-5 h-5" />
+                    <FilePlus class="h-5 w-5" />
                     계약서 작성
                 </button>
             </div>
-            <p class="text-white/60">프리랜서와의 계약을 확인하세요</p>
+            <p class="text-slate-600">프리랜서와의 계약을 확인하세요</p>
         </div>
 
         <!-- Search, Sort, and Filter -->
@@ -253,18 +253,18 @@ watch(
             <div class="flex flex-col sm:flex-row gap-4">
                 <!-- Search Bar -->
                 <div class="relative flex-1">
-                    <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <Search class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                     <input
                         v-model="searchQuery"
                         type="text"
                         placeholder="프로젝트명 또는 프리랜서 이름으로 검색..."
-                        class="w-full pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:border-blue-500/50 focus:outline-none transition-colors"
+                        class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-slate-900 placeholder-slate-400 transition-colors focus:border-[#21AFBF] focus:outline-none"
                     />
                 </div>
 
                 <button
                     @click="resetFilters"
-                    class="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors min-w-[96px]"
+                    class="min-w-[96px] rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-700 transition-colors hover:bg-slate-50"
                 >
                     초기화
                 </button>
@@ -273,24 +273,24 @@ watch(
                 <div class="relative">
                     <button
                         @click="isDropdownOpen = !isDropdownOpen"
-                        class="flex items-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors min-w-[160px] justify-between"
+                        class="flex min-w-[160px] items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-700 transition-colors hover:bg-slate-50"
                     >
                         <span>{{ currentSortLabel }}</span>
                         <ChevronDown
-                            class="w-4 h-4 transition-transform"
+                            class="h-4 w-4 transition-transform"
                             :class="{ 'rotate-180': isDropdownOpen }"
                         />
                     </button>
                     <div
                         v-if="isDropdownOpen"
-                        class="absolute top-full mt-2 right-0 w-full bg-gray-900 border border-white/10 rounded-xl overflow-hidden shadow-xl"
+                        class="absolute right-0 top-full mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
                     >
                         <button
                             v-for="option in sortOptions"
                             :key="option.value"
                             @click="selectSortOption(option.value)"
-                            class="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-colors"
-                            :class="{ 'bg-white/5': sortOption === option.value }"
+                            class="w-full px-4 py-3 text-left text-slate-700 transition-colors hover:bg-slate-50"
+                            :class="{ 'bg-sky-50 text-slate-900': sortOption === option.value }"
                         >
                             {{ option.label }}
                         </button>
@@ -307,8 +307,8 @@ watch(
                     class="px-4 py-2 rounded-full text-sm font-medium transition-all"
                     :class="
                         selectedStatus === filter.value
-                            ? 'bg-blue-500 text-white shadow-lg'
-                            : 'bg-white/5 text-white/70 hover:bg-white/10 border border-white/10'
+                            ? 'border border-sky-200 bg-sky-50 text-slate-900 shadow-sm'
+                            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                     "
                 >
                     {{ filter.label }}
@@ -317,30 +317,30 @@ watch(
         </div>
 
         <!-- Results Count -->
-        <div class="mb-6 text-white/60 text-sm">
+        <div class="mb-6 text-sm text-slate-500">
             {{ filteredAndSortedContracts.length }}개의 계약서
         </div>
 
         <!-- Empty State -->
         <div
             v-if="filteredAndSortedContracts.length === 0"
-            class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 text-center"
+            class="rounded-3xl border border-slate-200 bg-white p-16 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)]"
             v-motion
             :initial="{ opacity: 0, scale: 0.95 }"
             :enter="{ opacity: 1, scale: 1 }"
         >
             <div
-                class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6"
+                class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-sky-50"
                 v-motion
                 :initial="{ scale: 0 }"
                 :enter="{ scale: 1, transition: { type: 'spring', delay: 0.2 } }"
             >
-                <FileText class="w-10 h-10 text-white/60" />
+                <FileText class="h-10 w-10 text-[#21AFBF]" />
             </div>
-            <h3 class="text-2xl font-semibold mb-3">
+            <h3 class="mb-3 text-2xl font-semibold text-slate-900">
                 {{ searchQuery || selectedStatus !== 'ALL' ? '검색 결과가 없습니다' : '계약이 없습니다' }}
             </h3>
-            <p class="text-white/60">
+            <p class="text-slate-500">
                 {{ searchQuery || selectedStatus !== 'ALL' ? '다른 검색어나 필터를 시도해보세요' : '새로운 프로젝트를 시작해보세요' }}
             </p>
         </div>
@@ -350,7 +350,7 @@ watch(
             <div
                 v-for="(contract, index) in filteredAndSortedContracts"
                 :key="contract.id"
-                class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-8 hover:border-white/20 transition-all"
+                class="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)] transition-all hover:border-sky-200"
                 v-motion
                 :initial="{ opacity: 0, y: 20 }"
                 :enter="{ opacity: 1, y: 0, transition: { delay: index * 0.05 } }"
@@ -359,39 +359,39 @@ watch(
                 <!-- Header -->
                 <div class="mb-8">
                     <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <h2 class="text-3xl font-bold">{{ contract.projectName }}</h2>
+                        <h2 class="text-3xl font-bold text-slate-950">{{ contract.projectName }}</h2>
                         <div
                             v-if="statusConfig[contract.status]"
-                            :class="`ml-auto flex items-center gap-2 self-end rounded-full px-4 py-2 text-sm font-medium shadow-sm ${statusConfig[contract.status].badgeClass}`"
+                            :class="`ml-auto flex items-center gap-2 self-start rounded-full px-4 py-2 text-sm font-medium shadow-sm sm:self-auto ${statusConfig[contract.status].badgeClass}`"
                         >
                             <component
                                 :is="statusConfig[contract.status].icon"
-                                class="w-4 h-4"
+                                class="h-4 w-4"
                             />
                             {{ statusConfig[contract.status].label }}
                         </div>
                     </div>
-                    <div class="text-white/60 flex items-center gap-2">
-                        <Sparkles class="w-4 h-4" />
+                    <div class="flex items-center gap-2 text-slate-500">
+                        <Sparkles class="h-4 w-4 text-[#21AFBF]" />
                         담당자: {{ contract.freelancerName }}
                     </div>
                 </div>
 
                 <!-- Footer -->
                 <div
-                    class="flex flex-col lg:flex-row items-start lg:items-center justify-between pt-8 border-t border-white/10 gap-4"
+                    class="flex flex-col items-start justify-between gap-4 border-t border-slate-200 pt-8 lg:flex-row lg:items-center"
                 >
-                    <div class="flex flex-wrap gap-6 text-white/60">
+                    <div class="flex flex-wrap gap-6 text-slate-500">
                         <div class="flex items-center gap-2">
-                            <Calendar class="w-4 h-4" />
+                            <Calendar class="h-4 w-4 text-[#21AFBF]" />
                             <span class="text-sm">
                                 {{ formatDate(contract.startDate) }} ~
                                 {{ formatDate(contract.endDate) }}
                             </span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <DollarSign class="w-4 h-4" />
-                            <span class="text-sm font-medium"
+                            <DollarSign class="h-4 w-4 text-[#21AFBF]" />
+                            <span class="text-sm font-medium text-slate-700"
                                 >총 {{ formatCurrency(contract.budget) }}</span
                             >
                         </div>
@@ -399,9 +399,9 @@ watch(
 
                     <button
                         @click="openContractDetail(contract)"
-                        class="px-6 py-3 bg-white text-black rounded-full font-semibold flex items-center gap-2 shadow-lg hover:scale-105 active:scale-95 transition-all"
+                        class="flex items-center gap-2 rounded-full bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-6 py-3 font-semibold text-slate-900 shadow-lg transition-all hover:scale-105 active:scale-95"
                     >
-                        <Eye class="w-4 h-4" />
+                        <Eye class="h-4 w-4" />
                         상세보기
                     </button>
                 </div>

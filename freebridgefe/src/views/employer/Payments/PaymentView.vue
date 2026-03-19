@@ -38,20 +38,6 @@ let subscriptionRedirectInterval: ReturnType<typeof setInterval> | null = null;
 
 const storeId = import.meta.env.VITE_PORTONE_STORE_ID as string | undefined;
 const channelKey = import.meta.env.VITE_PORTONE_CHANNEL_KEY as string | undefined;
-const isDev = import.meta.env.DEV;
-
-const maskValue = (value?: string) => {
-    if (!value) return '(empty)';
-    if (value.length <= 8) return `${value.slice(0, 2)}***`;
-    return `${value.slice(0, 6)}...${value.slice(-4)}`;
-};
-
-const debugPortOneInfo = computed(() => {
-    return {
-        storeId: maskValue(storeId),
-        channelKey: maskValue(channelKey),
-    };
-});
 
 type SubscriptionPlanType = 'PRO' | 'PRIME';
 
@@ -511,14 +497,6 @@ onBeforeUnmount(() => {
                 <h1 class="text-4xl font-bold tracking-tight text-slate-950">결제 관리</h1>
             </div>
             <p class="mt-3 max-w-2xl text-base text-slate-500">진행 중인 계약의 선결제를 진행하고 정산 생성을 시작하세요.</p>
-            <div
-                v-if="isDev"
-                class="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs text-amber-700"
-            >
-                <span>DEBUG</span>
-                <span>storeId={{ debugPortOneInfo.storeId }}</span>
-                <span>channelKey={{ debugPortOneInfo.channelKey }}</span>
-            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
