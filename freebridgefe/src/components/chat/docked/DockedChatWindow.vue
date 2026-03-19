@@ -2,7 +2,7 @@
     <div 
         ref="windowRef"
         :style="dragStyle"
-        class="w-80 bg-[#0f172a] border border-white/10 rounded-t-lg shadow-lg flex flex-col"
+        class="flex w-80 flex-col rounded-t-lg border border-slate-200 bg-white shadow-lg"
         :class="[
             minimized ? 'h-12' : 'h-[400px]',
             isDragging ? 'shadow-2xl' : 'transition-all duration-300'
@@ -13,44 +13,43 @@
             ref="headerRef"
             @pointerdown="onPointerDown"
             @click="toggleMinimize"
-            class="px-3 h-12 flex items-center justify-between border-b border-white/10 cursor-move hover:bg-white/5 bg-[#0f172a] rounded-t-lg shrink-0 z-20"
-            :class="minimized ? 'bg-[#0f172a]' : 'bg-[#0f172a]'"
+            class="z-20 flex h-12 shrink-0 cursor-move items-center justify-between rounded-t-lg border-b border-sky-200/70 bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-3"
         >
             <div class="flex items-center gap-2">
                 <div class="relative">
-                     <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-300 font-bold text-xs shrink-0 border border-white/10">
+                     <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/80 text-xs font-bold text-[#0f2b2e]">
                         {{ otherParticipantName.charAt(0) }}
                     </div>
-                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[#0f172a] rounded-full"></span>
+                    <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white bg-emerald-500"></span>
                 </div>
                 <div>
-                    <h3 class="font-bold text-white text-sm truncate max-w-[120px]">{{ otherParticipantName }}</h3>
-                    <p v-if="!minimized" class="text-[10px] text-emerald-500">Active now</p>
+                    <h3 class="max-w-[120px] truncate text-sm font-bold text-[#0f2b2e]">{{ otherParticipantName }}</h3>
+                    <p v-if="!minimized" class="text-[10px] text-[#0f2b2e]/80">Active now</p>
                 </div>
             </div>
-            <div class="flex items-center gap-1 text-slate-400">
-                <button @click.stop="toggleMinimize" class="p-1 hover:bg-white/10 rounded">
+            <div class="flex items-center gap-1 text-[#0f2b2e]/70">
+                <button @click.stop="toggleMinimize" class="rounded p-1 hover:bg-white/25">
                     <MinusIcon class="w-4 h-4" />
                 </button>
-                <button @click.stop="closeWindow" class="p-1 hover:bg-white/10 rounded hover:text-red-400">
+                <button @click.stop="closeWindow" class="rounded p-1 hover:bg-white/25 hover:text-rose-700">
                     <XIcon class="w-4 h-4" />
                 </button>
             </div>
         </div>
 
         <!-- Content -->
-        <div v-show="!minimized" class="flex-1 flex flex-col overflow-hidden bg-slate-900">
+        <div v-show="!minimized" class="flex flex-1 flex-col overflow-hidden bg-white">
             <!-- Messages -->
-            <div class="flex-1 overflow-y-auto p-3 custom-scrollbar" ref="messagesContainer">
+            <div class="custom-scrollbar flex-1 overflow-y-auto bg-slate-50 p-3" ref="messagesContainer">
                  <div
                     v-if="nonSystemMessages.length === 0"
-                    class="h-full min-h-[120px] flex items-center justify-center text-slate-400 text-xs"
+                    class="flex h-full min-h-[120px] items-center justify-center text-xs text-slate-400"
                 >
                     새로운 대화를 시작해보세요.
                 </div>
                 <div
                     v-else-if="isReadOnly"
-                    class="mb-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] text-slate-300"
+                    class="mb-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] text-slate-700"
                 >
                     상대방이 채팅방을 나갔습니다. 이 채팅은 읽기 전용입니다.
                 </div>
@@ -61,9 +60,9 @@
                         <div 
                             :class="[
                                 'max-w-[85%] px-3 py-2 rounded-lg text-sm relative group',
-                                isMyMessage(msg) 
-                                    ? 'bg-emerald-600 text-white rounded-br-none' 
-                                    : 'bg-[#1e293b] text-slate-100 border border-white/10 rounded-bl-none'
+                                isMyMessage(msg)
+                                    ? 'bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] text-[#0f2b2e] rounded-br-none shadow-sm'
+                                    : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-sm'
                             ]"
                         >
                             <template v-if="msg.type === 'FILE' && getFileUrl(msg)">
@@ -92,15 +91,15 @@
             </div>
 
             <!-- Input -->
-            <div class="p-2 border-t border-white/10 bg-[#0f172a]">
-                <div class="flex items-end gap-2 bg-[#1e293b] p-1.5 rounded-lg border border-white/10">
+            <div class="border-t border-slate-200 bg-white p-2">
+                <div class="flex items-end gap-2 rounded-lg border border-slate-200 bg-slate-50 p-1.5">
                     <textarea 
                         v-model="newMessage"
                         @compositionstart="isComposing = true"
                         @compositionend="handleCompositionEnd"
                         @keydown.enter.exact.prevent="handleMessageEnter"
                         rows="1"
-                        class="flex-1 bg-transparent border-none focus:ring-0 resize-none text-sm max-h-20 text-white placeholder-slate-500"
+                        class="max-h-20 flex-1 resize-none border-none bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:ring-0"
                         placeholder="Write a message..."
                          style="min-height: 32px;"
                         :disabled="isReadOnly"
@@ -108,15 +107,15 @@
                     <button 
                         @click="sendMessage"
                         :disabled="!newMessage.trim() || isReadOnly"
-                        class="p-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50"
+                        class="rounded-md bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] p-1.5 text-[#0f2b2e] hover:brightness-105 disabled:opacity-50"
                     >
                         <SendIcon class="w-3 h-3" />
                     </button>
                 </div>
                 <div class="flex justify-between items-center mt-1 px-1">
                     <div class="flex gap-2">
-                        <button class="text-slate-500 hover:text-slate-300"><ImageIcon class="w-4 h-4" /></button>
-                        <button class="text-slate-500 hover:text-slate-300"><PaperclipIcon class="w-4 h-4" /></button>
+                        <button class="text-slate-400 hover:text-[#21AFBF]"><ImageIcon class="w-4 h-4" /></button>
+                        <button class="text-slate-400 hover:text-[#21AFBF]"><PaperclipIcon class="w-4 h-4" /></button>
                     </div>
                 </div>
             </div>

@@ -1,8 +1,8 @@
 <template>
-    <div class="h-full flex flex-col bg-slate-950 overflow-y-auto custom-scrollbar">
-        <div class="p-6 bg-slate-900 border-b border-white/5 sticky top-0 z-10">
-            <h2 class="text-xl font-bold text-white">계약 관리</h2>
-            <p class="text-sm text-slate-400 mt-1">
+    <div class="custom-scrollbar flex h-full flex-col overflow-y-auto bg-slate-50">
+        <div class="sticky top-0 z-10 border-b border-sky-200/70 bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] p-6">
+            <h2 class="text-xl font-bold text-[#0f2b2e]">계약 관리</h2>
+            <p class="mt-1 text-sm text-[#0f2b2e]/80">
                 채팅에서는 계약 상태만 확인하고, 실제 작성과 서명은 계약 화면에서 진행합니다.
             </p>
         </div>
@@ -12,12 +12,12 @@
                 v-if="isContractLookupPending"
                 class="h-full min-h-[320px] flex flex-col items-center justify-center text-center space-y-4"
             >
-                <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-white/5 flex items-center justify-center">
-                    <Loader2Icon class="w-8 h-8 text-emerald-400 animate-spin" />
+                <div class="flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+                    <Loader2Icon class="w-8 h-8 animate-spin text-[#21AFBF]" />
                 </div>
                 <div>
-                    <h3 class="text-lg font-bold text-white">계약 정보를 불러오는 중입니다</h3>
-                    <p class="text-sm text-slate-400 mt-2">잠시 후 현재 대화와 연결된 계약 상태를 확인합니다.</p>
+                    <h3 class="text-lg font-bold text-slate-900">계약 정보를 불러오는 중입니다</h3>
+                    <p class="mt-2 text-sm text-slate-500">잠시 후 현재 대화와 연결된 계약 상태를 확인합니다.</p>
                 </div>
             </div>
 
@@ -25,26 +25,26 @@
                 v-else-if="!displayContract && !hasContractCandidates"
                 class="h-full min-h-[320px] flex flex-col items-center justify-center text-center space-y-4"
             >
-                <div class="w-20 h-20 rounded-2xl bg-slate-900 border border-white/5 flex items-center justify-center">
-                    <FileTextIcon class="w-10 h-10 text-slate-600" />
+                <div class="flex h-20 w-20 items-center justify-center rounded-2xl border border-slate-200 bg-white">
+                    <FileTextIcon class="w-10 h-10 text-slate-400" />
                 </div>
                 <div class="space-y-2">
-                    <h3 class="text-lg font-bold text-white">연결된 계약이 없습니다</h3>
-                    <p class="text-sm text-slate-400 max-w-md leading-relaxed">
+                    <h3 class="text-lg font-bold text-slate-900">연결된 계약이 없습니다</h3>
+                    <p class="max-w-md text-sm leading-relaxed text-slate-500">
                         {{ emptyStateDescription }}
                     </p>
                 </div>
                 <div class="mt-2 flex flex-col gap-3">
                     <button
                         @click="openContractPage"
-                        class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-950/30"
+                        class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-6 py-3 font-semibold text-[#0f2b2e] transition-all hover:brightness-105"
                     >
                         {{ primaryActionLabel }}
                         <ArrowRightIcon class="w-4 h-4" />
                     </button>
                     <button
                         @click="openLegalAdvicePage"
-                        class="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-sky-400/20 bg-sky-500/10 text-sky-100 font-semibold hover:bg-sky-500/20 transition-colors"
+                        class="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-6 py-3 font-semibold text-slate-700 transition-colors hover:bg-sky-100"
                     >
                         <ScaleIcon class="w-4 h-4" />
                         법률 자문 AI 보기
@@ -55,14 +55,14 @@
             <div v-else class="space-y-6">
                 <div
                     v-if="hasContractCandidates"
-                    class="bg-slate-900 rounded-2xl border border-white/5 overflow-hidden shadow-lg"
+                    class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
                 >
-                    <div class="px-6 py-4 border-b border-white/5">
-                        <p class="text-xs uppercase tracking-[0.18em] text-slate-500 mb-2">계약 목록</p>
-                        <h3 class="text-lg font-bold text-white">
+                    <div class="border-b border-slate-200 px-6 py-4">
+                        <p class="mb-2 text-xs uppercase tracking-[0.18em] text-slate-500">계약 목록</p>
+                        <h3 class="text-lg font-bold text-slate-900">
                             {{ contractCandidates.length > 1 ? '이 대화와 연결된 계약들' : '이 대화와 연결된 계약' }}
                         </h3>
-                        <p class="text-sm text-slate-400 mt-1">
+                        <p class="mt-1 text-sm text-slate-500">
                             {{ contractCandidates.length > 1 ? '여러 계약이 있어 목록 중에 계약을 선택하여 확인할 수 있습니다.' : '현재 대화 상대와 연결된 계약입니다.' }}
                         </p>
                     </div>
@@ -72,19 +72,19 @@
                             v-for="contract in contractCandidates"
                             :key="contract.contractId"
                             type="button"
-                            @click="selectedContractId = contract.contractId"
+                            @click="openContractModule(contract.contractId)"
                             :class="[
                                 'w-full rounded-2xl border px-4 py-4 text-left transition-colors',
                                 Number(displayContract?.contractId) === Number(contract.contractId)
-                                    ? 'border-emerald-500/40 bg-emerald-500/10'
-                                    : 'border-white/5 bg-slate-950/70 hover:border-white/10 hover:bg-slate-950'
+                                    ? 'border-[#21AFBF]/35 bg-[#21AFBF]/10'
+                                    : 'border-slate-200 bg-white hover:border-[#21AFBF]/25 hover:bg-slate-50'
                             ]"
                         >
                             <div class="flex items-start justify-between gap-4">
                                 <div class="min-w-0">
-                                    <p class="text-base font-semibold text-white truncate">{{ contract.projectName }}</p>
-                                    <p class="text-sm text-slate-400 mt-1">계약번호 · {{ contract.contractId }}</p>
-                                    <p class="text-sm text-slate-500 mt-2">
+                                    <p class="truncate text-base font-semibold text-slate-900">{{ contract.projectName }}</p>
+                                    <p class="mt-1 text-sm text-slate-500">계약번호 · {{ contract.contractId }}</p>
+                                    <p class="mt-2 text-sm text-slate-500">
                                         {{ formatDate(contract.startDate) }} ~ {{ formatDate(contract.endDate) }}
                                     </p>
                                 </div>
@@ -95,7 +95,7 @@
                                     >
                                         {{ statusConfig[contract.status].label }}
                                     </span>
-                                    <p class="text-sm font-semibold text-white mt-3">{{ formatCurrency(contract.budget) }}</p>
+                                    <p class="mt-3 text-sm font-semibold text-slate-900">{{ formatCurrency(contract.budget) }}</p>
                                 </div>
                             </div>
                         </button>
@@ -103,104 +103,120 @@
                 </div>
 
                 <div
-                    v-if="!displayContract && hasContractCandidates"
-                    class="rounded-2xl border border-white/5 bg-slate-900 px-6 py-10 text-center"
+                    v-if="hasContractCandidates"
+                    class="rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center shadow-sm"
                 >
-                    <p class="text-base font-semibold text-white">확인할 계약을 선택하세요</p>
-                    <p class="text-sm text-slate-400 mt-2">위 목록에서 계약을 선택하시면 이 탭에서 계약 정보를 바로 확인할 수 있습니다.</p>
+                    <p class="text-base font-semibold text-slate-900">확인할 계약을 선택하세요</p>
+                    <p class="mt-2 text-sm text-slate-500">위 목록에서 계약을 선택하시면 계약 정보 모듈이 열립니다.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div
+        v-if="displayContract && isContractModuleOpen"
+        class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/28 p-4 backdrop-blur-sm"
+        @click.self="closeContractModule"
+    >
+        <div class="max-h-[90vh] w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+            <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-5">
+                <div>
+                    <p class="mb-2 text-xs uppercase tracking-[0.18em] text-slate-500">현재 계약</p>
+                    <h3 class="text-xl font-bold text-slate-900">{{ displayContract.projectName }}</h3>
+                    <p class="mt-1 text-sm text-slate-500">
+                        계약번호 · {{ displayContract.contractId }}
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div
+                        :class="currentStatusConfig.badgeClass"
+                        class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold border"
+                    >
+                        <component :is="currentStatusConfig.icon" class="w-4 h-4" />
+                        {{ currentStatusConfig.label }}
+                    </div>
+                    <button
+                        type="button"
+                        @click="closeContractModule"
+                        class="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800"
+                        aria-label="계약 정보 닫기"
+                    >
+                        닫기
+                    </button>
+                </div>
+            </div>
+
+            <div class="custom-scrollbar max-h-[calc(90vh-88px)] overflow-y-auto p-6 space-y-6">
+                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p class="text-sm leading-relaxed text-slate-700">
+                        {{ currentStatusConfig.description }}
+                    </p>
                 </div>
 
-                <div v-if="displayContract" class="bg-slate-900 rounded-2xl border border-white/5 overflow-hidden shadow-lg">
-                    <div class="px-6 py-4 border-b border-white/5 flex items-start justify-between gap-4">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-xs uppercase tracking-wider text-slate-500">상대방</p>
+                        <p class="mt-2 text-base font-semibold text-slate-900">{{ otherParticipantName }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-xs uppercase tracking-wider text-slate-500">총 계약금액</p>
+                        <p class="mt-2 text-base font-semibold text-slate-900">{{ formatCurrency(displayContract.budget) }}</p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-xs uppercase tracking-wider text-slate-500">계약 기간</p>
+                        <p class="mt-2 text-base font-semibold text-slate-900">
+                            {{ formatDate(displayContract.startDate) }} ~ {{ formatDate(displayContract.endDate) }}
+                        </p>
+                    </div>
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-xs uppercase tracking-wider text-slate-500">정산일</p>
+                        <p class="mt-2 text-base font-semibold text-slate-900">
+                            매월 {{ displayContract.paymentDay || 25 }}일
+                        </p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
                         <div>
-                            <p class="text-xs uppercase tracking-[0.18em] text-slate-500 mb-2">현재 계약</p>
-                            <h3 class="text-xl font-bold text-white">{{ displayContract.projectName }}</h3>
-                            <p class="text-sm text-slate-400 mt-1">
-                                계약번호 · {{ displayContract.contractId }}
-                            </p>
+                            <p class="text-sm font-semibold text-slate-900">고용주 서명</p>
+                            <p class="mt-1 text-xs text-slate-500">계약 화면에서만 서명할 수 있습니다.</p>
                         </div>
-                        <div
-                            :class="currentStatusConfig.badgeClass"
-                            class="inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-semibold border"
+                        <span
+                            :class="displayContract.employerSignedDate ? 'text-slate-700 border-emerald-200 bg-emerald-50' : 'text-slate-600 border-slate-200 bg-white'"
+                            class="px-3 py-1.5 rounded-full text-xs font-semibold border"
                         >
-                            <component :is="currentStatusConfig.icon" class="w-4 h-4" />
-                            {{ currentStatusConfig.label }}
-                        </div>
+                            {{ displayContract.employerSignedDate ? '완료' : '대기중' }}
+                        </span>
                     </div>
-
-                    <div class="p-6 space-y-6">
-                        <div class="rounded-2xl border border-white/5 bg-slate-950/70 p-4">
-                            <p class="text-sm text-slate-300 leading-relaxed">
-                                {{ currentStatusConfig.description }}
-                            </p>
+                    <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-900">프리랜서 서명</p>
+                            <p class="mt-1 text-xs text-slate-500">계약 화면에서만 서명할 수 있습니다.</p>
                         </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="rounded-xl bg-slate-950/70 border border-white/5 p-4">
-                                <p class="text-xs text-slate-500 uppercase tracking-wider">상대방</p>
-                                <p class="text-base font-semibold text-white mt-2">{{ otherParticipantName }}</p>
-                            </div>
-                            <div class="rounded-xl bg-slate-950/70 border border-white/5 p-4">
-                                <p class="text-xs text-slate-500 uppercase tracking-wider">총 계약금액</p>
-                                <p class="text-base font-semibold text-white mt-2">{{ formatCurrency(displayContract.budget) }}</p>
-                            </div>
-                            <div class="rounded-xl bg-slate-950/70 border border-white/5 p-4">
-                                <p class="text-xs text-slate-500 uppercase tracking-wider">계약 기간</p>
-                                <p class="text-base font-semibold text-white mt-2">
-                                    {{ formatDate(displayContract.startDate) }} ~ {{ formatDate(displayContract.endDate) }}
-                                </p>
-                            </div>
-                            <div class="rounded-xl bg-slate-950/70 border border-white/5 p-4">
-                                <p class="text-xs text-slate-500 uppercase tracking-wider">정산일</p>
-                                <p class="text-base font-semibold text-white mt-2">
-                                    매월 {{ displayContract.paymentDay || 25 }}일
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between gap-3 rounded-xl bg-slate-950/70 border border-white/5 p-4">
-                                <div>
-                                    <p class="text-sm font-semibold text-white">고용주 서명</p>
-                                    <p class="text-xs text-slate-500 mt-1">계약 화면에서만 서명할 수 있습니다.</p>
-                                </div>
-                                <span
-                                    :class="displayContract.employerSignedDate ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5'"
-                                    class="px-3 py-1.5 rounded-full text-xs font-semibold border"
-                                >
-                                    {{ displayContract.employerSignedDate ? '완료' : '대기중' }}
-                                </span>
-                            </div>
-                            <div class="flex items-center justify-between gap-3 rounded-xl bg-slate-950/70 border border-white/5 p-4">
-                                <div>
-                                    <p class="text-sm font-semibold text-white">프리랜서 서명</p>
-                                    <p class="text-xs text-slate-500 mt-1">계약 화면에서만 서명할 수 있습니다.</p>
-                                </div>
-                                <span
-                                    :class="displayContract.freelancerSignedDate ? 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' : 'text-slate-400 border-white/10 bg-white/5'"
-                                    class="px-3 py-1.5 rounded-full text-xs font-semibold border"
-                                >
-                                    {{ displayContract.freelancerSignedDate ? '완료' : '대기중' }}
-                                </span>
-                            </div>
-                        </div>
-
-                        <button
-                            @click="openContractPage"
-                            class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-950/30"
+                        <span
+                            :class="displayContract.freelancerSignedDate ? 'text-slate-700 border-emerald-200 bg-emerald-50' : 'text-slate-600 border-slate-200 bg-white'"
+                            class="px-3 py-1.5 rounded-full text-xs font-semibold border"
                         >
-                            {{ primaryActionLabel }}
-                            <ArrowRightIcon class="w-4 h-4" />
-                        </button>
-                        <button
-                            @click="openLegalAdvicePage"
-                            class="w-full inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-sky-400/20 bg-sky-500/10 text-sky-100 font-semibold hover:bg-sky-500/20 transition-colors"
-                        >
-                            <ScaleIcon class="w-4 h-4" />
-                            법률 자문 AI 보기
-                        </button>
+                            {{ displayContract.freelancerSignedDate ? '완료' : '대기중' }}
+                        </span>
                     </div>
                 </div>
+
+                <button
+                    @click="openContractPage"
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-6 py-3 font-semibold text-[#0f2b2e] transition-all hover:brightness-105"
+                >
+                    {{ primaryActionLabel }}
+                    <ArrowRightIcon class="w-4 h-4" />
+                </button>
+                <button
+                    @click="openLegalAdvicePage"
+                    class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-6 py-3 font-semibold text-slate-700 transition-colors hover:bg-sky-100"
+                >
+                    <ScaleIcon class="w-4 h-4" />
+                    법률 자문 AI 보기
+                </button>
             </div>
         </div>
     </div>
@@ -304,6 +320,7 @@ const relatedContracts = computed(() => {
 const linkedContract = computed(() => contractStore.findContractForChatRoom(currentRoom.value));
 const isEnsuringContractRoom = ref(false);
 const selectedContractId = ref<number | null>(null);
+const isContractModuleOpen = ref(false);
 
 const autoConnectableContract = computed(() => {
     if (!props.isActive || !currentRoom.value || currentRoom.value.contractId) {
@@ -333,14 +350,14 @@ const contractCandidates = computed(() => {
 });
 
 const displayContract = computed(() => {
-    if (linkedContract.value) {
-        return linkedContract.value;
-    }
-
     if (selectedContractId.value != null) {
         return contractCandidates.value.find(
             (contract) => Number(contract.contractId) === Number(selectedContractId.value)
         ) || null;
+    }
+
+    if (linkedContract.value) {
+        return linkedContract.value;
     }
 
     if (autoConnectableContract.value) {
@@ -500,6 +517,15 @@ function openContractPage() {
     }
 
     router.push({ name: targetRouteName, query });
+}
+
+function openContractModule(contractId: number) {
+    selectedContractId.value = contractId;
+    isContractModuleOpen.value = true;
+}
+
+function closeContractModule() {
+    isContractModuleOpen.value = false;
 }
 
 function openLegalAdvicePage() {

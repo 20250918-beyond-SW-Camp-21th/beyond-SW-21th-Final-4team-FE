@@ -240,23 +240,23 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white">
+    <div class="mx-auto max-w-[1400px] px-4 py-12 text-slate-900 md:px-8">
         <!-- Header -->
         <div v-motion :initial="{ opacity: 0, y: 20 }" :enter="{ opacity: 1, y: 0 }" class="mb-8">
             <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
                 <div class="flex items-center gap-3">
-                    <Receipt class="w-10 h-10 text-white" />
-                    <h1 class="text-4xl font-bold text-white">정산 관리</h1>
+                    <Receipt class="h-10 w-10 text-[#21AFBF]" />
+                    <h1 class="text-4xl font-bold text-slate-950">정산 관리</h1>
                 </div>
                 <button
                     @click="goToPaymentPage"
-                    class="px-4 py-2 bg-blue-500 hover:bg-blue-600 rounded-xl text-white font-semibold flex items-center gap-2 transition-colors"
+                    class="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-4 py-2 font-semibold text-slate-900 transition-colors hover:brightness-105"
                 >
-                    <CreditCard class="w-4 h-4" />
+                    <CreditCard class="h-4 w-4" />
                     결제 페이지 이동
                 </button>
             </div>
-            <p class="text-white/60">프리랜서 정산 내역을 확인하고 관리하세요</p>
+            <p class="text-slate-600">프리랜서 정산 내역을 확인하고 관리하세요</p>
         </div>
 
         <!-- Next Settlement Card -->
@@ -268,31 +268,31 @@ onMounted(async () => {
         >
             <div
                 v-if="nextSettlement"
-                class="relative overflow-hidden bg-[#1e293b]/80 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-xl"
+                class="relative overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_20px_60px_rgba(15,23,42,0.08)]"
             >
                 <div class="relative z-10">
                     <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
                         <div>
-                            <div class="flex items-center gap-2 text-blue-400 mb-2 font-medium">
-                                <AlertCircle class="w-4 h-4" />
+                            <div class="mb-2 flex items-center gap-2 font-medium text-[#21AFBF]">
+                                <AlertCircle class="h-4 w-4" />
                                 다음 정산 예정
                             </div>
-                            <div class="text-3xl font-bold text-white mb-2">
+                            <div class="mb-2 text-3xl font-bold text-slate-950">
                                 {{ nextSettlement.projectName }}
                             </div>
-                            <div class="text-white/60 mb-4">
+                            <div class="mb-4 text-slate-500">
                                 {{ nextSettlement.freelancerName }} · {{ nextSettlement.installmentNumber }}차 청구
                             </div>
                             <div class="flex items-center gap-6">
                                 <div>
-                                    <div class="text-sm text-white/40 mb-1">청구 금액</div>
-                                    <div class="text-2xl font-bold text-white">
+                                    <div class="mb-1 text-sm text-slate-400">청구 금액</div>
+                                    <div class="text-2xl font-bold text-slate-950">
                                         {{ formatCurrency(nextSettlement.billingAmount) }}
                                     </div>
                                 </div>
                                 <div>
-                                    <div class="text-sm text-white/40 mb-1">결제일</div>
-                                    <div class="text-lg font-medium text-white">
+                                    <div class="mb-1 text-sm text-slate-400">결제일</div>
+                                    <div class="text-lg font-medium text-slate-900">
                                         {{ formatDate(nextSettlement.dueDate) }}
                                     </div>
                                 </div>
@@ -300,17 +300,17 @@ onMounted(async () => {
                         </div>
 
                         <div class="flex flex-col items-center gap-4">
-                            <div class="px-4 py-2 rounded-full bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 font-medium">
+                            <div class="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 font-medium text-slate-700">
                                 결제 대기
                             </div>
                             <button
                                 @click="goToPaymentPage"
-                                class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors flex items-center gap-2"
+                                class="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-6 py-3 font-semibold text-slate-900 transition-colors hover:brightness-105"
                                 v-motion
                                 :hover="{ scale: 1.02 }"
                                 :tap="{ scale: 0.98 }"
                             >
-                                <CreditCard class="w-5 h-5" />
+                                <CreditCard class="h-5 w-5" />
                                 결제하기
                             </button>
                         </div>
@@ -321,13 +321,13 @@ onMounted(async () => {
             <!-- No upcoming settlements -->
             <div
                 v-else
-                class="bg-[#1e293b]/50 backdrop-blur-xl rounded-3xl p-8 border border-white/10 text-center"
+                class="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)]"
             >
-                <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle class="w-8 h-8 text-green-400" />
+                <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
+                    <CheckCircle class="h-8 w-8 text-emerald-500" />
                 </div>
-                <h3 class="text-xl font-semibold mb-2">예정된 정산이 없습니다</h3>
-                <p class="text-white/60">모든 청구서가 처리되었습니다</p>
+                <h3 class="mb-2 text-xl font-semibold text-slate-900">예정된 정산이 없습니다</h3>
+                <p class="text-slate-500">모든 청구서가 처리되었습니다</p>
             </div>
         </div>
 
@@ -338,33 +338,33 @@ onMounted(async () => {
             :initial="{ opacity: 0, y: 20 }"
             :enter="{ opacity: 1, y: 0, transition: { delay: 0.2 } }"
         >
-            <div class="bg-[#1e293b]/50 backdrop-blur-sm rounded-2xl p-5 border border-white/5">
-                <div class="flex items-center gap-2 text-white/60 text-sm mb-2">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="mb-2 flex items-center gap-2 text-sm text-slate-500">
                     <DollarSign class="w-4 h-4" />
                     미결제 금액
                 </div>
-                <div class="text-2xl font-bold text-white">{{ formatCurrency(totalPending) }}</div>
+                <div class="text-2xl font-bold text-slate-950">{{ formatCurrency(totalPending) }}</div>
             </div>
-            <div class="bg-[#1e293b]/50 backdrop-blur-sm rounded-2xl p-5 border border-white/5">
-                <div class="flex items-center gap-2 text-white/60 text-sm mb-2">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="mb-2 flex items-center gap-2 text-sm text-slate-500">
                     <CheckCircle class="w-4 h-4" />
                     결제 완료
                 </div>
-                <div class="text-2xl font-bold text-white">{{ formatCurrency(totalPaid) }}</div>
+                <div class="text-2xl font-bold text-slate-950">{{ formatCurrency(totalPaid) }}</div>
             </div>
-            <div class="bg-[#1e293b]/50 backdrop-blur-sm rounded-2xl p-5 border border-white/5">
-                <div class="flex items-center gap-2 text-white/60 text-sm mb-2">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="mb-2 flex items-center gap-2 text-sm text-slate-500">
                     <Clock class="w-4 h-4" />
                     청구 대기
                 </div>
-                <div class="text-2xl font-bold text-white">{{ statusCounts.ISSUED }}건</div>
+                <div class="text-2xl font-bold text-slate-950">{{ statusCounts.ISSUED }}건</div>
             </div>
-            <div class="bg-[#1e293b]/50 backdrop-blur-sm rounded-2xl p-5 border border-white/5">
-                <div class="flex items-center gap-2 text-white/60 text-sm mb-2">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="mb-2 flex items-center gap-2 text-sm text-slate-500">
                     <Send class="w-4 h-4" />
                     지급 완료
                 </div>
-                <div class="text-2xl font-bold text-white">{{ statusCounts.DISBURSED }}건</div>
+                <div class="text-2xl font-bold text-slate-950">{{ statusCounts.DISBURSED }}건</div>
             </div>
         </div>
 
@@ -378,17 +378,17 @@ onMounted(async () => {
             <div class="flex items-center gap-4 w-full md:w-auto">
                 <!-- Search Bar -->
                 <div class="relative flex-1 md:flex-initial">
-                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                    <Search class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                         v-model="searchQuery"
                         type="text"
                         placeholder="프로젝트 또는 프리랜서 검색"
-                        class="w-full md:w-64 pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-blue-500 transition-colors"
+                        class="w-full md:w-64 rounded-xl border border-slate-200 bg-white py-2 pl-10 pr-4 text-slate-900 placeholder:text-slate-400 shadow-sm transition-colors focus:border-[#21AFBF] focus:outline-none"
                     />
                 </div>
 
                 <!-- Date Range Filter -->
-                <div class="flex bg-white/5 p-1 rounded-xl border border-white/10">
+                <div class="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
                     <button
                         v-for="option in dateRangeOptions"
                         :key="option.value"
@@ -396,8 +396,8 @@ onMounted(async () => {
                         class="px-3 py-1 text-sm rounded-lg transition-colors"
                         :class="
                             selectedDateRange === option.value
-                                ? 'bg-blue-600 text-white shadow-lg'
-                                : 'text-white/60 hover:text-white hover:bg-white/5'
+                                ? 'bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] font-semibold text-[#0f2b2e] shadow-sm'
+                                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'
                         "
                     >
                         {{ option.label }}
@@ -407,21 +407,21 @@ onMounted(async () => {
                 <button
                     type="button"
                     @click="resetFilters"
-                    class="px-3 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 transition-colors"
+                    class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                 >
                     초기화
                 </button>
             </div>
 
             <div class="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
-                <div class="text-white/60 text-sm">
+                <div class="text-sm text-slate-500">
                     {{ filteredSettlements.length }}개의 정산 내역
                 </div>
 
                 <button
                     type="button"
                     @click="downloadSettlementList"
-                    class="px-4 py-2 text-sm rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 transition-colors flex items-center gap-2"
+                    class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                 >
                     <Download class="w-4 h-4" />
                     다운로드
@@ -431,7 +431,7 @@ onMounted(async () => {
                 <div class="relative z-30">
                     <button
                         @click="isDropdownOpen = !isDropdownOpen"
-                        class="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors min-w-[140px] justify-between"
+                        class="flex min-w-[140px] items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
                     >
                         <span>{{ currentStatusLabel }}</span>
                         <ChevronDown
@@ -441,14 +441,14 @@ onMounted(async () => {
                     </button>
                     <div
                         v-if="isDropdownOpen"
-                        class="absolute top-full mt-2 right-0 w-full bg-gray-900 border border-white/10 rounded-xl overflow-hidden shadow-xl z-50"
+                        class="absolute top-full right-0 z-50 mt-2 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
                     >
                         <button
                             v-for="filter in statusFilters"
                             :key="filter.value"
                             @click="selectStatusFilter(filter.value)"
-                            class="w-full px-4 py-3 text-left text-white hover:bg-white/10 transition-colors"
-                            :class="{ 'bg-white/5': selectedStatus === filter.value }"
+                            class="w-full px-4 py-3 text-left text-slate-700 transition-colors hover:bg-slate-50"
+                            :class="{ 'bg-slate-50 font-medium text-slate-900': selectedStatus === filter.value }"
                         >
                             {{ filter.label }}
                         </button>
@@ -460,23 +460,23 @@ onMounted(async () => {
         <!-- Settlement List -->
         <div
             v-if="paginatedSettlements.length === 0"
-            class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 text-center"
+            class="rounded-3xl border border-slate-200 bg-white p-16 text-center shadow-sm"
             v-motion
             :initial="{ opacity: 0, scale: 0.95 }"
             :enter="{ opacity: 1, scale: 1 }"
         >
-            <div class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6">
-                <Receipt class="w-10 h-10 text-white/60" />
+            <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-100">
+                <Receipt class="w-10 h-10 text-slate-400" />
             </div>
-            <h3 class="text-2xl font-semibold mb-3">정산 내역이 없습니다</h3>
-            <p class="text-white/60">선택한 필터에 해당하는 정산 내역이 없습니다</p>
+            <h3 class="mb-3 text-2xl font-semibold text-slate-900">정산 내역이 없습니다</h3>
+            <p class="text-slate-500">선택한 필터에 해당하는 정산 내역이 없습니다</p>
         </div>
 
         <div v-else class="space-y-4 relative z-10">
             <div
                 v-for="(settlement, index) in paginatedSettlements"
                 :key="settlement.id"
-                class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6 hover:border-white/20 transition-all"
+                class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-[#21AFBF]/25 hover:shadow-[0_16px_36px_rgba(15,23,42,0.08)]"
                 v-motion
                 :initial="{ opacity: 0, y: 20 }"
                 :enter="{ opacity: 1, y: 0, transition: { delay: 0.3 + index * 0.05 } }"
@@ -485,18 +485,18 @@ onMounted(async () => {
                     <!-- Left: Info -->
                     <div class="flex items-center gap-4 flex-1">
                         <div
-                            class="w-12 h-12 rounded-xl flex items-center justify-center bg-white/5 border border-white/10"
+                            class="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50"
                         >
                             <component
                                 :is="statusConfig[settlement.status].icon"
-                                class="w-6 h-6 text-white/60"
+                                class="w-6 h-6 text-slate-500"
                             />
                         </div>
                         <div>
-                            <div class="font-bold text-white mb-1">
+                            <div class="mb-1 font-bold text-slate-900">
                                 {{ settlement.projectName }}
                             </div>
-                            <div class="text-sm text-white/60">
+                            <div class="text-sm text-slate-500">
                                 {{ settlement.freelancerName }} · {{ settlement.installmentNumber }}차 청구
                             </div>
                         </div>
@@ -504,10 +504,10 @@ onMounted(async () => {
 
                     <!-- Center: Amount -->
                     <div class="text-center lg:text-right">
-                        <div class="text-sm text-white/40 mb-1">
+                        <div class="mb-1 text-sm text-slate-400">
                             {{ settlement.status === 'ISSUED' ? '청구 금액' : '결제 금액' }}
                         </div>
-                        <div class="text-xl font-bold text-white">
+                        <div class="text-xl font-bold text-slate-950">
                             {{ formatCurrency(settlement.billingAmount) }}
                         </div>
                     </div>
@@ -517,31 +517,31 @@ onMounted(async () => {
                         <!-- Status Badge -->
                         <div
                             v-if="settlement.status === 'ISSUED'"
-                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 flex items-center gap-2"
+                            class="flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-sm font-medium text-slate-700"
                         >
                             결제 대기
                             <span
                                 v-if="new Date(settlement.dueDate) < now"
-                                class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30"
+                                class="inline-flex items-center rounded border border-red-200 bg-red-50 px-1.5 py-0.5 text-xs font-semibold text-red-600"
                             >
                                 연체
                             </span>
                         </div>
                         <div
                             v-else-if="settlement.status === 'PAID'"
-                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-blue-500/20 border border-blue-500/30 text-blue-400"
+                            class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-sm font-medium text-slate-700"
                         >
                             결제 완료
                         </div>
                         <div
                             v-else-if="settlement.status === 'DISBURSED'"
-                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-green-500/20 border border-green-500/30 text-green-400"
+                            class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-slate-700"
                         >
                             지급 완료
                         </div>
                         <div
                             v-else
-                            class="px-3 py-1.5 rounded-full text-sm font-medium bg-rose-500/20 border border-rose-500/30 text-rose-400"
+                            class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-sm font-medium text-slate-700"
                         >
                             취소됨
                         </div>
@@ -550,7 +550,7 @@ onMounted(async () => {
                         <button
                             v-if="settlement.status === 'ISSUED'"
                             @click="goToPaymentPage"
-                            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5"
+                            class="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-4 py-2 text-sm font-semibold text-[#0f2b2e] transition-all hover:brightness-105"
                         >
                             <CreditCard class="w-4 h-4" />
                             결제
@@ -558,10 +558,10 @@ onMounted(async () => {
 
                         <button
                             @click="selectedSettlement = settlement"
-                            class="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                            class="rounded-lg p-2 transition-colors hover:bg-slate-100"
                             title="상세보기"
                         >
-                            <Eye class="w-5 h-5 text-white/60" />
+                            <Eye class="w-5 h-5 text-slate-500" />
                         </button>
                     </div>
                 </div>
@@ -579,9 +579,9 @@ onMounted(async () => {
             <button
                 @click="goToPage(currentPage - 1)"
                 :disabled="currentPage === 1"
-                class="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                class="rounded-lg border border-slate-200 bg-white p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-                <ChevronLeft class="w-5 h-5 text-white" />
+                <ChevronLeft class="w-5 h-5 text-slate-600" />
             </button>
 
             <template v-for="page in totalPages" :key="page">
@@ -590,8 +590,8 @@ onMounted(async () => {
                     class="w-10 h-10 rounded-lg font-medium transition-colors"
                     :class="
                         currentPage === page
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-white/5 text-white/60 hover:bg-white/10'
+                            ? 'bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] text-[#0f2b2e]'
+                            : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                     "
                 >
                     {{ page }}
@@ -601,9 +601,9 @@ onMounted(async () => {
             <button
                 @click="goToPage(currentPage + 1)"
                 :disabled="currentPage === totalPages"
-                class="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                class="rounded-lg border border-slate-200 bg-white p-2 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-                <ChevronRight class="w-5 h-5 text-white" />
+                <ChevronRight class="w-5 h-5 text-slate-600" />
             </button>
         </div>
 
