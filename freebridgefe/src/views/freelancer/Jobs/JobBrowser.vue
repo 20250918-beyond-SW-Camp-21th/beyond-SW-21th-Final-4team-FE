@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useMotion } from '@vueuse/motion';
 import {
   Briefcase,
@@ -36,6 +36,11 @@ const aiRecommendationResults = ref<AiRecommendationResponseDTO[]>([]);
 const isAiRecommendationLoading = ref(false);
 const hasLoadedAiRecommendations = ref(false);
 const aiRecommendationError = ref<string | null>(null);
+let activeRecommendationController: AbortController | null = null;
+
+const isAbortError = (error: unknown) =>
+  error instanceof Error &&
+  (error.name === 'AbortError' || error.name === 'CanceledError');
 
 const getErrorMessage = (error: unknown): string => {
   if (
@@ -61,18 +66,29 @@ const loadAiRecommendations = async () => {
     return;
   }
 
+  activeRecommendationController?.abort();
+  const controller = new AbortController();
+  activeRecommendationController = controller;
   isAiRecommendationLoading.value = true;
   aiRecommendationError.value = null;
 
   try {
-    aiRecommendationResults.value = await getJobRecommendationsForFreelancer();
+    aiRecommendationResults.value = await getJobRecommendationsForFreelancer(
+      controller.signal,
+    );
   } catch (error) {
+    if (isAbortError(error)) {
+      return;
+    }
     console.error('Failed to load AI job recommendations:', error);
     aiRecommendationResults.value = [];
     aiRecommendationError.value = getErrorMessage(error);
   } finally {
-    isAiRecommendationLoading.value = false;
-    hasLoadedAiRecommendations.value = true;
+    if (activeRecommendationController === controller) {
+      isAiRecommendationLoading.value = false;
+      hasLoadedAiRecommendations.value = true;
+      activeRecommendationController = null;
+    }
   }
 };
 
@@ -86,6 +102,10 @@ onMounted(async () => {
     console.error('Failed to load freelancer job postings:', jobsResult.reason);
     window.alert('프로젝트 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
   }
+});
+
+onBeforeUnmount(() => {
+  activeRecommendationController?.abort();
 });
 
 const openJobs = computed(() =>

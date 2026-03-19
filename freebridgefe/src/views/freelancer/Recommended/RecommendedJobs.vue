@@ -1,40 +1,46 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { useMotion } from "@vueuse/motion";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import {
-  Sparkles,
-  DollarSign,
-  Clock,
   Briefcase,
-  TrendingUp,
+  Clock,
+  DollarSign,
+  Sparkles,
   Star,
+  TrendingUp,
 } from "lucide-vue-next";
-import { useAuthStore } from "@/stores/authStore";
 import type { JobPosting } from "@/types";
-import JobDetailModal from "../Jobs/components/JobDetailModal.vue";
 import { getJobRecommendationsForFreelancer } from "@/api/recommendationApi";
+import JobDetailModal from "../Jobs/components/JobDetailModal.vue";
 
-const authStore = useAuthStore();
 const selectedJob = ref<JobPosting | null>(null);
 const favoriteIds = ref<string[]>([]);
 const recommendedJobs = ref<(JobPosting & { matchScore?: number })[]>([]);
 const isLoading = ref(true);
 const fetchError = ref<string | null>(null);
+let activeRecommendationController: AbortController | null = null;
+
+const isAbortError = (error: unknown) =>
+  error instanceof Error &&
+  (error.name === "AbortError" || error.name === "CanceledError");
 
 onMounted(async () => {
+  activeRecommendationController?.abort();
+  const controller = new AbortController();
+  activeRecommendationController = controller;
   isLoading.value = true;
   fetchError.value = null;
+
   try {
-    const recommendations = await getJobRecommendationsForFreelancer();
-    // Here we map the minimal API recommendation back to a recognizable JobPosting structure for the UI
+    const recommendations = await getJobRecommendationsForFreelancer(
+      controller.signal,
+    );
+
     recommendedJobs.value = recommendations.map((rec) => ({
       id: rec.id.toString(),
       employerId: "hidden",
       employerName: "기업(AI 추천)",
       title: rec.nameOrTitle,
-      description:
-        rec.description ||
-        `이 공고는 회원님의 프로필 정보와 ${Math.round(rec.matchScore * 100)}% 일치합니다.`,
+      description: rec.description?.trim() || "",
       techStack: rec.skills || [],
       budget: rec.budget || 0,
       duration: rec.duration || 0,
@@ -44,16 +50,20 @@ onMounted(async () => {
       matchScore: rec.matchScore,
     })) as (JobPosting & { matchScore?: number })[];
   } catch (error: any) {
+    if (isAbortError(error)) {
+      return;
+    }
+
     console.error("Failed to load job recommendations:", error);
-    fetchError.value = error.message || "추천 정보를 불러오는데 실패했습니다.";
+    fetchError.value =
+      error.message || "추천 프로젝트를 불러오지 못했습니다.";
   } finally {
-    isLoading.value = false;
+    if (activeRecommendationController === controller) {
+      isLoading.value = false;
+      activeRecommendationController = null;
+    }
   }
 });
-
-const formatDate = (date: Date | string) => {
-  return new Date(date).toLocaleDateString("ko-KR");
-};
 
 const isFavorite = (id: string) => favoriteIds.value.includes(id);
 
@@ -62,13 +72,17 @@ const toggleFavorite = (id: string) => {
     favoriteIds.value = favoriteIds.value.filter((item) => item !== id);
     return;
   }
+
   favoriteIds.value = [...favoriteIds.value, id];
 };
+
+onBeforeUnmount(() => {
+  activeRecommendationController?.abort();
+});
 </script>
 
 <template>
   <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 font-sans text-white">
-    <!-- Header -->
     <div
       class="mb-12"
       data-tour="freelancer-recommended-header"
@@ -78,18 +92,15 @@ const toggleFavorite = (id: string) => {
     >
       <div class="flex items-center gap-2 mb-3">
         <Sparkles class="w-8 h-8 text-yellow-400" />
-        <h1
-          class="text-4xl font-bold tracking-tight text-white"
-        >
+        <h1 class="text-4xl font-bold tracking-tight text-white">
           AI 추천 프로젝트
         </h1>
       </div>
       <p class="text-white/60">
-        회원님의 스킬과 경험을 분석하여 딱 맞는 프로젝트를 추천해드려요
+        회원님의 스킬과 경험을 바탕으로 잘 맞는 프로젝트를 추천해드려요.
       </p>
     </div>
 
-    <!-- Loading State -->
     <div
       v-if="isLoading"
       class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 flex flex-col items-center justify-center text-center"
@@ -97,13 +108,17 @@ const toggleFavorite = (id: string) => {
       <div
         class="animate-spin rounded-full h-10 w-10 border-b-2 border-white mb-4 opacity-70"
       ></div>
-      <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
+      <h3 class="text-xl font-semibold mb-2 text-white/80">
+        AI가 프로젝트를 고르는 중입니다
+      </h3>
       <p class="text-white/50">
-        회원님에게 가장 적합한 프로젝트를 찾고 있습니다
+        잘못된 정보를 보여주지 않도록 결과가 준비될 때까지 기다리고 있습니다.
+      </p>
+      <p class="mt-2 text-sm text-white/40">
+        정확한 추천이 나올 때까지 계속 기다려 주세요.
       </p>
     </div>
 
-    <!-- Error State -->
     <div
       v-else-if="fetchError"
       class="bg-red-500/5 backdrop-blur-xl rounded-3xl border border-red-500/10 p-16 text-center"
@@ -114,12 +129,11 @@ const toggleFavorite = (id: string) => {
         <Sparkles class="w-10 h-10 text-red-400" />
       </div>
       <h3 class="text-2xl font-semibold mb-3 text-red-200">
-        추천을 불러오지 못했습니다
+        추천 결과를 불러오지 못했습니다
       </h3>
       <p class="text-red-300/60">{{ fetchError }}</p>
     </div>
 
-    <!-- Empty State -->
     <div
       v-else-if="recommendedJobs.length === 0"
       class="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-16 text-center"
@@ -136,7 +150,7 @@ const toggleFavorite = (id: string) => {
         추천 프로젝트가 없습니다
       </h3>
       <p class="text-white/60">
-        프로필에 스킬을 추가하면 더 정확한 추천을 받을 수 있어요
+        프로필의 스킬과 경력을 조금 더 보완한 뒤 다시 확인해 보세요.
       </p>
     </div>
 
@@ -152,7 +166,6 @@ const toggleFavorite = (id: string) => {
       >
         <div class="flex items-start justify-between mb-6">
           <div class="flex-1">
-            <!-- Title -->
             <div class="flex items-start gap-3 mb-3">
               <h3
                 class="text-2xl font-semibold text-white group-hover:text-blue-400 transition-colors flex-1"
@@ -164,7 +177,7 @@ const toggleFavorite = (id: string) => {
                   class="px-3 py-1 bg-yellow-400/10 text-yellow-400 text-xs font-bold rounded-full border border-yellow-400/20 flex items-center gap-1"
                 >
                   <Sparkles class="w-3 h-3" />
-                  강력 추천
+                  AI 추천
                 </div>
                 <div
                   v-if="job.matchScore !== undefined"
@@ -176,12 +189,10 @@ const toggleFavorite = (id: string) => {
               </div>
             </div>
 
-            <!-- Description -->
             <p class="text-white/70 mb-6 leading-relaxed line-clamp-2">
-              {{ job.description }}
+              {{ job.description || "상세 설명은 프로젝트 상세보기에서 확인할 수 있습니다." }}
             </p>
 
-            <!-- Tech Stack -->
             <div class="flex flex-wrap gap-2 mb-6">
               <span
                 v-for="tech in job.techStack"
@@ -192,7 +203,6 @@ const toggleFavorite = (id: string) => {
               </span>
             </div>
 
-            <!-- Stats -->
             <div class="flex flex-wrap gap-6 text-white/60">
               <div class="flex items-center gap-2" v-if="job.budget > 0">
                 <div
@@ -200,9 +210,9 @@ const toggleFavorite = (id: string) => {
                 >
                   <DollarSign class="w-4 h-4 text-green-400" />
                 </div>
-                <span class="font-medium"
-                  >월급 {{ job.budget.toLocaleString() }}원</span
-                >
+                <span class="font-medium">
+                  예산 {{ job.budget.toLocaleString() }}원
+                </span>
               </div>
               <div class="flex items-center gap-2" v-if="job.duration > 0">
                 <div
@@ -222,6 +232,7 @@ const toggleFavorite = (id: string) => {
               </div>
             </div>
           </div>
+
           <button
             type="button"
             class="ml-4 h-10 w-10 rounded-full border transition-all"
@@ -243,7 +254,6 @@ const toggleFavorite = (id: string) => {
       </div>
     </div>
 
-    <!-- 상세보기 모달 -->
     <JobDetailModal
       v-if="selectedJob"
       :job="selectedJob"
