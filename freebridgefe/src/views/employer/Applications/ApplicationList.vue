@@ -303,8 +303,8 @@ const openFreelancerProfile = async (freelancerId: string | number) => {
               v-if="proposal.status === 'ACCEPTED'"
               class="flex items-center gap-3 rounded-2xl border border-green-500/20 bg-green-500/10 p-4"
             >
-              <CheckCircle class="h-5 w-5 text-green-400" />
-              <span class="font-medium text-green-300">
+              <CheckCircle class="h-5 w-5 text-green-600" />
+              <span class="font-semibold text-slate-900">
                 프리랜서가 제안을 수락했습니다. 계약 진행을 시작해 주세요.
               </span>
             </div>

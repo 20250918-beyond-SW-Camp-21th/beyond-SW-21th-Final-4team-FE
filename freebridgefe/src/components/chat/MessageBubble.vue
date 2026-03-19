@@ -35,7 +35,7 @@
                     class="flex min-w-[240px] items-center gap-3 px-4 py-3 text-[14px] shadow-md transition-all hover:shadow-lg"
                     :class="[
                         isMine
-                            ? 'bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] text-white rounded-[22px] rounded-tr-sm'
+                            ? 'fb-chat-own-bubble rounded-[22px] rounded-tr-sm'
                             : 'bg-slate-800 border border-white/5 text-slate-200 rounded-[22px] rounded-tl-sm'
                     ]"
                 >
@@ -58,7 +58,7 @@
                     class="px-4 py-2 text-[14px] relative shadow-md transition-all hover:shadow-lg"
                     :class="[
                         isMine 
-                            ? 'bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] text-white rounded-[22px] rounded-tr-sm' 
+                            ? 'fb-chat-own-bubble rounded-[22px] rounded-tr-sm' 
                             : 'bg-slate-800 border border-white/5 text-slate-200 rounded-[22px] rounded-tl-sm'
                     ]"
                 >
@@ -145,3 +145,18 @@ function formatFileSize(bytes: number) {
     return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 </script>
+
+<style scoped>
+.fb-chat-own-bubble {
+    background: linear-gradient(90deg, #21afbf 0%, #00d4da 100%);
+    color: #ffffff !important;
+    box-shadow: 0 14px 24px rgba(33, 175, 191, 0.22);
+}
+
+.fb-chat-own-bubble p,
+.fb-chat-own-bubble svg,
+.fb-chat-own-bubble a,
+.fb-chat-own-bubble span {
+    color: #ffffff !important;
+}
+</style>
