@@ -227,8 +227,8 @@ const overallRating = computed(() => {
                     </div>
                 </div>
 
-                <p class="text-white/80 leading-relaxed bg-black/20 rounded-xl p-4">
-                    {{ review.comment }}
+                <p class="rounded-xl border border-slate-200 bg-slate-50 p-4 leading-relaxed text-slate-700">
+                  {{ review.comment }}
                 </p>
             </div>
 

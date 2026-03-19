@@ -149,7 +149,7 @@ function formatFileSize(bytes: number) {
 <style scoped>
 .fb-chat-own-bubble {
     background: linear-gradient(90deg, #21afbf 0%, #00d4da 100%);
-    color: #ffffff !important;
+    color: #0f2b2e !important;
     box-shadow: 0 14px 24px rgba(33, 175, 191, 0.22);
 }
 
@@ -157,6 +157,6 @@ function formatFileSize(bytes: number) {
 .fb-chat-own-bubble svg,
 .fb-chat-own-bubble a,
 .fb-chat-own-bubble span {
-    color: #ffffff !important;
+    color: #0f2b2e !important;
 }
 </style>

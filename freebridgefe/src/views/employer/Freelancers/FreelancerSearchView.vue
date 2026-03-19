@@ -338,7 +338,7 @@ onMounted(() => {
           <button
             type="button"
             @click="applyFilters"
-            class="ml-auto px-4 py-2 rounded-lg bg-emerald-400 text-black font-semibold hover:bg-emerald-300 transition-colors"
+            class="ml-auto rounded-lg bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-4 py-2 font-semibold text-[#0f2b2e] transition-all hover:brightness-105"
           >
             검색
           </button>
@@ -382,7 +382,7 @@ onMounted(() => {
         @keyup.space.self.prevent="openFreelancerProfile(freelancer)"
       >
         <div class="flex items-start gap-4 mb-4">
-          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 overflow-hidden flex items-center justify-center text-white text-2xl font-bold">
+          <div class="w-14 h-14 rounded-full bg-gradient-to-br from-[#21AFBF] to-[#00D4DA] overflow-hidden flex items-center justify-center text-white text-2xl font-bold">
             <img
               v-if="freelancer.avatarUrl"
               :src="freelancer.avatarUrl"
@@ -396,7 +396,7 @@ onMounted(() => {
               <div class="text-xl font-semibold">{{ freelancer.name }}</div>
               <span
                 v-if="freelancer.grade"
-                class="px-2 py-0.5 rounded-full border border-emerald-400/20 bg-emerald-400/10 text-xs text-emerald-300"
+                class="px-2 py-0.5 rounded-full border border-[#21AFBF]/20 bg-[#21AFBF]/10 text-xs text-[#21AFBF]"
               >
                 {{ freelancer.grade }}
               </span>
@@ -417,7 +417,7 @@ onMounted(() => {
           <span
             v-for="skill in formatSkills(freelancer.skills)"
             :key="skill"
-            class="px-3 py-1 bg-emerald-400/10 text-emerald-300 text-xs rounded-full border border-emerald-400/20"
+            class="px-3 py-1 bg-[#21AFBF]/10 text-[#21AFBF] text-xs rounded-full border border-[#21AFBF]/20"
           >
             {{ skill }}
           </span>
@@ -433,18 +433,18 @@ onMounted(() => {
               @click.stop="toggleFavorite(freelancer.freelancerId)"
               class="px-3 py-2 rounded-lg border transition-all"
               :class="isFavorite(freelancer.freelancerId)
-                ? 'bg-yellow-400/20 border-yellow-400/40 text-yellow-300'
+                ? 'bg-[#21AFBF]/12 border-[#21AFBF]/35 text-[#21AFBF]'
                 : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'"
             >
               <Star
                 class="w-4 h-4"
-                :class="isFavorite(freelancer.freelancerId) ? 'fill-yellow-400 text-yellow-400' : ''"
+                :class="isFavorite(freelancer.freelancerId) ? 'fill-[#21AFBF] text-[#21AFBF]' : ''"
               />
             </button>
             <button
               type="button"
               @click.stop="selectedFreelancer = toProposalFreelancer(freelancer)"
-              class="px-4 py-2 bg-emerald-400 text-black rounded-lg font-semibold hover:bg-emerald-300 transition-colors flex items-center gap-2"
+              class="px-4 py-2 bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] text-[#0f2b2e] rounded-lg font-semibold hover:brightness-105 transition-all flex items-center gap-2"
             >
               <Send class="w-4 h-4" />
               제안하기

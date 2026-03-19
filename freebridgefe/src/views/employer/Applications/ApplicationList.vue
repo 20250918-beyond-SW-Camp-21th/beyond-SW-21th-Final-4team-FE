@@ -105,17 +105,17 @@ const statusConfig: Record<ApplicationStatus, { icon: any; label: string; gradie
   PENDING: {
     icon: Clock,
     label: '검토중',
-    gradient: 'from-blue-500 to-cyan-500',
+    gradient: 'from-sky-200 to-cyan-200',
   },
   ACCEPTED: {
     icon: CheckCircle,
     label: '수락됨',
-    gradient: 'from-green-500 to-emerald-500',
+    gradient: 'from-green-200 to-emerald-200',
   },
   REJECTED: {
     icon: XCircle,
     label: '거절됨',
-    gradient: 'from-red-500 to-red-600',
+    gradient: 'from-rose-200 to-red-200',
   },
 };
 
@@ -262,10 +262,10 @@ const openFreelancerProfile = async (freelancerId: string | number) => {
           >
             <div class="mb-5 flex flex-col items-start justify-between gap-6 lg:flex-row">
               <div class="flex-1">
-                <div class="mb-2 flex flex-wrap items-center gap-3">
+                <div class="mb-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <h3 class="text-2xl font-bold text-white">{{ proposal.freelancerName }}</h3>
                   <div
-                    class="flex items-center gap-2 rounded-full bg-gradient-to-r px-4 py-2 text-sm font-medium text-white shadow-lg"
+                    class="flex items-center gap-2 self-start rounded-full bg-gradient-to-r px-4 py-2 text-sm font-medium text-slate-900 shadow-sm sm:self-auto"
                     :class="statusConfig[proposal.status].gradient"
                   >
                     <component :is="statusConfig[proposal.status].icon" class="h-4 w-4" />
@@ -313,13 +313,13 @@ const openFreelancerProfile = async (freelancerId: string | number) => {
               v-if="proposal.status === 'REJECTED'"
               class="rounded-2xl border border-red-500/20 bg-red-500/10 p-4"
             >
-              <div class="mb-2 flex items-center gap-2 font-medium text-red-300">
-                <AlertCircle class="h-4 w-4" />
-                프리랜서가 제안을 거절했습니다.
-              </div>
-              <div v-if="proposal.rejectionReason" class="text-sm text-red-200">
-                사유: {{ proposal.rejectionReason }}
-              </div>
+                <div class="mb-2 flex items-center gap-2 font-semibold text-slate-900">
+                  <AlertCircle class="h-5 w-5 text-red-500" />
+                  프리랜서가 제안을 거절했습니다.
+                </div>
+                <div v-if="proposal.rejectionReason" class="text-sm text-slate-700">
+                  사유: {{ proposal.rejectionReason }}
+                </div>
             </div>
           </article>
         </div>
@@ -352,59 +352,57 @@ const openFreelancerProfile = async (freelancerId: string | number) => {
             :key="app.id"
             class="rounded-2xl border border-white/10 bg-slate-800/80 p-6 shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
           >
-            <div class="mb-4 flex flex-col items-start justify-between gap-4 md:flex-row">
-              <div class="flex items-center gap-4">
-                <ProfileIdentityAvatar
-                  :label="app.freelancerName"
-                  variant="freelancer"
-                  shape="circle"
-                  size-class="h-14 w-14"
-                  text-class="text-xl font-bold"
-                  ring-class="shadow-lg"
-                />
-                <div>
-                  <div class="flex items-center gap-2 text-lg font-semibold text-white">
-                    {{ app.freelancerName }}
-                    <Sparkles class="h-4 w-4 text-yellow-400" />
+            <div class="mb-5 flex flex-col items-start justify-between gap-6 lg:flex-row">
+              <div class="flex-1">
+                <div class="mb-2 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="flex items-center gap-4">
+                    <ProfileIdentityAvatar
+                      :label="app.freelancerName"
+                      variant="freelancer"
+                      shape="circle"
+                      size-class="h-14 w-14"
+                      text-class="text-xl font-bold"
+                      ring-class="shadow-lg"
+                    />
+                    <div>
+                      <div class="text-2xl font-bold text-white">{{ app.freelancerName }}</div>
+                      <div class="mb-2 flex items-center gap-2 text-white/80">
+                        <Sparkles class="h-4 w-4 text-yellow-400" />
+                        <span>{{ formatDate(app.createdAt) }} 지원</span>
+                      </div>
+                      <div class="text-sm text-white/85">
+                        지원 공고: {{ getJobTitle(app.jobId) }}
+                      </div>
+                    </div>
                   </div>
-                  <div class="text-sm text-white/80">
-                    {{ formatDate(app.createdAt) }} 지원
-                  </div>
-                  <div class="mt-1 text-sm text-white/85">
-                    지원 공고: {{ getJobTitle(app.jobId) }}
-                  </div>
-                  <button
-                    type="button"
-                    class="mt-1 flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 hover:underline"
-                    @click="openFreelancerProfile(app.freelancerId)"
-                  >
-                    프로필 및 포트폴리오 보기
-                  </button>
-                </div>
-              </div>
 
-              <div v-if="app.status === 'PENDING'" class="flex gap-2">
-                <button
-                  @click="handleAccept(app)"
-                  class="flex items-center gap-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-5 py-2.5 font-medium text-white transition-all hover:shadow-lg"
-                >
-                  <Check class="h-4 w-4" />
-                  수락
-                </button>
-                <button
-                  @click="handleReject(app)"
-                  class="flex items-center gap-2 rounded-full bg-gradient-to-r from-red-500 to-red-600 px-5 py-2.5 font-medium text-white transition-all hover:shadow-lg"
-                >
-                  <X class="h-4 w-4" />
-                  거절
-                </button>
-              </div>
-              <div
-                v-else
-                class="rounded-full border px-5 py-2.5 font-medium"
-                :class="app.status === 'ACCEPTED' ? 'border-green-500/30 bg-green-500/20 text-green-300' : 'border-red-500/30 bg-red-500/20 text-red-300'"
-              >
-                {{ app.status === 'ACCEPTED' ? '수락됨' : '거절됨' }}
+                  <div v-if="app.status === 'PENDING'" class="flex gap-2 self-start sm:self-auto">
+                    <button
+                      @click="handleAccept(app)"
+                      class="flex items-center gap-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 px-5 py-2.5 font-medium text-white transition-all hover:shadow-lg"
+                    >
+                      <Check class="h-4 w-4" />
+                      수락
+                    </button>
+                    <button
+                      @click="handleReject(app)"
+                      class="flex items-center gap-2 rounded-full bg-gradient-to-r from-red-500 to-red-600 px-5 py-2.5 font-medium text-white transition-all hover:shadow-lg"
+                    >
+                      <X class="h-4 w-4" />
+                      거절
+                    </button>
+                  </div>
+                  <div
+                    v-else
+                    class="flex items-center gap-2 self-start rounded-full border bg-gradient-to-r px-4 py-2 text-sm font-medium text-slate-900 shadow-sm sm:self-auto"
+                    :class="app.status === 'ACCEPTED'
+                      ? 'border-green-300/60 from-green-200 to-emerald-200'
+                      : 'border-red-300/60 from-rose-200 to-red-200'"
+                  >
+                    <component :is="app.status === 'ACCEPTED' ? CheckCircle : XCircle" class="h-4 w-4" />
+                    {{ app.status === 'ACCEPTED' ? '수락됨' : '거절됨' }}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -415,7 +413,15 @@ const openFreelancerProfile = async (freelancerId: string | number) => {
               </div>
             </div>
 
-            <div v-if="app.portfolioUrl || app.resumeUrl" class="mb-4 flex gap-3">
+            <div class="mb-4 flex flex-wrap items-center gap-4">
+              <button
+                type="button"
+                class="flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
+                @click="openFreelancerProfile(app.freelancerId)"
+              >
+                프로필 보기
+              </button>
+
               <a
                 v-if="app.portfolioUrl"
                 :href="app.portfolioUrl"
@@ -438,10 +444,16 @@ const openFreelancerProfile = async (freelancerId: string | number) => {
               </a>
             </div>
 
-            <div v-if="app.status === 'REJECTED' && app.rejectionReason" class="border-t border-white/10 pt-4">
-              <div class="mb-2 text-sm text-white/80">거절 사유</div>
-              <div class="rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">
-                {{ app.rejectionReason }}
+            <div
+              v-if="app.status === 'REJECTED'"
+              class="rounded-2xl border border-red-500/20 bg-red-500/10 p-4"
+            >
+              <div class="mb-2 flex items-center gap-2 font-semibold text-slate-900">
+                <AlertCircle class="h-5 w-5 text-red-500" />
+                프리랜서 지원서를 거절했습니다.
+              </div>
+              <div v-if="app.rejectionReason" class="text-sm text-slate-700">
+                사유: {{ app.rejectionReason }}
               </div>
             </div>
           </article>
