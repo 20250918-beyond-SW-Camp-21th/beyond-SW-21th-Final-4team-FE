@@ -100,6 +100,13 @@ const openModal = (project: Project) => {
   isModalOpen.value = true;
 };
 
+const handleProjectCardKeydown = (event: KeyboardEvent, project: Project) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    openModal(project);
+  }
+};
+
 const resetFilters = () => {
   searchTerm.value = '';
   statusFilter.value = 'ALL';
@@ -237,7 +244,11 @@ onMounted(() => {
             v-for="(project, index) in filteredProjects"
             :key="project.id"
             @click="openModal(project)"
-            class="group rounded-[28px] border border-slate-200 p-6 shadow-[0_24px_70px_-55px_rgba(15,23,42,0.12)] transition-all duration-300 flex flex-col aspect-[4/4] relative overflow-hidden cursor-pointer bg-white"
+            @keydown="handleProjectCardKeydown($event, project)"
+            tabindex="0"
+            role="button"
+            :aria-label="`${project.title} 상세 열기`"
+            class="group relative flex aspect-[4/4] cursor-pointer flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white p-6 shadow-[0_24px_70px_-55px_rgba(15,23,42,0.12)] transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
             :class="project.status === 'IN_PROGRESS'
               ? 'hover:bg-emerald-50 border-emerald-100'
               : project.status === 'COMPLETED'

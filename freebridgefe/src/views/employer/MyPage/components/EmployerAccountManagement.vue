@@ -416,7 +416,7 @@ onMounted(() => {
             @click="handlePlanChange(planKey as PlanType)"
             :disabled="currentPlan === planKey || isLoading"
             class="w-full py-3 rounded-full font-semibold transition-all mt-auto disabled:opacity-60 disabled:cursor-not-allowed"
-            :class="currentPlan === planKey ? 'bg-slate-100 text-slate-700 cursor-default border border-slate-200' : 'bg-sky-500 text-white hover:bg-sky-400 shadow-[0_18px_40px_-24px_rgba(56,189,248,0.35)]'"
+            :class="currentPlan === planKey ? 'bg-slate-100 text-slate-700 cursor-default border border-slate-200' : 'bg-sky-700 text-white hover:bg-sky-600 shadow-[0_18px_40px_-24px_rgba(3,105,161,0.35)]'"
           >
             {{ currentPlan === planKey ? '사용 중' : '변경하기' }}
           </button>
@@ -446,7 +446,7 @@ onMounted(() => {
           <input
             type="password"
             v-model="verificationPassword"
-            class="bg-transparent border-none outline-none w-full text-slate-950 text-sm"
+            class="w-full rounded-md border-none bg-transparent text-sm text-slate-950 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
             placeholder="비밀번호를 입력해 주세요"
             @keyup.enter="handleVerifyIdentity"
           />
@@ -455,7 +455,7 @@ onMounted(() => {
         <button
           @click="handleVerifyIdentity"
           :disabled="isVerifying"
-          class="mt-4 px-5 py-2.5 bg-sky-500 text-white hover:bg-sky-400 rounded-full text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          class="mt-4 px-5 py-2.5 bg-sky-700 text-white hover:bg-sky-600 rounded-full text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {{ isVerifying ? '확인 중...' : '확인' }}
         </button>
@@ -474,7 +474,7 @@ onMounted(() => {
             <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">이름</label>
             <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
               <User class="w-4 h-4 text-slate-400" />
-              <input type="text" v-model="accountInfo.name" class="bg-transparent border-none outline-none w-full text-slate-950 text-sm" />
+              <input type="text" v-model="accountInfo.name" class="w-full rounded-md border-none bg-transparent text-sm text-slate-950 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50" />
             </div>
           </div>
 
@@ -482,7 +482,7 @@ onMounted(() => {
             <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">이메일</label>
             <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
               <Mail class="w-4 h-4 text-slate-400" />
-              <input type="email" v-model="accountInfo.email" class="bg-transparent border-none outline-none w-full text-slate-950 text-sm" />
+              <input type="email" v-model="accountInfo.email" class="w-full rounded-md border-none bg-transparent text-sm text-slate-950 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50" />
             </div>
           </div>
 
@@ -490,7 +490,7 @@ onMounted(() => {
             <label class="text-xs text-slate-500 mb-2 block uppercase tracking-[0.2em]">휴대폰 번호</label>
             <div class="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3">
               <Phone class="w-4 h-4 text-slate-400" />
-              <input type="tel" v-model="formattedAccountPhone" class="bg-transparent border-none outline-none w-full text-slate-950 text-sm" />
+              <input type="tel" v-model="formattedAccountPhone" class="w-full rounded-md border-none bg-transparent text-sm text-slate-950 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50" />
             </div>
           </div>
         </div>
@@ -498,7 +498,7 @@ onMounted(() => {
         <button
           @click="handleSaveAccountInfo"
           :disabled="isSaving || isLoading"
-          class="mt-6 px-5 py-2.5 bg-sky-500 text-white hover:bg-sky-400 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_18px_40px_-24px_rgba(56,189,248,0.35)]"
+          class="mt-6 px-5 py-2.5 bg-sky-700 text-white hover:bg-sky-600 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_18px_40px_-24px_rgba(3,105,161,0.35)]"
         >
           <Save class="w-4 h-4" />
           {{ isSaving ? '저장 중...' : '정보 저장' }}
@@ -514,7 +514,7 @@ onMounted(() => {
                 <input
                   type="password"
                   v-model="passwordForm.current"
-                  class="bg-transparent border-none outline-none w-full text-slate-950 text-sm"
+                  class="w-full rounded-md border-none bg-transparent text-sm text-slate-950 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
                   placeholder="현재 비밀번호"
                 />
               </div>
@@ -526,7 +526,7 @@ onMounted(() => {
                 <input
                   type="password"
                   v-model="passwordForm.new"
-                  class="bg-transparent border-none outline-none w-full text-slate-950 text-sm"
+                  class="w-full rounded-md border-none bg-transparent text-sm text-slate-950 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
                   placeholder="8자 이상"
                 />
               </div>
@@ -538,7 +538,7 @@ onMounted(() => {
                 <input
                   type="password"
                   v-model="passwordForm.confirm"
-                  class="bg-transparent border-none outline-none w-full text-slate-950 text-sm"
+                  class="w-full rounded-md border-none bg-transparent text-sm text-slate-950 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
                   placeholder="새 비밀번호 확인"
                 />
               </div>
@@ -550,7 +550,7 @@ onMounted(() => {
           <button
             @click="handleChangePassword"
             :disabled="isPasswordSaving"
-            class="mt-4 px-5 py-2.5 bg-violet-500 hover:bg-violet-400 text-white rounded-full text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_18px_40px_-24px_rgba(168,85,247,0.3)]"
+            class="mt-4 px-5 py-2.5 bg-violet-700 hover:bg-violet-600 text-white rounded-full text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_18px_40px_-24px_rgba(109,40,217,0.3)]"
           >
             {{ isPasswordSaving ? '변경 중...' : '비밀번호 변경' }}
           </button>
