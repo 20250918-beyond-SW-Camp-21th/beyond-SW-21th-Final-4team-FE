@@ -286,13 +286,14 @@ const loadRecommendationForSelectedJob = async (requestId: number) => {
 const loadRecommendedFreelancers = async () => {
   initLoading.value = true;
   let jobs = recommendableEmployerJobs.value;
+  const shouldRefreshJobs = true;
   console.info("[employer-reco-view] init load start", {
     currentJobCount: employerJobs.value.length,
     recommendableJobCount: jobs.length,
   });
 
   try {
-    if (!employerJobs.value.length) {
+    if (shouldRefreshJobs) {
       try {
         await jobStore.fetchJobPostings();
         jobs = recommendableEmployerJobs.value;
@@ -473,6 +474,9 @@ onBeforeUnmount(() => {
       <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
       <p class="text-white/50">
         등록하신 프로젝트에 맞는 프리랜서를 찾고 있습니다.
+      </p>
+      <p class="mt-2 text-sm text-white/40">
+        AI가 추천 프리랜서를 고르는 중입니다. 정확한 결과가 준비될 때까지 계속 기다려 주세요.
       </p>
     </div>
 

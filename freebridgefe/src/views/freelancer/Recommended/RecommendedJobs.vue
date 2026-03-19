@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onBeforeUnmount, onMounted } from "vue";
 import { useMotion } from "@vueuse/motion";
 import {
   Sparkles,
@@ -20,12 +20,22 @@ const favoriteIds = ref<string[]>([]);
 const recommendedJobs = ref<(JobPosting & { matchScore?: number })[]>([]);
 const isLoading = ref(true);
 const fetchError = ref<string | null>(null);
+let activeRecommendationController: AbortController | null = null;
+
+const isAbortError = (error: unknown) =>
+  error instanceof Error &&
+  (error.name === "AbortError" || error.name === "CanceledError");
 
 onMounted(async () => {
+  const controller = new AbortController();
+  activeRecommendationController?.abort();
+  activeRecommendationController = controller;
   isLoading.value = true;
   fetchError.value = null;
   try {
-    const recommendations = await getJobRecommendationsForFreelancer();
+    const recommendations = await getJobRecommendationsForFreelancer(
+      controller.signal,
+    );
     // Here we map the minimal API recommendation back to a recognizable JobPosting structure for the UI
     recommendedJobs.value = recommendations.map((rec) => ({
       id: rec.id.toString(),
@@ -43,11 +53,21 @@ onMounted(async () => {
       updatedAt: new Date(),
       matchScore: rec.matchScore,
     })) as (JobPosting & { matchScore?: number })[];
+    recommendedJobs.value = recommendedJobs.value.map((job, index) => ({
+      ...job,
+      description: recommendations[index]?.description?.trim() || "",
+    }));
   } catch (error: any) {
+    if (isAbortError(error)) {
+      return;
+    }
     console.error("Failed to load job recommendations:", error);
     fetchError.value = error.message || "추천 정보를 불러오는데 실패했습니다.";
   } finally {
-    isLoading.value = false;
+    if (activeRecommendationController === controller) {
+      isLoading.value = false;
+      activeRecommendationController = null;
+    }
   }
 });
 
@@ -64,6 +84,10 @@ const toggleFavorite = (id: string) => {
   }
   favoriteIds.value = [...favoriteIds.value, id];
 };
+
+onBeforeUnmount(() => {
+  activeRecommendationController?.abort();
+});
 </script>
 
 <template>
@@ -87,6 +111,9 @@ const toggleFavorite = (id: string) => {
       <p class="text-white/60">
         회원님의 스킬과 경험을 분석하여 딱 맞는 프로젝트를 추천해드려요
       </p>
+      <p v-if="false" class="mt-2 text-sm text-white/40">
+        AI가 추천 결과를 고르는 중입니다. 정확한 결과가 나올 때까지 계속 기다려 주세요.
+      </p>
     </div>
 
     <!-- Loading State -->
@@ -100,6 +127,9 @@ const toggleFavorite = (id: string) => {
       <h3 class="text-xl font-semibold mb-2 text-white/80">AI 분석 중...</h3>
       <p class="text-white/50">
         회원님에게 가장 적합한 프로젝트를 찾고 있습니다
+      </p>
+      <p class="mt-2 text-sm text-white/40">
+        AI가 추천 결과를 고르는 중입니다. 정확한 결과가 나올 때까지 계속 기다려 주세요.
       </p>
     </div>
 
