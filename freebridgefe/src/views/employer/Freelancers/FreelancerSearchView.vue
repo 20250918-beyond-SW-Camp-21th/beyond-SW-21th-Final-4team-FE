@@ -362,7 +362,7 @@ onMounted(() => {
       프리랜서 목록을 불러오는 중입니다.
     </div>
 
-    <div v-else-if="loadError" class="bg-red-500/10 border border-red-400/20 rounded-3xl p-12 text-center text-red-200">
+    <div v-else-if="loadError" class="bg-red-500/10 border border-red-400/20 rounded-3xl p-12 text-center text-red-700">
       {{ loadError }}
     </div>
 
