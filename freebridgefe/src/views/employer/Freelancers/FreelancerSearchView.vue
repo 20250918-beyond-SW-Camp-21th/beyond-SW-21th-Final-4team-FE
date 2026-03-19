@@ -263,34 +263,34 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-[1400px] mx-auto px-4 md:px-8 py-12 text-white">
+  <div class="mx-auto max-w-[1400px] px-4 py-12 text-slate-900 md:px-8">
     <div class="flex flex-col gap-6 mb-10">
       <div class="flex items-center gap-2">
-        <Users class="w-7 h-7 text-emerald-300" />
+        <Users class="h-7 w-7 text-[#21AFBF]" />
         <h1 class="text-3xl md:text-4xl font-bold">프리랜서 찾기</h1>
       </div>
-      <p class="text-white/60">전체 프리랜서를 조건별로 검색해보세요</p>
-      <p class="text-sm text-white/40">
+      <p class="text-slate-600">전체 프리랜서를 조건별로 검색해보세요</p>
+      <p class="text-sm text-slate-500">
         이름/직무/소개는 서버에서 조회하고, 스킬·경력·희망금액·즐겨찾기는 현재 조회 결과에서 추가 필터링합니다.
       </p>
 
       <div class="grid gap-4 lg:grid-cols-[2fr_1fr_1fr_1fr_auto] items-stretch">
-        <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <Search class="w-5 h-5 text-white/50" />
+        <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <Search class="h-5 w-5 text-slate-400" />
           <input
             v-model="searchQueryInput"
             @keyup.enter="applyFilters"
             type="text"
             placeholder="이름, 스킬, 소개로 검색"
-            class="w-full bg-transparent text-white placeholder:text-white/40 focus:outline-none"
+            class="w-full bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none"
           />
         </div>
 
-        <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <Filter class="w-5 h-5 text-white/50" />
+        <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <Filter class="h-5 w-5 text-slate-400" />
           <select
             v-model="selectedSkillInput"
-            class="w-full bg-transparent text-white focus:outline-none"
+            class="w-full bg-transparent text-slate-900 focus:outline-none [&>option]:bg-white [&>option]:text-slate-900"
           >
             <option v-for="skill in allSkills" :key="skill" :value="skill">
               {{ skill === 'ALL' ? '전체 스킬' : skill }}
@@ -298,40 +298,40 @@ onMounted(() => {
           </select>
         </div>
 
-        <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <SlidersHorizontal class="w-5 h-5 text-white/50" />
+        <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <SlidersHorizontal class="h-5 w-5 text-slate-400" />
           <input
             v-model.number="minExperienceInput"
             @keyup.enter="applyFilters"
             type="number"
             min="0"
             step="1"
-            class="w-full bg-transparent text-white focus:outline-none"
+            class="w-full bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none"
             placeholder="최소 경력"
           />
-          <span class="text-white/40 text-sm">년+</span>
+          <span class="text-sm text-slate-500">년+</span>
         </div>
 
-        <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <DollarSign class="w-5 h-5 text-white/50" />
+        <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <DollarSign class="h-5 w-5 text-slate-400" />
           <input
             v-model.number="maxMonthlySalaryInput"
             @keyup.enter="applyFilters"
             type="number"
             min="0"
             step="100000"
-            class="w-full bg-transparent text-white focus:outline-none"
+            class="w-full bg-transparent text-slate-900 placeholder:text-slate-400 focus:outline-none"
             placeholder="최대 월급"
           />
-          <span class="text-white/40 text-sm">원</span>
+          <span class="text-sm text-slate-500">원</span>
         </div>
 
-        <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-3">
-          <label class="flex items-center gap-2 text-sm text-white/80 whitespace-nowrap">
+        <div class="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+          <label class="flex items-center gap-2 whitespace-nowrap text-sm text-slate-700">
             <input
               v-model="favoriteOnlyInput"
               type="checkbox"
-              class="h-4 w-4 rounded border-white/20 bg-transparent"
+              class="h-4 w-4 rounded border-slate-300 bg-white"
             />
             즐겨찾기만
           </label>
@@ -345,7 +345,7 @@ onMounted(() => {
           <button
             type="button"
             @click="resetFilters"
-            class="px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white font-semibold hover:bg-white/20 transition-colors"
+            class="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 font-semibold text-slate-700 transition-colors hover:bg-slate-100"
           >
             초기화
           </button>
@@ -353,12 +353,12 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="mb-6 flex items-center justify-between gap-4 text-sm text-white/60">
+    <div class="mb-6 flex items-center justify-between gap-4 text-sm text-slate-500">
       <span>검색 결과 {{ totalElements.toLocaleString() }}명</span>
       <span v-if="totalPages > 0">페이지 {{ currentPage + 1 }} / {{ totalPages }}</span>
     </div>
 
-    <div v-if="isLoading" class="bg-white/5 border border-white/10 rounded-3xl p-12 text-center text-white/50">
+    <div v-if="isLoading" class="rounded-3xl border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-sm">
       프리랜서 목록을 불러오는 중입니다.
     </div>
 
@@ -366,7 +366,7 @@ onMounted(() => {
       {{ loadError }}
     </div>
 
-    <div v-else-if="filteredFreelancers.length === 0" class="bg-white/5 border border-white/10 rounded-3xl p-12 text-center text-white/50">
+    <div v-else-if="filteredFreelancers.length === 0" class="rounded-3xl border border-slate-200 bg-white p-12 text-center text-slate-500 shadow-sm">
       조건에 맞는 프리랜서가 없습니다.
     </div>
 
@@ -374,7 +374,7 @@ onMounted(() => {
       <div
         v-for="freelancer in filteredFreelancers"
         :key="freelancer.freelancerId"
-        class="cursor-pointer bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all"
+        class="cursor-pointer rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#21AFBF]/30 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
         role="button"
         tabindex="0"
         @click="openFreelancerProfile(freelancer)"
@@ -401,15 +401,15 @@ onMounted(() => {
                 {{ freelancer.grade }}
               </span>
             </div>
-            <div class="mt-1 flex items-center gap-2 text-sm text-white/60">
+            <div class="mt-1 flex items-center gap-2 text-sm text-slate-500">
               <BriefcaseBusiness class="w-4 h-4" />
               <span>{{ freelancer.job || '직무 정보 없음' }}</span>
             </div>
-            <div class="text-sm text-white/60">{{ freelancer.careerYears ?? 0 }}년 경력</div>
+            <div class="text-sm text-slate-500">{{ freelancer.careerYears ?? 0 }}년 경력</div>
           </div>
         </div>
 
-        <p class="text-white/70 text-sm mb-4 line-clamp-2 min-h-[40px]">
+        <p class="mb-4 min-h-[40px] line-clamp-2 text-sm text-slate-600">
           {{ freelancer.introduction || '소개가 아직 등록되지 않았습니다.' }}
         </p>
 
@@ -423,9 +423,9 @@ onMounted(() => {
           </span>
         </div>
 
-        <div class="flex items-center justify-between pt-4 border-t border-white/10">
-          <div class="text-sm text-white/60">
-            희망 금액 <span class="text-white font-semibold">{{ formatMoney(freelancer.wage) }}원</span>
+        <div class="flex items-center justify-between border-t border-slate-200 pt-4">
+          <div class="text-sm text-slate-500">
+            희망 금액 <span class="font-semibold text-slate-900">{{ formatMoney(freelancer.wage) }}원</span>
           </div>
           <div class="flex items-center gap-2">
             <button
@@ -434,7 +434,7 @@ onMounted(() => {
               class="px-3 py-2 rounded-lg border transition-all"
               :class="isFavorite(freelancer.freelancerId)
                 ? 'bg-[#21AFBF]/12 border-[#21AFBF]/35 text-[#21AFBF]'
-                : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'"
+                : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-[#21AFBF]'"
             >
               <Star
                 class="w-4 h-4"
@@ -459,19 +459,19 @@ onMounted(() => {
         type="button"
         @click="movePage(currentPage - 1)"
         :disabled="!canGoPrev"
-        class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <ChevronLeft class="h-4 w-4" />
         이전
       </button>
-      <div class="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/70">
+      <div class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
         {{ currentPage + 1 }} / {{ totalPages }}
       </div>
       <button
         type="button"
         @click="movePage(currentPage + 1)"
         :disabled="!canGoNext"
-        class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
       >
         다음
         <ChevronRight class="h-4 w-4" />

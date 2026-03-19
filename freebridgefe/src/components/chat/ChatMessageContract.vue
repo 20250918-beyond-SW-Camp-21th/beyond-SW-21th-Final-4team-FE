@@ -1,18 +1,18 @@
 <template>
-    <div class="w-72 bg-slate-800 rounded-xl border border-emerald-500/30 overflow-hidden shadow-md my-2">
-        <div class="px-4 py-3 bg-slate-800/50 border-b border-white/5 flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-                <FileTextIcon class="w-4 h-4 text-emerald-500" />
+    <div class="my-2 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md">
+        <div class="flex items-center gap-3 border-b border-sky-200/70 bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] px-4 py-3">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-white/80">
+                <FileTextIcon class="w-4 h-4 text-[#0f2b2e]" />
             </div>
             <div>
-                <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">계약 알림</p>
-                <p class="text-sm font-bold text-white">{{ contractTitle }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-[#0f2b2e]/80">계약 알림</p>
+                <p class="text-sm font-bold text-[#0f2b2e]">{{ contractTitle }}</p>
             </div>
         </div>
 
         <div class="p-4 space-y-3">
             <div class="flex justify-between items-center text-sm gap-3">
-                <span class="text-slate-400">상태</span>
+                <span class="text-slate-500">상태</span>
                 <span :class="statusBadgeClass">
                     {{ statusLabel }}
                 </span>
@@ -20,7 +20,7 @@
 
             <div class="space-y-1">
                 <p class="text-xs text-slate-500">프로젝트명</p>
-                <p class="text-sm text-slate-300 font-medium truncate">{{ contractProjectName }}</p>
+                <p class="truncate text-sm font-medium text-slate-800">{{ contractProjectName }}</p>
             </div>
 
             <div v-if="contractNumberLabel" class="text-xs text-slate-500">
@@ -31,12 +31,12 @@
                 계약 정보를 불러오는 중입니다.
             </div>
 
-            <p class="text-xs text-slate-400 leading-relaxed">
+            <p class="text-xs leading-relaxed text-slate-600">
                 채팅에서는 계약 상태만 볼 수 있습니다. 상세 확인과 서명은 계약 기능에서 진행하세요.
             </p>
 
             <button
-                class="w-full py-2 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg transition-colors shadow-lg shadow-emerald-900/20"
+                class="w-full rounded-lg bg-gradient-to-r from-[#21AFBF] to-[#00D4DA] py-2 text-xs font-semibold text-[#0f2b2e] transition-all hover:brightness-105"
                 @click="openContractPage"
             >
                 계약으로 이동
@@ -95,18 +95,18 @@ const statusLabel = computed(() => {
 
 const statusBadgeClass = computed(() => {
     if (resolvedStatus.value === 'WAITING_SIGNATURE') {
-        return 'px-2 py-0.5 rounded text-xs font-medium bg-yellow-500/10 text-yellow-500 border border-yellow-500/20';
+        return 'px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-slate-700 border border-amber-200';
     }
     if (resolvedStatus.value === 'IN_PROGRESS') {
-        return 'px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20';
+        return 'px-2 py-0.5 rounded text-xs font-medium bg-sky-50 text-slate-700 border border-sky-200';
     }
     if (resolvedStatus.value === 'COMPLETED') {
-        return 'px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+        return 'px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-slate-700 border border-emerald-200';
     }
     if (resolvedStatus.value === 'REJECTED') {
-        return 'px-2 py-0.5 rounded text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20';
+        return 'px-2 py-0.5 rounded text-xs font-medium bg-rose-50 text-slate-700 border border-rose-200';
     }
-    return 'px-2 py-0.5 rounded text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20';
+    return 'px-2 py-0.5 rounded text-xs font-medium bg-slate-50 text-slate-700 border border-slate-200';
 });
 
 function openContractPage() {

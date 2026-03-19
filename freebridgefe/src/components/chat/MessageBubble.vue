@@ -1,14 +1,17 @@
 <template>
     <div :class="['flex mb-6 transition-all duration-300 ease-out group', isMine ? 'justify-end' : 'justify-start']">
         <!-- Avatar (Optionally show only for other) -->
-        <div v-if="!isMine && !isSystem" class="w-9 h-9 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-xs font-bold text-slate-300 mr-3 shrink-0 overflow-hidden border border-white/5 ring-1 ring-white/5 self-start mt-1 shadow-sm">
+        <div
+            v-if="!isMine && !isSystem"
+            class="mr-3 mt-1 flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#21AFBF]/20 bg-gradient-to-br from-[#21AFBF]/18 to-[#00D4DA]/20 text-xs font-bold text-[#0f2b2e] shadow-sm"
+        >
             {{ senderName.charAt(0) }}
         </div>
 
         <div class="max-w-[65%] flex flex-col" :class="isMine ? 'items-end' : 'items-start'">
             <!-- System Message -->
             <div v-if="isSystem" class="flex justify-center w-full my-6">
-                <span class="bg-slate-800/50 backdrop-blur-sm text-slate-400 text-xs px-4 py-1.5 rounded-full border border-white/5 shadow-sm">
+                <span class="rounded-full border border-slate-200 bg-slate-100 px-4 py-1.5 text-xs text-slate-500 shadow-sm">
                     {{ message.content }}
                 </span>
             </div>
@@ -36,12 +39,12 @@
                     :class="[
                         isMine
                             ? 'fb-chat-own-bubble rounded-[22px] rounded-tr-sm'
-                            : 'bg-slate-800 border border-white/5 text-slate-200 rounded-[22px] rounded-tl-sm'
+                            : 'rounded-[22px] rounded-tl-sm border border-slate-200 bg-white text-slate-800 shadow-sm'
                     ]"
                 >
                     <div
                         class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
-                        :class="isMine ? 'bg-white/15' : 'bg-slate-700/80'"
+                        :class="isMine ? 'bg-white/20' : 'bg-slate-100'"
                     >
                         <PaperclipIcon class="h-4 w-4" />
                     </div>
@@ -59,7 +62,7 @@
                     :class="[
                         isMine 
                             ? 'fb-chat-own-bubble rounded-[22px] rounded-tr-sm' 
-                            : 'bg-slate-800 border border-white/5 text-slate-200 rounded-[22px] rounded-tl-sm'
+                            : 'rounded-[22px] rounded-tl-sm border border-slate-200 bg-white text-slate-800 shadow-sm'
                     ]"
                 >
                     <p class="whitespace-pre-wrap leading-relaxed break-words font-light tracking-wide">{{ message.content }}</p>
