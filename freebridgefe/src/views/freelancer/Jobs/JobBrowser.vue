@@ -66,8 +66,8 @@ const loadAiRecommendations = async () => {
     return;
   }
 
-  const controller = new AbortController();
   activeRecommendationController?.abort();
+  const controller = new AbortController();
   activeRecommendationController = controller;
   isAiRecommendationLoading.value = true;
   aiRecommendationError.value = null;
