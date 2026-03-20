@@ -245,6 +245,7 @@ onMounted(async () => {
 
                 if (summaryResult.status === 'fulfilled') {
                     const summary = summaryResult.value;
+                    profile.value.reviewSummary = summary;
                     profile.value.topPercentile = summary.topPercentile ?? 0;
                 }
 

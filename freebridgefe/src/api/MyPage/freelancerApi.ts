@@ -100,6 +100,13 @@ export interface FreelancerProfileDashboard {
     strengths: string[];
     weaknesses: string[];
   };
+  reviewSummary?: {
+    averageRate: number;
+    topPercentile: number;
+    expertiseRate: number;
+    communicationRate: number;
+    scheduleRate: number;
+  };
   crmAlerts?: {
     isOnboardingNeeded: boolean;
     isApplyEncouraged: boolean;

@@ -105,6 +105,10 @@ const filteredRejections = computed(() => {
 
 // Computed: 평균 평점 (props 우선, 없으면 목록 기반)
 const averageScore = computed(() => {
+  const reviewAverage = props.profile?.reviewSummary?.averageRate;
+  if (reviewAverage !== undefined && reviewAverage !== null) {
+    return Number(reviewAverage).toFixed(1);
+  }
   if (props.profile?.averageRating !== undefined) {
     return Number(props.profile.averageRating).toFixed(1);
   }
@@ -118,6 +122,10 @@ const averageScore = computed(() => {
 
 // Computed: 전문성 평균 점수
 const professionalismScore = computed(() => {
+  const expertiseRate = props.profile?.reviewSummary?.expertiseRate;
+  if (expertiseRate !== undefined && expertiseRate !== null) {
+    return Number(expertiseRate).toFixed(1);
+  }
   if (!props.profile?.expertise) return "0.0";
   const { programming, framework, problemSolving } = props.profile.expertise;
   return ((programming + framework + problemSolving) / 3).toFixed(1);
@@ -125,6 +133,16 @@ const professionalismScore = computed(() => {
 
 // Computed: 협업 역량 평균 점수
 const collaborationScore = computed(() => {
+  const communicationRate = props.profile?.reviewSummary?.communicationRate;
+  const scheduleRate = props.profile?.reviewSummary?.scheduleRate;
+  if (
+    communicationRate !== undefined &&
+    communicationRate !== null &&
+    scheduleRate !== undefined &&
+    scheduleRate !== null
+  ) {
+    return ((Number(communicationRate) + Number(scheduleRate)) / 2).toFixed(1);
+  }
   if (!props.profile?.collaboration) return "0.0";
   const { communication, scheduleAdherence, dispute } =
     props.profile.collaboration;
