@@ -341,25 +341,6 @@ const handlePasswordChange = async () => {
           </button>
         </div>
 
-        <!-- Demo Info -->
-        <div
-          v-motion
-          :initial="{ opacity: 0 }"
-          :enter="{ opacity: 1, transition: { delay: 900 } }"
-          class="mt-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl"
-        >
-          <div class="text-sm text-blue-300">
-            <div class="font-medium mb-2">🔑 데모 계정</div>
-            <div class="space-y-1 text-xs text-white/60">
-              <div>
-                <strong>고용주:</strong> employer@test.com / test1234
-              </div>
-              <div>
-                <strong>프리랜서:</strong> freelancer@test.com / test1234
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
